@@ -68,10 +68,10 @@ static uint32_t ntos_getkey(void) {
 
 static NtosApi g_ntos_api = {
     &ntos_puts,
-    &Debug_Printf,
-    &LCD_Refresh,
-    &Mem_Malloc,
-    &Mem_Free,
+    Debug_Printf, // SDK declares these as function pointers, not functions
+    LCD_Refresh,
+    &Mem_Malloc,  // this one really is an inline function in the SDK
+    Mem_Free,
     &ntos_getkey,
 };
 
@@ -304,8 +304,9 @@ int main(int argc, char **argv, char **envp) {
 
     banner();
 
-    // Scan flash for .NTX payloads.
-    char_const16_t names[kMaxFiles][kMaxName + 1] = {};
+    // Scan flash for .NTX payloads. File_FindFirst returns UCS-16 names;
+    // File_Open takes ANSI paths, so convert on the way in.
+    char names[kMaxFiles][kMaxName + 1] = {};
     uint32_t sizes[kMaxFiles] = {};
     int count = 0;
 
@@ -319,8 +320,8 @@ int main(int argc, char **argv, char **envp) {
                     count < kMaxFiles) {
                     int k = 0;
                     for (; k < kMaxName && name[k] != 0; k++)
-                        names[count][k] = name[k];
-                    names[count][k] = 0;
+                        names[count][k] = static_cast<char>(name[k]);
+                    names[count][k] = '\0';
                     sizes[count] = info.size;
                     count++;
                 }
@@ -349,8 +350,8 @@ int main(int argc, char **argv, char **envp) {
         line[p++] = static_cast<char>('0' + i);
         line[p++] = ':';
         line[p++] = ' ';
-        for (int k = 0; k < kMaxName && names[i][k] != 0; k++)
-            line[p++] = static_cast<char>(names[i][k]);
+        for (int k = 0; k < kMaxName && names[i][k] != '\0'; k++)
+            line[p++] = names[i][k];
         line[p++] = ' ';
         for (int k = 0; sz[k] != '\0' && p < 46; k++)
             line[p++] = sz[k];
@@ -388,16 +389,16 @@ int main(int argc, char **argv, char **envp) {
         }
     }
 
-    // Read the selected file fully.
-    char_const16_t path[40] = {};
+    // Read the selected file fully. File_Open takes an ANSI path.
+    char path[8 + kMaxName + 1];
     {
-        const char_const16_t prefix[] = {'\\', 'f', 'l', 's', '0', '\\', 0};
+        const char prefix[] = "\\fls0\\";
         int p = 0;
-        for (; prefix[p] != 0; p++)
+        for (; prefix[p] != '\0'; p++)
             path[p] = prefix[p];
-        for (int k = 0; k < kMaxName && names[selected][k] != 0; k++)
+        for (int k = 0; k < kMaxName && names[selected][k] != '\0'; k++)
             path[p++] = names[selected][k];
-        path[p] = 0;
+        path[p] = '\0';
     }
 
     int fd = File_Open(path, FILE_OPEN_READ);
@@ -440,9 +441,10 @@ int main(int argc, char **argv, char **envp) {
     Mem_Free(file);
 
     Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
-                 "Loaded at 0x%08X entry 0x%08X",
-                 reinterpret_cast<uint32_t>(image),
-                 reinterpret_cast<uint32_t>(image) + hdr.oh.entry_rva);
+                 "Loaded at 0x%08lX entry 0x%08lX",
+                 static_cast<unsigned long>(reinterpret_cast<uintptr_t>(image)),
+                 static_cast<unsigned long>(reinterpret_cast<uintptr_t>(image)) +
+                     hdr.oh.entry_rva);
     LCD_Refresh();
 
     // Execute. Entry contract: r4 = &NtosApi, r5 = argv, r6 = envp.
@@ -453,7 +455,8 @@ int main(int argc, char **argv, char **envp) {
     int ret = entry(&g_ntos_api, nullptr, nullptr);
 
     Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
-                 "Payload returned 0x%08X", ret);
+                 "Payload returned 0x%08lX",
+                 static_cast<unsigned long>(static_cast<uint32_t>(ret)));
     LCD_Refresh();
     Mem_Free(image);
     Debug_WaitKey();
