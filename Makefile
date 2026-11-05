@@ -73,11 +73,12 @@ $(PAYLOAD_OBJ): $(PAYLOAD_SRCS)
 	@mkdir -p $(dir $@)
 	$(CC) -c $(PAYLOAD_DIR)/hello.c -o $@ \
 		-ffreestanding -fno-builtin -fno-stack-protector \
+		-fno-unwind-tables -fno-asynchronous-unwind-tables \
 		-O2 -Wall -Wextra $(INCLUDES)
 
 $(PAYLOAD_ELF): $(PAYLOAD_OBJ) $(PAYLOAD_LD)
 	@mkdir -p $(dir $@)
-	$(LD) -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_LD) -o $@ $(PAYLOAD_OBJ)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_LD) -o $@ $(PAYLOAD_OBJ)
 
 $(PAYLOAD_NTX): $(PAYLOAD_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
