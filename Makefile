@@ -28,6 +28,7 @@ LIBS:=-L$(SDK_DIR) -lsdk
 READELF:=sh4a_nofpueb-elf-readelf
 OBJCOPY:=sh4a_nofpueb-elf-objcopy
 STRIP:=sh4a_nofpueb-elf-strip
+PYTHON := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
 
 APP_ELF := $(OUTDIR)/NTOS.elf
 APP_HH3 := $(APP_ELF:.elf=.hh3)
@@ -82,7 +83,7 @@ $(PAYLOAD_ELF): $(PAYLOAD_OBJ) $(PAYLOAD_LD)
 
 $(PAYLOAD_NTX): $(PAYLOAD_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
-	python3 tools/elf2ntx.py $(PAYLOAD_ELF) -o $@
+	$(PYTHON) tools/elf2ntx.py $(PAYLOAD_ELF) -o $@
 
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)

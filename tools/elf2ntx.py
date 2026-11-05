@@ -301,9 +301,22 @@ def emit_ntx(elf, base):
                          "NTOS limit of 8")
 
     size_of_image = align_up(reloc_rva + len(reloc_data), 0x1000)
-    entry_rva = elf.e_entry - base
-    if entry_rva < 0:
-        raise SystemExit("error: entry point below image base")
+
+    # Entry: trust e_entry, but if ld defaulted it to the section start
+    # ("cannot find entry symbol" warning), fall back to looking up `main`
+    # in the symbol table.
+    entry_va = elf.e_entry
+    if entry_va <= base:
+        for sym in elf.symbols:
+            if sym.name == "main" and sym.type == STT_FUNC                     and sym.shndx != SHN_UNDEF:
+                entry_va = sym.value
+                print(f"note: using symbol table entry 'main' "
+                      f"at 0x{entry_va:08X}")
+                break
+        else:
+            raise SystemExit("error: no entry point (e_entry unset and no "
+                             "global 'main' symbol found)")
+    entry_rva = entry_va - base
 
     # --- file assembly -------------------------------------------------------
     # COFF header (20) + optional header (224) + section headers (40*n),
@@ -399,9 +412,9 @@ def make_synthetic_elf(base):
 
     shstr_off = 1  # ".text" at 1
     symtab_data = b"\x00" * 16  # null symbol
-    # symbol 1: 'foo' defined in .text (section 1) at value 0x100
-    symtab_data += struct.pack(">IIIBBH", 7, 0x100, 0, (1 << 4) | 2, 0, 1)
-    strtab_data = b"\x00foo\x00"
+    # symbol 1: 'main' defined in .text (section 1) at value 0x100
+    symtab_data += struct.pack(">IIIBBH", 1, 0x00400100, 0, (1 << 4) | 2, 0, 1)
+    strtab_data = b"\x00main\x00"
     rela_data = struct.pack(">IIi", base + lit_off, (1 << 8) | R_SH_DIR32, 0)
 
     body_layout = []
@@ -424,7 +437,7 @@ def make_synthetic_elf(base):
                       base,       # e_entry
                       0,          # e_phoff
                       0,          # e_shoff patched later
-                      0, 52, 0, 0, 40, 5, 4)  # 5 sections, shstrndx = index of shstrtab
+                      0, 52, 0, 0, 40, 6, 5)  # 6 sections (null + 5), shstrndx = 5
     # append shstrtab data too
     s5, p5, d5 = addsec(0, SHT_STRTAB, 0, 0, secnames)
     body_layout.append((p5, d5))
@@ -436,6 +449,7 @@ def make_synthetic_elf(base):
     if len(blob) % 4:
         blob += b"\x00" * (4 - len(blob) % 4)
     e_shoff = len(blob)
+    blob += b"\x00" * 40  # mandatory null section header (index 0)
     for s in (s1, s2, s3, s4, s5):
         blob += s
     struct.pack_into(">I", blob, 32, e_shoff)  # e_shoff (field 6 at 16+16)
@@ -454,7 +468,7 @@ def selftest():
     opt = out[20:20 + PE32_OPTHDR_SIZE]
     entry = struct.unpack_from(">I", opt, 16)[0]      # AddressOfEntryPoint
     img_base = struct.unpack_from(">I", opt, 28)[0]   # ImageBase
-    assert entry == 0 and img_base == base
+    assert entry == 0x100 and img_base == base  # 'main' fallback
     dir5_rva, dir5_size = struct.unpack_from(">II", opt, 96 + 5 * 8)
     assert dir5_size >= 8
     # find .reloc section raw content and verify block structure
