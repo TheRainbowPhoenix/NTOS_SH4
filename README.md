@@ -14,17 +14,38 @@ VA `0x08100000`).
 
 ## How to build
 
-GitHub Actions builds `dist/NTOS.hh3` on every push to `main` and attaches it
-to a release for `v*.*.*` tags. Locally:
+GitHub Actions builds `dist/NTOS.hh3` **and** `dist/HELLO.NTX` on every push
+to `main`. Locally (devcontainer or any env with the sh4a_nofpueb-elf
+toolchain and `SDK_DIR` pointing at the HH3 sdk/):
 
 ```sh
-# devcontainer (ghcr.io/classpaddev/hollyhock-3) or any env with the
-# sh4a_nofpueb-elf toolchain and SDK_DIR pointing at the HH3 sdk/
-make -j
+make -j        # NTOS.hh3 + HELLO.NTX (payload)
+make ntx       # payload only
 ```
 
-Copy `dist/NTOS.hh3` to the root of the calculator (USB storage mode) and run
-it from the Hollyhock launcher.
+Copy both `dist/NTOS.hh3` and `dist/HELLO.NTX` to the root of the calculator
+(USB storage mode), run NTOS from the Hollyhock launcher, and select
+`HELLO.NTX`.
+
+## Building your own .NTX payloads
+
+The repo builds a payload with the *same GCC toolchain as the launcher* — no
+MSVC needed:
+
+1. Compile freestanding: `sh4a_nofpueb-elf-gcc -c -ffreestanding -fno-builtin
+   -O2 hello.c`
+2. Static-link at the payload base with retained relocations:
+   `sh4a_nofpueb-elf-ld --emit-relocs -e main -T payload/payload.ld -o
+   hello.elf hello.o`
+3. Pack: `python3 tools/elf2ntx.py hello.elf -o HELLO.NTX`
+
+`tools/elf2ntx.py` converts the big-endian ELF32 into a big-endian COFF EXE
+(machine `0x01A8`, PE32 optional header, WinCE subsystem): every absolute
+address ld retained (`--emit-relocs`, `R_SH_DIR32` sites against in-image
+symbols) becomes a `HIGHLOW` entry in a PE `.reloc` table, so NTOS can
+copy-load the image anywhere in the heap and apply the base delta. Run
+`python3 tools/elf2ntx.py --selftest` for a round-trip check without a
+toolchain.
 
 ## Payload contract
 

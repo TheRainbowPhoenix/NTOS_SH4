@@ -32,6 +32,15 @@ STRIP:=sh4a_nofpueb-elf-strip
 APP_ELF := $(OUTDIR)/NTOS.elf
 APP_HH3 := $(APP_ELF:.elf=.hh3)
 
+# --- .NTX payload (big-endian SH4 COFF EXE, machine 0x01A8) -----------------
+PAYLOAD_DIR := payload
+PAYLOAD_NAME := HELLO
+PAYLOAD_LD := $(PAYLOAD_DIR)/payload.ld
+PAYLOAD_SRCS := $(wildcard $(PAYLOAD_DIR)/*.c)
+PAYLOAD_OBJ := $(BUILDDIR)/payload/hello.o
+PAYLOAD_ELF := $(BUILDDIR)/payload/hello.elf
+PAYLOAD_NTX := $(OUTDIR)/$(PAYLOAD_NAME).NTX
+
 AS_SOURCES:=$(shell find $(SOURCEDIR) -name '*.S')
 CC_SOURCES:=$(shell find $(SOURCEDIR) -name '*.c')
 CXX_SOURCES:=$(shell find $(SOURCEDIR) -name '*.cpp')
@@ -45,8 +54,9 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
+ntx: $(PAYLOAD_NTX) Makefile
 
-all: elf hh3
+all: elf hh3 ntx
 .DEFAULT_GOAL := all
 .SECONDARY: # Prevents intermediate files from being deleted
 
@@ -56,6 +66,22 @@ clean:
 
 %.hh3: %.elf
 	$(STRIP) -o $@ $^
+
+# Payload: freestanding compile, static link at 0x00400000 with retained
+# relocations, then the ELF->COFF packer emits the BE NTX EXE.
+$(PAYLOAD_OBJ): $(PAYLOAD_SRCS)
+	@mkdir -p $(dir $@)
+	$(CC) -c $(PAYLOAD_DIR)/hello.c -o $@ \
+		-ffreestanding -fno-builtin -fno-stack-protector \
+		-O2 -Wall -Wextra $(INCLUDES)
+
+$(PAYLOAD_ELF): $(PAYLOAD_OBJ) $(PAYLOAD_LD)
+	@mkdir -p $(dir $@)
+	$(LD) --emit-relocs -e main -T $(PAYLOAD_LD) -o $@ $(PAYLOAD_OBJ)
+
+$(PAYLOAD_NTX): $(PAYLOAD_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	python3 tools/elf2ntx.py $(PAYLOAD_ELF) -o $@
 
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
@@ -81,6 +107,6 @@ compile_commands.json:
 	$(MAKE) $(MAKEFLAGS) clean
 	bear -- sh -c "$(MAKE) $(MAKEFLAGS) --keep-going all || exit 0"
 
-.PHONY: elf hh3 all clean compile_commands.json
+.PHONY: elf hh3 ntx all clean compile_commands.json
 
 -include $(DEPFILES)
