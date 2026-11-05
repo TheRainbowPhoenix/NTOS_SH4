@@ -310,15 +310,20 @@ def emit_ntx(elf, base):
     # in the symbol table.
     entry_va = elf.e_entry
     if entry_va <= base:
-        for sym in elf.symbols:
-            if sym.name == "main" and sym.type == STT_FUNC                     and sym.shndx != SHN_UNDEF:
+        defined = [s for s in elf.symbols
+                   if s.shndx != SHN_UNDEF and s.shndx < SHN_LORESERVE
+                   and s.type != STT_SECTION and s.name]
+        for sym in defined:
+            if sym.name.lower() in ("main", "_main"):
                 entry_va = sym.value
-                print(f"note: using symbol table entry 'main' "
+                print(f"note: using symbol table entry '{sym.name}' "
                       f"at 0x{entry_va:08X}")
                 break
         else:
-            raise SystemExit("error: no entry point (e_entry unset and no "
-                             "global 'main' symbol found)")
+            listing = ", ".join(f"{s.name}({hex(s.value)})" for s in defined[:20])
+            print(f"warning: no 'main' symbol (seen: {listing or 'NONE'}); "
+                  "defaulting entry to image start")
+            entry_va = base
     entry_rva = entry_va - base
 
     # --- file assembly -------------------------------------------------------
