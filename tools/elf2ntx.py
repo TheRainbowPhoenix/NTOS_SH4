@@ -104,9 +104,12 @@ class Elf:
     def __init__(self, data):
         if data[:4] != b"\x7fELF":
             raise SystemExit("error: not an ELF file")
-        if data[4] != 2:
+        # EI_CLASS (index 4): 1 = ELF32. EI_DATA (index 5): 2 = big-endian.
+        if data[4] != 1:
+            raise SystemExit("error: not a 32-bit ELF")
+        if data[5] != 2:
             raise SystemExit("error: not a big-endian ELF (sh4a_nofpueb-elf is EB)")
-        if data[5] != 1:
+        if data[6] != 1:
             raise SystemExit("error: unexpected ELF version")
         (self.e_type, self.e_machine, self.e_version, self.e_entry,
          self.e_phoff, self.e_shoff, self.e_flags, self.e_ehsize,
@@ -430,7 +433,7 @@ def make_synthetic_elf(base):
     s4, p4, d4 = addsec(23, SHT_RELA, 0, 0, rela_data, link=2, entsize=12)
     body_layout.append((p4, d4))
 
-    eh = b"\x7fELF" + bytes([2, 1, 1, 0]) + b"\x00" * 8
+    eh = b"\x7fELF" + bytes([1, 2, 1, 0]) + b"\x00" * 8
     eh += struct.pack(">HHIIIIIHHHHHH",
                       2,          # e_type ET_EXEC
                       EM_SH, 1,
