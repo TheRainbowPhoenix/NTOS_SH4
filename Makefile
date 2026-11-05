@@ -77,7 +77,7 @@ $(PAYLOAD_OBJ): $(PAYLOAD_SRCS)
 
 $(PAYLOAD_ELF): $(PAYLOAD_OBJ) $(PAYLOAD_LD)
 	@mkdir -p $(dir $@)
-	$(LD) --emit-relocs -e main -T $(PAYLOAD_LD) -o $@ $(PAYLOAD_OBJ)
+	$(LD) -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_LD) -o $@ $(PAYLOAD_OBJ)
 
 $(PAYLOAD_NTX): $(PAYLOAD_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
