@@ -2,4 +2,5 @@ dist/
 obj/
 .cache/
 .deps/
-compile_commands.json
+compile_commands.json__pycache__/
+*.pyc
