@@ -20,7 +20,7 @@
 #include <sdk/os/lcd.h>
 #include <sdk/os/mem.h>
 
-#include "coff.hpp"
+#include "pe.hpp"
 #include "mmu.hpp"
 
 APP_NAME("NTOS")
@@ -102,19 +102,19 @@ struct LoadedSection {
 };
 
 static int load_coff(const uint8_t *file, uint32_t file_size,
-                     uint8_t **out_image, coff::Image *out_hdr,
+                     uint8_t **out_image, pe::Image *out_hdr,
                      LoadedSection *out_sections, const char **err) {
     *err = "unknown";
-    if (coff::parse(file, file_size, out_hdr) != 0) {
-        *err = "bad COFF header (not SH4BE 0x01A8?)";
+    if (pe::parse(file, file_size, out_hdr) != 0) {
+        *err = "bad PE header (not SH4BE 0x01A8?)";
         return -1;
     }
 
-    const bool has_obj_relocs = !(out_hdr->fh.flags & coff::F_RELFLG);
     const bool has_base_relocs = out_hdr->oh.basereloc_rva != 0 &&
                                  out_hdr->oh.basereloc_size != 0;
-    if (!has_obj_relocs && !has_base_relocs) {
-        *err = "image has no relocations (link without stripping them)";
+    if (!has_base_relocs) {
+        *err = "image has no .reloc directory (mapped mode can run it at "
+               "its preferred base; keep relocations for copy-load)";
         return -3;
     }
 
@@ -128,8 +128,8 @@ static int load_coff(const uint8_t *file, uint32_t file_size,
     }
 
     // Copy-load: place the image wherever the heap gives it to us, then
-    // relocate. PE base relocs make the image position-independent; COFF
-    // object relocs rebuild absolute addresses from the symbol table.
+    // relocate. The .reloc table itself is little-endian (PE spec); the
+    // fixup sites are payload-visible words, so big-endian in memory.
     auto *image = static_cast<uint8_t *>(Mem_Malloc(vsize));
     if (image == nullptr) {
         *err = "out of memory";
@@ -138,15 +138,16 @@ static int load_coff(const uint8_t *file, uint32_t file_size,
     Mem_Memset(image, 0, vsize);
 
     for (uint32_t i = 0; i < out_hdr->section_count; i++) {
-        const coff::SectionHeader &sh = out_hdr->sections[i];
+        const pe::SectionHeader &sh = out_hdr->sections[i];
         LoadedSection &ls = out_sections[i];
         ls.rva = sh.rva;
         ls.va = reinterpret_cast<uint32_t>(image) + sh.rva;
         ls.raw_size = sh.raw_size;
         ls.vsize = sh.vsize != 0 ? sh.vsize : sh.raw_size;
-        ls.flags = sh.flags;
+        ls.flags = sh.characteristics;
 
-        if ((sh.flags & coff::STYP_BSS) || sh.raw_size == 0)
+        if ((sh.characteristics & pe::SCN_CNT_UNINITIALIZED_DATA) ||
+            sh.raw_size == 0)
             continue; // already zeroed
         if (sh.raw_offset > file_size ||
             sh.raw_size > file_size - sh.raw_offset) {
@@ -157,102 +158,34 @@ static int load_coff(const uint8_t *file, uint32_t file_size,
         Mem_Memcpy(image + sh.rva, file + sh.raw_offset, sh.raw_size);
     }
 
-    if (has_base_relocs) {
-        // PE-style: walk the base relocation blocks and add
-        // delta = actual_base - preferred_base to every HIGHLOW entry.
-        const uint32_t delta =
-            reinterpret_cast<uint32_t>(image) - out_hdr->oh.image_base;
-        uint32_t off = out_hdr->oh.basereloc_rva;
-        const uint32_t end = off + out_hdr->oh.basereloc_size;
-        while (off + 8 <= end && off + 8 <= vsize) {
-            const uint32_t page_rva   = coff::rd32(image + off);
-            const uint32_t block_size = coff::rd32(image + off + 4);
-            if (block_size < 8 || off + block_size > end ||
-                off + block_size > vsize)
-                break;
-            const uint32_t n_entries = (block_size - 8) / 2;
-            for (uint32_t k = 0; k < n_entries; k++) {
-                const uint16_t e =
-                    coff::rd16(image + off + 8 + k * 2);
-                const uint8_t type = static_cast<uint8_t>(e >> 12);
-                const uint16_t ofs = static_cast<uint16_t>(e & 0x0FFFu);
-                if (type == coff::BRELOC_ABSOLUTE)
-                    continue;
-                if (type == coff::BRELOC_HIGHLOW) {
-                    uint8_t *at = image + page_rva + ofs;
-                    if (at + 4 > image + vsize)
-                        continue;
-                    coff::wr32(at, coff::rd32(at) + delta);
-                }
-                // other types ignored
-            }
-            off += block_size;
-        }
-    } else {
-        // Object-style: per-section COFF relocs resolved against the symbol
-        // table. Section symbols (storage class 3, value = offset within the
-        // section) dominate for shasm output.
-        const uint8_t *symtab = file + out_hdr->fh.symtab_offset;
-        for (uint32_t i = 0; i < out_hdr->section_count; i++) {
-            const coff::SectionHeader &sh = out_hdr->sections[i];
-            if (sh.nrelocs == 0)
+    // PE base relocations: add delta = actual_base - preferred_base to
+    // every HIGHLOW site.
+    const uint32_t delta =
+        reinterpret_cast<uint32_t>(image) - out_hdr->oh.image_base;
+    uint32_t off = out_hdr->oh.basereloc_rva;
+    const uint32_t end = off + out_hdr->oh.basereloc_size;
+    while (off + 8 <= end && off + 8 <= vsize) {
+        const uint32_t page_rva   = pe::rd32le(image + off);
+        const uint32_t block_size = pe::rd32le(image + off + 4);
+        if (block_size < 8 || off + block_size > end ||
+            off + block_size > vsize)
+            break;
+        const uint32_t n_entries = (block_size - 8) / 2;
+        for (uint32_t k = 0; k < n_entries; k++) {
+            const uint16_t e = pe::rd16le(image + off + 8 + k * 2);
+            const uint8_t type = static_cast<uint8_t>(e >> 12);
+            const uint16_t ofs = static_cast<uint16_t>(e & 0x0FFFu);
+            if (type == pe::BRELOC_ABSOLUTE)
                 continue;
-            for (uint16_t r = 0; r < sh.nrelocs; r++) {
-                const uint32_t ro = sh.reloc_offset + r * 10;
-                if (ro + 10 > file_size)
-                    break;
-                const uint32_t rel_off  = coff::rd32(file + ro);
-                const uint16_t symindex = coff::rd16(file + ro + 4);
-                const uint16_t rtype    = coff::rd16(file + ro + 6);
-
-                // Walk the symbol table (skipping aux records) for ours.
-                uint32_t aux = 0;
-                uint32_t sym_value = 0;
-                int32_t sym_section = 0;
-                bool found = false;
-                for (uint32_t si = 0; si < out_hdr->fh.nsymbols;
-                     si += 1 + aux) {
-                    if (out_hdr->fh.symtab_offset + (si + 1) * 18 > file_size)
-                        break;
-                    const uint8_t *e = symtab + si * 18;
-                    aux = e[17]; // naux
-                    if (si == symindex) {
-                        sym_value = coff::rd32(e + 8);
-                        sym_section =
-                            static_cast<int32_t>(coff::rd16(e + 12));
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found)
-                    continue;
-
-                // r_vaddr is the offset from the beginning of the section
-                // (PE spec, object-file relocations).
-                uint8_t *at = image + sh.rva + rel_off;
+            if (type == pe::BRELOC_HIGHLOW) {
+                uint8_t *at = image + page_rva + ofs;
                 if (at + 4 > image + vsize)
                     continue;
-
-                // Symbol VA = load base of the symbol's section + value.
-                uint32_t sym_va =
-                    reinterpret_cast<uint32_t>(image) + sym_value;
-                if (sym_section >= 1 &&
-                    static_cast<uint32_t>(sym_section) <=
-                        out_hdr->section_count) {
-                    sym_va = reinterpret_cast<uint32_t>(image) +
-                             out_hdr->sections[sym_section - 1].rva +
-                             sym_value;
-                }
-
-                if (rtype == coff::REL_DIR32) {
-                    coff::wr32(at, coff::rd32(at) + sym_va);
-                } else if (rtype == coff::REL_REL32) {
-                    coff::wr32(at, coff::rd32(at) + sym_va -
-                                       (reinterpret_cast<uint32_t>(at) + 4));
-                }
-                // other types ignored
+                pe::wr32be(at, pe::rd32be(at) + delta);
             }
+            // other types ignored
         }
+        off += block_size;
     }
 
     flush_image(image, vsize);
@@ -302,10 +235,10 @@ static void *align_page(void *p) {
 // Copy an image into 4 KiB-aligned heap memory without applying any
 // relocations -- it will execute at its preferred base via the UTLB.
 static int load_mapped(const uint8_t *file, uint32_t file_size,
-                       const coff::Image &hdr, MappedImage *out_mi,
+                       const pe::Image &hdr, MappedImage *out_mi,
                        const char **err) {
     *err = "unknown";
-    if (hdr.oh.magic != 0x010B || hdr.oh.image_base == 0 ||
+    if (hdr.oh.magic != pe::OPT_MAGIC_PE32 || hdr.oh.image_base == 0 ||
         hdr.oh.image_base < 0x00100000u ||
         hdr.oh.image_base > 0x07FF0000u) {
         *err = "no valid preferred base (needs PE32 optional header)";
@@ -334,8 +267,9 @@ static int load_mapped(const uint8_t *file, uint32_t file_size,
     Mem_Memset(image, 0, vsize);
 
     for (uint32_t i = 0; i < hdr.section_count; i++) {
-        const coff::SectionHeader &sh = hdr.sections[i];
-        if ((sh.flags & coff::STYP_BSS) || sh.raw_size == 0)
+        const pe::SectionHeader &sh = hdr.sections[i];
+        if ((sh.characteristics & pe::SCN_CNT_UNINITIALIZED_DATA) ||
+            sh.raw_size == 0)
             continue;
         if (sh.raw_offset > file_size ||
             sh.raw_size > file_size - sh.raw_offset ||
@@ -358,27 +292,29 @@ static int load_mapped(const uint8_t *file, uint32_t file_size,
 
 // Snap the EXE's PE import directory against coredll's export directory
 // (the WinCE IAT snap): each FirstThunk slot receives the absolute P0 VA
-// of the resolved export. Plain P1 memory operations -- the MMU is still
-// off here. Returns the number of snapped imports, negative on error.
-static int snap_imports(const coff::Image &exe_hdr, const MappedImage *exe,
-                        const coff::Image *dll_hdr, const MappedImage *dll,
+// of the resolved export -- written big-endian, since the payload reads
+// the slots with plain SH4 BE word loads. The directory tables themselves
+// stay little-endian in memory. Plain P1 memory operations -- the MMU is
+// still off here. Returns the number of snapped imports, negative on error.
+static int snap_imports(const pe::Image &exe_hdr, const MappedImage *exe,
+                        const pe::Image *dll_hdr, const MappedImage *dll,
                         char *tmp, uint32_t tmp_size, const char **err) {
     *err = "unknown";
-    coff::ExportDir ed{};
+    pe::ExportDir ed{};
     bool have_ed = false;
     int total = 0;
 
     for (uint32_t di = 0;; di++) {
-        coff::ImportDesc d{};
-        if (!coff::read_import_desc(exe_hdr, exe->image, exe->vsize, di, &d))
+        pe::ImportDesc d{};
+        if (!pe::read_import_desc(exe_hdr, exe->image, exe->vsize, di, &d))
             break; // end of import table (or none at all)
         if (dll->image == nullptr) {
             *err = "image has an import table but COREDLL.NTX is missing";
             return -2;
         }
         if (!have_ed) {
-            if (!coff::read_export_dir(*dll_hdr, dll->image, dll->vsize,
-                                       &ed)) {
+            if (!pe::read_export_dir(*dll_hdr, dll->image, dll->vsize,
+                                     &ed)) {
                 *err = "COREDLL.NTX has no usable export directory";
                 return -3;
             }
@@ -397,7 +333,7 @@ static int snap_imports(const coff::Image &exe_hdr, const MappedImage *exe,
                 *err = "import thunk arrays out of bounds";
                 return -4;
             }
-            const uint32_t entry = coff::rd32(exe->image + hn_off);
+            const uint32_t entry = pe::rd32le(exe->image + hn_off);
             if (entry == 0)
                 break;
 
@@ -409,18 +345,18 @@ static int snap_imports(const coff::Image &exe_hdr, const MappedImage *exe,
                     *err = "ordinal import out of range";
                     return -5;
                 }
-                func_rva = coff::rd32(
+                func_rva = pe::rd32le(
                     dll->image + ed.addrfuncs_rva +
                     (ord - ed.ordinal_base) * 4);
             } else {
                 if (entry + 2 >= exe->vsize ||
-                    coff::rva_string(exe->image, exe->vsize, entry + 2, tmp,
-                                     tmp_size) == nullptr) {
+                    pe::rva_string(exe->image, exe->vsize, entry + 2, tmp,
+                                   tmp_size) == nullptr) {
                     *err = "bad import-by-name record";
                     return -6;
                 }
-                if (!coff::export_lookup(*dll_hdr, dll->image, dll->vsize,
-                                         tmp, &func_rva)) {
+                if (!pe::export_lookup(*dll_hdr, dll->image, dll->vsize,
+                                       tmp, &func_rva)) {
                     *err = "import not found in COREDLL";
                     return -7;
                 }
@@ -431,7 +367,7 @@ static int snap_imports(const coff::Image &exe_hdr, const MappedImage *exe,
                 *err = "resolved import is a forwarder (unsupported)";
                 return -8;
             }
-            coff::wr32(exe->image + ft_off, dll->base + func_rva);
+            pe::wr32be(exe->image + ft_off, dll->base + func_rva);
             total++;
         }
     }
@@ -442,13 +378,13 @@ static int snap_imports(const coff::Image &exe_hdr, const MappedImage *exe,
 // Full UTLB-mapped run. Returns 0 on success (payload return value in
 // *out_ret) or -1 on loader error with `err` set. On every exit path the
 // MMU is disabled, the UTLB flushed and all allocations released.
-static int run_mapped(uint8_t *file, uint32_t fsize, const coff::Image &hdr,
+static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                       const char *core_path, uint32_t core_size,
                       int *out_ret, const char **err) {
     *err = "unknown";
     MappedImage exe{};
     MappedImage dll{};
-    coff::Image dll_hdr{};
+    pe::Image dll_hdr{};
     uint8_t *dll_file = nullptr;
     uint8_t *api_raw = nullptr;
     uint8_t *api_block = nullptr;
@@ -475,8 +411,8 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const coff::Image &hdr,
             goto done;
         }
         File_Close(fd);
-        if (coff::parse(dll_file, core_size, &dll_hdr) != 0) {
-            *err = "COREDLL.NTX: bad COFF header";
+        if (pe::parse(dll_file, core_size, &dll_hdr) != 0) {
+            *err = "COREDLL.NTX: bad PE header";
             goto done;
         }
         if (load_mapped(dll_file, core_size, dll_hdr, &dll, err) != 0)
@@ -743,16 +679,16 @@ int main(int argc, char **argv, char **envp) {
     File_Close(fd);
 
     // Parse the header once to pick the load path.
-    coff::Image hdr{};
-    if (coff::parse(file, fsize, &hdr) != 0) {
-        ntos_puts("Bad COFF header (not SH4BE 0x01A8?)");
+    pe::Image hdr{};
+    if (pe::parse(file, fsize, &hdr) != 0) {
+        ntos_puts("Bad PE header (not SH4BE 0x01A8?)");
         Mem_Free(file);
         Debug_WaitKey();
         return 2;
     }
 
     int ret;
-    if (!mmu::at_enabled() && hdr.oh.magic == 0x010B &&
+    if (!mmu::at_enabled() && hdr.oh.magic == pe::OPT_MAGIC_PE32 &&
         hdr.oh.image_base != 0) {
         // UTLB-mapped mode: copy both images into the heap and map their
         // pages at the preferred bases; snap imports against COREDLL.NTX.

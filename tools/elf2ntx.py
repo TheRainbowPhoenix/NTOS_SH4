@@ -403,6 +403,14 @@ def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
     if any(s.sh_addr < base for s in alloc):
         raise SystemExit("error: section below image base; link at "
                          f"0x{base:08X} or pass --base")
+    # Section RVAs must be SectionAlignment (0x200) multiples -- the linker
+    # scripts do the spacing so linked absolute pointers stay valid.
+    for s in alloc:
+        if (s.sh_addr - base) % 0x200 != 0:
+            raise SystemExit(
+                f"error: section {s.name} at 0x{s.sh_addr:08X} is not "
+                "0x200-aligned above the base (link with the ALIGN(0x200) "
+                "payload linker scripts)")
 
     name_map = {
         ".text": ".text", ".rodata": ".rodata", ".data": ".data",
@@ -430,15 +438,24 @@ def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
             "chars": chars,
         })
 
-    # optional PE directories (.imports / .exports), then .reloc
-    sites = collect_base_reloc_sites(elf, base)
+    # Sections live past the header block, like any real PE: RVA = header
+    # slide + (linked VA - base). SectionAlignment == FileAlignment == 0x200
+    # keeps the image tight (legal per the PE spec; our 4 KiB UTLB pages
+    # map the copied image linearly, so 0x200-aligned RVAs are fine).
+    nsecs_tmp = len(coff_secs)
+    headers_len_tmp = DOS_HDR_SIZE + 4 + 20 + PE32_OPTHDR_SIZE + nsecs_tmp * 40
+    slide = align_up(headers_len_tmp, 0x200)
+    for c in coff_secs:
+        c["rva"] += slide
+    sites = [s + slide for s in collect_base_reloc_sites(elf, base)]
     reloc_data = build_reloc_section(sites)
     end_of_image = max((c["rva"] + c["vsize"] for c in coff_secs), default=0)
-    extra_rva = align_up(end_of_image, 4)
+    extra_rva = align_up(end_of_image, 0x200)
     extra_dirs = {}
 
     if import_module:
-        slots = [(r - base, n) for r, n in collect_import_slots(elf)]
+        slots = [(r - base + slide, n)
+                 for r, n in collect_import_slots(elf)]
         imp_data = build_import_section(slots, import_module, extra_rva)
         coff_secs.append({
             "name": ".imports",
@@ -448,9 +465,10 @@ def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
             "chars": IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ,
         })
         extra_dirs[PE32_DIR_IMPORT] = (extra_rva, len(imp_data))
-        extra_rva = align_up(extra_rva + len(imp_data), 4)
+        extra_rva = align_up(extra_rva + len(imp_data), 0x200)
 
     if exports:
+        exports = [(n, r + slide) for n, r in exports]
         exp_data = build_export_section(exports, dll_name, extra_rva)
         coff_secs.append({
             "name": ".exports",
@@ -460,7 +478,7 @@ def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
             "chars": IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ,
         })
         extra_dirs[PE32_DIR_EXPORT] = (extra_rva, len(exp_data))
-        extra_rva = align_up(extra_rva + len(exp_data), 4)
+        extra_rva = align_up(extra_rva + len(exp_data), 0x200)
 
     reloc_rva = extra_rva
     coff_secs.append({
@@ -476,7 +494,7 @@ def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
         raise SystemExit(f"error: {len(coff_secs)} sections exceeds the "
                          "NTOS limit of 8")
 
-    size_of_image = align_up(reloc_rva + len(reloc_data), 0x1000)
+    size_of_image = align_up(reloc_rva + len(reloc_data), 0x200)
 
     # Entry: trust e_entry, but if ld defaulted it to the section start
     # ("cannot find entry symbol" warning), fall back to looking up `main`
@@ -497,7 +515,7 @@ def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
             print(f"warning: no 'main' symbol (seen: {listing or 'NONE'}); "
                   "defaulting entry to image start")
             entry_va = base
-    entry_rva = entry_va - base
+    entry_rva = entry_va - base + slide
 
     # --- file assembly -------------------------------------------------------
     # DOS header (0x40) + "PE\0\0" (4) + COFF header (20) + optional header
@@ -524,7 +542,7 @@ def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
                                        if c["chars"] & IMAGE_SCN_CNT_CODE))
     struct.pack_into("<I", opt, 16, entry_rva)        # AddressOfEntryPoint
     struct.pack_into("<I", opt, 28, base)             # ImageBase
-    struct.pack_into("<I", opt, 32, 0x1000)           # SectionAlignment
+    struct.pack_into("<I", opt, 32, 0x200)            # SectionAlignment
     struct.pack_into("<I", opt, 36, 0x200)            # FileAlignment
     struct.pack_into("<H", opt, 40, 2)                # MajorOSVersion (WinCE)
     struct.pack_into("<H", opt, 48, 2)                # MajorSubsystemVersion
@@ -667,7 +685,7 @@ def sec_by_name(out, want):
     """(rva, size, raw_bytes) of a PE section in an emitted image, or None."""
     nsecs = struct.unpack_from("<H", out, 0x44 + 2)[0]
     optsz = struct.unpack_from("<H", out, 0x44 + 16)[0]
-    table = 0x44 + 4 + 20 + optsz
+    table = 0x44 + 20 + optsz  # 0x44 = COFF file header (lfanew+4)
     for i in range(nsecs):
         h = out[table + i * 40:][:40]
         name = h[:8].rstrip(b"\x00").decode()
@@ -684,22 +702,24 @@ def selftest():
     lit_off = 8  # synthetic .text: 8 bytes filler, then the 4-byte pool word
     elf = Elf(make_synthetic_elf(base))
     out, sites = emit_ntx(elf, base)
-    assert sites == [lit_off], sites
+    slide = 0x200  # header block slides sections to the next file page
+    assert sites == [slide + lit_off], sites
 
     # parse the PE back (little-endian, standard layout)
     assert out[:2] == b"MZ"
     lfanew = struct.unpack_from("<I", out, 0x3C)[0]
     assert out[lfanew:lfanew + 4] == b"PE\x00\x00"
-    machine, nsecs = struct.unpack_from("<HH", out, lfanew + 4)
+    fh_at = lfanew + 4
+    machine, nsecs = struct.unpack_from("<HH", out, fh_at)
     assert machine == IMAGE_FILE_MACHINE_SH4BE, hex(machine)
-    optsz = struct.unpack_from("<H", out, lfanew + 16)[0]
+    optsz = struct.unpack_from("<H", out, fh_at + 16)[0]
     assert optsz == PE32_OPTHDR_SIZE
-    opt_at = lfanew + 24
+    opt_at = fh_at + 20
     entry = struct.unpack_from("<I", out, opt_at + 16)[0]   # AddressOfEntryPoint
     img_base = struct.unpack_from("<I", out, opt_at + 28)[0]  # ImageBase
-    assert entry == 0x100 and img_base == base  # 'main' fallback
+    assert entry == 0x100 + slide and img_base == base  # 'main' fallback
     soi = struct.unpack_from("<I", out, opt_at + 56)[0]
-    assert soi == align_up(lit_off + 4 + 16, 0x1000), hex(soi)
+    assert soi == 0x600, hex(soi)  # header page + .text page + .reloc page
     dir5_rva, dir5_size = struct.unpack_from(
         "<II", out, opt_at + 96 + PE32_DIR_BASERELOC * 8)
     assert dir5_size >= 8
@@ -707,11 +727,11 @@ def selftest():
     # .reloc block structure (LE table, site = BE memory word)
     rva, rsz, blob = sec_by_name(out, ".reloc")
     page, bsz = struct.unpack_from("<II", blob, 0)
-    assert page == (lit_off >> 12) << 12
+    assert page == ((slide + lit_off) >> 12) << 12
     assert bsz == 8 + 4  # entry + ABSOLUTE pad to 4 bytes
     entry_word = struct.unpack_from("<H", blob, 8)[0]
     assert (entry_word >> 12) == BRELOC_HIGHLOW
-    assert (entry_word & 0xFFF) == (lit_off & 0xFFF)
+    assert (entry_word & 0xFFF) == ((slide + lit_off) & 0xFFF)
     assert struct.unpack_from("<H", blob, 10)[0] == 0
 
     # --- export + import directory round trip ------------------------------
@@ -733,7 +753,8 @@ def selftest():
     aord = struct.unpack_from("<I", ebytes, 36)[0]
     ord0 = struct.unpack_from("<H", ebytes, aord - er)[0]
     eat = struct.unpack_from("<I", ebytes, 28)[0]
-    assert struct.unpack_from("<I", ebytes, eat - er + ord0 * 4)[0] == 0x200
+    assert struct.unpack_from("<I", ebytes, eat - er + ord0 * 4)[0] \
+        == 0x200 + slide
 
     ir, isz, ibytes = sec_by_name(out2, ".imports")
     oft, tds, fwd, iname, ft = struct.unpack_from("<IIIII", ibytes, 0)
@@ -744,7 +765,7 @@ def selftest():
     hint = struct.unpack_from("<H", ibytes, hn0 - ir)[0]
     fname = ibytes[hn0 - ir + 2:].split(b"\x00")[0]
     assert hint == 0 and fname == b"coredll_puts", (hint, fname)
-    assert ft == 0x8, hex(ft)  # __imp_coredll_puts slot rva
+    assert ft == slide + 0x8, hex(ft)  # __imp_coredll_puts slot rva
     # dir 0/1 wired in the optional header; DLL characteristic set
     opt2_at = struct.unpack_from("<I", out2, 0x3C)[0] + 24
     d0r, d0s = struct.unpack_from("<II", out2, opt2_at + 96 + 0 * 8)
@@ -763,9 +784,9 @@ def selftest():
         return
     pe = pefile.PE(data=out2)
     assert pe.FILE_HEADER.Machine == IMAGE_FILE_MACHINE_SH4BE
-    assert pe.OPTIONAL_HEADER.AddressOfEntryPoint == 0x100
+    assert pe.OPTIONAL_HEADER.AddressOfEntryPoint == 0x100 + slide
     assert pe.OPTIONAL_HEADER.ImageBase == base
-    assert pe.OPTIONAL_HEADER.SUBSYSTEM == IMAGE_SUBSYSTEM_WINDOWS_CE_GUI
+    assert pe.OPTIONAL_HEADER.Subsystem == IMAGE_SUBSYSTEM_WINDOWS_CE_GUI
     assert [e.name.decode() for e in pe.DIRECTORY_ENTRY_EXPORT.symbols] == \
         ["coredll_puts"]
     assert [i.dll.decode() for i in pe.DIRECTORY_ENTRY_IMPORT] == \

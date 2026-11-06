@@ -105,7 +105,7 @@ $(COREDLL_ELF): $(COREDLL_OBJ) $(PAYLOAD_DIR)/coredll.ld
 
 $(COREDLL_NTX): $(COREDLL_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x00800000 \
+	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x00800000 --dll \
 		--exports coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free \
 		--dll-name COREDLL.DLL
 
