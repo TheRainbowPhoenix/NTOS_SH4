@@ -1,6 +1,6 @@
 // NTOS -- "NT loader" for SH4 big-endian COFF EXEs on Hollyhock-3.
 //
-// An HH3 SDK app that scans \fls0\*.NTX (big-endian COFF EXEs, machine
+// An HH3 SDK app that scans \fls0\*.EXE / *.DLL (standard PE images, machine
 // 0x01A8), lists them, loads the selected one into the HH3 heap, applies
 // relocations (PE .reloc base-relocs for MSVC-linked images, COFF
 // DIR32/REL32 object relocs for shasm-linked ones), flushes caches, and
@@ -14,6 +14,7 @@
 #include <appdef.h>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <sdk/calc/calc.h>
 #include <sdk/os/debug.h>
 #include <sdk/os/file.h>
@@ -202,7 +203,7 @@ static int load_coff(const uint8_t *file, uint32_t file_size,
 // the MMU is off in the HH3 context (MMUCR.AT = bit 0 = 0), so NTOS takes
 // the P0 address space over for the duration of one payload run:
 //
-//   * coredll (COREDLL.NTX) is copied into the heap and its 4 KiB pages are
+//   * coredll (COREDLL.DLL) is copied into the heap and its 4 KiB pages are
 //     UTLB-mapped at its preferred base (WinCE maps coredll once and every
 //     EXE sees it at the same VA);
 //   * the payload EXE is copied and mapped at ITS preferred base, so no
@@ -309,13 +310,13 @@ static int snap_imports(const pe::Image &exe_hdr, const MappedImage *exe,
         if (!pe::read_import_desc(exe_hdr, exe->image, exe->vsize, di, &d))
             break; // end of import table (or none at all)
         if (dll->image == nullptr) {
-            *err = "image has an import table but COREDLL.NTX is missing";
+            *err = "image has an import table but COREDLL.DLL is missing";
             return -2;
         }
         if (!have_ed) {
             if (!pe::read_export_dir(*dll_hdr, dll->image, dll->vsize,
                                      &ed)) {
-                *err = "COREDLL.NTX has no usable export directory";
+                *err = "COREDLL.DLL has no usable export directory";
                 return -3;
             }
             have_ed = true;
@@ -390,29 +391,41 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     uint8_t *api_block = nullptr;
     uint32_t slot = 0;
     int rc = -1;
+    // Set+way bookkeeping for the UTLB install (see below): pages whose VA
+    // bits 16:12 land in the same of the 32 UTLB sets must occupy different
+    // ways -- the set is derived from the VPN, the slot only matters on
+    // fully-associative hardware.
+    uint8_t set_ways[32] = {};
+    auto install_page = [&](uint32_t va, uint32_t pa, uint32_t page_slot) {
+        const uint32_t set = (va >> 12) & 0x1Fu;
+        if (set_ways[set] > 3)
+            return false;
+        mmu::map_page_at_index(va, pa, page_slot, set_ways[set]++);
+        return true;
+    };
 
     // --- coredll copy ---------------------------------------------------
     if (core_path != nullptr) {
         int fd = File_Open(core_path, FILE_OPEN_READ);
         if (fd < 0) {
-            *err = "File_Open(COREDLL.NTX) failed";
+            *err = "File_Open(COREDLL.DLL) failed";
             goto done;
         }
         dll_file = static_cast<uint8_t *>(Mem_Malloc(core_size));
         if (dll_file == nullptr) {
             File_Close(fd);
-            *err = "OOM reading COREDLL.NTX";
+            *err = "OOM reading COREDLL.DLL";
             goto done;
         }
         if (File_Read(fd, dll_file, static_cast<int>(core_size)) !=
             static_cast<int>(core_size)) {
             File_Close(fd);
-            *err = "File_Read(COREDLL.NTX) failed";
+            *err = "File_Read(COREDLL.DLL) failed";
             goto done;
         }
         File_Close(fd);
         if (pe::parse(dll_file, core_size, &dll_hdr) != 0) {
-            *err = "COREDLL.NTX: bad PE header";
+            *err = "COREDLL.DLL: bad PE header";
             goto done;
         }
         if (load_mapped(dll_file, core_size, dll_hdr, &dll, err) != 0)
@@ -465,18 +478,28 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     // --- install UTLB entries (AT is still off) ------------------------------
     mmu::disable_at_flush(); // flush the UTLB; AT guaranteed off here
     for (uint32_t p = 0; p < dll.npages; p++, slot++)
-        mmu::map_page_at_index(dll.base + p * 0x1000u,
-                               mmu::phys_addr(dll.image + p * 0x1000u),
-                               slot);
+        if (!install_page(dll.base + p * 0x1000u,
+                          mmu::phys_addr(dll.image + p * 0x1000u), slot)) {
+            *err = "too many pages in one UTLB set";
+            goto done;
+        }
     for (uint32_t p = 0; p < exe.npages; p++, slot++)
-        mmu::map_page_at_index(exe.base + p * 0x1000u,
-                               mmu::phys_addr(exe.image + p * 0x1000u),
-                               slot);
+        if (!install_page(exe.base + p * 0x1000u,
+                          mmu::phys_addr(exe.image + p * 0x1000u), slot)) {
+            *err = "too many pages in one UTLB set";
+            goto done;
+        }
     for (uint32_t i = 0; i < mmu::API_WINDOW_PAGES; i++)
-        mmu::map_page_at_index(mmu::VA_API_WINDOW + i * 0x1000u,
-                               mmu::phys_addr(api_block + i * 0x1000u),
-                               mmu::SLOT_API_FIRST + i);
-    mmu::map_page_at_index(0, 0, mmu::SLOT_NULL_GUARD);
+        if (!install_page(mmu::VA_API_WINDOW + i * 0x1000u,
+                          mmu::phys_addr(api_block + i * 0x1000u),
+                          mmu::SLOT_API_FIRST + i)) {
+            *err = "too many pages in one UTLB set";
+            goto done;
+        }
+    if (!install_page(0, 0, mmu::SLOT_NULL_GUARD)) {
+        *err = "too many pages in one UTLB set";
+        goto done;
+    }
 
     // --- enable translation, drop stale P0-indexed cache lines --------------
     mmu::enable_at();
@@ -519,8 +542,11 @@ done:
 constexpr int kMaxFiles = 12;
 constexpr int kMaxName = 25;
 
-static char_const16_t g_find_pattern[] = {
-    '\\', 'f', 'l', 's', '0', '\\', '*', '.', 'N', 'T', 'X', 0,
+static char_const16_t g_find_pattern_exe[] = {
+    '\\', 'f', 'l', 's', '0', '\\', '*', '.', 'E', 'X', 'E', 0,
+};
+static char_const16_t g_find_pattern_dll[] = {
+    '\\', 'f', 'l', 's', '0', '\\', '*', '.', 'D', 'L', 'L', 0,
 };
 
 static void banner(void) {
@@ -528,7 +554,7 @@ static void banner(void) {
     Debug_SetCursorPosition(0, 0);
     Debug_PrintString("NTOS 0.2 - SH4BE COFF loader + UTLB", true);
     Debug_SetCursorPosition(0, 1);
-    Debug_PrintString("Select an .NTX (big-endian COFF EXE)", false);
+    Debug_PrintString("Select an .EXE (SH4BE PE)", false);
     LCD_Refresh();
     cur_row = 3;
 }
@@ -557,17 +583,20 @@ int main(int argc, char **argv, char **envp) {
 
     banner();
 
-    // Scan flash for .NTX payloads. File_FindFirst returns UCS-16 names;
-    // File_Open takes ANSI paths, so convert on the way in.
+    // Scan flash for payload images (*.EXE) and modules (*.DLL). NTOS maps
+    // a COREDLL.DLL / COREDLL.EXE as the shared module every EXE imports
+    // from; it is not shown in the picker. File_FindFirst returns UCS-16
+    // names; File_Open takes ANSI paths, so convert on the way in.
     char names[kMaxFiles][kMaxName + 1] = {};
     uint32_t sizes[kMaxFiles] = {};
     int count = 0;
 
-    {
+    for (const char_const16_t *pattern :
+         {g_find_pattern_exe, g_find_pattern_dll}) {
         int find = 0;
         char_const16_t name[32] = {};
         File_FindInfo info{};
-        if (File_FindFirst(g_find_pattern, &find, name, &info) == 0) {
+        if (File_FindFirst(pattern, &find, name, &info) == 0) {
             do {
                 if (info.type == File_FindInfo::EntryTypeFile &&
                     count < kMaxFiles) {
@@ -585,11 +614,31 @@ int main(int argc, char **argv, char **envp) {
         }
     }
 
+    // Build the pickable list (everything except COREDLL.*) and find the
+    // coredll module for the loader.
+    int pick[kMaxFiles] = {};
+    int coredll_idx = -1;
+    {
+        int npick = 0;
+        for (int i = 0; i < count; i++) {
+            const char stem[] = "COREDLL";
+            int k = 0;
+            while (stem[k] != '\0' && names[i][k] != '\0' &&
+                   (names[i][k] | 0x20) == (stem[k] | 0x20))
+                k++;
+            if (stem[k] != '\0' || names[i][k] != '.')
+                pick[npick++] = i;
+            else
+                coredll_idx = i;
+        }
+        count = npick;
+    }
+
     if (count == 0) {
         Debug_SetCursorPosition(0, 3);
-        Debug_PrintString("No .NTX files found on \\fls0.", false);
+        Debug_PrintString("No .EXE files found on \\fls0.", false);
         Debug_SetCursorPosition(0, 4);
-        Debug_PrintString("Put a BE COFF EXE there and retry.", false);
+        Debug_PrintString("Put an SH4BE PE EXE there and retry.", false);
         LCD_Refresh();
         Debug_WaitKey();
         return 0;
@@ -598,13 +647,13 @@ int main(int argc, char **argv, char **envp) {
     for (int i = 0; i < count; i++) {
         char line[48];
         char sz[12];
-        tiny_utoa(sizes[i], sz);
+        tiny_utoa(sizes[pick[i]], sz);
         int p = 0;
         line[p++] = static_cast<char>('0' + i);
         line[p++] = ':';
         line[p++] = ' ';
-        for (int k = 0; k < kMaxName && names[i][k] != '\0'; k++)
-            line[p++] = names[i][k];
+        for (int k = 0; k < kMaxName && names[pick[i]][k] != '\0'; k++)
+            line[p++] = names[pick[i]][k];
         line[p++] = ' ';
         for (int k = 0; sz[k] != '\0' && p < 46; k++)
             line[p++] = sz[k];
@@ -649,8 +698,9 @@ int main(int argc, char **argv, char **envp) {
         int p = 0;
         for (; prefix[p] != '\0'; p++)
             path[p] = prefix[p];
-        for (int k = 0; k < kMaxName && names[selected][k] != '\0'; k++)
-            path[p++] = names[selected][k];
+        const int sel = pick[selected];
+        for (int k = 0; k < kMaxName && names[sel][k] != '\0'; k++)
+            path[p++] = names[sel][k];
         path[p] = '\0';
     }
 
@@ -660,7 +710,7 @@ int main(int argc, char **argv, char **envp) {
         Debug_WaitKey();
         return 1;
     }
-    uint32_t fsize = sizes[selected];
+    uint32_t fsize = sizes[pick[selected]];
     auto *file = static_cast<uint8_t *>(Mem_Malloc(fsize != 0 ? fsize : 1));
     if (file == nullptr) {
         ntos_puts("OOM reading file");
@@ -691,28 +741,20 @@ int main(int argc, char **argv, char **envp) {
     if (!mmu::at_enabled() && hdr.oh.magic == pe::OPT_MAGIC_PE32 &&
         hdr.oh.image_base != 0) {
         // UTLB-mapped mode: copy both images into the heap and map their
-        // pages at the preferred bases; snap imports against COREDLL.NTX.
+        // pages at the preferred bases; snap imports against COREDLL.
         const char *core_path = nullptr;
         uint32_t core_size = 0;
         char core_path_buf[8 + kMaxName + 1];
-        for (int i = 0; i < count; i++) {
-            const char want[] = "COREDLL.NTX";
-            int k = 0;
-            while (want[k] != '\0' && names[i][k] != '\0' &&
-                   (names[i][k] | 0x20) == (want[k] | 0x20))
-                k++;
-            if (want[k] == '\0' && names[i][k] == '\0') {
-                const char prefix[] = "\\fls0\\";
-                int p = 0;
-                for (; prefix[p] != '\0'; p++)
-                    core_path_buf[p] = prefix[p];
-                for (int j = 0; names[i][j] != '\0'; j++)
-                    core_path_buf[p++] = names[i][j];
-                core_path_buf[p] = '\0';
-                core_path = core_path_buf;
-                core_size = sizes[i];
-                break;
-            }
+        if (coredll_idx >= 0) {
+            const char prefix[] = "\\fls0\\";
+            int p = 0;
+            for (; prefix[p] != '\0'; p++)
+                core_path_buf[p] = prefix[p];
+            for (int j = 0; names[coredll_idx][j] != '\0'; j++)
+                core_path_buf[p++] = names[coredll_idx][j];
+            core_path_buf[p] = '\0';
+            core_path = core_path_buf;
+            core_size = sizes[coredll_idx];
         }
         ntos_puts("Mode: UTLB-mapped (preferred base)");
         const char *err = nullptr;

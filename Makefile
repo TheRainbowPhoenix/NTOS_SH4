@@ -33,10 +33,10 @@ PYTHON := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/nul
 APP_ELF := $(OUTDIR)/NTOS.elf
 APP_HH3 := $(APP_ELF:.elf=.hh3)
 
-# --- .NTX payloads (big-endian SH4 COFF EXEs, machine 0x01A8) ---------------
-#   HELLO.NTX      self-contained hello (copy-load fallback or UTLB-mapped)
-#   COREDLL.NTX    stub COREDLL module, /FIXED at 0x00800000, PE exports
-#   HELLOCORE.NTX  EXE importing from COREDLL (exercises UTLB + import snap)
+# --- payloads (standard PE EXEs/DLLs, machine 0x01A8 SH4 BE) ----------------
+#   HELLO.EXE      self-contained hello (copy-load fallback or UTLB-mapped)
+#   COREDLL.DLL    stub COREDLL module, /FIXED at 0x00800000, PE exports
+#   HELLOCORE.EXE  EXE importing from COREDLL (exercises UTLB + import snap)
 PAYLOAD_DIR := payload
 PAYLOAD_CFLAGS := -ffreestanding -fno-builtin -fno-stack-protector \
 	-fno-unwind-tables -fno-asynchronous-unwind-tables \
@@ -44,15 +44,15 @@ PAYLOAD_CFLAGS := -ffreestanding -fno-builtin -fno-stack-protector \
 
 HELLO_OBJ := $(BUILDDIR)/payload/hello.o
 HELLO_ELF := $(BUILDDIR)/payload/hello.elf
-HELLO_NTX := $(OUTDIR)/HELLO.NTX
+HELLO_EXE := $(OUTDIR)/HELLO.EXE
 
 COREDLL_OBJ := $(BUILDDIR)/payload/coredll.o
 COREDLL_ELF := $(BUILDDIR)/payload/coredll.elf
-COREDLL_NTX := $(OUTDIR)/COREDLL.NTX
+COREDLL_DLL := $(OUTDIR)/COREDLL.DLL
 
 HELLOCORE_OBJ := $(BUILDDIR)/payload/hello_core.o
 HELLOCORE_ELF := $(BUILDDIR)/payload/hello_core.elf
-HELLOCORE_NTX := $(OUTDIR)/HELLOCORE.NTX
+HELLOCORE_EXE := $(OUTDIR)/HELLOCORE.EXE
 
 AS_SOURCES:=$(shell find $(SOURCEDIR) -name '*.S')
 CC_SOURCES:=$(shell find $(SOURCEDIR) -name '*.c')
@@ -67,7 +67,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_NTX) $(COREDLL_NTX) $(HELLOCORE_NTX) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(HELLOCORE_EXE) Makefile
 
 all: elf hh3 ntx
 .DEFAULT_GOAL := all
@@ -81,8 +81,8 @@ clean:
 	$(STRIP) -o $@ $^
 
 # Payloads: freestanding compile, static link at their preferred base with
-# retained relocations, then the ELF->COFF packer emits the BE NTX EXE.
-# HELLO.NTX / HELLOCORE.NTX at 0x00400000, COREDLL.NTX at 0x00800000.
+# retained relocations, then the ELF->PE packer emits the standard PE image.
+# HELLO.EXE / HELLOCORE.EXE at 0x00400000, COREDLL.DLL at 0x00800000.
 $(HELLO_OBJ): $(PAYLOAD_DIR)/hello.c payload/ntimport.h
 	@mkdir -p $(dir $@)
 	$(CC) -c $(PAYLOAD_DIR)/hello.c -o $@ $(PAYLOAD_CFLAGS)
@@ -91,7 +91,7 @@ $(HELLO_ELF): $(HELLO_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
 	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(HELLO_OBJ)
 
-$(HELLO_NTX): $(HELLO_ELF) tools/elf2ntx.py
+$(HELLO_EXE): $(HELLO_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(HELLO_ELF) -o $@
 
@@ -103,7 +103,7 @@ $(COREDLL_ELF): $(COREDLL_OBJ) $(PAYLOAD_DIR)/coredll.ld
 	@mkdir -p $(dir $@)
 	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/coredll.ld -o $@ $(COREDLL_OBJ)
 
-$(COREDLL_NTX): $(COREDLL_ELF) tools/elf2ntx.py
+$(COREDLL_DLL): $(COREDLL_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x00800000 --dll \
 		--exports coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free \
@@ -117,7 +117,7 @@ $(HELLOCORE_ELF): $(HELLOCORE_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
 	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(HELLOCORE_OBJ)
 
-$(HELLOCORE_NTX): $(HELLOCORE_ELF) tools/elf2ntx.py
+$(HELLOCORE_EXE): $(HELLOCORE_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(HELLOCORE_ELF) -o $@ --import-module COREDLL.DLL
 

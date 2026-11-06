@@ -1,6 +1,6 @@
 /* coredll.ld -- fixed layout for the NTOS stub COREDLL.
  *
- * Links at the preferred base 0x00800000. NTOS UTLB-maps the image at
+ * Links at the preferred base 0x00800200. NTOS UTLB-maps the image at
  * exactly this address (WinCE XIP semantics: e32_vbase is honored, no
  * relocation is ever applied), so absolute constants and PC-relative code
  * both work with zero fixups. Sections are 0x200-aligned for the PE packer
@@ -9,7 +9,7 @@
 ENTRY(main)
 SECTIONS
 {
-  . = 0x00800000;
+  . = 0x00800200;
 
   .text : ALIGN(0x200) { *(.text*) }
   .rodata : ALIGN(0x200) { *(.rodata*) }

@@ -1,6 +1,6 @@
 // pe.hpp -- standard PE32 image parsing for big-endian SH4 payloads.
 //
-// .NTX files are real PE executables: MZ header, "PE\0\0" signature,
+// Payload files are real PE executables (.EXE/.DLL): MZ header, "PE\0\0" signature,
 // little-endian header fields and directory tables, exactly as pefile /
 // dumpbin / Ghidra's PE loader expect -- the machine type 0x01A8 marks the
 // code as SH4 big-endian. Only what the *file format* defines is

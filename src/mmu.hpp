@@ -93,9 +93,13 @@ inline void flush_tlb(void) {
 }
 
 // Install one 4 KiB page mapping at a fixed UTLB slot. `pa` must already be
-// the physical page base (P1 identity: pa = va & PA_MASK).
-inline void map_page_at_index(uint32_t va, uint32_t pa, uint32_t slot) {
-    tlb_install_entry(va, pa & PA_MASK, PTEL_PAGE, slot);
+// the physical page base (P1 identity: pa = va & PA_MASK). `way` (0..3) is
+// the UTLB way for CPUs/emulators that index the TLB as 32 sets x 4 ways:
+// two pages whose VA bits 16:12 land in the same set must get different
+// ways or they overwrite each other. The caller tracks per-set usage.
+inline void map_page_at_index(uint32_t va, uint32_t pa, uint32_t slot,
+                              uint32_t way) {
+    tlb_install_entry(va, pa & PA_MASK, PTEL_PAGE | (way << 16), slot);
 }
 
 // Physical address of a P1 (cached identity) pointer.

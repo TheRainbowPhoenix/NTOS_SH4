@@ -20,27 +20,41 @@
 ! ---------------------------------------------------------------------------
 ! void tlb_install_entry(u32 va   [r4],
 !                        u32 pa   [r5],
-!                        u32 pte_flags [r6],
+!                        u32 pte_flags [r6],   ! bits 17:16 = UTLB way
 !                        u32 slot [r7])
 !
 ! OS330 MMU_InstallTLBEntryRotating / MMU_InstallTLBEntryAtIndex recipe:
 ! URC=slot -> cache invalidate -> PTEH=va -> PTEL=pa|flags -> ldtlb ->
 ! cache invalidate.
+!
+! pte_flags bits 17:16 carry the UTLB way (0..3) for set+way indexed UTLBs
+! (the way is also programmed into MMUCR.RC, bits 5:4). They are masked
+! off before PTEL is written.
 ! ---------------------------------------------------------------------------
     .global _tlb_install_entry
 _tlb_install_entry:
     mov.l   r8, @-r15
+    mov.l   r9, @-r15
     sts.l   pr, @-r15
     mov     r7, r8                  ! r8 = slot
 
-    ! MMUCR = (MMUCR & 0xFFFF03FF) | (slot << 10)
+    ! MMUCR: URC = slot (bits 12:10), RC = way (bits 5:4)
     mov.l   .Lmmucr, r0
     mov.l   @r0, r1
     mov.l   .Lurcmask, r2
-    and     r2, r1
-    shll8   r8
-    shll2   r8                      ! slot << 10
-    or      r8, r1
+    and     r2, r1                  ! clear URC (bits 12:10)
+    mov.l   .Lrcmask, r2
+    and     r2, r1                  ! clear RC  (bits 5:4)
+    mov     r8, r3
+    shll8   r3
+    shll2   r3                      ! slot << 10
+    or      r3, r1
+    mov     r6, r9
+    shlr8   r9
+    shlr8   r9                      ! way = flags >> 16
+    shll2   r9
+    shll2   r9                      ! way << 4
+    or      r9, r1
     mov.l   r1, @r0
 
     ! CCR |= 1 (cache invalidate, hardware auto-clear)
@@ -53,13 +67,15 @@ _tlb_install_entry:
     mov.l   .Lpteh, r0
     mov.l   r4, @r0
 
-    ! PTEL = pa | pte_flags
-    mov     r6, r0
-    or      r5, r0
+    ! PTEL = pa | (flags & 0x1FF)
+    mov.l   .Lptelflags, r2
+    and     r2, r6
+    mov     r5, r0
+    or      r6, r0
     mov.l   .Lptel, r1
     mov.l   r0, @r1
 
-    ldtlb                           ! commit into UTLB[URC]
+    ldtlb                           ! commit into UTLB[URC/RC]
 
     ! CCR |= 1 again (OS330 invalidates after LDTLB too)
     mov.l   .Lccr, r1
@@ -68,6 +84,7 @@ _tlb_install_entry:
     mov.l   r0, @r1
 
     lds.l   @r15+, pr
+    mov.l   @r15+, r9
     mov.l   @r15+, r8
     rts
     nop
@@ -125,8 +142,10 @@ _cache_flush_invalidate_block:
     nop
 
     .align 2
-.Lmmucr:   .long 0xFF000010
-.Lpteh:    .long 0xFF000000
-.Lptel:    .long 0xFF000004
-.Lccr:     .long 0xFF00001C
-.Lurcmask: .long 0xFFFF03FF
+.Lmmucr:    .long 0xFF000010
+.Lpteh:     .long 0xFF000000
+.Lptel:     .long 0xFF000004
+.Lccr:      .long 0xFF00001C
+.Lurcmask:  .long 0xFFFF03FF
+.Lrcmask:   .long 0xFFFFFFCF
+.Lptelflags:.long 0x000001FF
