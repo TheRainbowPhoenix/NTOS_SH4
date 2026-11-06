@@ -29,5 +29,5 @@ int main(u32 api, char **argv, char **envp)
     NT_CALL(coredll_puts, ("Hello from a UTLB-mapped EXE"));
     NT_CALL(coredll_puts, ("imports snapped against COREDLL"));
 
-    return 0x600DCAFE;
+    return 0x0F03BEE0;
 }
