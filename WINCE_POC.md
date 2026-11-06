@@ -25,9 +25,15 @@ Requiring .reloc unconditionally is not correct for WinCE.
   placeholder GetTickCount. Other imports fail explicitly.
 - Calculator .EXE and .NTX discovery. Legacy raw BE .NTX executables still
   use their original loader.
-- **Safe staging only** for MZ/PE files: NTOS parses, copies sections,
-  inspects imports and computes the proposed VA->physical mapping. It
-  **does not execute** fixed-image entry points yet.
+- **Safe staging** for arbitrary MZ/PE files: NTOS parses, copies
+  sections and computes the proposed VA->physical mapping, but does not
+  execute fixed-address WinCE programs.
+- **Native execution POC:** `dist/HELLO_PE.EXE` contains compiled SH4BE
+  machine code with a real COREDLL.DLL import for OutputDebugStringA.
+  Its NTOSABI1 marker allows a separate guarded path to relocate to the
+  actual HH3 heap, bind its IAT, flush caches and run the existing NTOS
+  3-argument entry convention. Expected return: 0x13572468.
+  This is not WinCE CRT startup or a real WinCE process.
 - Linux host regression using synthetic little/big endian PE images with
   COREDLL IAT by-name and by-ordinal imports.
 
@@ -64,9 +70,11 @@ python3 tests/test_ce_pe.py
 python3 tests/test_ce_pe.py ctlpnl.exe apcshell.exe nk.exe coredll.dll baseapp.dll
 ```
 
-Build the HH3 as normal. Copy a PE as .EXE or .NTX to \\fls0\\.
-The device prints PE machine/base and the staging result; it will not
-jump into the WinCE entry until MMU/OS prerequisites are implemented.
+Build the HH3 as normal, then copy `dist/NTOS.hh3` and
+`dist/HELLO_PE.EXE` to the calculator's \\fls0\\. Select the
+executable to exercise real relocatable SH4BE PE execution and a COREDLL
+import. Ordinary fixed WinCE files remain staged but not executed until
+MMU/OS prerequisites are implemented.
 
 The synthetic fixture generator `tools/make_ce_poc.py` checks format and
 imports only: it does **not** contain a runnable CE application.
