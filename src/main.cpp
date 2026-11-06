@@ -364,13 +364,16 @@ constexpr int kMaxName = 25;
 static char_const16_t g_find_pattern[] = {
     '\\', 'f', 'l', 's', '0', '\\', '*', '.', 'N', 'T', 'X', 0,
 };
+static char_const16_t g_find_pattern_exe[] = {
+    '\\', 'f', 'l', 's', '0', '\\', '*', '.', 'E', 'X', 'E', 0,
+};
 
 static void banner(void) {
     fillScreen(color(0, 0, 40));
     Debug_SetCursorPosition(0, 0);
     Debug_PrintString("NTOS 0.2 - COFF/reloc fix", true);
     Debug_SetCursorPosition(0, 1);
-    Debug_PrintString("Select an .NTX (big-endian COFF EXE)", false);
+    Debug_PrintString("Select .NTX or .EXE (SH4BE PE32)", false);
     LCD_Refresh();
     cur_row = 3;
 }
@@ -405,24 +408,25 @@ int main(int argc, char **argv, char **envp) {
     uint32_t sizes[kMaxFiles] = {};
     int count = 0;
 
-    {
+    for (int pattern_index=0; pattern_index<2; ++pattern_index) {
         int find = 0;
         char_const16_t name[32] = {};
+        char_const16_t *pattern = pattern_index ?
+            g_find_pattern_exe : g_find_pattern;
         File_FindInfo info{};
-        if (File_FindFirst(g_find_pattern, &find, name, &info) == 0) {
+        if (File_FindFirst(pattern, &find, name, &info) == 0) {
             do {
                 if (info.type == File_FindInfo::EntryTypeFile &&
                     count < kMaxFiles) {
-                    int k = 0;
-                    for (; k < kMaxName && name[k] != 0; k++)
-                        names[count][k] = static_cast<char>(name[k]);
-                    names[count][k] = '\0';
-                    sizes[count] = info.size;
-                    count++;
+                    int k=0;
+                    for (; k<kMaxName && name[k]!=0; ++k)
+                        names[count][k]=static_cast<char>(name[k]);
+                    names[count][k]='\0';
+                    sizes[count]=info.size;
+                    ++count;
                 }
-                if (File_FindNext(find, name, &info) != 0)
-                    break;
-            } while (true);
+                if(File_FindNext(find,name,&info)!=0)break;
+            } while(true);
             File_FindClose(find);
         }
     }
