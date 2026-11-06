@@ -1,0 +1,19 @@
+name: WinCE PE32 staging POC
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/wince-pe-poc]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-pe-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test fixed-address WinCE PE loader with synthetic LE and BE images
+        run: python3 tests/test_ce_pe.py
