@@ -53,7 +53,7 @@ def inspect(path):
     sections = []
     for i in range(count):
         h = section_base + i * 40
-        name = data[h:h + 8].split(b"\\0", 1)[0].decode("ascii", "replace")
+        name = data[h:h + 8].split(bytes((0,)), 1)[0].decode("ascii", "replace")
         vsize, rva, raw_size, raw_offset, reloc_ptr = struct.unpack_from(
             ">IIIII", data, h + 8)
         relocs = u16(data, h + 32)
