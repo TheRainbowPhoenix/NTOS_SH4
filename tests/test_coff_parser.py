@@ -19,6 +19,8 @@ with tempfile.TemporaryDirectory() as temp:
     image_path = Path(temp) / "HELLO.NTX"
     binary = Path(temp) / "coff_parser_test"
     image_path.write_bytes(image)
+    subprocess.run([sys.executable, str(root / "tools" / "check_ntx.py"),
+                    str(image_path)], check=True)
     subprocess.run(["c++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
                     "-o", str(binary),
                     str(root / "tests" / "coff_parser_test.cpp")], check=True)
