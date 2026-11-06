@@ -28,8 +28,11 @@ def convert(raw,elfpath=None):
         spec.loader.exec_module(packer)
         elf=packer.Elf(Path(elfpath).read_bytes())
         symbol=next((x for x in elf.symbols
-                     if x.name=='imp_OutputDebugStringA'),None)
-        if symbol is None:raise ValueError('missing imp_OutputDebugStringA')
+                     if x.name=='imp_OutputDebugStringA' or
+                     x.name=='_imp_OutputDebugStringA'),None)
+        if symbol is None:
+            raise ValueError('missing imp_OutputDebugStringA; ELF symbols: '+
+                             ', '.join(repr(x.name) for x in elf.symbols[:50]))
         iat_rva=symbol.value-base
         if iat_rva>=struct.unpack_from('>I',opt,56)[0]:
             raise ValueError('IAT symbol outside image')
