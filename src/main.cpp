@@ -27,7 +27,7 @@
 APP_NAME("NTOS")
 APP_DESCRIPTION("Big-endian SH4 COFF EXE loader")
 APP_AUTHOR("recreate project")
-APP_VERSION("0.2")
+APP_VERSION("0.3")
 
 // ---------------------------------------------------------------------------
 // Syscall table handed to payloads (field order == table order)
@@ -320,9 +320,14 @@ static int inspect_ce_pe(const uint8_t *file,uint32_t size) {
         ntos_puts("SH3/LE PE: inspect only; requires SH4BE translation");
         return -1;
     }
+    // Only our explicitly marked NTOSABI1 demo uses the legacy 3-arg
+    // NTOS entry contract. It also MUST be relocatable to the actual heap.
+    // Generic WinCE EXEs are staged, never called with the wrong ABI.
+    const bool native_demo =
+        size>=0x48 && memcmp(file+0x40,"NTOSABI1",8)==0 &&
+        hdr.dirs[5].rva && hdr.dirs[5].size;
     // Stage into physical HH3 heap for inspection, zero-fill and imports.
-    // Passing preferred VA to map() simulates *future* MMU placement.
-    // Do NOT execute this pointer: actual heap VA differs from WinCE VA!
+    // Fixed WinCE images need a separate MMU VA mapping; no unsafe writes.
     auto *allocation=static_cast<uint8_t *>(Mem_Malloc(hdr.size+4095u));
     if (!allocation) {ntos_puts("PE stage: OOM");return -1;}
     uintptr_t aligned=(reinterpret_cast<uintptr_t>(allocation)+4095u)&~4095u;
@@ -332,7 +337,10 @@ static int inspect_ce_pe(const uint8_t *file,uint32_t size) {
         ntos_puts("PE address planning failed");
         Mem_Free(allocation);return -1;
     }
-    rc=cepe::map(file,size,hdr,image,hdr.size,hdr.preferred);
+    // The relocated demo can execute at the real heap base. A normal
+    // fixed CE image is only *staged*, using preferred VA for future MMU.
+    rc=cepe::map(file,size,hdr,image,hdr.size,
+                 native_demo ? static_cast<uint32_t>(aligned) : hdr.preferred);
     if (rc!=cepe::OK) {
         ntos_puts(cepe::error(rc));
         Mem_Free(allocation);return -1;
@@ -350,7 +358,22 @@ static int inspect_ce_pe(const uint8_t *file,uint32_t size) {
         static_cast<unsigned long>(proposed.physical),
         static_cast<unsigned long>(proposed.length));
     LCD_Refresh();
-    ntos_puts("POC: MMU mapping not installed; entry NOT executed");
+    if (native_demo && rc==cepe::OK) {
+        // Only for explicitly marked, relocatable SH4BE demo programs.
+        // These have the NTOS entry convention, not the WinCE CRT ABI.
+        flush_image(image,hdr.size);
+        using demo_entry=int (*)(const NtosApi *,char **,char **);
+        demo_entry entry=reinterpret_cast<demo_entry>(
+            static_cast<uint32_t>(aligned)+hdr.entry);
+        ntos_puts("NTOSABI1: executing relocatable SH4BE PE");
+        int result=entry(&g_ntos_api,nullptr,nullptr);
+        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+            "PE returned %08lX",static_cast<unsigned long>(
+                static_cast<uint32_t>(result)));
+        LCD_Refresh();
+    } else {
+        ntos_puts("POC: WinCE MMU absent; fixed entry NOT executed");
+    }
     Mem_Free(allocation);
     return 0;
 }
@@ -371,7 +394,7 @@ static char_const16_t g_find_pattern_exe[] = {
 static void banner(void) {
     fillScreen(color(0, 0, 40));
     Debug_SetCursorPosition(0, 0);
-    Debug_PrintString("NTOS 0.2 - COFF/reloc fix", true);
+    Debug_PrintString("NTOS 0.3 - WinCE PE POC", true);
     Debug_SetCursorPosition(0, 1);
     Debug_PrintString("Select .NTX or .EXE (SH4BE PE32)", false);
     LCD_Refresh();
