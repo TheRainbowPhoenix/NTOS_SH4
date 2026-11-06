@@ -25,7 +25,7 @@
 APP_NAME("NTOS")
 APP_DESCRIPTION("Big-endian SH4 COFF EXE loader")
 APP_AUTHOR("recreate project")
-APP_VERSION("0.1")
+APP_VERSION("0.2")
 
 // ---------------------------------------------------------------------------
 // Syscall table handed to payloads (field order == table order)
@@ -129,7 +129,7 @@ static int load_coff(const uint8_t *file, uint32_t file_size,
     const bool has_base_relocs = out_hdr->oh.basereloc_rva != 0 &&
                                  out_hdr->oh.basereloc_size >= 8;
     if (!has_obj_relocs && !has_base_relocs) {
-        *err = "no usable relocations: link with --emit-relocs and pack .reloc";
+        *err = "NTOS 0.2: no usable .reloc/COFF relocs in this NTX";
         return -3;
     }
 
@@ -290,7 +290,7 @@ static char_const16_t g_find_pattern[] = {
 static void banner(void) {
     fillScreen(color(0, 0, 40));
     Debug_SetCursorPosition(0, 0);
-    Debug_PrintString("NTOS 0.1 - SH4BE COFF loader", true);
+    Debug_PrintString("NTOS 0.2 - COFF/reloc fix", true);
     Debug_SetCursorPosition(0, 1);
     Debug_PrintString("Select an .NTX (big-endian COFF EXE)", false);
     LCD_Refresh();
