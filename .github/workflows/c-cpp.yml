@@ -30,6 +30,8 @@ jobs:
     - run: make -j
     - name: Validate the real built HELLO.NTX base relocations
       run: python3 tools/check_ntx.py dist/HELLO.NTX
+    - name: Validate actual SH4BE PE32 relocations and COREDLL IAT
+      run: python3 tests/test_ce_pe.py --live dist/HELLO_PE.EXE
     - uses: actions/upload-artifact@v7
       with:
         path: dist/**
