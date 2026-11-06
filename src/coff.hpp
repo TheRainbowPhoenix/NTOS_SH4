@@ -123,7 +123,10 @@ inline void wr32(uint8_t *p, uint32_t v) {
 // Parse the COFF file header + optional header + section table from `data`.
 // Returns 0 on success, negative error code otherwise.
 inline int parse(const uint8_t *data, uint32_t size, Image *img) {
-    if (size < 24)
+    // The COFF file header is exactly 20 bytes, not 24. The PE32
+    // optional header starts immediately after it (no DOS/PE signature
+    // in our raw .NTX format).
+    if (size < 20)
         return -1;
     img->fh.machine       = rd16(data + 0);
     img->fh.nsections     = rd16(data + 2);
@@ -137,11 +140,11 @@ inline int parse(const uint8_t *data, uint32_t size, Image *img) {
         return -2; // not a big-endian SH4 COFF
     if (img->fh.nsections == 0 || img->fh.nsections > 8)
         return -3;
-    if (size < 24u + img->fh.opthdr_size + img->fh.nsections * 40u)
+    if (size < 20u + img->fh.opthdr_size + img->fh.nsections * 40u)
         return -4;
 
-    if (img->fh.opthdr_size >= 28) {
-        const uint8_t *o = data + 24;
+    if (img->fh.opthdr_size >= 32) {
+        const uint8_t *o = data + 20;
         img->oh.magic         = rd16(o + 0);
         img->oh.major_link    = o[2];
         img->oh.minor_link    = o[3];
@@ -154,8 +157,9 @@ inline int parse(const uint8_t *data, uint32_t size, Image *img) {
         img->oh.image_base    = rd32(o + 28);
         img->oh.section_align = (img->fh.opthdr_size >= 36) ? rd32(o + 32) : 16;
         img->oh.file_align    = (img->fh.opthdr_size >= 40) ? rd32(o + 36) : 16;
-        img->oh.size_of_image = (img->fh.opthdr_size >= 72) ? rd32(o + 68) : 0;
-        img->oh.size_of_headers = (img->fh.opthdr_size >= 76) ? rd32(o + 72) : 0;
+        // PE32: SizeOfImage is at offset 56, SizeOfHeaders at 60.
+        img->oh.size_of_image = (img->fh.opthdr_size >= 60) ? rd32(o + 56) : 0;
+        img->oh.size_of_headers = (img->fh.opthdr_size >= 64) ? rd32(o + 60) : 0;
         // PE32 data directories start at optional-header offset 96.
         // Directory #5 (base relocation table) sits at 96 + 5*8 = 136.
         if (img->fh.opthdr_size >= 144) {
@@ -175,7 +179,7 @@ inline int parse(const uint8_t *data, uint32_t size, Image *img) {
         img->oh.basereloc_size = 0;
     }
 
-    const uint8_t *s = data + 24 + img->fh.opthdr_size;
+    const uint8_t *s = data + 20 + img->fh.opthdr_size;
     img->section_count = img->fh.nsections;
     img->image_end = 0;
     for (uint32_t i = 0; i < img->section_count; i++) {
