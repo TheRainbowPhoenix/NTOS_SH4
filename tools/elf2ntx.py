@@ -356,8 +356,8 @@ def emit_ntx(elf, base):
     struct.pack_into(">I", opt, 76, 0x1000)           # StackCommit
     struct.pack_into(">I", opt, 80, 0x10000)          # HeapReserve
     struct.pack_into(">I", opt, 84, 0x1000)           # HeapCommit
-    struct.pack_into(">I", opt, 92, 0)                # LoaderFlags
-    struct.pack_into(">I", opt, 96, 16)               # NumberOfRvaAndSizes
+    struct.pack_into(">I", opt, 88, 0)                # LoaderFlags
+    struct.pack_into(">I", opt, 92, 16)               # NumberOfRvaAndSizes
     # data directory #5 = base relocation table (offset 96 + 5*8)
     struct.pack_into(">II", opt, 96 + 5 * 8, reloc_rva, len(reloc_data))
 
