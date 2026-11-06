@@ -42,6 +42,27 @@ PAYLOAD_OBJ := $(BUILDDIR)/payload/hello.o
 PAYLOAD_ELF := $(BUILDDIR)/payload/hello.elf
 PAYLOAD_NTX := $(OUTDIR)/$(PAYLOAD_NAME).NTX
 
+# Native SH4BE MZ+PE32 proof of concept: real machine code and COREDLL IAT.
+PAYLOAD_CE_OBJ := $(BUILDDIR)/payload/hello_ce.o
+PAYLOAD_CE_ELF := $(BUILDDIR)/payload/hello_ce.elf
+PAYLOAD_CE_NTX := $(BUILDDIR)/payload/hello_ce.ntx
+PAYLOAD_CE_PE := $(OUTDIR)/HELLO_PE.EXE
+
+$(PAYLOAD_CE_OBJ): $(PAYLOAD_DIR)/hello_ce.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ -ffreestanding -fno-builtin -fno-stack-protector \
+		-fno-unwind-tables -fno-asynchronous-unwind-tables -O2 $(INCLUDES)
+
+$(PAYLOAD_CE_ELF): $(PAYLOAD_CE_OBJ) $(PAYLOAD_LD)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_LD) -o $@ $(PAYLOAD_CE_OBJ)
+
+$(PAYLOAD_CE_NTX): $(PAYLOAD_CE_ELF) tools/elf2ntx.py
+	$(PYTHON) tools/elf2ntx.py $(PAYLOAD_CE_ELF) -o $@
+
+$(PAYLOAD_CE_PE): $(PAYLOAD_CE_NTX) $(PAYLOAD_CE_ELF) tools/ntx2pe.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/ntx2pe.py $(PAYLOAD_CE_NTX) --elf $(PAYLOAD_CE_ELF) -o $@
+
 AS_SOURCES:=$(shell find $(SOURCEDIR) -name '*.S')
 CC_SOURCES:=$(shell find $(SOURCEDIR) -name '*.c')
 CXX_SOURCES:=$(shell find $(SOURCEDIR) -name '*.cpp')
@@ -55,9 +76,9 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(PAYLOAD_NTX) Makefile
+ntx: $(PAYLOAD_NTX) $(PAYLOAD_CE_PE) Makefile
 
-all: elf hh3 ntx
+all: elf hh3 ntx $(PAYLOAD_CE_PE)
 .DEFAULT_GOAL := all
 .SECONDARY: # Prevents intermediate files from being deleted
 
