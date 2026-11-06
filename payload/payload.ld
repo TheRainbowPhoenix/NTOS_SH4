@@ -12,6 +12,7 @@ SECTIONS
   .text : { *(.text*) }
   .rodata : { *(.rodata*) }
   .data : { *(.data*) *(.got*) }
+  .idata : { *(.idata*) }   /* PE import address table slots (NTOS-patched) */
   .bss : { *(.bss*) *(COMMON) }
 
   /DISCARD/ : { *(.comment) *(.note*) *(.eh_frame*) }

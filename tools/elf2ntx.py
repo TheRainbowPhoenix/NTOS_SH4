@@ -1,20 +1,31 @@
 #!/usr/bin/env python3
 """
-elf2ntx.py -- COFF late linker/packer: big-endian SH4 ELF -> NTX EXE.
+elf2ntx.py -- PE linker/packer: big-endian SH4 ELF -> NTX PE EXE.
 
 Takes a fully linked big-endian ELF32 (SuperH) executable -- built by
 `sh4a_nofpueb-elf-ld --emit-relocs` from freestanding objects -- and emits a
-big-endian COFF EXE (machine 0x01A8, "SH4 BE" MIPS-style, per our patched
-shasm) with a PE32 optional header and a PE `.reloc` base-relocation table.
+**standard PE32 executable**: MZ header, "PE\\0\\0" signature, little-endian
+header fields, PE data directories, import/export/base-reloc tables -- all
+exactly per the PE spec so common tooling (pefile, dumpbin, Ghidra's PE
+loader) can parse an .NTX file. The machine type is 0x01A8 ("SH4 BE",
+MIPS-style, per our patched shasm); the CPU-visible bytes (SH4 code, literal
+pools, .data pointers, IAT slots) are big-endian, while every file-format
+structure is little-endian as the spec requires.
 
-NTOS (this repo) copy-loads the .NTX anywhere in the HH3 heap and applies
-delta = actual_base - preferred_base to every HIGHLOW entry, exactly like a
-WinCE loader would. Absolute addresses must therefore be present in the file:
-link with `--emit-relocs` so ld retains the relocation sites; every R_SH_DIR32
-site whose symbol is defined inside the image becomes a HIGHLOW entry.
+NTOS copy-loads the .NTX into the heap and either relocates it (applying
+delta = actual_base - preferred_base to every HIGHLOW site) or UTLB-maps it
+at its preferred base and snaps its imports against COREDLL.NTX -- the same
+two mechanisms a WinCE loader uses. Absolute addresses must be present in
+the file: link with `--emit-relocs` so ld retains the relocation sites; every
+R_SH_DIR32 site whose symbol is defined inside the image becomes a HIGHLOW
+entry.
 
 Usage:
     python3 tools/elf2ntx.py payload.elf -o dist/HELLO.NTX [--base 0x400000]
+    python3 tools/elf2ntx.py coredll.elf -o dist/COREDLL.NTX --base 0x800000 \
+        --exports coredll_puts,coredll_getkey --dll-name COREDLL.DLL --dll
+    python3 tools/elf2ntx.py hello.elf -o dist/HELLOCORE.NTX \
+        --import-module COREDLL.DLL
 
     python3 tools/elf2ntx.py --selftest     (synthetic ELF round-trip check)
 """
@@ -48,29 +59,42 @@ STT_FUNC = 2
 STT_SECTION = 3
 STT_FILE = 4
 
-STYP_TEXT = 0x20
-STYP_DATA = 0x40
-STYP_BSS = 0x80
+# --- PE constants ------------------------------------------------------------
+IMAGE_FILE_MACHINE_SH4BE = 0x01A8
+IMAGE_FILE_EXECUTABLE_IMAGE = 0x0002
+IMAGE_FILE_32BIT_MACHINE = 0x0104
+IMAGE_FILE_DLL = 0x2000
 
-F_EXEC = 0x0002
-F_RELFLG = 0x0001  # "relocation info stripped" -> NTOS uses PE .reloc instead
-F_AR32WR = 0x0100
+IMAGE_SCN_CNT_CODE = 0x00000020
+IMAGE_SCN_CNT_INITIALIZED_DATA = 0x00000040
+IMAGE_SCN_CNT_UNINITIALIZED_DATA = 0x00000080
+IMAGE_SCN_MEM_DISCARDABLE = 0x02000000
+IMAGE_SCN_MEM_EXECUTE = 0x20000000
+IMAGE_SCN_MEM_READ = 0x40000000
+IMAGE_SCN_MEM_WRITE = 0x80000000
+
+IMAGE_SUBSYSTEM_WINDOWS_CE_GUI = 9
 
 BRELOC_ABSOLUTE = 0
 BRELOC_HIGHLOW = 3
 
+PE32_DIR_EXPORT = 0
+PE32_DIR_IMPORT = 1
 PE32_DIR_BASERELOC = 5
 PE32_OPTHDR_SIZE = 224  # 28 std + 68 windows + 16*8 data dirs
+DOS_HDR_SIZE = 0x40
 
 DEFAULT_BASE = 0x00400000
+DEFAULT_COREDLL_BASE = 0x00800000
+DEFAULT_IMPORT_MODULE = "COREDLL.DLL"
 
 
-def be16(x):
-    return struct.pack(">H", x & 0xFFFF)
+def le16(x):
+    return struct.pack("<H", x & 0xFFFF)
 
 
-def be32(x):
-    return struct.pack(">I", x & 0xFFFFFFFF)
+def le32(x):
+    return struct.pack("<I", x & 0xFFFFFFFF)
 
 
 def align_up(x, a):
@@ -199,7 +223,16 @@ class Elf:
                 self.relas.append(r)
 
 
-# --- COFF emission -----------------------------------------------------------
+# --- helpers -----------------------------------------------------------------
+def _unmangle(name):
+    """Strip the target's user-symbol underscore prefix(es): the SH
+    toolchain emits `_main`, so `__imp_coredll_puts` appears in the ELF as
+    `___imp_coredll_puts`."""
+    while name.startswith("_"):
+        name = name[1:]
+    return name
+
+
 def collect_base_reloc_sites(elf, base):
     """Return sorted list of image-relative RVAs that hold absolute pointers."""
     sites = set()
@@ -220,13 +253,13 @@ def collect_base_reloc_sites(elf, base):
 
 
 def build_reloc_section(sites):
-    """PE base-relocation blocks (written big-endian; NTOS reads the loaded
-    image with BE readers). Returns bytes, always non-empty so the PE data
-    directory is present even for images with zero fixup sites."""
+    """PE base-relocation blocks (little-endian per the PE spec; NTOS patches
+    the *memory words* at each site big-endian). Returns bytes, always
+    non-empty so the data directory is present even with zero fixup sites."""
     out = bytearray()
     if not sites:
         # one empty block: PageRVA=0, BlockSize=8
-        out += be32(0) + be32(8)
+        out += le32(0) + le32(8)
         return bytes(out)
 
     pages = {}
@@ -241,15 +274,123 @@ def build_reloc_section(sites):
         while len(entries) % 2 != 0:
             entries.append(BRELOC_ABSOLUTE << 12)
         block = bytearray()
-        block += be32(page << 12)
-        block += be32(8 + 2 * len(entries))
+        block += le32(page << 12)
+        block += le32(8 + 2 * len(entries))
         for e in entries:
-            block += be16(e)
+            block += le16(e)
         out += block
     return bytes(out)
 
 
-def emit_ntx(elf, base):
+def build_export_section(exports, dll_name, sec_rva):
+    """exports: ordered [(name, rva)]. Returns the .exports section bytes
+    (little-endian IMAGE_EXPORT_DIRECTORY + tables, per the PE spec).
+
+    Layout: ExportDirectory(40) | module name | ExportAddressTable(4n) |
+    NamePointerTable(4n) | name strings | OrdinalTable(2n)."""
+    n = len(exports)
+    buf = bytearray(40)
+    off = 40
+    dll_name_off = off
+    buf += dll_name.encode("ascii") + b"\x00"
+    off += len(dll_name) + 1
+    pad = align_up(off, 4) - off
+    buf += b"\x00" * pad
+    off += pad
+    eat_off = off
+    buf += b"".join(le32(rva) for _, rva in exports)
+    off += 4 * n
+    anp_off = off
+    strings_off = off + 4 * n  # name strings follow the pointer table
+    off = strings_off
+    name_str_offs = []
+    for name, _ in exports:
+        name_str_offs.append(off)
+        off += len(name) + 1
+    buf += b"".join(le32(sec_rva + o) for o in name_str_offs)
+    for name, _ in exports:
+        buf += name.encode("ascii") + b"\x00"
+    ord_off = off
+    buf += b"".join(le16(i) for i in range(n))
+    off += 2 * n
+
+    struct.pack_into("<I", buf, 0, 0)                    # Characteristics
+    struct.pack_into("<I", buf, 4, 0)                    # TimeDateStamp
+    struct.pack_into("<H", buf, 8, 0)                    # MajorVersion
+    struct.pack_into("<H", buf, 10, 0)                   # MinorVersion
+    struct.pack_into("<I", buf, 12, sec_rva + dll_name_off)  # Name
+    struct.pack_into("<I", buf, 16, 1)                   # Base (ordinal)
+    struct.pack_into("<I", buf, 20, n)                   # NumberOfFunctions
+    struct.pack_into("<I", buf, 24, n)                   # NumberOfNames
+    struct.pack_into("<I", buf, 28, sec_rva + eat_off)   # AddressOfFunctions
+    struct.pack_into("<I", buf, 32, sec_rva + anp_off)   # AddressOfNames
+    struct.pack_into("<I", buf, 36, sec_rva + ord_off)   # ..NameOrdinals
+    return bytes(buf)
+
+
+def collect_import_slots(elf):
+    """Return [(slot_rva, func_name)] sorted by slot, one per defined
+    `__imp_<func>` symbol (the payload's .idata slots, laid out contiguously
+    by the linker script)."""
+    slots = []
+    for s in elf.symbols:
+        nm = _unmangle(s.name)
+        if (nm.startswith("imp_") and s.value != 0
+                and s.shndx != SHN_UNDEF and s.shndx < SHN_LORESERVE):
+            slots.append((s.value, nm[len("imp_"):]))
+    slots.sort()
+    return slots
+
+
+def build_import_section(slots, module_name, sec_rva):
+    """slots: [(slot_rva, func_name)] sorted by slot (contiguous IAT in the
+    payload's .idata). Returns the .imports section bytes (little-endian
+    IMAGE_IMPORT_DESCRIPTORs + hint/name records + HNT, per the PE spec).
+
+    The descriptor's FirstThunk points at the payload's real .idata slot
+    array (slot_rva[0]); NTOS walks the HNT array and writes the resolved
+    export VAs into the .idata slots -- big-endian, since the SH4 BE payload
+    reads them with plain word loads."""
+    n = len(slots)
+    if n == 0:
+        raise SystemExit("error: --import-module given but no __imp_* "
+                         "symbols found in the ELF")
+    slot_rvas = [r for r, _ in slots]
+    if slot_rvas != [slot_rvas[0] + 4 * i for i in range(n)]:
+        raise SystemExit("error: __imp_* slots are not contiguous/ordered "
+                         f"(got {[hex(r) for r in slot_rvas]}); define all "
+                         "NT_DEFINEs together in one translation unit")
+
+    buf = bytearray(20 * (n + 1))  # descriptors + terminator
+    off = 20 * (n + 1)
+    hn_offs = []
+    for _, fname in slots:
+        hn_offs.append(off)
+        buf += le16(0) + fname.encode("ascii") + b"\x00"  # hint + name
+        off += 2 + len(fname) + 1
+        if off % 2 != 0:
+            buf += b"\x00"
+            off += 1
+    hnt_off = off
+    buf += b"".join(le32(sec_rva + h) for h in hn_offs) + le32(0)
+    off += 4 * n + 4
+    name_off = off
+    buf += module_name.encode("ascii") + b"\x00"
+    off += len(module_name) + 1
+
+    for i in range(n):  # IMAGE_IMPORT_DESCRIPTORs
+        d = i * 20
+        struct.pack_into("<I", buf, d + 0, sec_rva + hnt_off)  # OriginalFT
+        struct.pack_into("<I", buf, d + 4, 0)                  # TimeDateStamp
+        struct.pack_into("<I", buf, d + 8, 0)                  # ForwarderChain
+        struct.pack_into("<I", buf, d + 12, sec_rva + name_off)  # Name
+        struct.pack_into("<I", buf, d + 16, slot_rvas[0])      # FirstThunk
+    # terminator descriptor (all zero) already present
+    return bytes(buf)
+
+
+def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
+             image_is_dll=False):
     if elf.e_type != 2:
         raise SystemExit("error: input is not ET_EXEC (link with a linker "
                          "script / -Ttext so addresses are final)")
@@ -273,30 +414,62 @@ def emit_ntx(elf, base):
     for s in alloc:
         coff_name = name_map.get(s.name, s.name.lstrip("."))[:8]
         if s.sh_type == SHT_NOBITS:
-            styp = STYP_BSS
+            chars = (IMAGE_SCN_CNT_UNINITIALIZED_DATA | IMAGE_SCN_MEM_READ |
+                     IMAGE_SCN_MEM_WRITE)
         elif s.sh_flags & SHF_EXECINSTR:
-            styp = STYP_TEXT
+            chars = (IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE |
+                     IMAGE_SCN_MEM_READ)
         else:
-            styp = STYP_DATA
+            chars = (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ |
+                     IMAGE_SCN_MEM_WRITE)
         coff_secs.append({
             "name": coff_name,
             "rva": s.sh_addr - base,
             "vsize": s.sh_size,
-            "raw": b"" if styp == STYP_BSS else s.data,
-            "flags": styp,
+            "raw": b"" if s.sh_type == SHT_NOBITS else s.data,
+            "chars": chars,
         })
 
-    # base relocation sites + .reloc section placed after everything else
+    # optional PE directories (.imports / .exports), then .reloc
     sites = collect_base_reloc_sites(elf, base)
     reloc_data = build_reloc_section(sites)
     end_of_image = max((c["rva"] + c["vsize"] for c in coff_secs), default=0)
-    reloc_rva = align_up(end_of_image, 4)
+    extra_rva = align_up(end_of_image, 4)
+    extra_dirs = {}
+
+    if import_module:
+        slots = [(r - base, n) for r, n in collect_import_slots(elf)]
+        imp_data = build_import_section(slots, import_module, extra_rva)
+        coff_secs.append({
+            "name": ".imports",
+            "rva": extra_rva,
+            "vsize": len(imp_data),
+            "raw": imp_data,
+            "chars": IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ,
+        })
+        extra_dirs[PE32_DIR_IMPORT] = (extra_rva, len(imp_data))
+        extra_rva = align_up(extra_rva + len(imp_data), 4)
+
+    if exports:
+        exp_data = build_export_section(exports, dll_name, extra_rva)
+        coff_secs.append({
+            "name": ".exports",
+            "rva": extra_rva,
+            "vsize": len(exp_data),
+            "raw": exp_data,
+            "chars": IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ,
+        })
+        extra_dirs[PE32_DIR_EXPORT] = (extra_rva, len(exp_data))
+        extra_rva = align_up(extra_rva + len(exp_data), 4)
+
+    reloc_rva = extra_rva
     coff_secs.append({
         "name": ".reloc",
         "rva": reloc_rva,
         "vsize": len(reloc_data),
         "raw": reloc_data,
-        "flags": STYP_DATA,
+        "chars": (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ |
+                  IMAGE_SCN_MEM_DISCARDABLE),
     })
 
     if len(coff_secs) > 8:
@@ -314,7 +487,7 @@ def emit_ntx(elf, base):
                    if s.shndx != SHN_UNDEF and s.shndx < SHN_LORESERVE
                    and s.type != STT_SECTION and s.name]
         for sym in defined:
-            if sym.name.lower() in ("main", "_main"):
+            if _unmangle(sym.name).lower() in ("main",):
                 entry_va = sym.value
                 print(f"note: using symbol table entry '{sym.name}' "
                       f"at 0x{entry_va:08X}")
@@ -327,39 +500,53 @@ def emit_ntx(elf, base):
     entry_rva = entry_va - base
 
     # --- file assembly -------------------------------------------------------
-    # COFF header (20) + optional header (224) + section headers (40*n),
-    # then file-aligned section raw data.
+    # DOS header (0x40) + "PE\0\0" (4) + COFF header (20) + optional header
+    # (224) + section headers (40*n), then file-aligned section raw data.
     nsecs = len(coff_secs)
-    headers_len = 20 + PE32_OPTHDR_SIZE + nsecs * 40
+    headers_len = DOS_HDR_SIZE + 4 + 20 + PE32_OPTHDR_SIZE + nsecs * 40
     raw_cursor = align_up(headers_len, 0x200)
 
-    # optional header (PE32, all fields big-endian like the rest of the file)
-    # PE32 field offsets: 0 magic, 16 entry, 28 image base, 32 section
-    # align, 36 file align, 56 SizeOfImage, 60 SizeOfHeaders, 64 CheckSum,
-    # 68 Subsystem, 70 DllCharacteristics, 72-95 stack/heap, 96 datadirs
+    # DOS header: "MZ" + e_lfanew = 0x40 (pefile only needs magic+lfanew)
+    dos = bytearray(DOS_HDR_SIZE)
+    dos[0:2] = b"MZ"
+    struct.pack_into("<I", dos, 0x3C, 0x40)
+
+    # optional header (PE32, little-endian per the PE spec)
+    # offsets: 0 magic, 16 entry, 28 image base, 32 section align,
+    # 36 file align, 56 SizeOfImage, 60 SizeOfHeaders, 68 Subsystem,
+    # 72-95 stack/heap, 92 NumberOfRvaAndSizes? (92 LoaderFlags,
+    # 96 NumberOfRvaAndSizes is PE32+; PE32: 88 LoaderFlags,
+    # 92 NumberOfRvaAndSizes, 100 data dirs -- see below)
     opt = bytearray(PE32_OPTHDR_SIZE)
-    struct.pack_into(">H", opt, 0, 0x010B)            # PE32 magic
+    struct.pack_into("<H", opt, 0, 0x010B)            # PE32 magic
     opt[2] = 9   # linker major (cosmetic)
-    struct.pack_into(">I", opt, 4, sum(len(c["raw"]) for c in coff_secs
-                                       if c["flags"] & STYP_TEXT))  # text size
-    struct.pack_into(">I", opt, 16, entry_rva)        # AddressOfEntryPoint
-    struct.pack_into(">I", opt, 28, base)             # ImageBase
-    struct.pack_into(">I", opt, 32, 0x1000)           # SectionAlignment
-    struct.pack_into(">I", opt, 36, 0x200)            # FileAlignment
-    struct.pack_into(">I", opt, 56, size_of_image)    # SizeOfImage
-    struct.pack_into(">I", opt, 60, raw_cursor)       # SizeOfHeaders
-    struct.pack_into(">I", opt, 64, 0)                # CheckSum
-    struct.pack_into(">H", opt, 68, 9)                # Subsystem = WinCE
-    struct.pack_into(">H", opt, 70, 0)                # DllCharacteristics
+    struct.pack_into("<I", opt, 4, sum(len(c["raw"]) for c in coff_secs
+                                       if c["chars"] & IMAGE_SCN_CNT_CODE))
+    struct.pack_into("<I", opt, 16, entry_rva)        # AddressOfEntryPoint
+    struct.pack_into("<I", opt, 28, base)             # ImageBase
+    struct.pack_into("<I", opt, 32, 0x1000)           # SectionAlignment
+    struct.pack_into("<I", opt, 36, 0x200)            # FileAlignment
+    struct.pack_into("<H", opt, 40, 2)                # MajorOSVersion (WinCE)
+    struct.pack_into("<H", opt, 48, 2)                # MajorSubsystemVersion
+    struct.pack_into("<I", opt, 56, size_of_image)    # SizeOfImage
+    struct.pack_into("<I", opt, 60, raw_cursor)       # SizeOfHeaders
+    struct.pack_into("<I", opt, 64, 0)                # CheckSum
+    struct.pack_into("<H", opt, 68, IMAGE_SUBSYSTEM_WINDOWS_CE_GUI)
+    struct.pack_into("<H", opt, 70, 0)                # DllCharacteristics
     # stack/heap (PE32: 72..95)
-    struct.pack_into(">I", opt, 72, 0x10000)          # StackReserve
-    struct.pack_into(">I", opt, 76, 0x1000)           # StackCommit
-    struct.pack_into(">I", opt, 80, 0x10000)          # HeapReserve
-    struct.pack_into(">I", opt, 84, 0x1000)           # HeapCommit
-    struct.pack_into(">I", opt, 92, 0)                # LoaderFlags
-    struct.pack_into(">I", opt, 96, 16)               # NumberOfRvaAndSizes
-    # data directory #5 = base relocation table (offset 96 + 5*8)
-    struct.pack_into(">II", opt, 96 + 5 * 8, reloc_rva, len(reloc_data))
+    struct.pack_into("<I", opt, 72, 0x10000)          # SizeOfStackReserve
+    struct.pack_into("<I", opt, 76, 0x1000)           # SizeOfStackCommit
+    struct.pack_into("<I", opt, 80, 0x10000)          # SizeOfHeapReserve
+    struct.pack_into("<I", opt, 84, 0x1000)           # SizeOfHeapCommit
+    struct.pack_into("<I", opt, 88, 0)                # LoaderFlags
+    struct.pack_into("<I", opt, 92, 16)               # NumberOfRvaAndSizes
+    # PE32 data directories start at optional-header offset 96.
+    struct.pack_into("<II", opt, 96 + PE32_DIR_EXPORT * 8,
+                     *extra_dirs.get(PE32_DIR_EXPORT, (0, 0)))
+    struct.pack_into("<II", opt, 96 + PE32_DIR_IMPORT * 8,
+                     *extra_dirs.get(PE32_DIR_IMPORT, (0, 0)))
+    struct.pack_into("<II", opt, 96 + PE32_DIR_BASERELOC * 8, reloc_rva,
+                     len(reloc_data))
 
     # section headers + raw data
     headers = bytearray()
@@ -367,32 +554,36 @@ def emit_ntx(elf, base):
     for c in coff_secs:
         raw_size = len(c["raw"])
         headers += c["name"].encode("ascii").ljust(8, b"\x00")
-        headers += be32(c["vsize"])     # VirtualSize
-        headers += be32(c["rva"])       # VirtualAddress
-        headers += be32(raw_size)       # SizeOfRawData
-        headers += be32(raw_cursor + len(body))  # PointerToRawData
-        headers += be32(0)              # PointerToRelocations
-        headers += be32(0)              # PointerToLinenumbers
-        headers += be16(0)              # NumberOfRelocations
-        headers += be16(0)              # NumberOfLinenumbers
-        headers += be32(c["flags"])     # Characteristics
+        headers += le32(c["vsize"])     # VirtualSize
+        headers += le32(c["rva"])       # VirtualAddress
+        headers += le32(raw_size)       # SizeOfRawData
+        headers += le32(raw_cursor + len(body))  # PointerToRawData
+        headers += le32(0)              # PointerToRelocations
+        headers += le32(0)              # PointerToLinenumbers
+        headers += le16(0)              # NumberOfRelocations
+        headers += le16(0)              # NumberOfLinenumbers
+        headers += le32(c["chars"])     # Characteristics
         body += c["raw"]
         # keep every section's file offset 0x200-aligned
         pad = align_up(raw_cursor + len(body), 0x200) - raw_cursor - len(body)
         body += b"\x00" * pad
 
-    # COFF file header
+    # COFF file header (little-endian)
     fh = bytearray()
-    fh += be16(0x01A8)                    # machine: SH4 BE
-    fh += be16(nsecs)
-    fh += be32(0)                         # timestamp
-    fh += be32(0)                         # symbol table offset
-    fh += be32(0)                         # symbol count
-    fh += be16(PE32_OPTHDR_SIZE)
-    fh += be16(F_EXEC | F_RELFLG | F_AR32WR)
+    fh += le16(IMAGE_FILE_MACHINE_SH4BE)  # machine: SH4 BE
+    fh += le16(nsecs)
+    fh += le32(0)                         # timestamp
+    fh += le32(0)                         # symbol table offset
+    fh += le32(0)                         # symbol count
+    fh += le16(PE32_OPTHDR_SIZE)
+    chars = IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_32BIT_MACHINE
+    if image_is_dll:
+        chars |= IMAGE_FILE_DLL
+    fh += le16(chars)
 
     gap = raw_cursor - headers_len
-    out = bytes(fh) + bytes(opt) + bytes(headers) + b"\x00" * gap + bytes(body)
+    out = (bytes(dos) + b"PE\x00\x00" + bytes(fh) + bytes(opt) +
+           bytes(headers) + b"\x00" * gap + bytes(body))
     assert len(out) == raw_cursor + len(body), (len(out), raw_cursor, len(body))
     return out, sites
 
@@ -404,7 +595,7 @@ def make_synthetic_elf(base):
     text = bytearray()
     text += b"\x00\x09" * 4            # 8 bytes filler (nop)
     lit_off = len(text)
-    text += be32(base + 0x100)         # .Lpool: .long some_symbol (+addend)
+    text += be32_be(base + 0x100)      # .Lpool: .long some_symbol (+addend)
 
     secnames = b"\x00.text\x00.symtab\x00.strtab\x00.rela.text\x00"
     ehp = {}
@@ -422,7 +613,11 @@ def make_synthetic_elf(base):
     symtab_data = b"\x00" * 16  # null symbol
     # symbol 1: 'main' defined in .text (section 1) at value 0x100
     symtab_data += struct.pack(">IIIBBH", 1, 0x00400100, 0, (1 << 4) | 2, 0, 1)
-    strtab_data = b"\x00main\x00"
+    # symbol 2: 'coredll_puts' (export test) at base+0x200
+    symtab_data += struct.pack(">IIIBBH", 6, 0x00400200, 0, (1 << 4) | 2, 0, 1)
+    # symbol 3: '__imp_coredll_puts' (import test) at base+0x8
+    symtab_data += struct.pack(">IIIBBH", 19, base + 8, 0, (1 << 4) | 1, 0, 1)
+    strtab_data = (b"\x00main\x00coredll_puts\x00__imp_coredll_puts\x00")
     rela_data = struct.pack(">IIi", base + lit_off, (1 << 8) | R_SH_DIR32, 0)
 
     body_layout = []
@@ -464,48 +659,140 @@ def make_synthetic_elf(base):
     return bytes(blob)
 
 
+def be32_be(x):
+    return struct.pack(">I", x & 0xFFFFFFFF)
+
+
+def sec_by_name(out, want):
+    """(rva, size, raw_bytes) of a PE section in an emitted image, or None."""
+    nsecs = struct.unpack_from("<H", out, 0x44 + 2)[0]
+    optsz = struct.unpack_from("<H", out, 0x44 + 16)[0]
+    table = 0x44 + 4 + 20 + optsz
+    for i in range(nsecs):
+        h = out[table + i * 40:][:40]
+        name = h[:8].rstrip(b"\x00").decode()
+        if name == want:
+            rva = struct.unpack_from("<I", h, 12)[0]
+            rsz = struct.unpack_from("<I", h, 16)[0]
+            roff = struct.unpack_from("<I", h, 20)[0]
+            return rva, rsz, out[roff:roff + rsz]
+    return None
+
+
 def selftest():
     base = DEFAULT_BASE
     lit_off = 8  # synthetic .text: 8 bytes filler, then the 4-byte pool word
     elf = Elf(make_synthetic_elf(base))
     out, sites = emit_ntx(elf, base)
     assert sites == [lit_off], sites
-    # parse the COFF back
-    machine, nsecs = struct.unpack_from(">HH", out, 0)
-    assert machine == 0x01A8, hex(machine)
-    opt = out[20:20 + PE32_OPTHDR_SIZE]
-    entry = struct.unpack_from(">I", opt, 16)[0]      # AddressOfEntryPoint
-    img_base = struct.unpack_from(">I", opt, 28)[0]   # ImageBase
+
+    # parse the PE back (little-endian, standard layout)
+    assert out[:2] == b"MZ"
+    lfanew = struct.unpack_from("<I", out, 0x3C)[0]
+    assert out[lfanew:lfanew + 4] == b"PE\x00\x00"
+    machine, nsecs = struct.unpack_from("<HH", out, lfanew + 4)
+    assert machine == IMAGE_FILE_MACHINE_SH4BE, hex(machine)
+    optsz = struct.unpack_from("<H", out, lfanew + 16)[0]
+    assert optsz == PE32_OPTHDR_SIZE
+    opt_at = lfanew + 24
+    entry = struct.unpack_from("<I", out, opt_at + 16)[0]   # AddressOfEntryPoint
+    img_base = struct.unpack_from("<I", out, opt_at + 28)[0]  # ImageBase
     assert entry == 0x100 and img_base == base  # 'main' fallback
-    dir5_rva, dir5_size = struct.unpack_from(">II", opt, 96 + 5 * 8)
+    soi = struct.unpack_from("<I", out, opt_at + 56)[0]
+    assert soi == align_up(lit_off + 4 + 16, 0x1000), hex(soi)
+    dir5_rva, dir5_size = struct.unpack_from(
+        "<II", out, opt_at + 96 + PE32_DIR_BASERELOC * 8)
     assert dir5_size >= 8
-    # find .reloc section raw content and verify block structure
-    for i in range(nsecs):
-        h = out[20 + PE32_OPTHDR_SIZE + i * 40:][:40]
-        name = h[:8].rstrip(b"\x00").decode()
-        if name == ".reloc":
-            raw_off = struct.unpack_from(">I", h, 20)[0]
-            raw_sz = struct.unpack_from(">I", h, 16)[0]
-            blob = out[raw_off:raw_off + raw_sz]
-            page, bsz = struct.unpack_from(">II", blob, 0)
-            assert page == (lit_off >> 12) << 12
-            assert bsz == 8 + 4  # entry + ABSOLUTE pad to 4 bytes
-            entry_word = struct.unpack_from(">H", blob, 8)[0]
-            assert (entry_word >> 12) == BRELOC_HIGHLOW
-            assert (entry_word & 0xFFF) == (lit_off & 0xFFF)
-            assert struct.unpack_from(">H", blob, 10)[0] == 0
-            print("selftest OK: 1 section-parsed COFF, 1 HIGHLOW site "
-                  f"@ RVA 0x{lit_off:X}")
-            return
-    raise SystemExit("selftest FAIL: .reloc section missing")
+
+    # .reloc block structure (LE table, site = BE memory word)
+    rva, rsz, blob = sec_by_name(out, ".reloc")
+    page, bsz = struct.unpack_from("<II", blob, 0)
+    assert page == (lit_off >> 12) << 12
+    assert bsz == 8 + 4  # entry + ABSOLUTE pad to 4 bytes
+    entry_word = struct.unpack_from("<H", blob, 8)[0]
+    assert (entry_word >> 12) == BRELOC_HIGHLOW
+    assert (entry_word & 0xFFF) == (lit_off & 0xFFF)
+    assert struct.unpack_from("<H", blob, 10)[0] == 0
+
+    # --- export + import directory round trip ------------------------------
+    out2, _ = emit_ntx(elf, base,
+                       exports=[("coredll_puts", 0x200)],
+                       dll_name=DEFAULT_IMPORT_MODULE,
+                       import_module=DEFAULT_IMPORT_MODULE,
+                       image_is_dll=True)
+    er, esz, ebytes = sec_by_name(out2, ".exports")
+    name_rva = struct.unpack_from("<I", ebytes, 12)[0]
+    nfuncs, nnames = struct.unpack_from("<II", ebytes, 20)
+    assert nfuncs == 1 and nnames == 1
+    dllname = ebytes[name_rva - er:].split(b"\x00")[0]
+    assert dllname == b"COREDLL.DLL", dllname
+    anp = struct.unpack_from("<I", ebytes, 32)[0]
+    name_ptr = struct.unpack_from("<I", ebytes, anp - er)[0]
+    nm = ebytes[name_ptr - er:].split(b"\x00")[0]
+    assert nm == b"coredll_puts", nm
+    aord = struct.unpack_from("<I", ebytes, 36)[0]
+    ord0 = struct.unpack_from("<H", ebytes, aord - er)[0]
+    eat = struct.unpack_from("<I", ebytes, 28)[0]
+    assert struct.unpack_from("<I", ebytes, eat - er + ord0 * 4)[0] == 0x200
+
+    ir, isz, ibytes = sec_by_name(out2, ".imports")
+    oft, tds, fwd, iname, ft = struct.unpack_from("<IIIII", ibytes, 0)
+    assert tds == 0 and fwd == 0
+    mn = ibytes[iname - ir:].split(b"\x00")[0]
+    assert mn == b"COREDLL.DLL", mn
+    hn0 = struct.unpack_from("<I", ibytes, oft - ir)[0]
+    hint = struct.unpack_from("<H", ibytes, hn0 - ir)[0]
+    fname = ibytes[hn0 - ir + 2:].split(b"\x00")[0]
+    assert hint == 0 and fname == b"coredll_puts", (hint, fname)
+    assert ft == 0x8, hex(ft)  # __imp_coredll_puts slot rva
+    # dir 0/1 wired in the optional header; DLL characteristic set
+    opt2_at = struct.unpack_from("<I", out2, 0x3C)[0] + 24
+    d0r, d0s = struct.unpack_from("<II", out2, opt2_at + 96 + 0 * 8)
+    d1r, d1s = struct.unpack_from("<II", out2, opt2_at + 96 + 1 * 8)
+    assert (d0r, d0s) == (er, esz) and (d1r, d1s) == (ir, isz)
+    fh_chars = struct.unpack_from("<H", out2, 0x44 + 18)[0]
+    assert fh_chars & IMAGE_FILE_DLL
+
+    # optional: validate with the real pefile module when available
+    try:
+        import pefile  # noqa: F401
+    except ImportError:
+        print("selftest OK: PE32 COFF parse, 1 HIGHLOW site "
+              f"@ RVA 0x{lit_off:X}, export + import dir round-trip "
+              "(pefile not installed -- skipped)")
+        return
+    pe = pefile.PE(data=out2)
+    assert pe.FILE_HEADER.Machine == IMAGE_FILE_MACHINE_SH4BE
+    assert pe.OPTIONAL_HEADER.AddressOfEntryPoint == 0x100
+    assert pe.OPTIONAL_HEADER.ImageBase == base
+    assert pe.OPTIONAL_HEADER.SUBSYSTEM == IMAGE_SUBSYSTEM_WINDOWS_CE_GUI
+    assert [e.name.decode() for e in pe.DIRECTORY_ENTRY_EXPORT.symbols] == \
+        ["coredll_puts"]
+    assert [i.dll.decode() for i in pe.DIRECTORY_ENTRY_IMPORT] == \
+        ["COREDLL.DLL"]
+    assert [i.name.decode() for i in pe.DIRECTORY_ENTRY_IMPORT[0].imports] == \
+        ["coredll_puts"]
+    print("selftest OK: PE32 parse, pefile agrees (exports + imports)")
+    return
 
 
 def main():
-    ap = argparse.ArgumentParser(description="ELF -> SH4BE COFF NTX packer")
+    ap = argparse.ArgumentParser(description="ELF -> SH4BE PE32 NTX packer")
     ap.add_argument("input", nargs="?", help="linked big-endian ELF32")
     ap.add_argument("-o", "--output", help="output .NTX file")
     ap.add_argument("--base", default=f"0x{DEFAULT_BASE:X}",
                     help=f"image base (default 0x{DEFAULT_BASE:X})")
+    ap.add_argument("--exports", default=None,
+                    help="comma-separated ELF symbol names to export via a "
+                         "PE export directory (COREDLL-style)")
+    ap.add_argument("--dll-name", default=DEFAULT_IMPORT_MODULE,
+                    help="module name recorded in the export directory "
+                         "(default COREDLL.DLL)")
+    ap.add_argument("--dll", action="store_true",
+                    help="set the IMAGE_FILE_DLL characteristic")
+    ap.add_argument("--import-module", default=None, metavar="MODULE",
+                    help="build a PE import directory for MODULE from the "
+                         "ELF's __imp_* symbols (e.g. COREDLL.DLL)")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
 
@@ -519,11 +806,31 @@ def main():
     base = int(args.base, 0)
     with open(args.input, "rb") as f:
         elf = Elf(f.read())
-    out, sites = emit_ntx(elf, base)
+
+    exports = None
+    if args.exports:
+        want = [n.strip() for n in args.exports.split(",") if n.strip()]
+        defined = {_unmangle(s.name): s.value for s in elf.symbols
+                   if s.shndx != SHN_UNDEF and s.shndx < SHN_LORESERVE}
+        missing = [n for n in want if n not in defined]
+        if missing:
+            ap.error(f"--exports: symbols not found in the ELF: {missing}")
+        exports = [(n, defined[n] - base) for n in want]
+
+    out, sites = emit_ntx(elf, base, exports=exports,
+                          dll_name=args.dll_name,
+                          import_module=args.import_module,
+                          image_is_dll=args.dll)
     with open(args.output, "wb") as f:
         f.write(out)
+    extra = ""
+    if exports:
+        extra += f", {len(exports)} export(s)"
+    if args.import_module:
+        extra += (f", {len(collect_import_slots(elf))} import(s) from "
+                  f"{args.import_module}")
     print(f"wrote {args.output}: {len(out)} bytes, "
-          f"{len(sites)} base-reloc site(s), base 0x{base:08X}")
+          f"{len(sites)} base-reloc site(s), base 0x{base:08X}{extra}")
 
 
 if __name__ == "__main__":

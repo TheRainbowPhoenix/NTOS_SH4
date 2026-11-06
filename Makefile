@@ -33,14 +33,26 @@ PYTHON := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/nul
 APP_ELF := $(OUTDIR)/NTOS.elf
 APP_HH3 := $(APP_ELF:.elf=.hh3)
 
-# --- .NTX payload (big-endian SH4 COFF EXE, machine 0x01A8) -----------------
+# --- .NTX payloads (big-endian SH4 COFF EXEs, machine 0x01A8) ---------------
+#   HELLO.NTX      self-contained hello (copy-load fallback or UTLB-mapped)
+#   COREDLL.NTX    stub COREDLL module, /FIXED at 0x00800000, PE exports
+#   HELLOCORE.NTX  EXE importing from COREDLL (exercises UTLB + import snap)
 PAYLOAD_DIR := payload
-PAYLOAD_NAME := HELLO
-PAYLOAD_LD := $(PAYLOAD_DIR)/payload.ld
-PAYLOAD_SRCS := $(wildcard $(PAYLOAD_DIR)/*.c)
-PAYLOAD_OBJ := $(BUILDDIR)/payload/hello.o
-PAYLOAD_ELF := $(BUILDDIR)/payload/hello.elf
-PAYLOAD_NTX := $(OUTDIR)/$(PAYLOAD_NAME).NTX
+PAYLOAD_CFLAGS := -ffreestanding -fno-builtin -fno-stack-protector \
+	-fno-unwind-tables -fno-asynchronous-unwind-tables \
+	-O2 -Wall -Wextra $(INCLUDES)
+
+HELLO_OBJ := $(BUILDDIR)/payload/hello.o
+HELLO_ELF := $(BUILDDIR)/payload/hello.elf
+HELLO_NTX := $(OUTDIR)/HELLO.NTX
+
+COREDLL_OBJ := $(BUILDDIR)/payload/coredll.o
+COREDLL_ELF := $(BUILDDIR)/payload/coredll.elf
+COREDLL_NTX := $(OUTDIR)/COREDLL.NTX
+
+HELLOCORE_OBJ := $(BUILDDIR)/payload/hello_core.o
+HELLOCORE_ELF := $(BUILDDIR)/payload/hello_core.elf
+HELLOCORE_NTX := $(OUTDIR)/HELLOCORE.NTX
 
 AS_SOURCES:=$(shell find $(SOURCEDIR) -name '*.S')
 CC_SOURCES:=$(shell find $(SOURCEDIR) -name '*.c')
@@ -55,7 +67,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(PAYLOAD_NTX) Makefile
+ntx: $(HELLO_NTX) $(COREDLL_NTX) $(HELLOCORE_NTX) Makefile
 
 all: elf hh3 ntx
 .DEFAULT_GOAL := all
@@ -68,22 +80,46 @@ clean:
 %.hh3: %.elf
 	$(STRIP) -o $@ $^
 
-# Payload: freestanding compile, static link at 0x00400000 with retained
-# relocations, then the ELF->COFF packer emits the BE NTX EXE.
-$(PAYLOAD_OBJ): $(PAYLOAD_SRCS)
+# Payloads: freestanding compile, static link at their preferred base with
+# retained relocations, then the ELF->COFF packer emits the BE NTX EXE.
+# HELLO.NTX / HELLOCORE.NTX at 0x00400000, COREDLL.NTX at 0x00800000.
+$(HELLO_OBJ): $(PAYLOAD_DIR)/hello.c payload/ntimport.h
 	@mkdir -p $(dir $@)
-	$(CC) -c $(PAYLOAD_DIR)/hello.c -o $@ \
-		-ffreestanding -fno-builtin -fno-stack-protector \
-		-fno-unwind-tables -fno-asynchronous-unwind-tables \
-		-O2 -Wall -Wextra $(INCLUDES)
+	$(CC) -c $(PAYLOAD_DIR)/hello.c -o $@ $(PAYLOAD_CFLAGS)
 
-$(PAYLOAD_ELF): $(PAYLOAD_OBJ) $(PAYLOAD_LD)
+$(HELLO_ELF): $(HELLO_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_LD) -o $@ $(PAYLOAD_OBJ)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(HELLO_OBJ)
 
-$(PAYLOAD_NTX): $(PAYLOAD_ELF) tools/elf2ntx.py
+$(HELLO_NTX): $(HELLO_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $(PAYLOAD_ELF) -o $@
+	$(PYTHON) tools/elf2ntx.py $(HELLO_ELF) -o $@
+
+$(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $(PAYLOAD_DIR)/coredll.c -o $@ $(PAYLOAD_CFLAGS)
+
+$(COREDLL_ELF): $(COREDLL_OBJ) $(PAYLOAD_DIR)/coredll.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/coredll.ld -o $@ $(COREDLL_OBJ)
+
+$(COREDLL_NTX): $(COREDLL_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x00800000 \
+		--exports coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free \
+		--dll-name COREDLL.DLL
+
+$(HELLOCORE_OBJ): $(PAYLOAD_DIR)/hello_core.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $(PAYLOAD_DIR)/hello_core.c -o $@ $(PAYLOAD_CFLAGS)
+
+$(HELLOCORE_ELF): $(HELLOCORE_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(HELLOCORE_OBJ)
+
+$(HELLOCORE_NTX): $(HELLOCORE_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(HELLOCORE_ELF) -o $@ --import-module COREDLL.DLL
 
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
