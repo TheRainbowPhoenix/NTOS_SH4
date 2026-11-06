@@ -108,11 +108,28 @@ static int load_coff(const uint8_t *file, uint32_t file_size,
         return -1;
     }
 
-    const bool has_obj_relocs = !(out_hdr->fh.flags & coff::F_RELFLG);
+    // F_RELFLG clear only means "not marked stripped"; it does NOT
+    // prove that the file has a usable COFF relocation table.
+    bool has_obj_relocs = false;
+    if (!(out_hdr->fh.flags & coff::F_RELFLG) &&
+        out_hdr->fh.symtab_offset <= file_size &&
+        out_hdr->fh.nsymbols != 0 &&
+        out_hdr->fh.nsymbols <=
+            (file_size - out_hdr->fh.symtab_offset) / 18u) {
+        for (uint32_t i = 0; i < out_hdr->section_count; i++) {
+            const coff::SectionHeader &s = out_hdr->sections[i];
+            if (s.nrelocs != 0 &&
+                s.reloc_offset <= file_size &&
+                s.nrelocs <= (file_size - s.reloc_offset) / 10u) {
+                has_obj_relocs = true;
+                break;
+            }
+        }
+    }
     const bool has_base_relocs = out_hdr->oh.basereloc_rva != 0 &&
-                                 out_hdr->oh.basereloc_size != 0;
+                                 out_hdr->oh.basereloc_size >= 8;
     if (!has_obj_relocs && !has_base_relocs) {
-        *err = "image has no relocations (link without stripping them)";
+        *err = "no usable relocations: link with --emit-relocs and pack .reloc";
         return -3;
     }
 
