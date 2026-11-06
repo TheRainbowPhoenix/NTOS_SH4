@@ -26,7 +26,7 @@ jobs:
       with:
         submodules: true
     - name: Install python3 (for tools/elf2ntx.py)
-      run: apt-get update -qq && apt-get install -y -qq python3
+      run: apt-get update -qq && apt-get install -y -qq python3 g++
     - run: make -j
     - name: Validate the real built HELLO.NTX base relocations
       run: python3 tools/check_ntx.py dist/HELLO.NTX
