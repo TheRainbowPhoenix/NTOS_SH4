@@ -21,6 +21,8 @@
 #include <sdk/os/mem.h>
 
 #include "coff.hpp"
+#include "ce_pe.hpp"
+#include "ce_world.hpp"
 
 APP_NAME("NTOS")
 APP_DESCRIPTION("Big-endian SH4 COFF EXE loader")
@@ -278,6 +280,82 @@ static int load_coff(const uint8_t *file, uint32_t file_size,
 }
 
 // ---------------------------------------------------------------------------
+// Windows CE PE32 staging path (POC; deliberately NO unsafe MMU writes)
+// ---------------------------------------------------------------------------
+// These exports are minimal stand-ins, not a full Windows CE COREDLL.
+static uint32_t ce_last_error=0;
+static void ce_debug_string(const char *s) { if(s) ntos_puts(s); }
+static uint32_t ce_get_last_error() { return ce_last_error; }
+static void ce_set_last_error(uint32_t value) { ce_last_error=value; }
+static uint32_t ce_get_tick_count() { return 0; }
+
+static uint32_t ce_resolve_stub(const char *dll,const char *name,
+                                uint16_t ordinal,void *) {
+    if (!cepe::eq(dll,"coredll.dll") || !name || ordinal) return 0;
+    if (cepe::eq(name,"OutputDebugStringA"))
+        return reinterpret_cast<uint32_t>(&ce_debug_string);
+    if (cepe::eq(name,"GetLastError"))
+        return reinterpret_cast<uint32_t>(&ce_get_last_error);
+    if (cepe::eq(name,"SetLastError"))
+        return reinterpret_cast<uint32_t>(&ce_set_last_error);
+    if (cepe::eq(name,"GetTickCount"))
+        return reinterpret_cast<uint32_t>(&ce_get_tick_count);
+    return 0; // Fail on unsupported WinCE APIs instead of calling nonsense.
+}
+
+static int inspect_ce_pe(const uint8_t *file,uint32_t size) {
+    cepe::Image hdr{};
+    cepe::Status rc=cepe::parse(file,size,&hdr);
+    if (rc!=cepe::OK) {
+        ntos_puts(cepe::error(rc));
+        return -1;
+    }
+    Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+        "PE machine %04X base %08lX",
+        hdr.machine,static_cast<unsigned long>(hdr.preferred));
+    LCD_Refresh();
+    // Uploaded WinCE binaries are SH3 LE. A BE SH4 CPU cannot execute
+    // them by changing the machine field or swapping PE metadata.
+    if (hdr.machine!=cepe::SH4BE_CUSTOM || hdr.little) {
+        ntos_puts("SH3/LE PE: inspect only; requires SH4BE translation");
+        return -1;
+    }
+    // Stage into physical HH3 heap for inspection, zero-fill and imports.
+    // Passing preferred VA to map() simulates *future* MMU placement.
+    // Do NOT execute this pointer: actual heap VA differs from WinCE VA!
+    auto *allocation=static_cast<uint8_t *>(Mem_Malloc(hdr.size+4095u));
+    if (!allocation) {ntos_puts("PE stage: OOM");return -1;}
+    uintptr_t aligned=(reinterpret_cast<uintptr_t>(allocation)+4095u)&~4095u;
+    auto *image=reinterpret_cast<uint8_t *>(aligned);
+    ceworld::Mapping proposed{};
+    if(!ceworld::plan_image(hdr,static_cast<uint32_t>(aligned),&proposed)) {
+        ntos_puts("PE address planning failed");
+        Mem_Free(allocation);return -1;
+    }
+    rc=cepe::map(file,size,hdr,image,hdr.size,hdr.preferred);
+    if (rc!=cepe::OK) {
+        ntos_puts(cepe::error(rc));
+        Mem_Free(allocation);return -1;
+    }
+    rc=cepe::imports(image,hdr,&ce_resolve_stub,nullptr);
+    if (rc!=cepe::OK) {
+        ntos_puts(cepe::error(rc));
+        ntos_puts("PE sections staged; unresolved import");
+    } else {
+        ntos_puts("PE sections + COREDLL stubs staged");
+    }
+    Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+        "VA %08lX -> heap %08lX (%lu bytes)",
+        static_cast<unsigned long>(proposed.guest_va),
+        static_cast<unsigned long>(proposed.physical),
+        static_cast<unsigned long>(proposed.length));
+    LCD_Refresh();
+    ntos_puts("POC: MMU mapping not installed; entry NOT executed");
+    Mem_Free(allocation);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
 // UI
 // ---------------------------------------------------------------------------
 constexpr int kMaxFiles = 12;
@@ -442,7 +520,16 @@ int main(int argc, char **argv, char **envp) {
     }
     File_Close(fd);
 
-    // Load it.
+    // Standard WinCE PE32 (MZ+PE) uses fixed image bases and DLL imports;
+    // it is NOT the legacy raw BE COFF .NTX format.
+    if (fsize >= 2 && file[0] == 'M' && file[1] == 'Z') {
+        int status=inspect_ce_pe(file,fsize);
+        Mem_Free(file);
+        Debug_WaitKey();
+        return status;
+    }
+
+    // Load legacy raw BE COFF .NTX (existing execution path).
     coff::Image hdr{};
     LoadedSection sections[8] = {};
     uint8_t *image = nullptr;
