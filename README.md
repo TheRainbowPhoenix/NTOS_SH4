@@ -27,6 +27,34 @@ Copy both `dist/NTOS.hh3` and `dist/HELLO.NTX` to the root of the calculator
 (USB storage mode), run NTOS from the Hollyhock launcher, and select
 `HELLO.NTX`.
 
+## Troubleshooting: "image has no relocations"
+
+The loader **version on the calculator matters**: the old `main` build
+(`NTOS 0.1`) reads raw COFF/PE32 headers at the wrong offsets and
+incorrectly reports missing relocations for valid `.NTX` payloads.
+Use the corrected `NTOS 0.2 - COFF/reloc fix` build from
+[PR #2](https://github.com/TheRainbowPhoenix/NTOS_SH4/pull/2), or merge
+that PR and rebuild. Replace **both** `NTOS.hh3` and `HELLO.NTX` in
+`\\fls0\\`; remove older copies to avoid launching the wrong version.
+
+```sh
+make clean && make -j
+python3 tools/check_ntx.py dist/HELLO.NTX
+```
+
+The checker prints the preferred base, actual PE32 relocation-directory RVA,
+and number of `HIGHLOW` sites. The repository's build should report two
+fixups for the current `HELLO.NTX`. If the calculator still displays
+**exactly** `image has no relocations (link without stripping them)`,
+you are running the **old** loader: the fixed loader emits a distinct
+`NTOS 0.2:` error and shows version 0.2 in its title.
+
+If the new loader reports no relocations for a **different** `.NTX`,
+inspect that exact file with `check_ntx.py`. A linked image without a PE
+`.reloc` directory cannot be relocated by the heap-copy loader; for the
+GCC path retain `--emit-relocs` and pack with `elf2ntx.py`. For the MSVC
+path retain base relocations (do not use `/FIXED`).
+
 ## Building your own .NTX payloads
 
 The repo builds a payload with the *same GCC toolchain as the launcher* — no
