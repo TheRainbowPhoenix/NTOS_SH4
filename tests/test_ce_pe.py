@@ -14,5 +14,9 @@ with tempfile.TemporaryDirectory() as temp:
         subprocess.run([sys.executable,str(root/"tools/make_ce_poc.py"),
                         str(image),endian],check=True)
         subprocess.run([str(exe),str(image),"imports"],check=True)
-    for path in sys.argv[1:]:
-        subprocess.run([str(exe),path],check=True)
+    args=sys.argv[1:]
+    if len(args)>=2 and args[0]=="--live":
+        subprocess.run([str(exe),args[1],"live"],check=True)
+    else:
+        for path in args:
+            subprocess.run([str(exe),path],check=True)
