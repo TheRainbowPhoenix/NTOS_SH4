@@ -3,6 +3,16 @@
  * Flat RGB565 colors, bitmap font, integer coordinates, no FPU.
  * Toggle controls are local demo state; no hardware settings are changed. */
 #include "wince_ui.h"
+/* Distinct PE import module: XAMLUI.DLL. Keep these NT_DEFINE slots after
+ * the COREDLL slots from wince_ui.h (one contiguous IAT per module). */
+NT_IMPORT(void,xamlui_tile,(void *,int,int,int,int,DWORD))
+NT_IMPORT(void,xamlui_label,(void *,int,int,const WCHAR16 *,DWORD))
+NT_IMPORT(void,xamlui_switch,(void *,int,int,int,DWORD))
+NT_DEFINE(xamlui_tile)
+NT_DEFINE(xamlui_label)
+NT_DEFINE(xamlui_switch)
+static const WCHAR16 metro_brand[]={'N','T','O','S',' ','S','e','t','t','i','n','g','s',0};
+
 static const WCHAR16 cls[]={'M','E','T','R','O','W','I','N',0};
 static const WCHAR16 title[]={'N','T','O','S',' ','S','e','t','t','i','n','g','s',0};
 static int page=0,accent=0;
@@ -11,30 +21,30 @@ static const DWORD accents[3]={RGB(0,120,215),RGB(0,169,157),RGB(134,67,179)};
 static DWORD ink(void) { return accents[accent]; }
 static void toggle(void *dc,int x,int y,int on)
 {
-    ui_fill(dc,x,y,x+68,y+29,on?ink():RGB(105,105,110));
-    if (on) ui_fill(dc,x+40,y+3,x+65,y+26,RGB(255,255,255));
-    else ui_fill(dc,x+3,y+3,x+28,y+26,RGB(255,255,255));
+    /* DLL-to-DLL call path: METROWIN -> XAMLUI -> COREDLL -> NTOS */
+    NT_CALL(xamlui_switch,(dc,x,y,on,ink()));
 }
 static void row(void *dc,int y,const char *head,const char *desc,int on)
 {
-    ui_fill(dc,16,y,304,y+76,RGB(38,38,43));
+    ui_fill(dc,16,y,304,y+76,RGB(232,237,242));
     ui_fill(dc,16,y,20,y+76,ink());
     ui_text(dc,34,y+13,head,RGB(255,255,255),0);
-    ui_text(dc,34,y+35,desc,RGB(178,181,190),0);
+    ui_text(dc,34,y+35,desc,RGB(91,98,109),0);
     toggle(dc,218,y+17,on);
 }
 static void draw(void *dc)
 {
-    const DWORD white=RGB(245,245,248),muted=RGB(157,160,171);
-    ui_fill(dc,0,0,320,528,RGB(19,19,22));
-    ui_fill(dc,0,0,320,37,RGB(10,10,13));
-    ui_text(dc,14,13,"NTOS  /  WINDOWS CE",muted,0);
+    const DWORD white=RGB(26,29,35),muted=RGB(91,98,109);
+    /* XAMLUI itself imports COREDLL FillRect and TextOutW. */
+    NT_CALL(xamlui_tile,(dc,0,0,320,528,RGB(251,251,253)));
+    NT_CALL(xamlui_tile,(dc,0,0,320,37,RGB(0,120,215)));
+    NT_CALL(xamlui_label,(dc,14,11,metro_brand,RGB(255,255,255)));
     ui_text(dc,286,13,"[+]",ink(),0);
     ui_fill(dc,15,49,20,93,ink());
     ui_text(dc,31,55,"settings",white,1);
     ui_text(dc,31,81,"PERSONALIZATION  /  DEMO",muted,0);
-    ui_fill(dc,16,112,304,148,RGB(39,39,44));
-    ui_text(dc,31,125,"Search settings",RGB(132,135,144),0);
+    ui_fill(dc,16,112,304,148,RGB(232,237,242));
+    ui_text(dc,31,125,"Search settings",RGB(113,121,132),0);
     for(int i=0;i<3;++i) {
         int x=16+i*101;
         if (page==i) ui_fill(dc,x,180,x+95,183,ink());
@@ -48,7 +58,7 @@ static void draw(void *dc)
         ui_text(dc,24,421,"Touch / keypad enabled",muted,0);
     } else if(page==1) {
         ui_text(dc,17,207,"Look and feel",white,1);
-        ui_fill(dc,16,243,304,345,RGB(38,38,43));
+        ui_fill(dc,16,243,304,345,RGB(232,237,242));
         ui_text(dc,28,258,"Accent color",white,0);
         for(int i=0;i<3;++i) {
             int x=28+i*92;
@@ -66,9 +76,9 @@ static void draw(void *dc)
         ui_text(dc,29,376,"GDI + WNDPROC + input",muted,0);
         ui_text(dc,29,398,"Integer math only",muted,0);
     }
-    ui_fill(dc,0,474,320,527,RGB(12,12,15));
+    ui_fill(dc,0,474,320,527,RGB(241,244,248));
     ui_fill(dc,page*106,473,page*106+106,476,ink());
-    ui_text(dc,17,488,"<  LEFT / RIGHT: categories",white,0);
+    ui_text(dc,17,488,"<  LEFT / RIGHT: categories",RGB(28,30,36),0);
     ui_text(dc,17,508,"DEMO SETTINGS - NOT PERSISTED",muted,0);
 }
 static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp)
