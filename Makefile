@@ -143,7 +143,7 @@ $(XAMLUI_ELF): $(XAMLUI_OBJ) $(PAYLOAD_DIR)/xamlui.ld
 
 $(XAMLUI_DLL): $(XAMLUI_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $(XAMLUI_ELF) -o $@ --base 0x00C00000 --dll --dll-name XAMLUI.DLL --import-module COREDLL.DLL --exports xamlui_tile,xamlui_label,xamlui_switch
+	$(PYTHON) tools/elf2ntx.py $(XAMLUI_ELF) -o $@ --base 0x00C00000 --dll --dll-name XAMLUI.DLL --import-module COREDLL.DLL --exports xamlui_tile,xamlui_label,xamlui_switch,xamlui_text,xamlui_shell,xamlui_pivot,xamlui_row,xamlui_checkbox,xamlui_progress,xamlui_actionbar,xamlui_dialog,xamlui_menu
 
 $(HELLOCORE_OBJ): $(PAYLOAD_DIR)/hello_core.c $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
