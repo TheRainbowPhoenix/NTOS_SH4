@@ -361,7 +361,7 @@ def build_import_section(slots, module_name, sec_rva):
                          f"(got {[hex(r) for r in slot_rvas]}); define all "
                          "NT_DEFINEs together in one translation unit")
 
-    buf = bytearray(20 * (n + 1))  # descriptors + terminator
+    buf = bytearray(20 * 2)  # one module descriptor + terminator
     off = 20 * (n + 1)
     hn_offs = []
     for _, fname in slots:
@@ -378,14 +378,14 @@ def build_import_section(slots, module_name, sec_rva):
     buf += module_name.encode("ascii") + b"\x00"
     off += len(module_name) + 1
 
-    for i in range(n):  # IMAGE_IMPORT_DESCRIPTORs
-        d = i * 20
-        struct.pack_into("<I", buf, d + 0, sec_rva + hnt_off)  # OriginalFT
-        struct.pack_into("<I", buf, d + 4, 0)                  # TimeDateStamp
-        struct.pack_into("<I", buf, d + 8, 0)                  # ForwarderChain
-        struct.pack_into("<I", buf, d + 12, sec_rva + name_off)  # Name
-        struct.pack_into("<I", buf, d + 16, slot_rvas[0])      # FirstThunk
-    # terminator descriptor (all zero) already present
+    # One descriptor per imported DLL, not one per thunk.  Previously we
+    # repeated the same descriptor n times, re-snapping the same IAT n*n times.
+    struct.pack_into("<I", buf, 0, sec_rva + hnt_off)  # OriginalFT
+    struct.pack_into("<I", buf, 4, 0)                  # TimeDateStamp
+    struct.pack_into("<I", buf, 8, 0)                  # ForwarderChain
+    struct.pack_into("<I", buf, 12, sec_rva + name_off) # Name
+    struct.pack_into("<I", buf, 16, slot_rvas[0])       # FirstThunk
+    # second IMAGE_IMPORT_DESCRIPTOR is the all-zero terminator
     return bytes(buf)
 
 
