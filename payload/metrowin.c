@@ -34,7 +34,7 @@ NT_DEFINE(xamlui_menu)
 #define PANEL C(31,31,31)
 static const WCHAR16 cls[]={'M','E','T','R','O','W','I','N',0};
 static const WCHAR16 title[]={'X','A','M','L','U','I',' ','D','e','m','o',0};
-static int screen=0,tab=0,menu_open=0,dialog_open=0,checked=2;
+static int screen=0,tab=0,menu_open=0,dialog_open=0,checked=4;
 static int percentages[5]={99,57,15,11,8};
 static const char *names[]={"This Device","Clear browsing data",
                             "MY MUSIC","Offline maps","Music folder"};
@@ -163,10 +163,8 @@ static void draw(void *dc) {
 }
 static void redraw(void *hwnd) {NT_CALL(InvalidateRect,(hwnd,0,1));}
 static void select_menu(int y) {
-    if(y<118)screen=0;
-    else if(y<176)screen=1;
-    else if(y<230)screen=2;
-    else if(y<300)screen=3;
+    int idx=(y-65)/66;
+    if(idx>=0 && idx<5)screen=idx;
     menu_open=0;tab=0;
 }
 static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp) {
@@ -187,7 +185,7 @@ static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp) {
         if(dialog_open) {
             if(y>260 && y<310)dialog_open=0;
         } else if(menu_open) {
-            if(x<225 && y>=50 && y<322)select_menu(y);
+            if(x<239 && y>=65 && y<395)select_menu(y);
             else menu_open=0;
         } else if(y<50) {
             if(x<54)menu_open=1;
