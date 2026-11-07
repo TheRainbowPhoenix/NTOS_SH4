@@ -196,26 +196,26 @@ static u32 rgb565(u32 colorref)
     return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
 }
 
-void coredll_clear(u32 colorref)
+static void ntos_clear(u32 colorref)
 {
     const void **a = ntapi();
     if (a && a[6]) ((void (*)(u32))a[6])(rgb565(colorref));
 }
 
-void coredll_pixel(u32 x, u32 y, u32 colorref)
+static void ntos_pixel(u32 x, u32 y, u32 colorref)
 {
     const void **a = ntapi();
     if (a && a[7]) ((void (*)(u32,u32,u32))a[7])(x,y,rgb565(colorref));
 }
 
-void coredll_line(u32 x1, u32 y1, u32 x2, u32 y2, u32 colorref)
+static void ntos_line(u32 x1, u32 y1, u32 x2, u32 y2, u32 colorref)
 {
     const void **a = ntapi();
     if (a && a[8]) ((void (*)(u32,u32,u32,u32,u32))a[8])
         (x1,y1,x2,y2,rgb565(colorref));
 }
 
-void coredll_fillrect(u32 l, u32 t, u32 r, u32 b, u32 colorref)
+static void ntos_fillrect(u32 l, u32 t, u32 r, u32 b, u32 colorref)
 {
     const void **a = ntapi();
     if (a && a[9]) ((void (*)(u32,u32,u32,u32,u32))a[9])
@@ -223,11 +223,44 @@ void coredll_fillrect(u32 l, u32 t, u32 r, u32 b, u32 colorref)
 }
 
 /* Blocking. Returns 1 on touch and 2 on CLEAR, with touch coordinates. */
-u32 coredll_touch(u32 *x, u32 *y)
+static u32 ntos_touch(u32 *x, u32 *y)
 {
     const void **a = ntapi();
     if (a && a[10]) return ((u32 (*)(u32 *,u32 *))a[10])(x,y);
     return 2;
+}
+
+/* WinCE MSG layout (32-bit SH4 ABI). Touch arrives as WM_LBUTTONDOWN;
+ * CLEAR produces WM_QUIT. This is a minimal message-pump adapter, not
+ * a complete WinCE desktop or window manager. */
+typedef struct {
+    void *hwnd;
+    u32 message;
+    u32 wParam;
+    u32 lParam;
+    u32 time;
+    NT_POINT pt;
+} NT_MSG;
+int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
+{
+    u32 x=0, y=0, ev;
+    (void)min_filter;
+    (void)max_filter;
+    if (!msg) return -1;
+    do { ev = ntos_touch(&x, &y); } while (!ev);
+    msg->hwnd = hwnd;
+    msg->wParam = 0;
+    msg->time = 0;
+    msg->pt.x = (int)x;
+    msg->pt.y = (int)y;
+    if (ev == 2) {
+        msg->message = 0x0012u; /* WM_QUIT */
+        msg->lParam = 0;
+        return 0;
+    }
+    msg->message = 0x0201u; /* WM_LBUTTONDOWN / stylus down */
+    msg->lParam = ((y & 0xFFFFu) << 16) | (x & 0xFFFFu);
+    return 1;
 }
 
 void *GetDC(void *hwnd)
@@ -265,7 +298,7 @@ int EndPaint(void *hwnd, const NT_PAINT *paint)
 u32 SetPixel(void *hdc, int x, int y, u32 colorref)
 {
     if (hdc && x >= 0 && y >= 0)
-        coredll_pixel((u32)x, (u32)y, colorref);
+        ntos_pixel((u32)x, (u32)y, colorref);
     return colorref;
 }
 
@@ -308,7 +341,7 @@ int LineTo(void *hdc, int x, int y)
 {
     if (!hdc) return 0;
     if (pen_x >= 0 && pen_y >= 0 && x >= 0 && y >= 0)
-        coredll_line((u32)pen_x, (u32)pen_y, (u32)x, (u32)y, 0x00FFFFFFu);
+        ntos_line((u32)pen_x, (u32)pen_y, (u32)x, (u32)y, 0x00FFFFFFu);
     pen_x = x; pen_y = y;
     return 1;
 }
@@ -316,10 +349,10 @@ int LineTo(void *hdc, int x, int y)
 int Rectangle(void *hdc, int l, int t, int r, int b)
 {
     if (!hdc || l < 0 || t < 0 || r <= l || b <= t) return 0;
-    coredll_line((u32)l,(u32)t,(u32)(r-1),(u32)t,0xFFFFFFu);
-    coredll_line((u32)(r-1),(u32)t,(u32)(r-1),(u32)(b-1),0xFFFFFFu);
-    coredll_line((u32)(r-1),(u32)(b-1),(u32)l,(u32)(b-1),0xFFFFFFu);
-    coredll_line((u32)l,(u32)(b-1),(u32)l,(u32)t,0xFFFFFFu);
+    ntos_line((u32)l,(u32)t,(u32)(r-1),(u32)t,0xFFFFFFu);
+    ntos_line((u32)(r-1),(u32)t,(u32)(r-1),(u32)(b-1),0xFFFFFFu);
+    ntos_line((u32)(r-1),(u32)(b-1),(u32)l,(u32)(b-1),0xFFFFFFu);
+    ntos_line((u32)l,(u32)(b-1),(u32)l,(u32)t,0xFFFFFFu);
     return 1;
 }
 
