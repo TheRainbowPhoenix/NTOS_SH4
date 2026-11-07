@@ -181,14 +181,18 @@ void xamlui_dialog(void *dc,const u16 *title,const u16 *message) {
     xamlui_text(dc,200,274,no,WHITE,0);
 }
 void xamlui_menu(void *dc) {
-    static const u16 a[]={'S','e','t','t','i','n','g','s',0};
-    static const u16 b[]={'S','t','o','r','a','g','e',0};
-    static const u16 c[]={'M','u','s','i','c',0};
+    static const u16 a[]={'S','t','o','r','a','g','e',' ','u','s','a','g','e',0};
+    static const u16 b[]={'C','l','e','a','r',' ','b','r','o','w','s','i','n','g',0};
+    static const u16 c[]={'M','y',' ','m','u','s','i','c',0};
     static const u16 d[]={'O','f','f','l','i','n','e',' ','m','a','p','s',0};
-    xamlui_tile(dc,0,50,223,448,PANEL);
-    xamlui_text(dc,20,78,a,WHITE,0);
-    xamlui_text(dc,20,135,b,WHITE,0);
-    xamlui_text(dc,20,192,c,WHITE,0);
-    xamlui_text(dc,20,249,d,WHITE,0);
+    static const u16 e[]={'F','i','l','e',' ','b','r','o','w','s','e','r',0};
+    static const u16 *items[5]={a,b,c,d,e};
+    xamlui_tile(dc,0,50,239,448,PANEL);
+    for(int i=0;i<5;++i) {
+        int y=65+i*66;
+        xamlui_text(dc,21,y+11,items[i],WHITE,0);
+        xamlui_tile(dc,14,y+56,223,y+57,RGB(64,64,64));
+    }
 }
+
 int main(void) { return 0; }
