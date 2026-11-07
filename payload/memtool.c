@@ -67,47 +67,34 @@ static void puthex(const char *label, u32 v)
     NT_CALL(NKDbgPrintfW, (buf));
 }
 
+/* Safe diagnostic path: no P4 control-register reads and no large heap
+ * allocation search while NTOS is running with its UTLB mappings enabled.
+ * Those operations can reset the calculator before any status is printed.
+ * Restore them individually only after the basic import/return path works. */
 int main(void)
 {
-    MEMSTATUS ms;
     u32 prev_kmode, prev_perms;
-    void *chunks[32];
-    int nchunks;
+    void *p;
 
-    NT_CALL(NKDbgPrintfW, ("=== MEMTOOL: kernel memory usage ==="));
+    NT_CALL(NKDbgPrintfW, ("MEMTOOL: start"));
 
-    /* ask for kernel mode + full permissions, like the original */
     prev_kmode = NT_CALL(SetKMode, (1));
-    prev_perms = NT_CALL(SetProcPermissions, (0xFFFFFFFFu));
     puthex("KModePrev=", prev_kmode);
+    prev_perms = NT_CALL(SetProcPermissions, (0xFFFFFFFFu));
     puthex("ProcPermsPrev=", prev_perms);
 
-    /* privileged register peek: MMU + cache control */
-    puthex("MMUCR=", rd32(REG_MMUCR));
-    puthex("PTEH=", rd32(REG_PTEH));
-    puthex("PTEL=", rd32(REG_PTEL));
-    puthex("CCR=", rd32(REG_CCR));
-
-    /* system memory picture (GlobalMemoryStatus probes the heap) */
-    ms.dwLength = sizeof(ms);
-    NT_CALL(GlobalMemoryStatus, (&ms));
-    puthex("TotalPhys=", ms.dwTotalPhys);
-    puthex("AvailPhys=", ms.dwAvailPhys);
-    puthex("MemLoad=", ms.dwMemLoad);
-
-    /* allocation soak: 32 KiB chunks through LocalAlloc/LocalFree */
-    nchunks = 0;
-    while (nchunks < 32) {
-        void *p = NT_CALL(LocalAlloc, (0, 32u * 1024u));
-        if (p == 0)
-            break;
-        chunks[nchunks++] = p;
+    /* Small, bounded allocator smoke test rather than the old 12 MiB
+     * GlobalMemoryStatus binary search and 1 MiB soak. */
+    NT_CALL(NKDbgPrintfW, ("Heap: testing 4 KiB"));
+    p = NT_CALL(LocalAlloc, (0, 4096u));
+    if (p != 0) {
+        NT_CALL(NKDbgPrintfW, ("Heap allocation OK"));
+        NT_CALL(LocalFree, (p));
+        NT_CALL(NKDbgPrintfW, ("Heap free OK"));
+    } else {
+        NT_CALL(NKDbgPrintfW, ("Heap allocation failed"));
     }
-    puthex("Alloc32K=", (u32)nchunks);
-    while (nchunks > 0)
-        NT_CALL(LocalFree, (chunks[--nchunks]));
-    NT_CALL(NKDbgPrintfW, ("soak: all blocks freed"));
 
-    NT_CALL(NKDbgPrintfW, ("=== MEMTOOL done ==="));
+    NT_CALL(NKDbgPrintfW, ("MEMTOOL: done"));
     return 0;
 }
