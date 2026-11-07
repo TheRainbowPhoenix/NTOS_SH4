@@ -60,12 +60,12 @@ for name in nativebase nativelayer nativeclient; do
         "/tmp/ntos-native/$name.elf.o" \
         "/tmp/ntos-native/$name.pe.o"
 done
-"$LD" -m shbepe -shared --image-base 0x00800000 -e _main \
+"$LD" -m shbepe --dll --image-base 0x00800000 -e _main \
     --subsystem 9 --export-all-symbols \
     --out-implib /tmp/ntos-native/libnativebase.a \
     -o /tmp/ntos-native/nativebase.dll \
     /tmp/ntos-native/nativebase.pe.o
-"$LD" -m shbepe -shared --image-base 0x00C00000 -e _main \
+"$LD" -m shbepe --dll --image-base 0x00C00000 -e _main \
     --subsystem 9 --export-all-symbols \
     --out-implib /tmp/ntos-native/libnativelayer.a \
     -o /tmp/ntos-native/nativelayer.dll \
