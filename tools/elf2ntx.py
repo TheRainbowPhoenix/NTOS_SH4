@@ -342,55 +342,44 @@ def collect_import_slots(elf):
     return slots
 
 
-def build_import_section(slots, module_name, sec_rva):
-    """slots: [(slot_rva, func_name)] sorted by slot (contiguous IAT in the
-    payload's .idata). Returns the .imports section bytes (little-endian
-    IMAGE_IMPORT_DESCRIPTORs + hint/name records + HNT, per the PE spec).
+def build_import_section(groups, sec_rva):
+    """Build one valid IMAGE_IMPORT_DESCRIPTOR per DLL, plus terminator.
 
-    The descriptor's FirstThunk points at the payload's real .idata slot
-    array (slot_rva[0]); NTOS walks the HNT array and writes the resolved
-    export VAs into the .idata slots -- big-endian, since the SH4 BE payload
-    reads them with plain word loads."""
-    n = len(slots)
-    if n == 0:
-        raise SystemExit("error: --import-module given but no __imp_* "
-                         "symbols found in the ELF")
-    slot_rvas = [r for r, _ in slots]
-    if slot_rvas != [slot_rvas[0] + 4 * i for i in range(n)]:
-        raise SystemExit("error: __imp_* slots are not contiguous/ordered "
-                         f"(got {[hex(r) for r in slot_rvas]}); define all "
-                         "NT_DEFINEs together in one translation unit")
-
-    buf = bytearray(20 * 2)  # one module descriptor + terminator
-    off = len(buf)  # offsets must match the actual two-descriptor buffer
-    hn_offs = []
-    for _, fname in slots:
-        hn_offs.append(off)
-        buf += le16(0) + fname.encode("ascii") + b"\x00"  # hint + name
-        off += 2 + len(fname) + 1
-        if off % 2 != 0:
-            buf += b"\x00"
-            off += 1
-    hnt_off = off
-    buf += b"".join(le32(sec_rva + h) for h in hn_offs) + le32(0)
-    off += 4 * n + 4
-    name_off = off
-    buf += module_name.encode("ascii") + b"\x00"
-    off += len(module_name) + 1
-
-    # One descriptor per imported DLL, not one per thunk.  Previously we
-    # repeated the same descriptor n times, re-snapping the same IAT n*n times.
-    struct.pack_into("<I", buf, 0, sec_rva + hnt_off)  # OriginalFT
-    struct.pack_into("<I", buf, 4, 0)                  # TimeDateStamp
-    struct.pack_into("<I", buf, 8, 0)                  # ForwarderChain
-    struct.pack_into("<I", buf, 12, sec_rva + name_off) # Name
-    struct.pack_into("<I", buf, 16, slot_rvas[0])       # FirstThunk
-    # second IMAGE_IMPORT_DESCRIPTOR is the all-zero terminator
+    groups: [(module_name, [(slot_rva, import_name), ...]), ...].
+    Each module's real .idata IAT slots must be contiguous in memory.
+    OriginalFirstThunk points to a separate name RVA array in .imports;
+    FirstThunk points to the writable, big-endian SH4 IAT in .idata.
+    """
+    if not groups:
+        raise SystemExit("error: no imported symbols")
+    buf = bytearray(20 * (len(groups) + 1))
+    for di, (module, slots) in enumerate(groups):
+        rvas = [r for r, _ in slots]
+        if not slots or rvas != [rvas[0] + i * 4 for i in range(len(rvas))]:
+            raise SystemExit(
+                f"error: noncontiguous IAT slots for {module}: "
+                f"{[hex(r) for r in rvas]} (keep NT_DEFINE calls grouped)")
+        hn = []
+        for _, name in slots:
+            hn.append(len(buf))
+            buf += le16(0) + name.encode("ascii") + b"\\x00"
+            if len(buf) & 1:
+                buf += b"\\x00"
+        oft = len(buf)
+        for offset in hn:
+            buf += le32(sec_rva + offset)
+        buf += le32(0)
+        name_offset = len(buf)
+        buf += module.encode("ascii") + b"\\x00"
+        struct.pack_into("<IIIII", buf, di * 20,
+                         sec_rva + oft, 0, 0,
+                         sec_rva + name_offset, rvas[0])
     return bytes(buf)
 
 
+
 def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
-             image_is_dll=False):
+             image_is_dll=False, extra_imports=()):
     if elf.e_type != 2:
         raise SystemExit("error: input is not ET_EXEC (link with a linker "
                          "script / -Ttext so addresses are final)")
@@ -457,7 +446,20 @@ def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
 
     if import_module:
         slots = [(r - base, n) for r, n in collect_import_slots(elf)]
-        imp_data = build_import_section(slots, import_module, extra_rva)
+        groups = [(import_module, [])]
+        for prefix, module in extra_imports:
+            groups.append((module, []))
+        for rva, name in slots:
+            matches = [(i, prefix) for i, (prefix, _) in enumerate(extra_imports)
+                       if name.startswith(prefix)]
+            if len(matches) > 1:
+                raise SystemExit(f"error: multiple module-prefix matches for {name}")
+            index = matches[0][0] + 1 if matches else 0
+            groups[index][1].append((rva, name))
+        groups = [(module, funcs) for module, funcs in groups if funcs]
+        if not groups:
+            raise SystemExit("error: import-module but no __imp_ symbols")
+        imp_data = build_import_section(groups, extra_rva)
         coff_secs.append({
             "name": ".imports",
             "rva": extra_rva,
@@ -824,6 +826,10 @@ def main():
     ap.add_argument("--import-module", default=None, metavar="MODULE",
                     help="build a PE import directory for MODULE from the "
                          "ELF's __imp_* symbols (e.g. COREDLL.DLL)")
+    ap.add_argument("--extra-import-prefix", action="append", default=[],
+                    metavar="PREFIX:MODULE",
+                    help="route __imp_ names beginning with PREFIX to MODULE; "
+                         "can be repeated for multiple import DLLs")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
 
@@ -837,6 +843,17 @@ def main():
     base = int(args.base, 0)
     with open(args.input, "rb") as f:
         elf = Elf(f.read())
+
+    extra_imports = []
+    for spec in args.extra_import_prefix:
+        if ":" not in spec:
+            ap.error("--extra-import-prefix expects PREFIX:MODULE")
+        prefix, module = spec.split(":", 1)
+        if not prefix or not module or len(module) > 24:
+            ap.error("invalid --extra-import-prefix " + spec)
+        extra_imports.append((prefix, module))
+    if extra_imports and not args.import_module:
+        ap.error("extra imports require --import-module")
 
     exports = []
     if args.exports:
@@ -880,7 +897,8 @@ def main():
     out, sites = emit_ntx(elf, base, exports=exports,
                           dll_name=args.dll_name,
                           import_module=args.import_module,
-                          image_is_dll=args.dll)
+                          image_is_dll=args.dll,
+                          extra_imports=extra_imports)
     with open(args.output, "wb") as f:
         f.write(out)
     extra = ""
