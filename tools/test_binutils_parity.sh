@@ -16,7 +16,11 @@ for name in coredll xamlui metrowin guiwin memtool; do
         memtool) image=MEMTOOL.EXE ;;
     esac
     elf="obj/payload/$name.elf"
-    "$OBJCOPY" -O coff-sh "$elf" "$TMP_DIR/$name.coff"
+    # A fully linked ELF may retain SH R_SH_DIR32 records solely because
+    # --emit-relocs is needed by the PE compatibility shim. Strip that
+    # debug/link-time metadata for a valid native COFF code-byte comparison.
+    "$OBJCOPY" --strip-all "$elf" "$TMP_DIR/$name.stripped.elf"
+    "$OBJCOPY" -O coff-sh "$TMP_DIR/$name.stripped.elf" "$TMP_DIR/$name.coff"
     "$OBJCOPY" --dump-section ".text=$TMP_DIR/$name.elf.text" "$elf"
     "$OBJCOPY" --dump-section ".text=$TMP_DIR/$name.coff.text" "$TMP_DIR/$name.coff"
     # The COFF writer is allowed to pad the end of a section to its
