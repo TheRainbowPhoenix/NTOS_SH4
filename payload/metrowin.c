@@ -193,9 +193,9 @@ static void draw(void *dc) {
 }
 static void redraw(void *hwnd) {NT_CALL(InvalidateRect,(hwnd,0,1));}
 static void select_menu(int y) {
-    int idx=(y-65)/66;
+    int idx=(y-76)/73;
     if(idx>=0 && idx<5)screen=idx;
-    menu_open=0;tab=0;
+    menu_open=0;tab=0;folder_menu=0;
 }
 static void back_action(void) {
     if(dialog_open){dialog_open=0;return;}
