@@ -1,116 +1,71 @@
-/* memtool.c -- SH4 BE recreation of the WinCE MEMTOOL.EXE found in
- * NonCASRom/WinCE (a "Kernel Memory Usage" diagnostic).
- *
- * The original imports exactly three functions from COREDLL.DLL:
- *   NKDbgPrintfW (ordinal 545), SetKMode (630), SetProcPermissions (611)
- * and pokes kernel memory in kmode. Ours goes through the same imports
- * (resolved against our COREDLL.DLL export directory) and reports:
- *   - the SH7305 MMU/cache control state (direct privileged P4 reads,
- *     after asking for kmode via SetKMode/SetProcPermissions),
- *   - the system memory picture via GlobalMemoryStatus (which probes the
- *     NTOS heap for its largest free block),
- *   - an allocation soak test through LocalAlloc/LocalFree.
- */
+/* MEMTOOL.EXE - WinCE COREDLL diagnostic, SH4 BE.
+ * Stage markers distinguish the PE entry ABI, COREDLL string dispatch,
+ * and memory allocation. No P4 reads or large heap probes in this build. */
 #include "ntimport.h"
-
 typedef unsigned int u32;
-
-/* WinCE MEMORYSTATUS */
+typedef unsigned short WCHAR16;
 typedef struct {
-    u32 dwLength;
-    u32 dwMemLoad;
-    u32 dwTotalPhys;
-    u32 dwAvailPhys;
-    u32 dwTotalPageFile;
-    u32 dwAvailPageFile;
-    u32 dwTotalVirtual;
-    u32 dwAvailVirtual;
-} MEMSTATUS;
+    void (*puts)(const char *);
+    void *reserved[10];
+} NTOS_API;
 
-NT_IMPORT(void, NKDbgPrintfW, (const unsigned short *s))
+NT_IMPORT(void, OutputDebugStringW, (const WCHAR16 *s))
 NT_IMPORT(u32, SetKMode, (u32 enable))
-NT_IMPORT(u32, SetProcPermissions, (u32 newperms))
-NT_IMPORT(void, GlobalMemoryStatus, (MEMSTATUS *ms))
+NT_IMPORT(u32, SetProcPermissions, (u32 permissions))
 NT_IMPORT(void *, LocalAlloc, (u32 flags, u32 bytes))
-NT_IMPORT(u32, LocalFree, (void *p))
+NT_IMPORT(u32, LocalFree, (void *ptr))
 
-NT_DEFINE(NKDbgPrintfW)
+NT_DEFINE(OutputDebugStringW)
 NT_DEFINE(SetKMode)
 NT_DEFINE(SetProcPermissions)
-NT_DEFINE(GlobalMemoryStatus)
 NT_DEFINE(LocalAlloc)
 NT_DEFINE(LocalFree)
 
-/* privileged SH7305 control registers (P4 area) */
-#define REG_MMUCR 0xFF000010u
-#define REG_PTEH  0xFF000000u
-#define REG_PTEL  0xFF000004u
-#define REG_CCR   0xFF00001Cu
-
-static u32 rd32(u32 addr)
+static void out_w(const char *narrow)
 {
-    return *(volatile u32 *)addr;
-}
-
-/* Convert diagnostic lines to UTF-16, as NKDbgPrintfW requires.
- * One 16-bit character per code unit, 0-terminated; no CRT needed. */
-static void debug_line(const char *s)
-{
-    unsigned short wide[64];
-    unsigned n = 0;
-    while (n < 63 && s[n] != 0) {
-        wide[n] = (unsigned char)s[n];
+    WCHAR16 w[64];
+    unsigned n=0;
+    while (n < 63 && narrow[n]) {
+        w[n] = (unsigned char)narrow[n];
         ++n;
     }
-    wide[n] = 0;
-    NT_CALL(NKDbgPrintfW, (wide));
+    w[n]=0;
+    NT_CALL(OutputDebugStringW, (w));
 }
 
-static void puthex(const char *label, u32 v)
+static void hex_w(const char *label, u32 value)
 {
     char buf[40];
-    const char hex[] = "0123456789ABCDEF";
-    unsigned i = 0;
-    while (label[i] && i < sizeof(buf) - 11) {
-        buf[i] = label[i];
-        ++i;
+    static const char hexdigits[] = "0123456789ABCDEF";
+    unsigned n=0;
+    while (label[n] && n < sizeof(buf)-11) {
+        buf[n]=label[n]; ++n;
     }
-    buf[i++] = '0';
-    buf[i++] = 'x';
-    for (int k = 7; k >= 0; --k)
-        buf[i++] = hex[(v >> (k * 4)) & 15];
-    buf[i] = 0;
-    debug_line(buf);
+    buf[n++]='0'; buf[n++]='x';
+    for (int shift=28; shift>=0; shift-=4)
+        buf[n++]=hexdigits[(value >> shift) & 15u];
+    buf[n]=0;
+    out_w(buf);
 }
 
-/* Safe diagnostic path: no P4 control-register reads and no large heap
- * allocation search while NTOS is running with its UTLB mappings enabled.
- * Those operations can reset the calculator before any status is printed.
- * Restore them individually only after the basic import/return path works. */
-int main(void)
+/* The loader passes the NTOS API table in r4. Keep the NTOS output path
+ * separate from imported COREDLL calls to expose import/ABI failures. */
+int main(const NTOS_API *api, char **argv, char **envp)
 {
-    u32 prev_kmode, prev_perms;
     void *p;
-
-    debug_line("MEMTOOL: start");
-
-    prev_kmode = NT_CALL(SetKMode, (1));
-    puthex("KModePrev=", prev_kmode);
-    prev_perms = NT_CALL(SetProcPermissions, (0xFFFFFFFFu));
-    puthex("ProcPermsPrev=", prev_perms);
-
-    /* Small, bounded allocator smoke test rather than the old 12 MiB
-     * GlobalMemoryStatus binary search and 1 MiB soak. */
-    debug_line("Heap: testing 4 KiB");
+    (void)argv; (void)envp;
+    if (api && api->puts) api->puts("MEMTOOL: entry reached");
+    out_w("MEMTOOL: COREDLL debug");
+    hex_w("KModePrev=", NT_CALL(SetKMode, (1)));
+    hex_w("ProcPermsPrev=", NT_CALL(SetProcPermissions, (0xFFFFFFFFu)));
     p = NT_CALL(LocalAlloc, (0, 4096u));
-    if (p != 0) {
-        debug_line("Heap allocation OK");
+    if (p) {
+        out_w("LocalAlloc 4K OK");
         NT_CALL(LocalFree, (p));
-        debug_line("Heap free OK");
+        out_w("LocalFree OK");
     } else {
-        debug_line("Heap allocation failed");
+        out_w("LocalAlloc failed");
     }
-
-    debug_line("MEMTOOL: done");
+    if (api && api->puts) api->puts("MEMTOOL: returning zero");
     return 0;
 }
