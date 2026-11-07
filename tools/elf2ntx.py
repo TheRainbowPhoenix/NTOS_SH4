@@ -362,15 +362,15 @@ def build_import_section(groups, sec_rva):
         hn = []
         for _, name in slots:
             hn.append(len(buf))
-            buf += le16(0) + name.encode("ascii") + b"\\x00"
+            buf += le16(0) + name.encode("ascii") + b"\x00"
             if len(buf) & 1:
-                buf += b"\\x00"
+                buf += b"\x00"
         oft = len(buf)
         for offset in hn:
             buf += le32(sec_rva + offset)
         buf += le32(0)
         name_offset = len(buf)
-        buf += module.encode("ascii") + b"\\x00"
+        buf += module.encode("ascii") + b"\x00"
         struct.pack_into("<IIIII", buf, di * 20,
                          sec_rva + oft, 0, 0,
                          sec_rva + name_offset, rvas[0])
@@ -784,9 +784,9 @@ def selftest():
     ]:
         oft, _, _, name, ft = struct.unpack_from("<IIIII", multi, index * 20)
         assert ft == first
-        assert multi[name - 0x1200:].split(b"\\x00")[0] == module
+        assert multi[name - 0x1200:].split(b"\x00")[0] == module
         assert struct.unpack_from("<I", multi, oft - 0x1200 + 8)[0] == 0
-    assert multi[40:60] == b"\\x00" * 20  # terminator descriptor
+    assert multi[40:60] == b"\x00" * 20  # terminator descriptor
 
     # dir 0/1 wired in the optional header; DLL characteristic set
     opt2_at = struct.unpack_from("<I", out2, 0x3C)[0] + 24
