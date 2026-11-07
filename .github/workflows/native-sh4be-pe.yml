@@ -49,7 +49,7 @@ jobs:
           source_dir=$(cat /tmp/ntos-native/source-path)
           cd /tmp/ntos-native/build
           "$source_dir/configure" --target=sh-unknown-pe \
-            --enable-targets=all --disable-nls --disable-werror \
+            --enable-targets=sh-unknown-elf --disable-nls --disable-werror \
             --disable-gdb --disable-gas --disable-sim --disable-gprof \
             --disable-gold --disable-lto
           make -j4 all-bfd all-binutils all-ld > /tmp/ntos-native-build.log 2>&1 || {
