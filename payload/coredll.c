@@ -84,19 +84,20 @@ typedef struct {
     u32 dwAvailVirtual;
 } MEMSTATUS;
 
-/* NKDbgPrintfW: debug output. Real CE takes a wide-char format string;
- * we treat the first argument as a narrow string and print it verbatim
- * (argument formatting is not supported -- callers in NTOS payloads pass
- * plain literal lines). */
-void NKDbgPrintfW(const char *s)
+/* WinCE NKDbgPrintfW is a wide-string API. Convert to a bounded, NUL-
+ * terminated byte buffer before crossing into the NTOS console service.
+ * Never interpret a UTF-16 pointer as char* (the old ABI was wrong). */
+void NKDbgPrintfW(const unsigned short *wide)
 {
-    /* Avoid the variadic Debug_Printf bridge: the syscall's calling
-     * convention is not guaranteed to match our imported C function.
-     * Use the already-working single-argument puts service instead. */
-    if (s != 0) {
-        coredll_puts(s);
-        coredll_refresh();
+    char out[80];
+    unsigned i = 0;
+    if (wide == 0) return;
+    while (i + 1 < sizeof(out) && wide[i] != 0) {
+        unsigned short ch = wide[i];
+        out[i++] = (ch >= 32 && ch < 127) ? (char)ch : '?';
     }
+    out[i] = 0;
+    coredll_puts(out);
 }
 
 /* Kernel-mode toggles: NTOS payloads run privileged already, so both are
