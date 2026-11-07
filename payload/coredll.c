@@ -243,23 +243,34 @@ typedef struct {
 } NT_MSG;
 int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
 {
-    u32 x=0, y=0, ev;
-    (void)min_filter;
-    (void)max_filter;
-    if (!msg) return -1;
-    do { ev = ntos_touch(&x, &y); } while (!ev);
-    msg->hwnd = hwnd;
-    msg->wParam = 0;
-    msg->time = 0;
-    msg->pt.x = (int)x;
-    msg->pt.y = (int)y;
+    u32 x=0, y=0, direction=0, ev;
+    const void **a=ntapi();
+    (void)min_filter; (void)max_filter;
+    if (!msg || !a || !a[15]) return -1;
+    do {
+        ev=((u32 (*)(u32 *,u32 *,u32 *))a[15])(&x,&y,&direction);
+    } while (ev == 0);
+    msg->hwnd=hwnd;
+    msg->wParam=0;
+    msg->time=0;
+    msg->pt.x=0;
+    msg->pt.y=0;
+    msg->lParam=0;
     if (ev == 2) {
-        msg->message = 0x0012u; /* WM_QUIT */
-        msg->lParam = 0;
+        msg->message=0x0012u; /* WM_QUIT */
         return 0;
     }
-    msg->message = 0x0201u; /* WM_LBUTTONDOWN / stylus down */
-    msg->lParam = ((y & 0xFFFFu) << 16) | (x & 0xFFFFu);
+    if (ev == 3) {
+        /* Hollyhock keycodes match the WinCE VK arrows, Enter and
+         * ASCII digit values used by our demos. */
+        msg->message=0x0100u; /* WM_KEYDOWN */
+        msg->wParam=x;
+        return 1;
+    }
+    msg->message=0x0201u; /* stylus / WM_LBUTTONDOWN */
+    msg->pt.x=(int)x;
+    msg->pt.y=(int)y;
+    msg->lParam=((y & 0xFFFFu)<<16) | (x & 0xFFFFu);
     return 1;
 }
 
@@ -367,6 +378,103 @@ void OutputDebugStringW(const u16 *wide)
     }
     buf[i] = 0;
     coredll_puts(buf);
+}
+
+/* WinCE file-handle bridge. Handles are tagged SDK file descriptors.
+ * Strings from apps are UTF-16; Hollyhock File_Open takes an ANSI path.
+ * Only the existing WinCE function names are exposed to PE clients. */
+#define NT_INVALID_FILE ((void *)-1)
+#define NT_HANDLE_TAG 0x00010000u
+#define NT_GENERIC_READ  0x80000000u
+#define NT_GENERIC_WRITE 0x40000000u
+#define NT_CREATE_ALWAYS 2u
+#define NT_OPEN_EXISTING 3u
+#define NT_OPEN_ALWAYS 4u
+#define NT_FILE_READ 1u
+#define NT_FILE_WRITE 2u
+#define NT_FILE_CREATE 4u
+
+static int narrow_path(const u16 *src, char *dest, u32 capacity)
+{
+    u32 i=0;
+    if (!src) return 0;
+    while (src[i] && i+1 < capacity) {
+        if (src[i] > 127u) return 0;
+        dest[i]=(char)src[i];
+        ++i;
+    }
+    if (src[i]) return 0;
+    dest[i]=0;
+    /* Restrict the initial implementation to the removable flash volume. */
+    return i >= 6u && dest[0]=='\\\\' &&
+        (dest[1]=='f' || dest[1]=='F') &&
+        (dest[2]=='l' || dest[2]=='L') &&
+        (dest[3]=='s' || dest[3]=='S') && dest[4]=='0' && dest[5]=='\\\\';
+}
+
+static int handle_fd(void *handle)
+{
+    u32 value=(u32)handle;
+    if ((value & 0xFFFF0000u) != NT_HANDLE_TAG ||
+        (value & 0xFFFFu) == 0u) return -1;
+    return (int)(value & 0xFFFFu)-1;
+}
+
+void *CreateFileW(const u16 *path, u32 access, u32 share,
+                  void *security, u32 creation, u32 attributes,
+                  void *template_file)
+{
+    const void **a=ntapi();
+    char narrow[96];
+    u32 flags=0;
+    int fd;
+    (void)share; (void)security; (void)attributes; (void)template_file;
+    if (!a || !a[11] || !narrow_path(path,narrow,sizeof(narrow)))
+        return NT_INVALID_FILE;
+    if (access & NT_GENERIC_READ) flags |= NT_FILE_READ;
+    if (access & NT_GENERIC_WRITE) flags |= NT_FILE_WRITE;
+    if (creation == NT_CREATE_ALWAYS || creation == NT_OPEN_ALWAYS)
+        flags |= NT_FILE_CREATE;
+    else if (creation != NT_OPEN_EXISTING) return NT_INVALID_FILE;
+    if (!(flags & (NT_FILE_READ|NT_FILE_WRITE))) return NT_INVALID_FILE;
+    fd=((int (*)(const char *,u32))a[11])(narrow,flags);
+    if (fd < 0 || fd >= 0xFFFF) return NT_INVALID_FILE;
+    return (void *)(NT_HANDLE_TAG | ((u32)fd+1u));
+}
+
+int ReadFile(void *handle, void *buffer, u32 count, u32 *done, void *overlapped)
+{
+    const void **a=ntapi();
+    int fd=handle_fd(handle), n;
+    if (done) *done=0;
+    if (fd < 0 || !buffer || !a || !a[12] || overlapped || count > 4096u)
+        return 0;
+    n=((int (*)(int,void *,u32))a[12])(fd,buffer,count);
+    if (n < 0) return 0;
+    if (done) *done=(u32)n;
+    return 1;
+}
+
+int WriteFile(void *handle, const void *buffer, u32 count, u32 *done,
+              void *overlapped)
+{
+    const void **a=ntapi();
+    int fd=handle_fd(handle), n;
+    if (done) *done=0;
+    if (fd < 0 || !buffer || !a || !a[13] || overlapped || count > 4096u)
+        return 0;
+    n=((int (*)(int,const void *,u32))a[13])(fd,buffer,count);
+    if (n < 0) return 0;
+    if (done) *done=(u32)n;
+    return 1;
+}
+
+int CloseHandle(void *handle)
+{
+    const void **a=ntapi();
+    int fd=handle_fd(handle);
+    if (fd < 0 || !a || !a[14]) return 0;
+    return ((int (*)(int))a[14])(fd)==0;
 }
 
 /* ---------------------------------------------------------------------------
