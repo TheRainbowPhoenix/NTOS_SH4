@@ -10,6 +10,8 @@ on:
       - "tools/patch_binutils_sh4be.py"
       - ".github/workflows/native-sh4be-pe.yml"
       - "tools/test_native_sh4be_pe.sh"
+      - "tools/test_native_sh4be_imports.py"
+      - "tests/native_pe/**"
 
 permissions:
   contents: read
