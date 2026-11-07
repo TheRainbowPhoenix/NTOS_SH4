@@ -16,7 +16,7 @@
  * word points at the syscall table (NTOS rebuilds that window in UTLB
  * slots 0x37..0x3A before the payload runs).
  */
-#include "inter_ui.h"
+#include "selawik_ui.h"
 typedef unsigned int u32;
 
 /* OS330 C1A API window contract: *(0x08100000) = syscall table pointer. */
@@ -616,7 +616,7 @@ int SetBkMode(void *hdc,int mode)
 /* Inter bitmap atlas is stored as Base64 C source data, decoded once
  * into BSS. Each glyph holds 16 scanlines of variable-width, MSB-first
  * pixels; total 1586 bytes. No font files, FPU, heap, or OS font service. */
-static unsigned char g_ui_raster[1586];
+static unsigned char g_ui_raster[1648];
 static int g_ui_raster_ready;
 static int nt_b64(unsigned char ch)
 {
@@ -632,7 +632,7 @@ static void nt_init_raster(void)
     u32 acc=0, pos=0;
     int bits=0;
     if (g_ui_raster_ready) return;
-    for (u32 i=0; ntos_inter_b64[i];++i) {
+    for (u32 i=0; ntos_selawik_b64[i];++i) {
         int v=nt_b64((unsigned char)ntos_inter_b64[i]);
         if (v<0) break;
         acc=(acc<<6)|(u32)v;
@@ -647,7 +647,7 @@ static void nt_init_raster(void)
 }
 static int nt_fontwidth(u16 ch)
 {
-    return ch>=32 && ch<127 ? ntos_inter_width[ch-32] : 8;
+    return ch>=32 && ch<127 ? ntos_selawik_width[ch-32] : 8;
 }
 static int nt_glyph(void *hdc,int x,int y,u16 ch)
 {
