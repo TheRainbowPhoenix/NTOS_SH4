@@ -192,16 +192,16 @@ void xamlui_polygon(void *dc,const POINT *pts,int n,u32 fill,u32 border) {
 }
 void xamlui_folder(void *dc,int x,int y,int width,int height,u32 color) {
     POINT p[8];
-    p[0]=(POINT){x,y+height/5};
-    p[1]=(POINT){x+width/3,y+height/5};
-    p[2]=(POINT){x+width*2/5,y};
+    p[0]=(POINT){x,y+poly_idiv(height,5)};
+    p[1]=(POINT){x+poly_idiv(width,3),y+poly_idiv(height,5)};
+    p[2]=(POINT){x+poly_idiv(width*2,5),y};
     p[3]=(POINT){x+width-7,y};
-    p[4]=(POINT){x+width-4,y+height/5};
-    p[5]=(POINT){x+width,y+height/5+3};
+    p[4]=(POINT){x+width-4,y+poly_idiv(height,5)};
+    p[5]=(POINT){x+width,y+poly_idiv(height,5)+3};
     p[6]=(POINT){x+width,y+height};
     p[7]=(POINT){x,y+height};
     xamlui_polygon(dc,p,8,color,RGB(220,164,64));
-    xamlui_tile(dc,x+2,y+height/4,x+width-2,y+height/4+1,
+    xamlui_tile(dc,x+2,y+poly_idiv(height,4),x+width-2,y+poly_idiv(height,4)+1,
                 RGB(255,244,182));
 }
 void xamlui_start(void *dc,int offset) {
@@ -285,7 +285,7 @@ void xamlui_progress(void *dc,int x,int y,int width,int percent) {
     /* Windows 10 Mobile: thick total-capacity bar, thin category bars. */
     int h=(y>=220) ? 7 : 11;
     xamlui_tile(dc,x,y,x+width,y+h,RGB(54,54,54));
-    xamlui_tile(dc,x,y,x+(width*percent)/100,y+h,BLUE);
+    xamlui_tile(dc,x,y,x+poly_idiv(width*percent,100),y+h,BLUE);
 }
 void xamlui_actionbar(void *dc,
                       const u16 *left,const u16 *right) {
