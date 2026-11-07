@@ -1,0 +1,70 @@
+name: Experimental native SH4BE PE binutils
+
+# Separate from the shipping build until the actual linker produces valid
+# EXE/DLL imports. A dedicated job is the correct place to compile a new
+# GPL binutils toolchain; do not edit third-party HH3 binaries in-place.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "tools/patch_binutils_sh4be.py"
+      - ".github/workflows/native-sh4be-pe.yml"
+      - "tools/test_native_sh4be_pe.sh"
+
+permissions:
+  contents: read
+
+jobs:
+  native-linker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.2
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install distro binutils source and native build tools
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            binutils-source build-essential python3 make flex bison texinfo \
+            libz-dev libgmp-dev libmpfr-dev libmpc-dev ca-certificates
+      - name: Extract and patch GNU binutils source
+        run: |
+          set -eu
+          mkdir -p /tmp/ntos-native/src /tmp/ntos-native/build
+          archive=$(find /usr/src -name 'binutils*.tar.*' -type f | head -1)
+          test -n "$archive"
+          echo "GNU source: $archive"
+          tar xf "$archive" -C /tmp/ntos-native/src
+          source_dir=$(find /tmp/ntos-native/src -maxdepth 1 -type d -name 'binutils-*' | head -1)
+          test -n "$source_dir"
+          echo "$source_dir" >/tmp/ntos-native/source-path
+          python3 tools/patch_binutils_sh4be.py "$source_dir"
+      - name: Compile the experimental big-data/little-header BFD target and ld
+        run: |
+          set -eu
+          source_dir=$(cat /tmp/ntos-native/source-path)
+          cd /tmp/ntos-native/build
+          "$source_dir/configure" --target=sh-unknown-pe \
+            --enable-targets=all --disable-nls --disable-werror \
+            --disable-gdb --disable-gas --disable-sim --disable-gprof \
+            --disable-gold --disable-lto
+          make -j4 all-bfd all-binutils all-ld > /tmp/ntos-native-build.log 2>&1 || {
+            tail -160 /tmp/ntos-native-build.log
+            exit 1
+          }
+      - name: Exercise the patched PE writer and linker
+        run: sh tools/test_native_sh4be_pe.sh
+      - name: Upload diagnostic build reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-sh4be-pe-experiment
+          path: |
+            /tmp/ntos-native-build.log
+            /tmp/ntos-native/native*.exe
+            /tmp/ntos-native/*.txt
+          if-no-files-found: ignore
