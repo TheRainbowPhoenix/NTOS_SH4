@@ -27,7 +27,7 @@ typedef struct {
     u32 dwAvailVirtual;
 } MEMSTATUS;
 
-NT_IMPORT(void, NKDbgPrintfW, (const char *s))
+NT_IMPORT(void, NKDbgPrintfW, (const unsigned short *s))
 NT_IMPORT(u32, SetKMode, (u32 enable))
 NT_IMPORT(u32, SetProcPermissions, (u32 newperms))
 NT_IMPORT(void, GlobalMemoryStatus, (MEMSTATUS *ms))
@@ -52,19 +52,35 @@ static u32 rd32(u32 addr)
     return *(volatile u32 *)addr;
 }
 
+/* Convert diagnostic lines to UTF-16, as NKDbgPrintfW requires.
+ * One 16-bit character per code unit, 0-terminated; no CRT needed. */
+static void debug_line(const char *s)
+{
+    unsigned short wide[64];
+    unsigned n = 0;
+    while (n < 63 && s[n] != 0) {
+        wide[n] = (unsigned char)s[n];
+        ++n;
+    }
+    wide[n] = 0;
+    NT_CALL(NKDbgPrintfW, (wide));
+}
+
 static void puthex(const char *label, u32 v)
 {
     char buf[40];
     const char hex[] = "0123456789ABCDEF";
-    int i;
-    for (i = 0; label[i] != '\0' && i < (int)sizeof(buf) - 11; i++)
+    unsigned i = 0;
+    while (label[i] && i < sizeof(buf) - 11) {
         buf[i] = label[i];
+        ++i;
+    }
     buf[i++] = '0';
     buf[i++] = 'x';
-    for (int k = 7; k >= 0; k--)
-        buf[i++] = hex[(v >> (k * 4)) & 0xF];
-    buf[i] = '\0';
-    NT_CALL(NKDbgPrintfW, (buf));
+    for (int k = 7; k >= 0; --k)
+        buf[i++] = hex[(v >> (k * 4)) & 15];
+    buf[i] = 0;
+    debug_line(buf);
 }
 
 /* Safe diagnostic path: no P4 control-register reads and no large heap
