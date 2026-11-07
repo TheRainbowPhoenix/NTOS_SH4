@@ -44,7 +44,7 @@ static void draw(void *dc)
         ui_text(dc,45,165,"Sample window",RGB(255,255,255),0);
         ui_fill(dc,46,198,274,251,RGB(224,224,224));
         ui_text(dc,56,209,"Classic desktop theme",RGB(0,0,0),0);
-        ui_button(dc,142,230,250,249,"OK",RGB(192,192,192),RGB(0,0,0));
+        ui_classic_button(dc,142,230,250,249,"OK");
         ui_text(dc,30,288,"Enable decorations",RGB(0,0,0),0);
         ui_fill(dc,30,311,47,328,RGB(255,255,255));
         if (check) ui_text(dc,33,313,"X",accent[choose],0);
@@ -64,8 +64,8 @@ static void draw(void *dc)
         ui_text(dc,28,218,"Bitmap font / RGB565",RGB(35,35,35),0);
         ui_text(dc,28,250,"No FPU required",RGB(35,35,35),0);
     }
-    ui_button(dc,14,388,150,434,"< PREVIOUS",RGB(224,224,224),RGB(0,0,0));
-    ui_button(dc,170,388,307,434,"NEXT >",accent[choose],RGB(255,255,255));
+    ui_classic_button(dc,14,388,150,434,"< PREVIOUS");
+    ui_classic_button(dc,170,388,307,434,"NEXT >");
     ui_fill(dc,0,473,320,475,RGB(255,255,255));
     ui_fill(dc,0,476,320,527,RGB(215,215,215));
     ui_text(dc,15,490,"Ready - WinCE message loop",RGB(55,55,55),0);
