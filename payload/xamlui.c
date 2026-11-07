@@ -214,15 +214,21 @@ void xamlui_start(void *dc,int offset) {
     static const u16 d[]={'P','h','o','t','o','s',0};
     static const u16 e[]={'S','t','o','r','a','g','e',0};
     static const u16 f[]={'M','a','p','s',0};
+    static const u16 g[]={'F','i','l','e','s',0};
+    static const u16 h[]={'S','e','t','t','i','n','g','s',0};
+    static const u16 j[]={'C','a','l','e','n','d','a','r',0};
+    static const u16 k[]={'C','a','l','c',0};
+    static const u16 l[]={'P','i','c','t','u','r','e','s',0};
+    static const u16 n[]={'A','b','o','u','t',0};
     xamlui_tile(dc,0,0,320,488,BG);
     xamlui_text(dc,14,22,title,WHITE,1);
-    for(int i=0;i<6;++i) {
-        int x=14+(i&1)*147, y=79+(i>>1)*129-offset*270;
-        if(y+116<=57 || y>=488)continue;
-        u32 col=((i==0 || i==3))?RGB(51,103,241):
-                ((i==1 || i==4))?RGB(0,143,146):RGB(116,72,178);
+    for(int i=0;i<12;++i) {
+        int x=14+(i&1)*147, y=79+(i>>1)*129-offset*390;
+        if(y<57 || y+117>488)continue;
+        u32 col=((i==0 || i==3 || i==6 || i==9))?RGB(51,103,241):
+                ((i==1 || i==4 || i==7 || i==10))?RGB(0,143,146):RGB(116,72,178);
         xamlui_tile(dc,x,y,x+137,y+117,col);
-        const u16 *labels[6]={a,b,c,d,e,f};
+        const u16 *labels[12]={a,b,c,d,e,f,g,h,j,k,l,n};
         if(i==0) {
             for(int j=0;j<3;++j)
                 xamlui_tile(dc,x+53,y+23+j*7,x+83,y+26+j*7,WHITE);
