@@ -99,12 +99,36 @@ The active font now uses a verified, direct 8x14 monochrome bitmap atlas
 from the user's [UGUI-v3 font_8x14.c](https://github.com/TheRainbowPhoenix/UGUI-v3/blob/master/src/UGUI/Fonts/font_8x14.c):
 95 Basic Latin glyphs, exactly 14 explicit row bytes per glyph,
 MSB-left. A per-glyph advance gives tighter UI labels than a fixed 8-cell
-grid. The decoder and bitstream offsets have been entirely removed.
-No antialiasing, FPU, font file, or TrueType rasterizer is required.
+grid. The decoder and bitstream offsets have been entirely removed. The UGUI glyph\nscanlines are **LSB-left**: treating bit 7 as the leftmost pixel mirrors\neach letter. COREDLL now reads bit 0 as the left edge, and per-character\nadvances are calculated with the matching bit orientation.
+Requested CreateFontIndirectW heights 9–32 pixels are honored using\ninteger nearest-neighbour raster scaling (no antialiasing, no FPU).\nThe hot loop uses a DDA accumulator rather than a 32-bit division helper.\nNo font file or TrueType rasterizer is required.
 
 The font is a reliable bitmap fallback rather than a genuine WinCE/Segoe
 TrueType renderer. The earlier Selawik UFO raster is preserved in
 `payload/selawik_ui.h` for future work but is **not** used by COREDLL.
+
+### XAMLUI controls and pen navigation
+
+XAMLUI now exports additional **framework-owned** controls:
+`xamlui_polygon` (scanline-filled polygon with optional 1px stroke),
+`xamlui_folder` (folder silhouette rendered with polygon vertices), and
+`xamlui_start` (Windows Phone-like Start tiles). These implement graphics
+using WinCE COREDLL GDI imports; no new pretend COREDLL APIs were added.
+
+METROWIN includes a 320x528 full-width hamburger menu, two pages of six
+Start tiles, and a working bottom bar. Tap the Windows icon to enter Start,
+use the pen drag gesture or UP/DOWN keys to change tile pages, and tap a
+tile to open its app section. Back returns to the previous section.
+The Clear browsing demo has expandable **Show more / Show less** checkboxes;
+Music offers separate Songs, Artists and Albums views; File Browser uses
+polygon folder icons and opens a context menu. All contents remain demo
+data, and Clear/Delete do not mutate real files.
+
+For previewing, use `python3 tools/preview_native_gdi.py` after creating
+`dist/`. The script reads **the same glyph rows** as COREDLL, uses the
+same LSB-left bit orientation and nearest-neighbour pixel-height rules,
+and emits `dist/native_gdi_storage_preview.png` without a host font,
+antialiasing, or Pillow. CI runs the preview's glyph-direction and
+14px/22px size tests in addition to the PE/UTLB tests.
 
 ### DLL and UI architecture
 
