@@ -7,13 +7,18 @@ set -eu
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 OBJCOPY=${OBJCOPY:-sh4a_nofpueb-elf-objcopy}
-for name in coredll xamlui metrowin guiwin memtool; do
+for name in hello hello_core memtool paintdemo winlab guiwin metrowin calc coredll xamlui; do
     case "$name" in
         coredll) image=COREDLL.DLL ;;
         xamlui) image=XAMLUI.DLL ;;
         metrowin) image=METROWIN.EXE ;;
         guiwin) image=GUIWIN.EXE ;;
         memtool) image=MEMTOOL.EXE ;;
+        hello) image=HELLO.EXE ;;
+        hello_core) image=HELLOCORE.EXE ;;
+        paintdemo) image=PAINT.EXE ;;
+        winlab) image=WINLAB.EXE ;;
+        calc) image=CALC.EXE ;;
     esac
     elf="obj/payload/$name.elf"
     # A fully linked ELF may retain SH R_SH_DIR32 records solely because
@@ -40,4 +45,9 @@ python3 tools/verify_pe_linkage.py \
     --text XAMLUI.DLL "$TMP_DIR/xamlui.elf.text" \
     --text METROWIN.EXE "$TMP_DIR/metrowin.elf.text" \
     --text GUIWIN.EXE "$TMP_DIR/guiwin.elf.text" \
-    --text MEMTOOL.EXE "$TMP_DIR/memtool.elf.text"
+    --text MEMTOOL.EXE "$TMP_DIR/memtool.elf.text" \
+    --text HELLO.EXE "$TMP_DIR/hello.elf.text" \
+    --text HELLOCORE.EXE "$TMP_DIR/hello_core.elf.text" \
+    --text PAINT.EXE "$TMP_DIR/paintdemo.elf.text" \
+    --text WINLAB.EXE "$TMP_DIR/winlab.elf.text" \
+    --text CALC.EXE "$TMP_DIR/calc.elf.text"
