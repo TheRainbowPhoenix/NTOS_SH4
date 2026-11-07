@@ -81,6 +81,8 @@ evidence that it is implemented. Before porting an application, inspect
 
 - **GUIWIN.EXE** — Classic Windows-inspired control panel with navy title bar,
   beveled buttons, three tabs, accent swatches, status area and a checkbox.
+  The caption [X] invokes DestroyWindow then PostQuitMessage(WM_QUIT), returning
+  to the NTOS EXE picker.
   Touch controls or use LEFT/RIGHT, ENTER and 0.
 - **METROWIN.EXE** — Metro-inspired dark Settings app with system,
   personalization and about pages; accent colors and interactive on/off
@@ -90,13 +92,15 @@ evidence that it is implemented. Before porting an application, inspect
 
 GUI apps include `payload/wince_ui.h`: a compact Windows CE type/ABI shim
 that imports **existing COREDLL function names**, not private drawing calls.
-The font in `payload/font8x8.h` is a public-domain 8x8 bitmapped font by
-Daniel Hepper / Marcel Sondaar (see https://github.com/dhepper/font8x8).
-`TextOutW` and `DrawTextW` rasterize glyphs through NTOS pixel gates;
-`CreateFontIndirectW`, `SelectObject`, `SetTextColor`, `SetBkColor`, and
-`SetBkMode` support basic font size and color state. Font size is currently
-restricted to native 8x8 and doubled 16x16 glyphs, with ASCII/Basic Latin
-bitmap coverage rather than a full Unicode text stack.
+The active WinCE GUI font is now a **13-pixel proportional Inter Regular raster**
+stored as compact C data in `payload/inter_ui.h`. Inter is licensed under
+SIL Open Font License 1.1 (https://github.com/rsms/inter).
+The older `payload/font8x8.h` is retained only as an unused reference.
+`TextOutW` and `DrawTextW` render variable-width glyphs through the
+NTOS RGB565 pixel gate, with 1x and 2x scale selected by
+`CreateFontIndirectW` / `SelectObject`. No OpenType library, FPU,
+subpixel antialiasing or font file is needed on the calculator. Supported
+raster glyphs are Basic Latin U+0020–U+007E; other glyphs use '?'.
 
 **DLL loading limitation:** the mapped loader currently maps a single
 COREDLL.DLL and resolves all import descriptors against its export table.
