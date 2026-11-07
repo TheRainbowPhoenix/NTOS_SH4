@@ -1,11 +1,11 @@
 /* Stable 1-bpp 8x14 glyph atlas sourced from TheRainbowPhoenix/UGUI-v3
  * src/UGUI/Fonts/font_8x14.c, glyphs U+0020..U+007E.
- * Each row is one byte, MSB is the leftmost pixel. No antialiasing.
- * Proportional advances are derived from rightmost occupied columns.
+ * Each row is one byte, LSB is the leftmost pixel. No antialiasing.
+ * Proportional advances are derived from rightmost occupied columns in LSB-first orientation.
  * User-suggested UGUI fallback replaces the broken packed Selawik stream. */
 #ifndef NTOS_UGUI_FONT_H
 #define NTOS_UGUI_FONT_H
-static const unsigned char nt_font_advance[95]={3,6,7,8,8,8,8,6,7,8,8,8,6,8,6,8,8,8,8,7,8,7,8,8,8,8,6,6,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,6,8,8,8,8,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8};
+static const unsigned char nt_font_advance[95]={3,5,7,9,7,9,9,5,8,7,8,8,6,8,6,8,8,9,7,8,8,8,8,8,8,8,6,6,8,8,8,8,9,9,8,8,8,8,8,8,8,7,7,8,8,8,8,8,8,9,8,8,8,8,9,9,9,9,8,8,8,6,8,9,7,9,8,8,8,8,8,8,8,6,7,8,6,8,8,8,8,8,7,7,8,8,9,9,8,9,8,8,6,8,9};
 static const unsigned char nt_font_rows[95][14]={
 {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}, /* U+20 */
 {0x00,0x08,0x08,0x08,0x08,0x08,0x08,0x08,0x00,0x08,0x08,0x00,0x00,0x00}, /* U+21 */
