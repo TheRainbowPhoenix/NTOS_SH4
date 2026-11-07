@@ -41,7 +41,8 @@ TranslateMessage does not synthesize WM_CHAR events.
 
 `GetDC`, `ReleaseDC`, `BeginPaint`, `EndPaint`, `SetPixel`,
 `CreateSolidBrush`, `FillRect`, `DeleteObject`, `MoveToEx`, `LineTo`,
-`Rectangle`, `TextOutW`.
+`Rectangle`, `TextOutW`, `DrawTextW`, `CreateFontIndirectW`,
+`SelectObject`, `SetTextColor`, `SetBkColor`, `SetBkMode`.
 
 A single synthetic full-screen DC; drawing uses RGB565 conversion and SDK
 pixels/lines. TextOutW uses the Hollyhock debug small font, not TrueType.
@@ -74,6 +75,37 @@ accurately classify directories.
 routed to `coredll_stub` returning zero. The presence of an export is **not**
 evidence that it is implemented. Before porting an application, inspect
 `payload/coredll.c` for the actual function and verify its semantics.
+
+
+## Visual UI demos (new)
+
+- **GUIWIN.EXE** — Classic Windows-inspired control panel with navy title bar,
+  beveled buttons, three tabs, accent swatches, status area and a checkbox.
+  Touch controls or use LEFT/RIGHT, ENTER and 0.
+- **METROWIN.EXE** — Metro-inspired dark Settings app with system,
+  personalization and about pages; accent colors and interactive on/off
+  switches. Changes are in-memory UI demonstrations, not OS preferences.
+- **CALC.EXE** — Integer-only calculator with on-screen digits/operators and
+  keypad support. No FPU, CRT, floats or floating-point operations.
+
+GUI apps include `payload/wince_ui.h`: a compact Windows CE type/ABI shim
+that imports **existing COREDLL function names**, not private drawing calls.
+The font in `payload/font8x8.h` is a public-domain 8x8 bitmapped font by
+Daniel Hepper / Marcel Sondaar (see https://github.com/dhepper/font8x8).
+`TextOutW` and `DrawTextW` rasterize glyphs through NTOS pixel gates;
+`CreateFontIndirectW`, `SelectObject`, `SetTextColor`, `SetBkColor`, and
+`SetBkMode` support basic font size and color state. Font size is currently
+restricted to native 8x8 and doubled 16x16 glyphs, with ASCII/Basic Latin
+bitmap coverage rather than a full Unicode text stack.
+
+**DLL loading limitation:** the mapped loader currently maps a single
+COREDLL.DLL and resolves all import descriptors against its export table.
+There is no reliable second-DLL loading or per-module import resolution.
+Do not claim XAML-UI.DLL or arbitrary WinCE DLL dependencies work until
+multi-module PE imports, mapping, lifetime and relocation are implemented.
+
+Build: `make clean && make -j4`; deploy `NTOS.hh3`, `COREDLL.DLL`,
+`GUIWIN.EXE`, `METROWIN.EXE`, and `CALC.EXE` together.
 
 ## Build and test
 
