@@ -93,7 +93,7 @@ static void action(void *dc,const char *a,const char *b) {
     NT_CALL(xamlui_actionbar,(dc,p,b?s:0));
 }
 static void draw_storage(void *dc) {
-    txt(dc,14,82,"Storage usage",WHITE,0);
+    txt(dc,14,82,"Storage usage",WHITE,1);
     label(dc,14,111,"Last refreshed: demo",BLUE);
     label(dc,14,147,"Total: 29.1 GB (example)",WHITE);
     progress(dc,14,178,290,99);
@@ -148,7 +148,7 @@ static void draw_music(void *dc) {
     label(dc,222,458,"|<  >  >|",WHITE);
 }
 static void draw_maps(void *dc) {
-    label(dc,14,87,"Maps",WHITE);
+    txt(dc,14,87,"Maps",WHITE,1);
     label(dc,14,124,"Download offline maps for",WHITE);
     label(dc,14,147,"apps when you're offline.",WHITE);
     tile(dc,14,189,30,30,WHITE);
