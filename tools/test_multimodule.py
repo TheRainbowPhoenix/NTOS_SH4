@@ -20,7 +20,7 @@ def inspect(path):
     data = Path(path).read_bytes()
     assert data[:2] == b"MZ", path
     pe = u32(data, 0x3C)
-    assert data[pe:pe + 4] == b"PE\\0\\0", path
+    assert data[pe:pe + 4] == b"PE\0\0", path
     coff = pe + 4
     nsections = u16(data, coff + 2)
     opt = coff + 20
@@ -44,7 +44,7 @@ def inspect(path):
         raise AssertionError((path, "invalid RVA", hex(rva)))
     def cstr(rva):
         i = offset(rva)
-        j = data.index(b"\\0", i)
+        j = data.index(b"\0", i)
         return data[i:j].decode("ascii")
     imp_rva = u32(data, opt + 96 + 8)
     modules = []
