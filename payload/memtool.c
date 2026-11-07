@@ -92,7 +92,7 @@ int main(void)
     u32 prev_kmode, prev_perms;
     void *p;
 
-    NT_CALL(NKDbgPrintfW, ("MEMTOOL: start"));
+    debug_line("MEMTOOL: start");
 
     prev_kmode = NT_CALL(SetKMode, (1));
     puthex("KModePrev=", prev_kmode);
@@ -101,16 +101,16 @@ int main(void)
 
     /* Small, bounded allocator smoke test rather than the old 12 MiB
      * GlobalMemoryStatus binary search and 1 MiB soak. */
-    NT_CALL(NKDbgPrintfW, ("Heap: testing 4 KiB"));
+    debug_line("Heap: testing 4 KiB");
     p = NT_CALL(LocalAlloc, (0, 4096u));
     if (p != 0) {
-        NT_CALL(NKDbgPrintfW, ("Heap allocation OK"));
+        debug_line("Heap allocation OK");
         NT_CALL(LocalFree, (p));
-        NT_CALL(NKDbgPrintfW, ("Heap free OK"));
+        debug_line("Heap free OK");
     } else {
-        NT_CALL(NKDbgPrintfW, ("Heap allocation failed"));
+        debug_line("Heap allocation failed");
     }
 
-    NT_CALL(NKDbgPrintfW, ("MEMTOOL: done"));
+    debug_line("MEMTOOL: done");
     return 0;
 }
