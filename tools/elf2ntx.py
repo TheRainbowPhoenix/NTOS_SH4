@@ -362,7 +362,7 @@ def build_import_section(slots, module_name, sec_rva):
                          "NT_DEFINEs together in one translation unit")
 
     buf = bytearray(20 * 2)  # one module descriptor + terminator
-    off = 20 * (n + 1)
+    off = len(buf)  # offsets must match the actual two-descriptor buffer
     hn_offs = []
     for _, fname in slots:
         hn_offs.append(off)
