@@ -172,9 +172,11 @@ def main():
         "XAMLUI.DLL": PE("dist/XAMLUI.DLL"),
     }
     programs = {
-        "METROWIN.EXE": PE("dist/METROWIN.EXE"),
-        "GUIWIN.EXE": PE("dist/GUIWIN.EXE"),
-        "MEMTOOL.EXE": PE("dist/MEMTOOL.EXE"),
+        name: PE("dist/" + name)
+        for name in (
+            "HELLO.EXE", "HELLOCORE.EXE", "MEMTOOL.EXE", "PAINT.EXE",
+            "WINLAB.EXE", "GUIWIN.EXE", "METROWIN.EXE", "CALC.EXE"
+        )
     }
     assert dlls["COREDLL.DLL"].dll and dlls["XAMLUI.DLL"].dll
     assert all(not prog.dll for prog in programs.values())
