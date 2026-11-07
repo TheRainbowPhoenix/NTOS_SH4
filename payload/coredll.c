@@ -241,41 +241,196 @@ typedef struct {
     u32 time;
     NT_POINT pt;
 } NT_MSG;
+/* One full-screen WinCE window and a small posted-message FIFO.
+ * This is intentionally an explicitly bounded USER32 subset; it allows
+ * WNDCLASSW/WNDPROC apps to run without pretending to offer multi-window
+ * z-order, compositing, timers or a complete OS message subsystem. */
+typedef int (*NT_WNDPROC)(void *, u32, u32, u32);
+typedef struct {
+    u32 style;
+    NT_WNDPROC wndproc;
+    int class_extra, window_extra;
+    void *instance, *icon, *cursor, *background;
+    const u16 *menu_name, *class_name;
+} NT_WNDCLASS;
+typedef struct {
+    u32 magic;
+    NT_WNDPROC proc;
+    int visible, invalidated;
+    NT_RECT bounds;
+    u16 title[48];
+} NT_WINDOW;
+
+static NT_WINDOW g_window;
+static NT_WNDPROC g_class_proc;
+static u16 g_class_name[48];
+static NT_MSG g_messages[16];
+static u32 g_qhead, g_qtail;
+
+static int same_wstr(const u16 *a, const u16 *b)
+{
+    u32 i=0;
+    if (!a || !b) return 0;
+    while (i < 47u && a[i] && b[i] && a[i] == b[i]) ++i;
+    return a[i] == 0 && b[i] == 0;
+}
+static void copy_wstr(u16 *dest, const u16 *src, u32 cap)
+{
+    u32 i=0;
+    if (src) while (i+1 < cap && src[i]) {
+        dest[i]=src[i]; ++i;
+    }
+    dest[i]=0;
+}
+static int is_hwnd(void *hwnd)
+{
+    return hwnd == (void *)&g_window && g_window.magic == 0x4E57494Eu;
+}
+static int enqueue(void *hwnd,u32 type,u32 wp,u32 lp)
+{
+    u32 next=(g_qtail+1u)%16u;
+    NT_MSG *msg;
+    if (next==g_qhead) return 0;
+    msg=&g_messages[g_qtail];
+    msg->hwnd=hwnd; msg->message=type; msg->wParam=wp;
+    msg->lParam=lp; msg->time=0;
+    msg->pt.x=(short)(lp & 0xFFFFu);
+    msg->pt.y=(short)((lp >> 16) & 0xFFFFu);
+    g_qtail=next;
+    return 1;
+}
+static void copy_msg(NT_MSG *out,const NT_MSG *from)
+{
+    out->hwnd=from->hwnd;
+    out->message=from->message;
+    out->wParam=from->wParam;
+    out->lParam=from->lParam;
+    out->time=from->time;
+    out->pt.x=from->pt.x;
+    out->pt.y=from->pt.y;
+}
+u32 RegisterClassW(const NT_WNDCLASS *wc)
+{
+    if (!wc || !wc->wndproc || !wc->class_name) return 0;
+    g_class_proc=wc->wndproc;
+    copy_wstr(g_class_name,wc->class_name,48);
+    return 1; /* atom representing the one registered class */
+}
+void *CreateWindowExW(u32 exstyle, const u16 *class_name,
+                      const u16 *title, u32 style, int x, int y,
+                      int w, int h, void *parent, void *menu,
+                      void *instance, void *param)
+{
+    void *hwnd;
+    (void)exstyle; (void)style; (void)parent;
+    (void)menu; (void)instance;
+    if (!g_class_proc || !same_wstr(class_name,g_class_name) ||
+        g_window.magic || w<=0 || h<=0) return 0;
+    g_window.magic=0x4E57494Eu;
+    g_window.proc=g_class_proc;
+    g_window.visible=0;
+    g_window.invalidated=1;
+    g_window.bounds.left=x;
+    g_window.bounds.top=y;
+    g_window.bounds.right=x+w;
+    g_window.bounds.bottom=y+h;
+    copy_wstr(g_window.title,title,48);
+    hwnd=(void *)&g_window;
+    g_window.proc(hwnd,0x0001u,0,(u32)param); /* WM_CREATE */
+    return hwnd;
+}
+int ShowWindow(void *hwnd,int cmd)
+{
+    int was;
+    if (!is_hwnd(hwnd)) return 0;
+    was=g_window.visible;
+    g_window.visible=(cmd!=0);
+    return was;
+}
+int PostMessageW(void *hwnd,u32 msg,u32 wp,u32 lp)
+{
+    if (hwnd && !is_hwnd(hwnd)) return 0;
+    return enqueue(hwnd,msg,wp,lp);
+}
+void PostQuitMessage(int exitcode)
+{
+    enqueue(0,0x0012u,(u32)exitcode,0);
+}
+int DefWindowProcW(void *hwnd,u32 msg,u32 wp,u32 lp)
+{
+    (void)hwnd; (void)wp; (void)lp;
+    if (msg==0x000Fu) coredll_refresh(); /* WM_PAINT */
+    return 0;
+}
+int DispatchMessageW(const NT_MSG *msg)
+{
+    if (!msg) return 0;
+    if (is_hwnd(msg->hwnd) && g_window.proc)
+        return g_window.proc(msg->hwnd,msg->message,msg->wParam,msg->lParam);
+    return DefWindowProcW(msg->hwnd,msg->message,msg->wParam,msg->lParam);
+}
+int TranslateMessage(const NT_MSG *msg)
+{
+    /* No Unicode keyboard map yet; retain WM_KEYDOWN for the caller. */
+    return msg != 0 && msg->message==0x0100u;
+}
+int DestroyWindow(void *hwnd)
+{
+    if (!is_hwnd(hwnd)) return 0;
+    if (g_window.proc) g_window.proc(hwnd,0x0002u,0,0); /* WM_DESTROY */
+    g_window.magic=0; g_window.proc=0;
+    return 1;
+}
+int SetWindowTextW(void *hwnd,const u16 *text)
+{
+    if (!is_hwnd(hwnd)) return 0;
+    copy_wstr(g_window.title,text,48);
+    return 1;
+}
+int GetWindowTextW(void *hwnd,u16 *buffer,int capacity)
+{
+    int n=0;
+    if (!is_hwnd(hwnd) || !buffer || capacity<=0) return 0;
+    while (n+1<capacity && g_window.title[n]) {
+        buffer[n]=g_window.title[n]; ++n;
+    }
+    buffer[n]=0;
+    return n;
+}
 int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
 {
     u32 x=0, y=0, direction=0, ev;
     const void **a=ntapi();
-    (void)min_filter; (void)max_filter;
+    (void)min_filter; (void)max_filter; /* filters not implemented */
     if (!msg || !a || !a[15]) return -1;
+    if (g_qhead != g_qtail) {
+        copy_msg(msg,&g_messages[g_qhead]);
+        g_qhead=(g_qhead+1u)%16u;
+        return msg->message == 0x0012u ? 0 : 1;
+    }
     do {
         ev=((u32 (*)(u32 *,u32 *,u32 *))a[15])(&x,&y,&direction);
-    } while (ev == 0);
-    msg->hwnd=hwnd;
-    msg->wParam=0;
-    msg->time=0;
-    msg->pt.x=0;
-    msg->pt.y=0;
-    msg->lParam=0;
-    if (ev == 2) {
-        msg->message=0x0012u; /* WM_QUIT */
+    } while (ev==0);
+    msg->hwnd=is_hwnd(hwnd) ? hwnd :
+              (g_window.magic ? (void *)&g_window : 0);
+    msg->wParam=0; msg->time=0;
+    msg->pt.x=0; msg->pt.y=0; msg->lParam=0;
+    if (ev==2) {
+        msg->message=0x0012u;
         return 0;
     }
-    if (ev == 3) {
-        /* Hollyhock keycodes match the WinCE VK arrows, Enter and
-         * ASCII digit values used by our demos. */
+    if (ev==3) {
         msg->message=0x0100u; /* WM_KEYDOWN */
-        /* Normalize Hollyhock keypad codes into standard WinCE VK_*. */
-        if (x == 0x0090u) x=0x26u;      /* VK_UP */
-        else if (x == 0x0091u) x=0x28u; /* VK_DOWN */
-        else if (x == 0x0092u) x=0x25u; /* VK_LEFT */
-        else if (x == 0x0093u) x=0x27u; /* VK_RIGHT */
-        else if (x == 0x0094u) x=0x0Du; /* VK_RETURN */
+        if (x==0x0090u) x=0x26u;       /* VK_UP */
+        else if (x==0x0091u) x=0x28u; /* VK_DOWN */
+        else if (x==0x0092u) x=0x25u; /* VK_LEFT */
+        else if (x==0x0093u) x=0x27u; /* VK_RIGHT */
+        else if (x==0x0094u) x=0x0Du; /* VK_RETURN */
         msg->wParam=x;
         return 1;
     }
-    msg->message=0x0201u; /* stylus / WM_LBUTTONDOWN */
-    msg->pt.x=(int)x;
-    msg->pt.y=(int)y;
+    msg->message=direction==2u ? 0x0200u : 0x0201u; /* MOVE/DOWN */
+    msg->pt.x=(int)x; msg->pt.y=(int)y;
     msg->lParam=((y & 0xFFFFu)<<16) | (x & 0xFFFFu);
     return 1;
 }
@@ -307,7 +462,8 @@ void *BeginPaint(void *hwnd, NT_PAINT *paint)
 
 int EndPaint(void *hwnd, const NT_PAINT *paint)
 {
-    (void)hwnd; (void)paint;
+    (void)paint;
+    if (is_hwnd(hwnd)) g_window.invalidated=0;
     coredll_refresh();
     return 1;
 }
@@ -389,11 +545,17 @@ void OutputDebugStringW(const u16 *wide)
 /* Working WinCE-compatible display helpers (single full-screen DC). */
 int GetClientRect(void *hwnd, NT_RECT *rect)
 {
-    (void)hwnd;
     if (!rect) return 0;
-    rect->left=0; rect->top=0; rect->right=320; rect->bottom=528;
+    rect->left=0; rect->top=0;
+    if (is_hwnd(hwnd)) {
+        rect->right=g_window.bounds.right-g_window.bounds.left;
+        rect->bottom=g_window.bounds.bottom-g_window.bounds.top;
+    } else {
+        rect->right=320; rect->bottom=528;
+    }
     return 1;
 }
+
 int GetSystemMetrics(int index)
 {
     if (index==0) return 320; /* SM_CXSCREEN */
@@ -416,13 +578,23 @@ int TextOutW(void *hdc, int x, int y, const u16 *text, int n)
 }
 int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
 {
-    (void)hwnd; (void)rect; (void)erase;
-    /* No async window manager yet; next BeginPaint always repaints. */
-    return 1;
+    (void)rect; (void)erase;
+    if (is_hwnd(hwnd)) {
+        if (!g_window.invalidated) {
+            g_window.invalidated=1;
+            return enqueue(hwnd,0x000Fu,0,0); /* WM_PAINT */
+        }
+        return 1;
+    }
+    return hwnd == 0;
 }
 int UpdateWindow(void *hwnd)
 {
-    (void)hwnd;
+    if (is_hwnd(hwnd) && g_window.invalidated) {
+        g_window.invalidated=0;
+        if (g_window.proc)
+            g_window.proc(hwnd,0x000Fu,0,0);
+    }
     coredll_refresh();
     return 1;
 }
