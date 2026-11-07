@@ -28,7 +28,8 @@ class PE:
         assert d[pe:pe + 4] == b"PE\0\0", self.path
         header = pe + 4
         self.machine = le16(d, header)
-        assert self.machine == 0x01A8, (self.path, "NTOS private SH4BE machine")
+        assert self.machine in (0x01A7, 0x01A8), (
+            self.path, "NTOS native/legacy private SH4BE machine")
         count = le16(d, header + 2)
         flags = le16(d, header + 18)
         assert flags & 2 and count <= 8
