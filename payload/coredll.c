@@ -90,15 +90,12 @@ typedef struct {
  * plain literal lines). */
 void NKDbgPrintfW(const char *s)
 {
-    static u32 row = 0;
-    const void **api = ntapi();
-    if (api != 0 && api[1] != 0) {
-        /* Debug_Printf = the small font (api[0]/puts uses the large one) */
-        typedef void (*printf_fn)(u32, u32, u32, u32, const char *, ...);
-        ((printf_fn)api[1])(0, row, 0, 0, "%s", s);
+    /* Avoid the variadic Debug_Printf bridge: the syscall's calling
+     * convention is not guaranteed to match our imported C function.
+     * Use the already-working single-argument puts service instead. */
+    if (s != 0) {
+        coredll_puts(s);
         coredll_refresh();
-        if (++row > 22)
-            row = 0;
     }
 }
 
