@@ -498,82 +498,90 @@ static int load_mapped(const uint8_t *file, uint32_t file_size,
 // the slots with plain SH4 BE word loads. The directory tables themselves
 // stay little-endian in memory. Plain P1 memory operations -- the MMU is
 // still off here. Returns the number of snapped imports, negative on error.
-static int snap_imports(const pe::Image &exe_hdr, const MappedImage *exe,
-                        const pe::Image *dll_hdr, const MappedImage *dll,
-                        char *tmp, uint32_t tmp_size, const char **err) {
-    *err = "unknown";
-    pe::ExportDir ed{};
-    bool have_ed = false;
-    int total = 0;
-
-    for (uint32_t di = 0;; di++) {
+struct LinkedModule {
+    const char *name;
+    const pe::Image *hdr;
+    const MappedImage *mapping;
+};
+static bool module_matches(const char *a, const char *b) {
+    if (!a || !b) return false;
+    for (; *a && *b; ++a, ++b) {
+        char x=*a, y=*b;
+        if (x>='a' && x<='z') x=static_cast<char>(x-32);
+        if (y>='a' && y<='z') y=static_cast<char>(y-32);
+        if (x != y) return false;
+    }
+    return *a == *b;
+}
+// Resolve each PE import descriptor against its OWN named DLL. Import
+// directories are LE; patched SH4 .idata pointers must be written BE.
+static int snap_imports(const pe::Image &image_hdr, const MappedImage *image,
+                        const LinkedModule *modules, unsigned module_count,
+                        char *scratch, uint32_t scratch_size,
+                        const char **err) {
+    int total=0;
+    for (uint32_t di=0;;++di) {
         pe::ImportDesc d{};
-        if (!pe::read_import_desc(exe_hdr, exe->image, exe->vsize, di, &d))
-            break; // end of import table (or none at all)
-        if (dll->image == nullptr) {
-            *err = "image has an import table but COREDLL.DLL is missing";
-            return -2;
-        }
-        if (!have_ed) {
-            if (!pe::read_export_dir(*dll_hdr, dll->image, dll->vsize,
-                                     &ed)) {
-                *err = "COREDLL.DLL has no usable export directory";
-                return -3;
-            }
-            have_ed = true;
-        }
-        if (d.oft_rva == 0 || d.ft_rva == 0 || d.name_rva == 0 ||
-            d.oft_rva + 4 > exe->vsize || d.ft_rva + 4 > exe->vsize) {
-            *err = "malformed import descriptor";
+        if (!pe::read_import_desc(image_hdr,image->image,image->vsize,di,&d))
+            break;
+        if (!d.name_rva || !d.oft_rva || !d.ft_rva ||
+            !pe::rva_string(image->image,image->vsize,d.name_rva,
+                            scratch,scratch_size)) {
+            *err="invalid module import descriptor";
             return -1;
         }
-
-        for (uint32_t i = 0;; i++) {
-            const uint32_t hn_off = d.oft_rva + i * 4;
-            const uint32_t ft_off = d.ft_rva + i * 4;
-            if (hn_off + 4 > exe->vsize || ft_off + 4 > exe->vsize) {
-                *err = "import thunk arrays out of bounds";
-                return -4;
+        const LinkedModule *target=nullptr;
+        for (unsigned mi=0;mi<module_count;++mi)
+            if (module_matches(scratch,modules[mi].name)) {
+                target=&modules[mi];break;
             }
-            const uint32_t entry = pe::rd32le(exe->image + hn_off);
-            if (entry == 0)
-                break;
-
-            uint32_t func_rva = 0;
-            if (entry & 0x80000000u) {
-                const uint32_t ord = entry & 0xFFFFu;
-                if (ord < ed.ordinal_base ||
-                    ord - ed.ordinal_base >= ed.nfuncs) {
-                    *err = "ordinal import out of range";
-                    return -5;
+        if (!target || !target->mapping || !target->mapping->image) {
+            *err="missing import module (install dependency DLL)";
+            return -2;
+        }
+        pe::ExportDir ed{};
+        if (!pe::read_export_dir(*target->hdr,target->mapping->image,
+                                 target->mapping->vsize,&ed)) {
+            *err="dependency DLL lacks PE exports";
+            return -3;
+        }
+        for (uint32_t i=0;;++i) {
+            uint32_t oft=d.oft_rva+i*4,ft=d.ft_rva+i*4;
+            if (oft+4>image->vsize || ft+4>image->vsize) {
+                *err="truncated PE thunk array";return -4;
+            }
+            uint32_t entry=pe::rd32le(image->image+oft);
+            if (!entry) break;
+            uint32_t func_rva=0;
+            if (entry&0x80000000u) {
+                uint32_t ord=entry&0xFFFFu;
+                if (ord<ed.ordinal_base || ord-ed.ordinal_base>=ed.nfuncs) {
+                    *err="invalid ordinal in PE import";return -5;
                 }
-                func_rva = pe::rd32le(
-                    dll->image + ed.addrfuncs_rva +
-                    (ord - ed.ordinal_base) * 4);
+                func_rva=pe::rd32le(target->mapping->image+ed.addrfuncs_rva+
+                                   (ord-ed.ordinal_base)*4);
             } else {
-                if (entry + 2 >= exe->vsize ||
-                    pe::rva_string(exe->image, exe->vsize, entry + 2, tmp,
-                                   tmp_size) == nullptr) {
-                    *err = "bad import-by-name record";
-                    return -6;
+                if (entry+2>=image->vsize ||
+                    !pe::rva_string(image->image,image->vsize,entry+2,
+                                    scratch,scratch_size)) {
+                    *err="invalid import-by-name entry";return -6;
                 }
-                if (!pe::export_lookup(*dll_hdr, dll->image, dll->vsize,
-                                       tmp, &func_rva)) {
-                    *err = "import not found in COREDLL";
-                    return -7;
+                if (!pe::export_lookup(*target->hdr,target->mapping->image,
+                                       target->mapping->vsize,scratch,
+                                       &func_rva)) {
+                    *err="import not exported by named DLL";return -7;
                 }
             }
-            if (func_rva >= dll_hdr->oh.export_rva &&
-                func_rva <
-                    dll_hdr->oh.export_rva + dll_hdr->oh.export_size) {
-                *err = "resolved import is a forwarder (unsupported)";
-                return -8;
+            if (func_rva>=target->hdr->oh.export_rva &&
+                func_rva<target->hdr->oh.export_rva+
+                         target->hdr->oh.export_size) {
+                *err="forwarded export unsupported";return -8;
             }
-            pe::wr32be(exe->image + ft_off, dll->base + func_rva);
-            total++;
+            pe::wr32be(image->image+ft,target->mapping->base+func_rva);
+            ++total;
         }
     }
-    *err = "ok";
+    *err="ok";
     return total;
 }
 
