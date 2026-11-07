@@ -33,7 +33,18 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             binutils-source build-essential python3 make flex bison texinfo \
             libz-dev libgmp-dev libmpfr-dev libmpc-dev ca-certificates
+      - name: Restore compiled experimental GNU linker
+        id: native-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /tmp/ntos-native/build/ld/ld-new
+            /tmp/ntos-native/build/binutils/objcopy
+            /tmp/ntos-native/build/binutils/objdump
+            /tmp/ntos-native/source-path
+          key: sh4be-binutils-2.44-${{ hashFiles('tools/patch_binutils_sh4be.py') }}
       - name: Extract and patch GNU binutils source
+        if: steps.native-cache.outputs.cache-hit != 'true'
         run: |
           set -eu
           mkdir -p /tmp/ntos-native/src /tmp/ntos-native/build
@@ -46,6 +57,7 @@ jobs:
           echo "$source_dir" >/tmp/ntos-native/source-path
           python3 tools/patch_binutils_sh4be.py "$source_dir"
       - name: Compile the experimental big-data/little-header BFD target and ld
+        if: steps.native-cache.outputs.cache-hit != 'true'
         run: |
           set -eu
           source_dir=$(cat /tmp/ntos-native/source-path)
@@ -58,6 +70,16 @@ jobs:
             tail -160 /tmp/ntos-native-build.log
             exit 1
           }
+      - name: Cache the compiled linker binaries
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /tmp/ntos-native/build/ld/ld-new
+            /tmp/ntos-native/build/binutils/objcopy
+            /tmp/ntos-native/build/binutils/objdump
+            /tmp/ntos-native/source-path
+          key: sh4be-binutils-2.44-${{ hashFiles('tools/patch_binutils_sh4be.py') }}
       - name: Exercise the patched PE writer and linker
         run: sh tools/test_native_sh4be_pe.sh
       - name: Upload diagnostic build reports
