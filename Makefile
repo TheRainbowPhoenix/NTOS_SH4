@@ -54,6 +54,9 @@ HELLO_EXE := $(OUTDIR)/HELLO.EXE
 COREDLL_OBJ := $(BUILDDIR)/payload/coredll.o
 COREDLL_ELF := $(BUILDDIR)/payload/coredll.elf
 COREDLL_DLL := $(OUTDIR)/COREDLL.DLL
+XAMLUI_OBJ := $(BUILDDIR)/payload/xamlui.o
+XAMLUI_ELF := $(BUILDDIR)/payload/xamlui.elf
+XAMLUI_DLL := $(OUTDIR)/XAMLUI.DLL
 
 HELLOCORE_OBJ := $(BUILDDIR)/payload/hello_core.o
 HELLOCORE_ELF := $(BUILDDIR)/payload/hello_core.elf
@@ -89,7 +92,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) Makefile
 
 all: elf hh3 ntx
 .DEFAULT_GOAL := all
@@ -128,6 +131,19 @@ $(COREDLL_ELF): $(COREDLL_OBJ) $(PAYLOAD_DIR)/coredll.ld
 $(COREDLL_DLL): $(COREDLL_ELF) tools/elf2ntx.py tools/coredll_exports.txt
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x00800000 --dll 		--exports coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free 		--exports-file tools/coredll_exports.txt --stub-symbol coredll_stub 		--dll-name COREDLL.DLL
+
+# XAMLUI is a genuine second PE DLL at 0x00C00000; it imports COREDLL.
+$(XAMLUI_OBJ): $(PAYLOAD_DIR)/xamlui.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(XAMLUI_ELF): $(XAMLUI_OBJ) $(PAYLOAD_DIR)/xamlui.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/xamlui.ld -o $@ $(XAMLUI_OBJ)
+
+$(XAMLUI_DLL): $(XAMLUI_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(XAMLUI_ELF) -o $@ --base 0x00C00000 --dll --dll-name XAMLUI.DLL --import-module COREDLL.DLL --exports xamlui_tile,xamlui_label,xamlui_switch
 
 $(HELLOCORE_OBJ): $(PAYLOAD_DIR)/hello_core.c $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
@@ -198,9 +214,9 @@ $(METROWIN_ELF): $(METROWIN_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
 	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(METROWIN_OBJ)
 
-$(METROWIN_EXE): $(METROWIN_ELF) tools/elf2ntx.py
+$(METROWIN_EXE): $(METROWIN_ELF) $(XAMLUI_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $(METROWIN_ELF) -o $@ --import-module COREDLL.DLL
+	$(PYTHON) tools/elf2ntx.py $(METROWIN_ELF) -o $@ --import-module COREDLL.DLL --extra-import-prefix xamlui_:XAMLUI.DLL
 
 $(CALC_OBJ): $(PAYLOAD_DIR)/calc.c $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
