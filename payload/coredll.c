@@ -634,23 +634,39 @@ int SetBkMode(void *hdc,int mode)
  * The previous 7-col bit lookup mirrored every glyph on the hardware.
  * Scale is a genuine integer pixel height (9..32), not just 1x/2x.
  * All interpolation is nearest-neighbour, without antialiasing or FPU. */
+/* Local unsigned shift/subtract divider: SH4 freestanding builds cannot
+ * rely on __sdivsi3_i4i emitted by variable or signed divisions. */
+static unsigned nt_glyph_div(unsigned numerator,unsigned denominator)
+{
+    unsigned q=0,r=0;
+    if(!denominator)return 0;
+    for(int i=31;i>=0;--i) {
+        unsigned top=r>>31;
+        r=(r<<1)|((numerator>>(unsigned)i)&1u);
+        if(top || r>=denominator) {
+            r-=denominator;
+            q|=1u<<(unsigned)i;
+        }
+    }
+    return q;
+}
 static int nt_fontwidth(u16 ch)
 {
     int raw=(ch>=32 && ch<127) ? nt_font_advance[ch-32] : 8;
-    return (raw*g_font_height+7)/14;
+    return (int)nt_glyph_div((unsigned)(raw*g_font_height+7),14u);
 }
 static int nt_glyph(void *hdc,int x,int y,u16 ch)
 {
     const void **api=ntapi();
     u32 fg=rgb565(g_text_color),bg=rgb565(g_bk_color);
     int h=g_font_height;
-    int w=(8*h+7)/14;
+    int w=(int)nt_glyph_div((unsigned)(8*h+7),14u);
     if(!hdc || !api || !api[7]) return 0;
     if(ch<32 || ch>=127)ch='?';
     for(int yy=0;yy<h;++yy) {
-        unsigned bits=nt_font_rows[ch-32][(yy*14)/h];
+        unsigned bits=nt_font_rows[ch-32][(int)nt_glyph_div((unsigned)(yy*14),(unsigned)h)];
         for(int xx=0;xx<w;++xx) {
-            int src=(xx*14)/h;
+            int src=(int)nt_glyph_div((unsigned)(xx*14),(unsigned)h);
             if(src>7)src=7;
             int active=(bits>>src)&1; /* LSB at the LEFT */
             if(!active && g_bk_mode==1)continue;
