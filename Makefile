@@ -94,7 +94,7 @@ hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
 ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) Makefile
 
-all: elf hh3 ntx
+all: elf hh3 check-pe
 
 # GNU binutils is the authoritative SH4BE object/code linker. The bundled
 # cross toolchain does NOT support sh-pe or pei-shl output: do not replace
