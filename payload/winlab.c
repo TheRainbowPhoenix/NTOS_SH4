@@ -157,7 +157,14 @@ static int load_state(void)
     if (!ok || !closed || count != sizeof(next) ||
         next.magic != 0x4E544C42u || next.color_index >= 6 ||
         next.brush < 3 || next.brush > 24) return 0;
-    state = next;
+    /* A whole-struct assignment makes GCC emit ___movmem_i4_even on SH4.
+     * Payloads link freestanding (-nostdlib), so copy fields explicitly. */
+    state.magic = next.magic;
+    state.color_index = next.color_index;
+    state.brush = next.brush;
+    state.stamp_count = next.stamp_count;
+    state.last_x = next.last_x;
+    state.last_y = next.last_y;
     return 1;
 }
 
