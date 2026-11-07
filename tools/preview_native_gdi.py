@@ -23,7 +23,7 @@ def font_data():
     advances = [int(x) for x in m.group(1).split(",")]
     glyphs = {}
     for body, cp in re.findall(
-        r"\{((?:0x[0-9a-f]{2},?){14})\}\s*/\* U\+([0-9a-f]+) \*/",
+        r"\{((?:0x[0-9a-f]{2},?){14})\}\s*,?\s*/\* U\+([0-9a-f]+) \*/",
         text, flags=re.I
     ):
         glyphs[int(cp, 16)] = [int(x, 16) for x in re.findall(r"0x[0-9a-f]{2}", body, re.I)]
