@@ -326,7 +326,17 @@ void *CreateWindowExW(u32 exstyle, const u16 *class_name,
     (void)exstyle; (void)style; (void)parent;
     (void)menu; (void)instance;
     if (!g_class_proc || !same_wstr(class_name,g_class_name) ||
-        g_window.magic || w<=0 || h<=0) return 0;
+        g_window.magic) return 0;
+    /* This environment has one pen-oriented LCD window. WinCE
+     * CW_USEDEFAULT and unspecified dimensions mean a full-screen window;
+     * explicit smaller dimensions are preserved in GetClientRect. */
+    if (w<=0) w=320;
+    if (h<=0) h=528;
+    if (x<0) x=0;
+    if (y<0) y=0;
+    if (x>=320 || y>=528) return 0;
+    if (w>320-x) w=320-x;
+    if (h>528-y) h=528-y;
     g_window.magic=0x4E57494Eu;
     g_window.proc=g_class_proc;
     g_window.visible=0;
