@@ -578,31 +578,34 @@ int GetSystemMetrics(int index)
 static u32 g_text_color=0x00000000u;
 static u32 g_bk_color=0x00FFFFFFu;
 static int g_bk_mode=1; /* TRANSPARENT */
-static int g_font_scale=1;
+static int g_font_height=14;
+/* 8x14 UGUI bitmap point size expressed in whole output pixels.
+ * Font handles retain requested heights, not an arbitrary 1x/2x flag. */
 #define NTOS_FONT_HANDLE 0x02000000u
-
 typedef struct {
     int lfHeight,lfWidth,lfEscapement,lfOrientation,lfWeight;
     unsigned char lfItalic,lfUnderline,lfStrikeOut,lfCharSet;
     unsigned char lfOutPrecision,lfClipPrecision,lfQuality,lfPitchAndFamily;
     u16 lfFaceName[32];
 } NT_LOGFONTW;
-
 void *CreateFontIndirectW(const NT_LOGFONTW *font)
 {
     int h;
     if (!font) return 0;
     h=font->lfHeight;
     if (h<0) h=-h;
-    return (void *)(NTOS_FONT_HANDLE | ((h>=20) ? 2u : 1u));
+    if (h<9) h=9;
+    if (h>32) h=32;
+    return (void *)(NTOS_FONT_HANDLE | (u32)h);
 }
 void *SelectObject(void *hdc,void *object)
 {
     u32 v=(u32)object;
-    void *old;
-    if (!hdc || (v & 0xFF000000u) != NTOS_FONT_HANDLE) return 0;
-    old=(void *)(NTOS_FONT_HANDLE | (u32)g_font_scale);
-    g_font_scale=(v & 0xFFu)==2u ? 2 : 1;
+    if (!hdc || (v & 0xFF000000u)!=NTOS_FONT_HANDLE) return 0;
+    int h=(int)(v&0xffu);
+    if (h<9 || h>32) return 0;
+    void *old=(void *)(NTOS_FONT_HANDLE | (u32)g_font_height);
+    g_font_height=h;
     return old;
 }
 u32 SetTextColor(void *hdc,u32 color)
@@ -627,57 +630,62 @@ int SetBkMode(void *hdc,int mode)
  * scanline bytes (MSB-left), eliminating the previous packed bitstream
  * offset error that mixed adjacent glyphs and produced glitchy text.
  * Integer-only GDI renderer; transparent/opaque background supported. */
+/* IMPORTANT: UGUI bitmap scanline bytes are LSB-LEFT, not MSB-left.
+ * The previous 7-col bit lookup mirrored every glyph on the hardware.
+ * Scale is a genuine integer pixel height (9..32), not just 1x/2x.
+ * All interpolation is nearest-neighbour, without antialiasing or FPU. */
 static int nt_fontwidth(u16 ch)
 {
-    return (ch>=32 && ch<127) ? nt_font_advance[ch-32] : 8;
+    int raw=(ch>=32 && ch<127) ? nt_font_advance[ch-32] : 8;
+    return (raw*g_font_height+7)/14;
 }
 static int nt_glyph(void *hdc,int x,int y,u16 ch)
 {
     const void **api=ntapi();
     u32 fg=rgb565(g_text_color),bg=rgb565(g_bk_color);
-    int scale=g_font_scale;
-    if (!hdc || !api || !api[7]) return 0;
-    if (ch<32 || ch>=127) ch='?';
-    for (int row=0;row<14;++row) {
-        unsigned bits=nt_font_rows[ch-32][row];
-        for (int col=0;col<8;++col) {
-            int active=(bits >> (7-col)) & 1;
-            if (!active && g_bk_mode==1) continue;
-            int xx=x+col*scale,yy=y+row*scale;
-            u32 clr=active ? fg : bg;
-            for(int sy=0;sy<scale;++sy)
-                for(int sx=0;sx<scale;++sx)
-                    if(xx+sx>=0 && yy+sy>=0 && xx+sx<320 && yy+sy<528)
-                        ((void (*)(u32,u32,u32))api[7])
-                            ((u32)(xx+sx),(u32)(yy+sy),clr);
+    int h=g_font_height;
+    int w=(8*h+7)/14;
+    if(!hdc || !api || !api[7]) return 0;
+    if(ch<32 || ch>=127)ch='?';
+    for(int yy=0;yy<h;++yy) {
+        unsigned bits=nt_font_rows[ch-32][(yy*14)/h];
+        for(int xx=0;xx<w;++xx) {
+            int src=(xx*14)/h;
+            if(src>7)src=7;
+            int active=(bits>>src)&1; /* LSB at the LEFT */
+            if(!active && g_bk_mode==1)continue;
+            int px=x+xx,py=y+yy;
+            if(px>=0 && px<320 && py>=0 && py<528)
+                ((void (*)(u32,u32,u32))api[7])
+                   ((u32)px,(u32)py,active?fg:bg);
         }
     }
     return 1;
 }
 int TextOutW(void *hdc,int x,int y,const u16 *text,int n)
 {
-    if (!hdc || !text || n<0) return 0;
+    if(!hdc || !text || n<0)return 0;
     for(int i=0;i<n && text[i] && x<320;++i) {
         nt_glyph(hdc,x,y,text[i]);
-        x+=nt_fontwidth(text[i])*g_font_scale;
+        x+=nt_fontwidth(text[i]);
     }
     return 1;
 }
 int DrawTextW(void *hdc,const u16 *text,int count,NT_RECT *rect,u32 flags)
 {
-    int n=0,w=0,x,y,scale=g_font_scale;
-    if(!hdc || !text || !rect) return 0;
+    int n=0,w=0,x,y,h=g_font_height;
+    if(!hdc || !text || !rect)return 0;
     while((count<0 || n<count) && n<255 && text[n]) {
-        w+=nt_fontwidth(text[n])*scale; ++n;
+        w+=nt_fontwidth(text[n]);++n;
     }
     x=rect->left;
-    if(flags&1u) x+=(rect->right-rect->left-w)/2;
-    if(flags&2u) x+=rect->right-rect->left-w;
+    if(flags&1u)x+=(rect->right-rect->left-w)/2;
+    if(flags&2u)x+=rect->right-rect->left-w;
     y=rect->top;
-    if(flags&4u) y+=(rect->bottom-rect->top-14*scale)/2;
-    if(!(flags&0x400u)) TextOutW(hdc,x,y,text,n);
-    else { rect->right=rect->left+w; rect->bottom=rect->top+14*scale; }
-    return 14*scale;
+    if(flags&4u)y+=(rect->bottom-rect->top-h)/2;
+    if(!(flags&0x400u))TextOutW(hdc,x,y,text,n);
+    else {rect->right=rect->left+w;rect->bottom=rect->top+h;}
+    return h;
 }
 
 int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
