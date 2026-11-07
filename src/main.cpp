@@ -51,13 +51,15 @@ struct NtosApi {
 
 static int cur_row = 0;
 
+// Console output goes through Debug_Printf -- the small font (the big
+// Debug_PrintString glyphs only fit ~28 columns and drown the screen).
 static void ntos_puts(const char *s) {
-    if (cur_row > 28) {
+    if (cur_row > 22) {
         cur_row = 0;
         LCD_Refresh();
     }
-    Debug_SetCursorPosition(0, static_cast<unsigned int>(cur_row++));
-    Debug_PrintString(s, false);
+    Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0, "%s",
+                 s);
     LCD_Refresh();
 }
 
@@ -551,10 +553,8 @@ static char_const16_t g_find_pattern_dll[] = {
 
 static void banner(void) {
     fillScreen(color(0, 0, 40));
-    Debug_SetCursorPosition(0, 0);
-    Debug_PrintString("NTOS 0.2 - SH4BE COFF loader + UTLB", true);
-    Debug_SetCursorPosition(0, 1);
-    Debug_PrintString("Select an .EXE (SH4BE PE)", false);
+    Debug_Printf(0, 0, true, 0, "%s", "NTOS 0.2 - SH4BE PE loader + UTLB");
+    Debug_Printf(0, 1, false, 0, "%s", "Select an .EXE (SH4BE PE)");
     LCD_Refresh();
     cur_row = 3;
 }
@@ -581,6 +581,7 @@ int main(int argc, char **argv, char **envp) {
     (void)argv;
     (void)envp;
 
+    while (true) {
     banner();
 
     // Scan flash for payload images (*.EXE) and modules (*.DLL). NTOS maps
@@ -674,7 +675,7 @@ int main(int argc, char **argv, char **envp) {
             if (testKey(key1, key2, KEY_EXE)) {
                 quit = true;
             } else if (testKey(key1, key2, KEY_CLEAR)) {
-                return 0;
+                return 0; // exits NTOS back to the launcher
             } else if (testKey(key1, key2, KEY_ADD) ||
                        testKey(0, key2, KEY_UP) ||
                        testKey(0, key2, KEY_DOWN)) {
@@ -804,7 +805,9 @@ int main(int argc, char **argv, char **envp) {
     Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
                   "Payload returned 0x%08lX",
                   static_cast<unsigned long>(static_cast<uint32_t>(ret)));
+    Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0, "%s",
+                 "EXE: pick again   CLEAR: exit");
     LCD_Refresh();
     Debug_WaitKey();
-    return ret;
+    } // relaunch loop: back to the banner + picker
 }

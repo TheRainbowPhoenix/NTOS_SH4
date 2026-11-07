@@ -22,13 +22,15 @@
  */
 #pragma once
 
+#include <stdint.h> /* uintptr_t for the import-call cast */
+
 /* Declare an imported function: typedef + call helper. */
 #define NT_IMPORT(ret, name, params)                                          \
     typedef ret (*__ntx_fn_t_##name) params;                                   \
     extern const void *volatile __imp_##name;                                  \
     static __inline __ntx_fn_t_##name __ntx_ref_##name(void)                   \
     {                                                                          \
-        return (__ntx_fn_t_##name)__imp_##name;                                \
+        return (__ntx_fn_t_##name)(uintptr_t)__imp_##name;                     \
     }
 
 /* Define the IAT slot for an imported function (in .idata, patched by the

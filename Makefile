@@ -37,10 +37,15 @@ APP_HH3 := $(APP_ELF:.elf=.hh3)
 #   HELLO.EXE      self-contained hello (copy-load fallback or UTLB-mapped)
 #   COREDLL.DLL    stub COREDLL module, /FIXED at 0x00800000, PE exports
 #   HELLOCORE.EXE  EXE importing from COREDLL (exercises UTLB + import snap)
+
 PAYLOAD_DIR := payload
-PAYLOAD_CFLAGS := -ffreestanding -fno-builtin -fno-stack-protector \
-	-fno-unwind-tables -fno-asynchronous-unwind-tables \
-	-O2 -Wall -Wextra $(INCLUDES)
+#   HELLO.EXE      self-contained hello (copy-load fallback or UTLB-mapped)
+#   COREDLL.DLL    WinCE-style COREDLL: ~1900 exports (coredll.def), a few
+#                  really implemented, the rest routed to coredll_stub
+#   HELLOCORE.EXE  EXE importing from COREDLL (UTLB + import snap demo)
+#   MEMTOOL.EXE    SH4 BE recreation of NonCASRom/WinCE/MEMTOOL.EXE
+#                  (NKDbgPrintfW / SetKMode / SetProcPermissions / memory)
+PAYLOAD_CFLAGS := -ffreestanding -fno-builtin -fno-stack-protector 	-fno-unwind-tables -fno-asynchronous-unwind-tables 	-O2 -Wall -Wextra $(INCLUDES)
 
 HELLO_OBJ := $(BUILDDIR)/payload/hello.o
 HELLO_ELF := $(BUILDDIR)/payload/hello.elf
@@ -54,12 +59,14 @@ HELLOCORE_OBJ := $(BUILDDIR)/payload/hello_core.o
 HELLOCORE_ELF := $(BUILDDIR)/payload/hello_core.elf
 HELLOCORE_EXE := $(OUTDIR)/HELLOCORE.EXE
 
+MEMTOOL_OBJ := $(BUILDDIR)/payload/memtool.o
+MEMTOOL_ELF := $(BUILDDIR)/payload/memtool.elf
+MEMTOOL_EXE := $(OUTDIR)/MEMTOOL.EXE
+
 AS_SOURCES:=$(shell find $(SOURCEDIR) -name '*.S')
 CC_SOURCES:=$(shell find $(SOURCEDIR) -name '*.c')
 CXX_SOURCES:=$(shell find $(SOURCEDIR) -name '*.cpp')
-OBJECTS := $(addprefix $(BUILDDIR)/,$(AS_SOURCES:.S=.o)) \
-	$(addprefix $(BUILDDIR)/,$(CC_SOURCES:.c=.o)) \
-	$(addprefix $(BUILDDIR)/,$(CXX_SOURCES:.cpp=.o))
+OBJECTS := $(addprefix $(BUILDDIR)/,$(AS_SOURCES:.S=.o)) 	$(addprefix $(BUILDDIR)/,$(CC_SOURCES:.c=.o)) 	$(addprefix $(BUILDDIR)/,$(CXX_SOURCES:.cpp=.o))
 
 NOLTOOBJS := $(foreach obj, $(OBJECTS), $(if $(findstring /nolto/, $(obj)), $(obj)))
 
@@ -67,7 +74,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(HELLOCORE_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) Makefile
 
 all: elf hh3 ntx
 .DEFAULT_GOAL := all
@@ -80,9 +87,9 @@ clean:
 %.hh3: %.elf
 	$(STRIP) -o $@ $^
 
-# Payloads: freestanding compile, static link at their preferred base with
-# retained relocations, then the ELF->PE packer emits the standard PE image.
-# HELLO.EXE / HELLOCORE.EXE at 0x00400000, COREDLL.DLL at 0x00800000.
+# Payloads: freestanding compile, static link at their preferred base
+# (+0x200 for the PE header page -- link VA == runtime VA, see elf2ntx.py),
+# then the ELF->PE packer emits the standard image.
 $(HELLO_OBJ): $(PAYLOAD_DIR)/hello.c payload/ntimport.h
 	@mkdir -p $(dir $@)
 	$(CC) -c $(PAYLOAD_DIR)/hello.c -o $@ $(PAYLOAD_CFLAGS)
@@ -103,11 +110,9 @@ $(COREDLL_ELF): $(COREDLL_OBJ) $(PAYLOAD_DIR)/coredll.ld
 	@mkdir -p $(dir $@)
 	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/coredll.ld -o $@ $(COREDLL_OBJ)
 
-$(COREDLL_DLL): $(COREDLL_ELF) tools/elf2ntx.py
+$(COREDLL_DLL): $(COREDLL_ELF) tools/elf2ntx.py tools/coredll_exports.txt
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x00800000 --dll \
-		--exports coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free \
-		--dll-name COREDLL.DLL
+	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x00800000 --dll 		--exports coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free 		--exports-file tools/coredll_exports.txt --stub-symbol coredll_stub 		--dll-name COREDLL.DLL
 
 $(HELLOCORE_OBJ): $(PAYLOAD_DIR)/hello_core.c $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
@@ -120,6 +125,18 @@ $(HELLOCORE_ELF): $(HELLOCORE_OBJ) $(PAYLOAD_DIR)/payload.ld
 $(HELLOCORE_EXE): $(HELLOCORE_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(HELLOCORE_ELF) -o $@ --import-module COREDLL.DLL
+
+$(MEMTOOL_OBJ): $(PAYLOAD_DIR)/memtool.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $(PAYLOAD_DIR)/memtool.c -o $@ $(PAYLOAD_CFLAGS)
+
+$(MEMTOOL_ELF): $(MEMTOOL_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(MEMTOOL_OBJ)
+
+$(MEMTOOL_EXE): $(MEMTOOL_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(MEMTOOL_ELF) -o $@ --import-module COREDLL.DLL
 
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)

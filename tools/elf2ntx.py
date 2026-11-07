@@ -809,6 +809,13 @@ def main():
     ap.add_argument("--exports", default=None,
                     help="comma-separated ELF symbol names to export via a "
                          "PE export directory (COREDLL-style)")
+    ap.add_argument("--exports-file", default=None,
+                    help="file with one export name per line (WinCE "
+                         "coredll.def-style, ~2000 names); names not defined "
+                         "in the ELF resolve to --stub-symbol")
+    ap.add_argument("--stub-symbol", default=None,
+                    help="ELF symbol whose RVA backs all undefined "
+                         "--exports-file names (e.g. coredll_stub)")
     ap.add_argument("--dll-name", default=DEFAULT_IMPORT_MODULE,
                     help="module name recorded in the export directory "
                          "(default COREDLL.DLL)")
@@ -831,7 +838,7 @@ def main():
     with open(args.input, "rb") as f:
         elf = Elf(f.read())
 
-    exports = None
+    exports = []
     if args.exports:
         want = [n.strip() for n in args.exports.split(",") if n.strip()]
         defined = {_unmangle(s.name): s.value for s in elf.symbols
@@ -840,6 +847,35 @@ def main():
         if missing:
             ap.error(f"--exports: symbols not found in the ELF: {missing}")
         exports = [(n, defined[n] - base) for n in want]
+
+    if args.exports_file:
+        want = [l.strip() for l in open(args.exports_file, encoding="utf-8",
+                                        errors="replace")
+                if l.strip() and not l.startswith(";")]
+        defined = {_unmangle(s.name): s.value for s in elf.symbols
+                   if s.shndx != SHN_UNDEF and s.shndx < SHN_LORESERVE}
+        stub_rva = None
+        if args.stub_symbol:
+            sv = defined.get(_unmangle(args.stub_symbol))
+            if sv is None:
+                ap.error(f"--stub-symbol {args.stub_symbol} not in the ELF")
+            stub_rva = sv - base
+        have = {n for n, _ in exports}
+        n_real = n_stub = 0
+        for n in want:
+            if n in have:
+                continue
+            sv = defined.get(n)
+            if sv is not None:
+                exports.append((n, sv - base))
+                n_real += 1
+            elif stub_rva is not None:
+                exports.append((n, stub_rva))
+                n_stub += 1
+            else:
+                ap.error(f"--exports-file: {n} not defined and no "
+                         "--stub-symbol given")
+        print(f"note: exports-file: {n_real} real, {n_stub} stubbed")
 
     out, sites = emit_ntx(elf, base, exports=exports,
                           dll_name=args.dll_name,
