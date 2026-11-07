@@ -15,6 +15,8 @@ NT_IMPORT(void,xamlui_progress,(void *,int,int,int,int))
 NT_IMPORT(void,xamlui_actionbar,(void *,const WCHAR16 *,const WCHAR16 *))
 NT_IMPORT(void,xamlui_dialog,(void *,const WCHAR16 *,const WCHAR16 *))
 NT_IMPORT(void,xamlui_menu,(void *))
+NT_IMPORT(void,xamlui_folder,(void *,int,int,int,int,DWORD))
+NT_IMPORT(void,xamlui_start,(void *,int))
 NT_DEFINE(xamlui_tile)
 NT_DEFINE(xamlui_label)
 NT_DEFINE(xamlui_switch)
@@ -27,6 +29,8 @@ NT_DEFINE(xamlui_progress)
 NT_DEFINE(xamlui_actionbar)
 NT_DEFINE(xamlui_dialog)
 NT_DEFINE(xamlui_menu)
+NT_DEFINE(xamlui_folder)
+NT_DEFINE(xamlui_start)
 #define C(r,g,b) RGB(r,g,b)
 #define WHITE C(240,240,240)
 #define BLUE C(51,103,241)
@@ -34,7 +38,11 @@ NT_DEFINE(xamlui_menu)
 #define PANEL C(31,31,31)
 static const WCHAR16 cls[]={'M','E','T','R','O','W','I','N',0};
 static const WCHAR16 title[]={'X','A','M','L','U','I',' ','D','e','m','o',0};
+/* screen 0..4 = apps, 5 = Start (home). */
 static int screen=0,tab=0,menu_open=0,dialog_open=0,checked=4;
+static int expanded=0,start_page=0,search_mode=0,music_filter=0;
+static int prior_screen=0,contact_selected=0,folder_menu=0;
+static int touch_origin_y=-1,touch_origin_x=-1;
 static int percentages[5]={99,57,15,11,8};
 static const char *names[]={"This Device","Clear browsing data",
                             "MY MUSIC","Offline maps","Music folder"};
@@ -89,28 +97,42 @@ static void draw_storage(void *dc) {
     }
 }
 static void draw_clear(void *dc) {
-    label(dc,14,73,"Clear browsing data",WHITE);
-    const char *items[7]={
+    label(dc,14,70,"Clear browsing data",WHITE);
+    const char *items[9]={
         "Browsing history","Cookies and website data",
         "Cached data and files","Recovery data","Download history",
-        "Form data","Passwords"
+        "Form data","Passwords","Media licenses","Site permissions"
     };
-    for(int i=0;i<7;++i)
-        checkbox(dc,14,117+i*39,items[i],(checked>>i)&1);
-    label(dc,14,405,"Show more  v",DIM);
-    tile(dc,14,443,126,33,PANEL);
-    label(dc,62,450,"Clear",WHITE);
+    int visible=expanded ? 9 : 7;
+    /* Extra controls are laid out as scrollable rows once expanded. */
+    int step=expanded ? 33 : 39;
+    for(int i=0;i<visible;++i)
+        checkbox(dc,14,109+i*step,items[i],(checked>>i)&1);
+    int sy=expanded ? 418 : 398;
+    label(dc,14,sy,expanded?"Show less  ^":"Show more  v",BLUE);
+    tile(dc,14,446,126,33,PANEL);
+    label(dc,61,453,"Clear",WHITE);
 }
 static void draw_music(void *dc) {
     WCHAR16 a[64],b[64],c[64];
     to_wide("Songs",a);to_wide("Artists",b);to_wide("Albums",c);
     NT_CALL(xamlui_pivot,(dc,tab,a,b,c));
-    label(dc,14,107,"Refine: A to Z",BLUE);
-    label(dc,14,154,"Nothing to show here.",WHITE);
-    label(dc,14,178,"Try a different filter.",WHITE);
+    label(dc,14,103,music_filter?"Refine: On this device":"Refine: A to Z",BLUE);
+    if(tab==0) {
+        label(dc,14,159,"No songs found on this device.",WHITE);
+        label(dc,14,191,"Try a different filter.",DIM);
+    } else if(tab==1) {
+        txt(dc,14,138,"Artists",WHITE,1);
+        xrow(dc,205,"Unknown Artist","No local artist artwork",1);
+        label(dc,14,302,"Tap artist to view albums",DIM);
+    } else {
+        txt(dc,14,138,"Albums",WHITE,1);
+        xrow(dc,207,"Unknown Album","2015 - Unknown Artist",1);
+        xrow(dc,288,"Sample Playlist","No playable files found",0);
+    }
     tile(dc,0,449,320,39,BLUE);
-    label(dc,16,461,"Unknown Artist",WHITE);
-    label(dc,211,461,"|<   >   >|",WHITE);
+    label(dc,16,458,music_filter?"Local collection":"Unknown Artist",WHITE);
+    label(dc,222,458,"|<  >  >|",WHITE);
 }
 static void draw_maps(void *dc) {
     label(dc,14,87,"Maps",WHITE);
@@ -128,37 +150,45 @@ static void draw_maps(void *dc) {
     action(dc,"Delete all","Storage");
 }
 static void draw_files(void *dc) {
-    label(dc,14,79,"Sort by: Name  v",DIM);
+    label(dc,14,78,"Sort by: Name   v",DIM);
     for(int i=0;i<3;++i) {
-        int x=30+i*102;
-        tile(dc,x,132,48,60,C(255,221,139));
-        tile(dc,x+6,128,32,11,C(255,221,139));
+        int x=26+i*101;
+        NT_CALL(xamlui_folder,(dc,x,131,57,65,C(255,221,139)));
     }
-    label(dc,20,207,"Audiobooks",WHITE);
-    label(dc,123,207,"Artists",WHITE);
-    label(dc,222,207,"Albums",WHITE);
-    if(tab) {
-        tile(dc,108,219,198,218,C(41,41,41));
-        const char *actions[5]={"Delete","Move to","Copy to","Rename",
-                                "Properties"};
-        for(int i=0;i<5;++i) label(dc,122,236+i*39,actions[i],WHITE);
+    label(dc,18,215,"Audio",WHITE);
+    label(dc,120,215,"Artists",WHITE);
+    label(dc,220,215,"Albums",WHITE);
+    if(folder_menu) {
+        tile(dc,85,235,225,207,C(40,40,40));
+        const char *items[5]={"Delete","Move to","Copy to",
+                              "Rename","Properties"};
+        for(int i=0;i<5;++i)label(dc,109,244+i*39,items[i],WHITE);
     }
     action(dc,"Select","More  ...");
 }
 static void draw(void *dc) {
-    WCHAR16 name[64];to_wide(names[screen],name);
-    NT_CALL(xamlui_shell,(dc,name,screen));
-    if(screen==0)draw_storage(dc);
-    else if(screen==1)draw_clear(dc);
-    else if(screen==2)draw_music(dc);
-    else if(screen==3)draw_maps(dc);
-    else draw_files(dc);
+    if(screen==5) {
+        NT_CALL(xamlui_start,(dc,start_page));
+    } else {
+        WCHAR16 name[64];to_wide(names[screen],name);
+        NT_CALL(xamlui_shell,(dc,name,screen));
+        if(screen==0)draw_storage(dc);
+        else if(screen==1)draw_clear(dc);
+        else if(screen==2)draw_music(dc);
+        else if(screen==3)draw_maps(dc);
+        else draw_files(dc);
+    }
+    if(search_mode) {
+        tile(dc,0,49,320,74,PANEL);
+        label(dc,12,67,"Search settings and apps",WHITE);
+        label(dc,12,92,"Tap to close search",DIM);
+    }
     if(menu_open)NT_CALL(xamlui_menu,(dc));
     if(dialog_open) {
-        WCHAR16 title_w[64],msg[64];
-        to_wide("Are you sure?",title_w);
-        to_wide("This is a demo action.",msg);
-        NT_CALL(xamlui_dialog,(dc,title_w,msg));
+        WCHAR16 caption[64],body[64];
+        to_wide("Are you sure?",caption);
+        to_wide("This is a demo action.",body);
+        NT_CALL(xamlui_dialog,(dc,caption,body));
     }
 }
 static void redraw(void *hwnd) {NT_CALL(InvalidateRect,(hwnd,0,1));}
@@ -167,43 +197,90 @@ static void select_menu(int y) {
     if(idx>=0 && idx<5)screen=idx;
     menu_open=0;tab=0;
 }
+static void back_action(void) {
+    if(dialog_open){dialog_open=0;return;}
+    if(menu_open){menu_open=0;return;}
+    if(search_mode){search_mode=0;return;}
+    if(screen==5){screen=prior_screen;return;}
+    prior_screen=screen;screen=5;
+}
+static void home_action(void) {
+    if(screen!=5)prior_screen=screen;
+    screen=5;menu_open=0;dialog_open=0;search_mode=0;
+}
+static void select_start_tile(int x,int y) {
+    int col=x>=160, row=(y-79+start_page*270)/129;
+    int which=row*2+col;
+    static const int route[6]={1,0,2,4,0,3};
+    if(which>=0 && which<6){screen=route[which];tab=0;}
+}
 static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp) {
     if(msg==WM_PAINT) {
         PAINTSTRUCT ps={0};
         void *dc=NT_CALL(BeginPaint,(hwnd,&ps));
-        if(dc) {draw(dc);NT_CALL(EndPaint,(hwnd,&ps));}
+        if(dc){draw(dc);NT_CALL(EndPaint,(hwnd,&ps));}
         return 0;
     }
     if(msg==WM_KEYDOWN) {
-        if(wp==VK_RIGHT)screen=(screen+1)%5;
-        else if(wp==VK_LEFT)screen=(screen+4)%5;
+        if(wp==VK_RIGHT) {
+            if(screen==5)start_page=1;
+            else if(screen==2)tab=(tab+1)%3;
+            else screen=(screen+1)%5;
+        } else if(wp==VK_LEFT) {
+            if(screen==5)start_page=0;
+            else if(screen==2)tab=(tab+2)%3;
+            else screen=(screen+4)%5;
+        } else if(wp==VK_UP && screen==5)start_page=0;
+        else if(wp==VK_DOWN && screen==5)start_page=1;
         else if(wp==VK_RETURN)menu_open=!menu_open;
-        else if(wp=='0')dialog_open=!dialog_open;
+        else if(wp=='0')home_action();
         else return 0;
-    } else if(msg==WM_LBUTTONDOWN) {
-        int x=(short)(lp&0xffffu),y=(short)(lp>>16);
+    } else if(msg==WM_LBUTTONDOWN || msg==0x0200u) {
+        int x=(short)(lp&65535u),y=(short)(lp>>16);
+        if(msg==0x0200u) {
+            if(screen==5 && touch_origin_y>=0) {
+                if(touch_origin_y-y>55)start_page=1;
+                if(y-touch_origin_y>55)start_page=0;
+            }
+            redraw(hwnd);
+            return 0;
+        }
+        touch_origin_x=x;touch_origin_y=y;
         if(dialog_open) {
-            if(y>260 && y<310)dialog_open=0;
+            if(y>=258 && y<310)dialog_open=0;
         } else if(menu_open) {
-            if(x<239 && y>=65 && y<395)select_menu(y);
+            if(y>=76 && y<447)select_menu(y);
             else menu_open=0;
+        } else if(y>=488) {
+            if(x<110)back_action();
+            else if(x<211)home_action();
+            else search_mode=!search_mode;
+        } else if(search_mode)search_mode=0;
+        else if(screen==5) {
+            if(y>=58 && y<455) {
+                if(x>=275 && y>=430)start_page=!start_page;
+                else select_start_tile(x,y);
+            }
         } else if(y<50) {
             if(x<54)menu_open=1;
-            else if(x>=267)screen=4;
-        } else if(y>=488) {
-            if(x<111) {screen=0;tab=0;}
-            else if(x<211) {screen=0;menu_open=0;}
-            else {screen=1;}
+            else if(x>=267)search_mode=1;
         } else if(screen==1) {
-            if(y>=117 && y<390) {
-                int k=(y-117)/39;
-                if(k>=0 && k<7)checked^=1<<k;
-            } else if(y>440 && y<482)dialog_open=1;
-        } else if(screen==2 && y>=52 && y<90) {
-            tab=x/106;if(tab>2)tab=2;
-        } else if(screen==3 && y>400 && y<455) dialog_open=1;
-        else if(screen==4 && y>115 && y<449) tab=!tab;
-        else if(screen==0 && y>230 && y<450) screen=1;
+            int step=expanded?33:39;
+            int count=expanded?9:7;
+            if(y>=109 && y<109+count*step) {
+                int i=(y-109)/step;
+                if(i>=0 && i<count)checked^=1<<i;
+            } else if(y>=394 && y<444)expanded=!expanded;
+            else if(y>=445 && y<488)dialog_open=1;
+        } else if(screen==2) {
+            if(y>=52 && y<90) {
+                tab=x/106;if(tab>2)tab=2;
+            } else if(y>=100 && y<126)music_filter=!music_filter;
+            else if(y>=199 && y<393 && tab!=0)dialog_open=1;
+        } else if(screen==3 && y>=399 && y<488)dialog_open=1;
+        else if(screen==4 && y>=115 && y<488) {
+            folder_menu=!folder_menu;
+        } else if(screen==0 && y>=230 && y<450)screen=1;
     } else return 0;
     redraw(hwnd);
     return 0;
