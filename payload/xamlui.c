@@ -166,7 +166,7 @@ void xamlui_polygon(void *dc,const POINT *pts,int n,u32 fill,u32 border) {
     for(int y=lo;y<=hi;++y) {
         int inter[12],count=0;
         for(int i=0;i<n;++i) {
-            const POINT a=pts[i],b=pts[(i+1)%n];
+            const POINT a=pts[i],b=pts[(i+1==n)?0:i+1];
             int y0=a.y,y1=b.y;
             if(y0==y1)continue;
             if(y0>y1){int t=y0;y0=y1;y1=t;}
@@ -187,7 +187,7 @@ void xamlui_polygon(void *dc,const POINT *pts,int n,u32 fill,u32 border) {
     }
     if(border!=0xffffffffu)
         for(int i=0;i<n;++i) {
-            const POINT a=pts[i],b=pts[(i+1)%n];
+            const POINT a=pts[i],b=pts[(i+1==n)?0:i+1];
             stroke(dc,a.x,a.y,b.x,b.y,border);
         }
 }
@@ -217,10 +217,10 @@ void xamlui_start(void *dc,int offset) {
     xamlui_tile(dc,0,0,320,488,BG);
     xamlui_text(dc,14,22,title,WHITE,1);
     for(int i=0;i<6;++i) {
-        int x=14+(i%2)*147, y=79+(i/2)*129-offset*270;
+        int x=14+(i&1)*147, y=79+(i>>1)*129-offset*270;
         if(y+116<=57 || y>=488)continue;
-        u32 col=(i%3==0)?RGB(51,103,241):
-                (i%3==1)?RGB(0,143,146):RGB(116,72,178);
+        u32 col=((i==0 || i==3))?RGB(51,103,241):
+                ((i==1 || i==4))?RGB(0,143,146):RGB(116,72,178);
         xamlui_tile(dc,x,y,x+137,y+117,col);
         const u16 *labels[6]={a,b,c,d,e,f};
         if(i==0) {
