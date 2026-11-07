@@ -222,10 +222,10 @@ static void home_action(void) {
     screen=5;menu_open=0;dialog_open=0;search_mode=0;
 }
 static void select_start_tile(int x,int y) {
-    int col=x>=160, row=(int)metro_div((unsigned)(y-79+start_page*270),129u);
+    int col=x>=160, row=(int)metro_div((unsigned)(y-79+start_page*390),129u);
     int which=row*2+col;
-    static const int route[6]={1,0,2,4,0,3};
-    if(which>=0 && which<6){screen=route[which];tab=0;}
+    static const int route[12]={1,0,2,4,0,3,4,1,0,0,4,0};
+    if(which>=0 && which<12){screen=route[which];tab=0;}
 }
 static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp) {
     if(msg==WM_PAINT) {
