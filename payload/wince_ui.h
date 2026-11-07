@@ -88,7 +88,8 @@ static void *ui_bigfont;
 static void *ui_smallfont;
 static void ui_init(void)
 {
-    LOGFONTW lf={0};
+    /* Static zero-initialization avoids SH4 freestanding movmem helpers. */
+    static LOGFONTW lf;
     lf.lfHeight=-16;
     ui_bigfont=NT_CALL(CreateFontIndirectW,(&lf));
     lf.lfHeight=-8;
