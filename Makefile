@@ -115,7 +115,7 @@ $(COREDLL_ELF): $(COREDLL_OBJ) $(PAYLOAD_DIR)/coredll.ld
 
 $(COREDLL_DLL): $(COREDLL_ELF) tools/elf2ntx.py tools/coredll_exports.txt
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x00800000 --dll 		--exports coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free 		--exports-file tools/coredll_exports.txt --stub-symbol coredll_stub 		--dll-name COREDLL.DLL
+	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x00800000 --dll 		--exports coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free,coredll_clear,coredll_pixel,coredll_line,coredll_fillrect,coredll_touch 		--exports-file tools/coredll_exports.txt --stub-symbol coredll_stub 		--dll-name COREDLL.DLL
 
 $(HELLOCORE_OBJ): $(PAYLOAD_DIR)/hello_core.c $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
