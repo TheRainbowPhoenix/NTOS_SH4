@@ -28,7 +28,7 @@ static void row(void *dc,int y,const char *head,const char *desc,int on)
 {
     ui_fill(dc,16,y,304,y+76,RGB(232,237,242));
     ui_fill(dc,16,y,20,y+76,ink());
-    ui_text(dc,34,y+13,head,RGB(255,255,255),0);
+    ui_text(dc,34,y+13,head,RGB(27,33,42),0);
     ui_text(dc,34,y+35,desc,RGB(91,98,109),0);
     toggle(dc,218,y+17,on);
 }
@@ -39,10 +39,10 @@ static void draw(void *dc)
     NT_CALL(xamlui_tile,(dc,0,0,320,528,RGB(251,251,253)));
     NT_CALL(xamlui_tile,(dc,0,0,320,37,RGB(0,120,215)));
     NT_CALL(xamlui_label,(dc,14,11,metro_brand,RGB(255,255,255)));
-    ui_text(dc,286,13,"[+]",ink(),0);
+    ui_text(dc,286,13,"[+]",RGB(255,255,255),0);
     ui_fill(dc,15,49,20,93,ink());
     ui_text(dc,31,55,"settings",white,1);
-    ui_text(dc,31,81,"PERSONALIZATION  /  DEMO",muted,0);
+    ui_text(dc,31,92,"PERSONALIZATION / DEMO",muted,0);
     ui_fill(dc,16,112,304,148,RGB(232,237,242));
     ui_text(dc,31,125,"Search settings",RGB(113,121,132),0);
     for(int i=0;i<3;++i) {
@@ -68,7 +68,7 @@ static void draw(void *dc)
         row(dc,358,"Touch hints","Show helper text",flags[2]);
     } else {
         ui_text(dc,17,211,"About this system",white,1);
-        ui_fill(dc,16,248,304,425,RGB(38,38,43));
+        ui_fill(dc,16,248,304,425,RGB(232,237,242));
         ui_fill(dc,29,263,35,314,ink());
         ui_text(dc,49,267,"NTOS 0.2",white,1);
         ui_text(dc,29,329,"SH-4 Big Endian",white,0);
