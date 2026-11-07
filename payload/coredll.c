@@ -16,6 +16,7 @@
  * word points at the syscall table (NTOS rebuilds that window in UTLB
  * slots 0x37..0x3A before the payload runs).
  */
+#include "font8x8.h"
 typedef unsigned int u32;
 
 /* OS330 C1A API window contract: *(0x08100000) = syscall table pointer. */
@@ -483,7 +484,7 @@ void *CreateSolidBrush(u32 colorref)
 
 int DeleteObject(void *object)
 {
-    return object != 0;
+    return object != 0; /* synthetic brush/font handles: no heap ownership */
 }
 
 int FillRect(void *hdc, const NT_RECT *rect, void *brush)
@@ -562,20 +563,105 @@ int GetSystemMetrics(int index)
     if (index==1) return 528; /* SM_CYSCREEN */
     return 0;
 }
-int TextOutW(void *hdc, int x, int y, const u16 *text, int n)
+/* Fixed-size public-domain bitmap font. No debug console or FPU. WinCE
+ * GDI names and COLORREF contracts; one synthetic framebuffer HDC only. */
+static u32 g_text_color=0x00000000u;
+static u32 g_bk_color=0x00FFFFFFu;
+static int g_bk_mode=1; /* TRANSPARENT */
+static int g_font_scale=1;
+#define NTOS_FONT_HANDLE 0x02000000u
+
+typedef struct {
+    int lfHeight,lfWidth,lfEscapement,lfOrientation,lfWeight;
+    unsigned char lfItalic,lfUnderline,lfStrikeOut,lfCharSet;
+    unsigned char lfOutPrecision,lfClipPrecision,lfQuality,lfPitchAndFamily;
+    u16 lfFaceName[32];
+} NT_LOGFONTW;
+
+void *CreateFontIndirectW(const NT_LOGFONTW *font)
 {
-    const void **a=ntapi();
-    char ansi[64];
-    int i=0;
-    if (!hdc || !text || !a || !a[16] || x<0 || y<0 || n<0) return 0;
-    while (i<n && i<63 && text[i]) {
-        ansi[i]=(text[i]>=32 && text[i]<127) ? (char)text[i] : '?';
-        ++i;
+    int h;
+    if (!font) return 0;
+    h=font->lfHeight;
+    if (h<0) h=-h;
+    return (void *)(NTOS_FONT_HANDLE | ((h>=14) ? 2u : 1u));
+}
+void *SelectObject(void *hdc,void *object)
+{
+    u32 v=(u32)object;
+    void *old;
+    if (!hdc || (v & 0xFF000000u) != NTOS_FONT_HANDLE) return 0;
+    old=(void *)(NTOS_FONT_HANDLE | (u32)g_font_scale);
+    g_font_scale=(v & 0xFFu)==2u ? 2 : 1;
+    return old;
+}
+u32 SetTextColor(void *hdc,u32 color)
+{
+    u32 old=g_text_color;
+    if (hdc) g_text_color=color;
+    return old;
+}
+u32 SetBkColor(void *hdc,u32 color)
+{
+    u32 old=g_bk_color;
+    if (hdc) g_bk_color=color;
+    return old;
+}
+int SetBkMode(void *hdc,int mode)
+{
+    int old=g_bk_mode;
+    if (hdc && (mode==1 || mode==2)) g_bk_mode=mode;
+    return old;
+}
+static int nt_glyph(void *hdc,int x,int y,u16 ch)
+{
+    const void **api=ntapi();
+    u32 fg=rgb565(g_text_color),bg=rgb565(g_bk_color);
+    int scale=g_font_scale;
+    if (!hdc || !api || !api[7]) return 0;
+    if (ch>127) ch='?';
+    for (int row=0;row<8;++row) {
+        u32 bits=ntos_font8x8[ch][row];
+        for (int col=0;col<8;++col) {
+            int active=(bits>>col)&1;
+            if (!active && g_bk_mode==1) continue;
+            int xx=x+col*scale, yy=y+row*scale;
+            u32 color=active ? fg : bg;
+            for (int sy=0;sy<scale;++sy)
+                for (int sx=0;sx<scale;++sx)
+                    if (xx+sx>=0 && yy+sy>=0 && xx+sx<320 && yy+sy<528)
+                        ((void (*)(u32,u32,u32))api[7])
+                            ((u32)(xx+sx),(u32)(yy+sy),color);
+        }
     }
-    ansi[i]=0;
-    ((void (*)(u32,u32,const char *))a[16])((u32)x,(u32)y,ansi);
     return 1;
 }
+int TextOutW(void *hdc,int x,int y,const u16 *text,int n)
+{
+    int i=0;
+    if (!hdc || !text || n<0) return 0;
+    while (i<n && text[i] && x+i*8*g_font_scale<320) {
+        nt_glyph(hdc,x+i*8*g_font_scale,y,text[i]);
+        ++i;
+    }
+    return 1;
+}
+int DrawTextW(void *hdc,const u16 *text,int count,NT_RECT *rect,u32 flags)
+{
+    int n=0,x,y,scale=g_font_scale;
+    if (!hdc || !text || !rect) return 0;
+    while ((count<0 || n<count) && n<255 && text[n]) ++n;
+    x=rect->left;
+    if (flags & 1u) x+=(rect->right-rect->left-n*8*scale)/2; /* DT_CENTER */
+    if (flags & 2u) x+=rect->right-rect->left-n*8*scale; /* DT_RIGHT */
+    y=rect->top;
+    if (flags & 4u) y+=(rect->bottom-rect->top-8*scale)/2; /* DT_VCENTER */
+    if (!(flags & 0x400u)) TextOutW(hdc,x,y,text,n); /* DT_CALCRECT */
+    else { rect->right=rect->left+n*8*scale;
+           rect->bottom=rect->top+8*scale; }
+    return 8*scale;
+}
+
 int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
 {
     (void)rect; (void)erase;
