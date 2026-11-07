@@ -713,6 +713,98 @@ int CloseHandle(void *handle)
     return ((int (*)(int))a[14])(fd)==0;
 }
 
+/* Additional WinCE filesystem calls. NTOS only exposes the FLS0 volume;
+ * these don't emulate WinCE sharing, ACLs or asynchronous I/O. */
+static u32 g_last_error;
+u32 GetLastError(void) { return g_last_error; }
+void SetLastError(u32 err) { g_last_error=err; }
+static u32 nt_file_error(int err)
+{
+    if (err == -14) return 2;  /* FILE_ENOENT -> ERROR_FILE_NOT_FOUND */
+    if (err == -5) return 5;   /* FILE_EACCES -> ERROR_ACCESS_DENIED */
+    if (err == -16) return 32; /* FILE_ESHARE -> ERROR_SHARING_VIOLATION */
+    if (err == -2) return 87;  /* FILE_EINVAL -> ERROR_INVALID_PARAMETER */
+    return 1;                 /* ERROR_INVALID_FUNCTION / generic failure */
+}
+
+u32 SetFilePointer(void *handle,int offset,int *high,u32 move_method)
+{
+    const void **a=ntapi();
+    int fd=handle_fd(handle),result;
+    if (fd<0 || !a || !a[18] || move_method>2 ||
+        (high && *high != 0)) {
+        g_last_error=87;
+        return 0xFFFFFFFFu;
+    }
+    result=((int (*)(int,int,u32))a[18])(fd,offset,move_method);
+    if (result<0) {
+        g_last_error=nt_file_error(result);
+        return 0xFFFFFFFFu;
+    }
+    if (high) *high=0;
+    g_last_error=0;
+    return (u32)result;
+}
+
+int DeleteFileW(const u16 *path)
+{
+    const void **a=ntapi();
+    char name[96];
+    int result;
+    if (!a || !a[19] || !narrow_path(path,name,sizeof(name))) {
+        g_last_error=123;
+        return 0;
+    }
+    result=((int (*)(const char *))a[19])(name);
+    g_last_error=result<0 ? nt_file_error(result) : 0;
+    return result==0;
+}
+
+int MoveFileW(const u16 *oldpath,const u16 *newpath)
+{
+    const void **a=ntapi();
+    char from[96],to[96];
+    int result;
+    if (!a || !a[20] ||
+        !narrow_path(oldpath,from,sizeof(from)) ||
+        !narrow_path(newpath,to,sizeof(to))) {
+        g_last_error=123;
+        return 0;
+    }
+    result=((int (*)(const char *,const char *))a[20])(from,to);
+    g_last_error=result<0 ? nt_file_error(result) : 0;
+    return result==0;
+}
+
+int CreateDirectoryW(const u16 *name,void *security)
+{
+    const void **a=ntapi();
+    char path[96];
+    int result;
+    (void)security;
+    if (!a || !a[21] || !narrow_path(name,path,sizeof(path))) {
+        g_last_error=123;
+        return 0;
+    }
+    result=((int (*)(const char *))a[21])(path);
+    g_last_error=result<0 ? nt_file_error(result) : 0;
+    return result==0;
+}
+
+u32 GetFileAttributesW(const u16 *name)
+{
+    const void **a=ntapi();
+    char path[96];
+    int result;
+    if (!a || !a[22] || !narrow_path(name,path,sizeof(path))) {
+        g_last_error=123;
+        return 0xFFFFFFFFu;
+    }
+    result=((int (*)(const char *))a[22])(path);
+    g_last_error=result<0 ? nt_file_error(result) : 0;
+    return result==0 ? 0x80u : 0xFFFFFFFFu; /* FILE_ATTRIBUTE_NORMAL */
+}
+
 /* ---------------------------------------------------------------------------
  * Stub fallback: every remaining export in tools/coredll_exports.txt is
  * redirected here by the packer (--exports-file + --stub-symbol).
