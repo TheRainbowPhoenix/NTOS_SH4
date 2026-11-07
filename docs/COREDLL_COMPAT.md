@@ -77,52 +77,74 @@ evidence that it is implemented. Before porting an application, inspect
 `payload/coredll.c` for the actual function and verify its semantics.
 
 
-## Visual UI demos (new)
+## UI applications and bitmap fonts
 
-- **GUIWIN.EXE** — Classic Windows-inspired control panel with navy title bar,
-  beveled buttons, three tabs, accent swatches, status area and a checkbox.
-  The caption close target posts WM_QUIT; the message loop returns and
-  destroys the window, restoring the NTOS EXE picker.
-  Touch controls or use LEFT/RIGHT, ENTER and 0.
-- **METROWIN.EXE** — Metro-inspired light Settings app with system,
-  personalization and about pages; accent colors and interactive on/off
-  switches. Changes are in-memory UI demonstrations, not OS preferences.
-- **CALC.EXE** — Integer-only calculator with on-screen digits/operators and
-  keypad support. No FPU, CRT, floats or floating-point operations.
+- **GUIWIN.EXE** — Windows 98-inspired WinCE control panel with title bar,
+  clickable close target, tabs, color selection and raised buttons. The
+  improved close path posts WM_QUIT; the EXE runner subsequently destroys
+  the window.
+- **METROWIN.EXE** — Windows 10 Mobile-inspired XAMLUI demo at 320x528,
+  based on user-supplied screenshots. A black/dark-gray shell, hamburger
+  navigation, bottom back/home/search navigation, pivot tabs, action bar,
+  storage progress bars, checkboxes, list rows, and modal dialog. It has
+  **five demo pages**: Storage Usage, Clear Browsing Data, My Music,
+  Offline Maps and File Browser. Values and entries are illustrative,
+  and do not read the device's actual files, songs or map inventory.
+- **CALC.EXE** — Integer-only touch/keypad calculator, no FPU.
 
-GUI apps include `payload/wince_ui.h`: a compact Windows CE type/ABI shim
-that imports **existing COREDLL function names**, not private drawing calls.
-The active WinCE GUI font is a **monochrome proportional Selawik Regular**
-bitmap raster generated directly from the user's Microsoft Selawik UFO
-archive. See `payload/selawik_ui.h` and `docs/SELAWIK_OFL_LICENSE.txt`
-(SIL Open Font License 1.1). This is fully 1-bit rasterization with
-**no antialiasing**, subpixel filtering, FPU or runtime font file.
-`TextOutW` and `DrawTextW` use the WinCE GDI calls to draw raster glyphs,
-with 1x and 2x sizes selected by `CreateFontIndirectW` / `SelectObject`.
-The atlas presently covers Basic Latin U+0020–U+007E.
+### Font fix
 
-**Two-module dependency demo:** METROWIN.EXE now imports from both
-`COREDLL.DLL` and `XAMLUI.DLL`. XAMLUI imports WinCE GDI APIs from
-COREDLL. The PE packer emits a separate named
-`IMAGE_IMPORT_DESCRIPTOR` with its own OriginalFirstThunk and FirstThunk
-for each DLL, and NTOS maps XAMLUI at its separate preferred base
-`0x00C00000` (COREDLL is `0x00800000`, EXEs are `0x00400000`).
-It resolves each dependency's imports before enabling the MMU, flushes
-the pages, maps every 4 KiB page into the UTLB, and releases all image
-allocations after the process returns.
+COREDLL's previous Selawik bitstream renderer exhibited garbled glyphs.
+The active font now uses a verified, direct 8x14 monochrome bitmap atlas
+from the user's [UGUI-v3 font_8x14.c](https://github.com/TheRainbowPhoenix/UGUI-v3/blob/master/src/UGUI/Fonts/font_8x14.c):
+95 Basic Latin glyphs, exactly 14 explicit row bytes per glyph,
+MSB-left. A per-glyph advance gives tighter UI labels than a fixed 8-cell
+grid. The decoder and bitstream offsets have been entirely removed.
+No antialiasing, FPU, font file, or TrueType rasterizer is required.
 
-This is **static load-time dependency resolution** for the two known
-DLL names, not arbitrary dynamic linking: `LoadLibraryW` /
-`GetProcAddress`, forwarder exports, arbitrary extra DLL discovery,
-and dependency cycles remain unsupported. The module size and available
-UTLB set/way budget also limit which binaries can run. The multi-module
-PE test is in `tools/test_multimodule.py`.
+The font is a reliable bitmap fallback rather than a genuine WinCE/Segoe
+TrueType renderer. The earlier Selawik UFO raster is preserved in
+`payload/selawik_ui.h` for future work but is **not** used by COREDLL.
 
-Build: `make clean && make -j4`; deploy `NTOS.hh3`, `COREDLL.DLL`,
-`XAMLUI.DLL`, `GUIWIN.EXE`, `METROWIN.EXE`, and `CALC.EXE`.
-Use `python3 tools/elf2ntx.py --selftest` and
-`python3 tools/test_multimodule.py` to validate the PE metadata.
-Hardware testing is still needed for UTLB mapping and pen-key event delivery.
+### DLL and UI architecture
+
+METROWIN imports both COREDLL and XAMLUI. XAMLUI is a separate SH4BE
+PE DLL at preferred base `0x00C00000`, and it imports real WinCE GDI
+exports from COREDLL at `0x00800000`. The METROWIN EXE is mapped at
+`0x00400000`.
+
+The XAMLUI exports (`xamlui_shell`, `xamlui_pivot`, `xamlui_row`,
+`xamlui_checkbox`, `xamlui_progress`, `xamlui_actionbar`,
+`xamlui_dialog`, `xamlui_menu`, etc.) are **owned by XAMLUI**, not
+added as fictitious COREDLL APIs. XAMLUI calls the real WinCE GDI subset
+backed by NTOS.
+
+The PE packer emits separate import descriptors and the loader snaps
+each by its DLL name, including the dependent XAMLUI -> COREDLL
+imports. Modules occupy disjoint preferred VAs and each mapped 4 KiB
+page uses a UTLB entry. The separate VA=0 'null guard' mapping was
+removed, because it incorrectly used a fifth way of set 0 when all
+three images plus the API window were present. VA 0 remains unmapped,
+which is the correct null-pointer guard.
+
+`tools/test_multimodule.py` now checks the emitted PE imports **and**
+simulates all 32 virtual-address-indexed four-way UTLB sets using the
+actual compiled PE image sizes. This does not replace a physical
+SH7305 run.
+
+Current limitations: only two named module dependencies, no
+LoadLibrary/GetProcAddress runtime loading, one synthetic WinCE
+window, no genuine XAML parser or Windows compositor, no Unicode
+shaping, and application data is illustrative.
+
+Build: `make clean && make -j4`. Install `NTOS.hh3`,
+`COREDLL.DLL`, `XAMLUI.DLL`, `GUIWIN.EXE`, and `METROWIN.EXE`
+together. Test with:
+
+```sh
+python3 tools/elf2ntx.py --selftest
+python3 tools/test_multimodule.py
+```
 
 ## Build and test
 
