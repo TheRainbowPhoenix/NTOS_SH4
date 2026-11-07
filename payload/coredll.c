@@ -663,18 +663,25 @@ static int nt_glyph(void *hdc,int x,int y,u16 ch)
     int w=(int)nt_glyph_div((unsigned)(8*h+7),14u);
     if(!hdc || !api || !api[7]) return 0;
     if(ch<32 || ch>=127)ch='?';
+    int sr=0,ry=0;
     for(int yy=0;yy<h;++yy) {
-        unsigned bits=nt_font_rows[ch-32][(int)nt_glyph_div((unsigned)(yy*14),(unsigned)h)];
+        unsigned bits=nt_font_rows[ch-32][sr];
+        int sc=0,rx=0;
         for(int xx=0;xx<w;++xx) {
-            int src=(int)nt_glyph_div((unsigned)(xx*14),(unsigned)h);
-            if(src>7)src=7;
+            int src=sc>7?7:sc;
             int active=(bits>>src)&1; /* LSB at the LEFT */
-            if(!active && g_bk_mode==1)continue;
-            int px=x+xx,py=y+yy;
-            if(px>=0 && px<320 && py>=0 && py<528)
-                ((void (*)(u32,u32,u32))api[7])
-                   ((u32)px,(u32)py,active?fg:bg);
+            if(active || g_bk_mode!=1) {
+                int px=x+xx,py=y+yy;
+                if(px>=0 && px<320 && py>=0 && py<528)
+                    ((void (*)(u32,u32,u32))api[7])
+                        ((u32)px,(u32)py,active?fg:bg);
+            }
+            rx+=14;
+            while(rx>=h) {rx-=h;++sc;}
         }
+        ry+=14;
+        while(ry>=h) {ry-=h;++sr;}
+        if(sr>13)sr=13;
     }
     return 1;
 }
