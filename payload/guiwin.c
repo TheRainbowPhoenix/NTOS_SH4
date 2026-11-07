@@ -84,10 +84,13 @@ static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp)
         else if (wp==VK_RIGHT || wp==VK_RETURN) page=(page+1)%3;
         else if (wp=='0') check=!check;
         else return 0;
-    } else if (msg==WM_LBUTTONDOWN) {
+    } else if (msg==WM_LBUTTONDOWN || msg==0x0200u) {
         int x=(short)(lp&65535u),y=(short)(lp>>16);
-        if (x>=278 && x<310 && y>=10 && y<36) {
-            NT_CALL(DestroyWindow,(hwnd));
+        /* The stylus should be able to hit the title close target even
+         * if calibrated several pixels off. Do not depend on the nested
+         * DestroyWindow -> WM_DESTROY path from inside input dispatch. */
+        if (x>=228 && x<320 && y>=0 && y<58) {
+            NT_CALL(PostQuitMessage,(0));
             return 0;
         }
         if (y>=83 && y<111 && x>=14 && x<310) page=(x-14)/100;
