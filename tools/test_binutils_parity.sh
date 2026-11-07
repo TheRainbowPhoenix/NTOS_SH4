@@ -19,7 +19,16 @@ for name in coredll xamlui metrowin guiwin memtool; do
     "$OBJCOPY" -O coff-sh "$elf" "$TMP_DIR/$name.coff"
     "$OBJCOPY" --dump-section ".text=$TMP_DIR/$name.elf.text" "$elf"
     "$OBJCOPY" --dump-section ".text=$TMP_DIR/$name.coff.text" "$TMP_DIR/$name.coff"
-    cmp "$TMP_DIR/$name.elf.text" "$TMP_DIR/$name.coff.text"
+    # The COFF writer is allowed to pad the end of a section to its
+    # mandated file alignment. The original ELF bytes must be identical.
+    python3 - "$TMP_DIR/$name.elf.text" "$TMP_DIR/$name.coff.text" <<'PY'
+import sys
+from pathlib import Path
+elf, coff = (Path(p).read_bytes() for p in sys.argv[1:])
+assert coff.startswith(elf), "BFD COFF conversion changed SH4BE code bytes"
+assert len(coff) - len(elf) < 512, "unreasonable COFF section padding"
+assert not any(coff[len(elf):]), "nonzero COFF section padding"
+PY
     echo "PASS GNU BFD coff-sh code round-trip: $name"
 done
 python3 tools/verify_pe_linkage.py \
