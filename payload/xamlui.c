@@ -118,6 +118,28 @@ static void nav_icon(void *dc,int what,int cx,int cy) {
 /* Convex/concave filled polygons via integer scanline intersection.
  * No floating point, polygon fill and strokes are implemented within
  * XAMLUI.DLL and ultimately use genuine WinCE GDI FillRect. */
+/* SH4 freestanding: variable signed / would emit __divsi3.
+ * Division below is explicitly shift/subtract, no libgcc needed. */
+static unsigned poly_udiv(unsigned num,unsigned den) {
+    unsigned quotient=0,remainder=0;
+    if(!den)return 0;
+    for(int i=31;i>=0;--i) {
+        unsigned carry=remainder>>31;
+        remainder=(remainder<<1)|((num>>(unsigned)i)&1u);
+        if(carry || remainder>=den) {
+            remainder-=den;
+            quotient|=1u<<(unsigned)i;
+        }
+    }
+    return quotient;
+}
+static int poly_idiv(int a,int b) {
+    int minus=(a<0)^(b<0);
+    unsigned n=a<0?(unsigned)(-(a+1))+1u:(unsigned)a;
+    unsigned d=b<0?(unsigned)(-(b+1))+1u:(unsigned)b;
+    unsigned q=poly_udiv(n,d);
+    return minus?-(int)q:(int)q;
+}
 static void stroke(void *dc,int x0,int y0,int x1,int y1,u32 color) {
     int dx=x1-x0,dy=y1-y0,sx=1,sy=1,err,e2;
     if(dx<0){dx=-dx;sx=-1;}
@@ -148,7 +170,7 @@ void xamlui_polygon(void *dc,const POINT *pts,int n,u32 fill,u32 border) {
             if(y0==y1)continue;
             if(y0>y1){int t=y0;y0=y1;y1=t;}
             if(y>=y0 && y<y1 && count<12)
-                inter[count++]=a.x+(y-a.y)*(b.x-a.x)/(b.y-a.y);
+                inter[count++]=a.x+poly_idiv((y-a.y)*(b.x-a.x),(b.y-a.y));
         }
         for(int i=1;i<count;++i) {
             int t=inter[i],j=i-1;
