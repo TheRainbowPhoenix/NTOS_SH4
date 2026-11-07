@@ -34,8 +34,10 @@ def patch_coffcode(s):
     # the per-target data ordering. No private reimplementation of PE.
     a = s.index("#define CREATE_LITTLE_COFF_TARGET_VEC(")
     b = s.find("\n#define ", a + 8)
+    # In binutils 2.44, CREATE_LITTLE_COFF_TARGET_VEC is the *last*
+    # macro in coffcode.h. Both layouts are valid.
     if b == -1:
-        raise RuntimeError("Missing next COFF target vector macro")
+        b = len(s)
     original = s[a:b]
     mixed = original.replace(
         "CREATE_LITTLE_COFF_TARGET_VEC", "CREATE_SH4BE_PE_TARGET_VEC", 1
