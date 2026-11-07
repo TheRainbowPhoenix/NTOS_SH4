@@ -125,18 +125,53 @@ static uint32_t ntos_input(uint32_t *x, uint32_t *y) {
     return 0;
 }
 
-// File I/O is mediated by NTOS. Never expose the Hollyhock SDK's
-// function-pointer variables directly to the mapped PE image.
+// File I/O is mediated by NTOS. Hollyhock OS routines must not be given
+// P0-mapped payload pointers: the SDK may temporarily change the MMU state.
+// Copy paths and data to/from a small P1-resident stack bounce buffer.
+static bool kernel_path(char *out, const char *in) {
+    if (!in) return false;
+    uint32_t i=0;
+    for (; i<95 && in[i]; ++i) out[i]=in[i];
+    if (i==95) return false;
+    out[i]=0;
+    return true;
+}
 static int32_t ntos_file_open(const char *name, uint32_t flags) {
-    return File_Open(name, static_cast<int>(flags));
+    char path[96];
+    if (!kernel_path(path,name)) return -2;
+    return File_Open(path,static_cast<int>(flags));
 }
 static int32_t ntos_file_read(int32_t fd, void *data, uint32_t count) {
-    if (!data || count > 4096u) return -2;
-    return File_Read(fd, data, static_cast<int>(count));
+    if (!data || count>4096u) return -2;
+    auto *dst=static_cast<uint8_t *>(data);
+    uint8_t bounce[256];
+    uint32_t total=0;
+    while (total<count) {
+        uint32_t amount=count-total;
+        if (amount>sizeof(bounce)) amount=sizeof(bounce);
+        int n=File_Read(fd,bounce,static_cast<int>(amount));
+        if (n<0) return total ? static_cast<int32_t>(total) : n;
+        for (int i=0;i<n;++i) dst[total+static_cast<uint32_t>(i)]=bounce[i];
+        total+=static_cast<uint32_t>(n);
+        if (n<static_cast<int>(amount)) break;
+    }
+    return static_cast<int32_t>(total);
 }
-static int32_t ntos_file_write(int32_t fd, const void *data, uint32_t count) {
-    if (!data || count > 4096u) return -2;
-    return File_Write(fd, data, static_cast<int>(count));
+static int32_t ntos_file_write(int32_t fd,const void *data,uint32_t count) {
+    if (!data || count>4096u) return -2;
+    const auto *src=static_cast<const uint8_t *>(data);
+    uint8_t bounce[256];
+    uint32_t total=0;
+    while (total<count) {
+        uint32_t amount=count-total;
+        if (amount>sizeof(bounce)) amount=sizeof(bounce);
+        for (uint32_t i=0;i<amount;++i) bounce[i]=src[total+i];
+        int n=File_Write(fd,bounce,static_cast<int>(amount));
+        if (n<0) return total ? static_cast<int32_t>(total) : n;
+        total+=static_cast<uint32_t>(n);
+        if (n<static_cast<int>(amount)) break;
+    }
+    return static_cast<int32_t>(total);
 }
 static int32_t ntos_file_close(int32_t fd) { return File_Close(fd); }
 
@@ -189,17 +224,25 @@ static int32_t ntos_file_seek(int32_t fd,int32_t offset,uint32_t whence) {
     return File_Lseek(fd,offset,static_cast<File_Whence>(whence));
 }
 static int32_t ntos_file_remove(const char *name) {
-    return File_Remove(name);
+    char path[96];
+    if (!kernel_path(path,name)) return -2;
+    return File_Remove(path);
 }
 static int32_t ntos_file_rename(const char *from,const char *to) {
-    return File_Rename(from,to);
+    char source[96],dest[96];
+    if (!kernel_path(source,from) || !kernel_path(dest,to)) return -2;
+    return File_Rename(source,dest);
 }
 static int32_t ntos_file_mkdir(const char *name) {
-    return File_Mkdir(name);
+    char path[96];
+    if (!kernel_path(path,name)) return -2;
+    return File_Mkdir(path);
 }
 static int32_t ntos_file_stat(const char *name) {
+    char path[96];
+    if (!kernel_path(path,name)) return -2;
     struct File_Stat st{};
-    return File_Stat(name,&st);
+    return File_Stat(path,&st);
 }
 
 static uint32_t ntos_getkey(void) {
