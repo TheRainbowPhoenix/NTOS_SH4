@@ -91,7 +91,7 @@ static void ntos_line(uint32_t x1, uint32_t y1, uint32_t x2,
 }
 static void ntos_fillrect(uint32_t l, uint32_t t, uint32_t r,
                           uint32_t b, uint32_t rgb565) {
-    if (l >= width || t >= height) return;
+    if (l >= width || t >= height || r <= l || b <= t) return;
     if (r > width) r = width;
     if (b > height) b = height;
     for (uint32_t y = t; y < b; ++y)
