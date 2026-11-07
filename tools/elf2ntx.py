@@ -771,6 +771,23 @@ def selftest():
     fname = ibytes[hn0 - ir + 2:].split(b"\x00")[0]
     assert hint == 0 and fname == b"coredll_puts", (hint, fname)
     assert ft == off + 0x8, hex(ft)  # __imp_coredll_puts slot rva
+    # Multi-DLL import directory: two module descriptors, two independent
+    # terminated lookup arrays, and real (contiguous) IAT slot RVAs.
+    multi = build_import_section([
+        ("COREDLL.DLL", [(0x800, "BeginPaint"), (0x804, "EndPaint")]),
+        ("XAMLUI.DLL", [(0x808, "xamlui_tile"),
+                        (0x80C, "xamlui_switch")]),
+    ], 0x1200)
+    for index, module, first in [
+        (0, b"COREDLL.DLL", 0x800),
+        (1, b"XAMLUI.DLL", 0x808),
+    ]:
+        oft, _, _, name, ft = struct.unpack_from("<IIIII", multi, index * 20)
+        assert ft == first
+        assert multi[name - 0x1200:].split(b"\\x00")[0] == module
+        assert struct.unpack_from("<I", multi, oft - 0x1200 + 8)[0] == 0
+    assert multi[40:60] == b"\\x00" * 20  # terminator descriptor
+
     # dir 0/1 wired in the optional header; DLL characteristic set
     opt2_at = struct.unpack_from("<I", out2, 0x3C)[0] + 24
     d0r, d0s = struct.unpack_from("<II", out2, opt2_at + 96 + 0 * 8)
