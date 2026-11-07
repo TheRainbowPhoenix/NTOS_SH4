@@ -23,6 +23,7 @@ typedef struct {int x,y;} POINT;
 #define WHITE RGB(244,244,244)
 #define DIM RGB(161,161,161)
 #define BLUE RGB(51,103,241)
+static int poly_idiv(int a,int b); /* defined with the polygon helpers */
 NT_IMPORT(void *,CreateSolidBrush,(u32))
 NT_IMPORT(int,FillRect,(void *,const RECT *,void *))
 NT_IMPORT(int,DeleteObject,(void *))
