@@ -54,10 +54,10 @@ static u32 rd32(u32 addr)
 
 static void puthex(const char *label, u32 v)
 {
-    char buf[24];
+    char buf[40];
     const char hex[] = "0123456789ABCDEF";
     int i;
-    for (i = 0; label[i] != '\0' && i < 20; i++)
+    for (i = 0; label[i] != '\0' && i < (int)sizeof(buf) - 11; i++)
         buf[i] = label[i];
     buf[i++] = '0';
     buf[i++] = 'x';
