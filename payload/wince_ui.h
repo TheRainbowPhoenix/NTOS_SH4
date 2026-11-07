@@ -92,9 +92,9 @@ static void ui_init(void)
 {
     /* Static zero-initialization avoids SH4 freestanding movmem helpers. */
     static LOGFONTW lf;
-    lf.lfHeight=-16;
+    lf.lfHeight=-24;
     ui_bigfont=NT_CALL(CreateFontIndirectW,(&lf));
-    lf.lfHeight=-8;
+    lf.lfHeight=-14;
     ui_smallfont=NT_CALL(CreateFontIndirectW,(&lf));
 }
 static void ui_fill(void *dc,int l,int t,int r,int b,DWORD color)
@@ -117,11 +117,11 @@ static void ui_text(void *dc,int x,int y,const char *s,DWORD color,int large)
     NT_CALL(SetBkMode,(dc,TRANSPARENT));
     NT_CALL(TextOutW,(dc,x,y,w,n));
 }
-/* Proportional Inter 13 px advances, same widths as COREDLL raster.
+/* UGUI 8x14 glyph advances, same widths as COREDLL raster.
  * Keep the UI helper independent of font file structures. */
 static int ui_measure(const char *s)
 {
-    static const unsigned char advances[95]={5,5,7,10,9,14,13,4,5,5,7,11,4,7,4,7,9,9,9,9,9,9,9,9,9,9,4,4,11,11,11,8,16,11,10,10,12,9,8,12,12,4,6,10,8,15,13,13,9,13,10,9,9,12,10,16,10,9,10,5,6,5,11,7,5,9,10,8,10,9,5,10,10,4,4,8,4,14,10,10,10,10,6,7,6,10,8,12,8,8,8,5,4,5,11};
+    static const unsigned char advances[95]={3,6,7,8,8,8,8,6,7,8,8,8,6,8,6,8,8,8,8,7,8,7,8,8,8,8,6,6,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,6,8,8,8,8,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8};
     int n=0;
     for (; *s; ++s) {
         unsigned c=(unsigned char)*s;
@@ -134,7 +134,7 @@ static void ui_button(void *dc,int l,int t,int r,int b,
 {
     int tw=ui_measure(label);
     ui_fill(dc,l,t,r,b,bg);
-    ui_text(dc,l+(r-l-tw)/2,t+(b-t-16)/2,label,fg,0);
+    ui_text(dc,l+(r-l-tw)/2,t+(b-t-14)/2,label,fg,0);
 }
 /* Faithful Windows 95/98 raised command button: light top/left edge,
  * dark right/bottom shadow, gray face, proportionally centered caption. */
