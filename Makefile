@@ -71,6 +71,12 @@ WINLAB_EXE := $(OUTDIR)/WINLAB.EXE
 GUIWIN_OBJ := $(BUILDDIR)/payload/guiwin.o
 GUIWIN_ELF := $(BUILDDIR)/payload/guiwin.elf
 GUIWIN_EXE := $(OUTDIR)/GUIWIN.EXE
+METROWIN_OBJ := $(BUILDDIR)/payload/metrowin.o
+METROWIN_ELF := $(BUILDDIR)/payload/metrowin.elf
+METROWIN_EXE := $(OUTDIR)/METROWIN.EXE
+CALC_OBJ := $(BUILDDIR)/payload/calc.o
+CALC_ELF := $(BUILDDIR)/payload/calc.elf
+CALC_EXE := $(OUTDIR)/CALC.EXE
 
 AS_SOURCES:=$(shell find $(SOURCEDIR) -name '*.S')
 CC_SOURCES:=$(shell find $(SOURCEDIR) -name '*.c')
@@ -83,7 +89,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) Makefile
 
 all: elf hh3 ntx
 .DEFAULT_GOAL := all
@@ -111,7 +117,7 @@ $(HELLO_EXE): $(HELLO_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(HELLO_ELF) -o $@
 
-$(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c
+$(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c $(PAYLOAD_DIR)/font8x8.h
 	@mkdir -p $(dir $@)
 	$(CC) -c $(PAYLOAD_DIR)/coredll.c -o $@ $(PAYLOAD_CFLAGS)
 
@@ -171,7 +177,7 @@ $(WINLAB_EXE): $(WINLAB_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(WINLAB_ELF) -o $@ --import-module COREDLL.DLL
 
-$(GUIWIN_OBJ): $(PAYLOAD_DIR)/guiwin.c $(PAYLOAD_DIR)/ntimport.h
+$(GUIWIN_OBJ): $(PAYLOAD_DIR)/guiwin.c $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
 	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
 
@@ -182,6 +188,31 @@ $(GUIWIN_ELF): $(GUIWIN_OBJ) $(PAYLOAD_DIR)/payload.ld
 $(GUIWIN_EXE): $(GUIWIN_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(GUIWIN_ELF) -o $@ --import-module COREDLL.DLL
+
+
+$(METROWIN_OBJ): $(PAYLOAD_DIR)/metrowin.c $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(METROWIN_ELF): $(METROWIN_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(METROWIN_OBJ)
+
+$(METROWIN_EXE): $(METROWIN_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(METROWIN_ELF) -o $@ --import-module COREDLL.DLL
+
+$(CALC_OBJ): $(PAYLOAD_DIR)/calc.c $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(CALC_ELF): $(CALC_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(CALC_OBJ)
+
+$(CALC_EXE): $(CALC_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(CALC_ELF) -o $@ --import-module COREDLL.DLL
 
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
