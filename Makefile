@@ -102,7 +102,7 @@ $(HELLO_OBJ): $(PAYLOAD_DIR)/hello.c payload/ntimport.h
 
 $(HELLO_ELF): $(HELLO_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(HELLO_OBJ)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(HELLO_OBJ)
 
 $(HELLO_EXE): $(HELLO_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
@@ -114,7 +114,7 @@ $(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c
 
 $(COREDLL_ELF): $(COREDLL_OBJ) $(PAYLOAD_DIR)/coredll.ld
 	@mkdir -p $(dir $@)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/coredll.ld -o $@ $(COREDLL_OBJ)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/coredll.ld -o $@ $(COREDLL_OBJ)
 
 $(COREDLL_DLL): $(COREDLL_ELF) tools/elf2ntx.py tools/coredll_exports.txt
 	@mkdir -p $(dir $@)
@@ -126,7 +126,7 @@ $(HELLOCORE_OBJ): $(PAYLOAD_DIR)/hello_core.c $(PAYLOAD_DIR)/ntimport.h
 
 $(HELLOCORE_ELF): $(HELLOCORE_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(HELLOCORE_OBJ)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(HELLOCORE_OBJ)
 
 $(HELLOCORE_EXE): $(HELLOCORE_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
@@ -138,7 +138,7 @@ $(MEMTOOL_OBJ): $(PAYLOAD_DIR)/memtool.c $(PAYLOAD_DIR)/ntimport.h
 
 $(MEMTOOL_ELF): $(MEMTOOL_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(MEMTOOL_OBJ)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(MEMTOOL_OBJ)
 
 $(MEMTOOL_EXE): $(MEMTOOL_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
@@ -150,7 +150,7 @@ $(PAINT_OBJ): $(PAYLOAD_DIR)/paintdemo.c $(PAYLOAD_DIR)/ntimport.h
 
 $(PAINT_ELF): $(PAINT_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(PAINT_OBJ)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(PAINT_OBJ)
 
 $(PAINT_EXE): $(PAINT_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
@@ -162,7 +162,7 @@ $(WINLAB_OBJ): $(PAYLOAD_DIR)/winlab.c $(PAYLOAD_DIR)/ntimport.h
 
 $(WINLAB_ELF): $(WINLAB_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(WINLAB_OBJ)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(WINLAB_OBJ)
 
 $(WINLAB_EXE): $(WINLAB_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
