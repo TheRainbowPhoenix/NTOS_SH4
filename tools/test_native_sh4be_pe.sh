@@ -48,3 +48,34 @@ assert entry>0
 print(f'PASS native GNU ld PE32 SH4BE EXE: machine {m:#x}, '
       f'entry {entry:#x}, image base {imagebase:#x}, {len(p)} bytes')
 PY
+
+# Native PE DLL/DEF/import library smoke chain:
+# NATIVECLIENT.EXE -> NATIVELAYER.DLL -> NATIVEBASE.DLL
+# Neither a handcrafted .idata nor elf2ntx.py is used.
+for name in nativebase nativelayer nativeclient; do
+    sh4a_nofpueb-elf-gcc -c "tests/native_pe/$name.c" \
+        -o "/tmp/ntos-native/$name.elf.o" \
+        -ffreestanding -fno-builtin -fno-stack-protector -O2
+    "$OBJCOPY" -I elf32-sh -O pe-shbe \
+        "/tmp/ntos-native/$name.elf.o" \
+        "/tmp/ntos-native/$name.pe.o"
+done
+"$LD" -m shbepe -shared --image-base 0x00800000 -e _main \
+    --subsystem 9 --export-all-symbols \
+    --out-implib /tmp/ntos-native/libnativebase.a \
+    -o /tmp/ntos-native/nativebase.dll \
+    /tmp/ntos-native/nativebase.pe.o
+"$LD" -m shbepe -shared --image-base 0x00C00000 -e _main \
+    --subsystem 9 --export-all-symbols \
+    --out-implib /tmp/ntos-native/libnativelayer.a \
+    -o /tmp/ntos-native/nativelayer.dll \
+    /tmp/ntos-native/nativelayer.pe.o /tmp/ntos-native/libnativebase.a
+"$LD" -m shbepe --image-base 0x00400000 -e _main \
+    --subsystem 9 -o /tmp/ntos-native/nativeclient.exe \
+    /tmp/ntos-native/nativeclient.pe.o \
+    /tmp/ntos-native/libnativelayer.a
+
+"$OBJDUMP" -x /tmp/ntos-native/nativebase.dll > /tmp/ntos-native/nativebase.txt
+"$OBJDUMP" -x /tmp/ntos-native/nativelayer.dll > /tmp/ntos-native/nativelayer.txt
+"$OBJDUMP" -x /tmp/ntos-native/nativeclient.exe > /tmp/ntos-native/nativeclient.txt
+python3 tools/test_native_sh4be_imports.py
