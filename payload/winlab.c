@@ -3,7 +3,7 @@
  *
  * Touch the canvas to stamp multicolor rings. Tap color swatches at top.
  * LEFT/RIGHT changes color; UP/DOWN changes brush size; 0 clears;
- * EXE saves state; 1 loads state; CLEAR exits to the NTOS picker.
+ * EXE saves state; 1 loads state; touch SAVE/LOAD buttons; CLEAR exits.
  * Save file: \fls0\NTLAB.DAT (short fixed-size state, not a bitmap).
  */
 #include "ntimport.h"
@@ -34,6 +34,9 @@ NT_IMPORT(void *, CreateFileW, (const WCHAR16 *, u32, u32, void *, u32, u32, voi
 NT_IMPORT(int, ReadFile, (void *, void *, u32, u32 *, void *))
 NT_IMPORT(int, WriteFile, (void *, const void *, u32, u32 *, void *))
 NT_IMPORT(int, CloseHandle, (void *))
+NT_IMPORT(int, TextOutW, (void *, int, int, const WCHAR16 *, int))
+NT_IMPORT(u32, GetFileSize, (void *, u32 *))
+NT_IMPORT(int, GetClientRect, (void *, RECT *))
 
 NT_DEFINE(BeginPaint)
 NT_DEFINE(EndPaint)
@@ -49,10 +52,13 @@ NT_DEFINE(CreateFileW)
 NT_DEFINE(ReadFile)
 NT_DEFINE(WriteFile)
 NT_DEFINE(CloseHandle)
+NT_DEFINE(TextOutW)
+NT_DEFINE(GetFileSize)
+NT_DEFINE(GetClientRect)
 
 #define SCREEN_W 320
 #define SCREEN_H 528
-#define TOP 98
+#define TOP 148
 #define FILE_READ 0x80000000u
 #define FILE_WRITE 0x40000000u
 #define OPEN_EXISTING 3u
@@ -65,6 +71,13 @@ NT_DEFINE(CloseHandle)
 #define VK_RIGHT 0x27u
 #define VK_DOWN 0x28u
 #define VK_RETURN 0x0Du
+
+static const WCHAR16 label_save[] = {'S','A','V','E',0};
+static const WCHAR16 label_load[] = {'L','O','A','D',0};
+static const WCHAR16 label_ready[] = {'T','A','P',' ','S','A','V','E','/','L','O','A','D',0};
+static const WCHAR16 label_saved[] = {'S','A','V','E','D',' ','N','T','L','A','B','.','D','A','T',0};
+static const WCHAR16 label_loaded[] = {'L','O','A','D','E','D',' ','N','T','L','A','B','.','D','A','T',0};
+static const WCHAR16 label_failed[] = {'F','I','L','E',' ','I','/','O',' ','F','A','I','L','E','D',0};
 
 static const WCHAR16 save_path[] = {
     '\\','f','l','s','0','\\','N','T','L','A','B','.','D','A','T',0
@@ -113,6 +126,11 @@ static void ring(void *dc, int cx, int cy, int radius, u32 color)
         }
 }
 
+static void caption(void *dc, int x, int y, const WCHAR16 *str, int len)
+{
+    NT_CALL(TextOutW, (dc, x, y, str, len));
+}
+
 static void draw_ui(void *dc)
 {
     fill(dc, 0, 0, SCREEN_W, TOP, 0x00202024u);
@@ -125,13 +143,21 @@ static void draw_ui(void *dc)
             NT_CALL(Rectangle, (dc, x-2, 8, x+47, 61));
         }
     }
-    /* Brush-size ruler (one bar for each radius increment). */
     for (u32 i = 0; i < state.brush && i < 24; ++i)
         fill(dc, 10+(int)i*12, 76, 18+(int)i*12, 86, 0x0000E0FFu);
-    u32 col = status == 1 ? 0x0000FF00u :
-              status == 2 ? 0x00FFAA00u :
-              status == 3 ? 0x000000FFu : 0x00606060u;
-    fill(dc, 301, 76, 316, 91, col);
+
+    /* Real, tappable SAVE/LOAD controls. The status line explicitly reports
+     * filesystem success or failure rather than using a tiny status pixel. */
+    fill(dc, 8, 100, 154, 133, status==1 ? 0x00004000u : 0x00604422u);
+    fill(dc, 166, 100, 312, 133, status==2 ? 0x00004000u : 0x00604422u);
+    NT_CALL(Rectangle, (dc, 8, 100, 154, 133));
+    NT_CALL(Rectangle, (dc, 166, 100, 312, 133));
+    caption(dc, 57, 109, label_save, 4);
+    caption(dc, 215, 109, label_load, 4);
+    if (status == 1) caption(dc, 8, 136, label_saved, 15);
+    else if (status == 2) caption(dc, 8, 136, label_loaded, 16);
+    else if (status == 3) caption(dc, 8, 136, label_failed, 15);
+    else caption(dc, 8, 136, label_ready, 13);
 }
 
 static int save_state(void)
@@ -152,6 +178,11 @@ static int load_state(void)
     void *h = NT_CALL(CreateFileW, (save_path, FILE_READ, 0, 0,
                                    OPEN_EXISTING, 0, 0));
     if (h == (void *)-1) return 0;
+    u32 file_size = NT_CALL(GetFileSize, (h, 0));
+    if (file_size != sizeof(next)) {
+        NT_CALL(CloseHandle, (h));
+        return 0;
+    }
     int ok = NT_CALL(ReadFile, (h, &next, sizeof(next), &count, 0));
     int closed = NT_CALL(CloseHandle, (h));
     if (!ok || !closed || count != sizeof(next) ||
@@ -212,7 +243,13 @@ int main(void)
         if (rc <= 0 || msg.message == WM_QUIT) break;
         if (msg.message == WM_LBUTTONDOWN) {
             int x = msg.pt.x, y = msg.pt.y;
-            if (y < TOP && x >= 8 && x < 320 && y < 70) {
+            if (x >= 8 && x < 154 && y >= 100 && y < 133) {
+                status = save_state() ? 1 : 3;
+                paint_screen();
+            } else if (x >= 166 && x < 312 && y >= 100 && y < 133) {
+                status = load_state() ? 2 : 3;
+                paint_screen();
+            } else if (y < 70 && x >= 8 && x < 320) {
                 u32 idx = (u32)((x-8)/52);
                 if (idx < 6) {
                     state.color_index = idx;
