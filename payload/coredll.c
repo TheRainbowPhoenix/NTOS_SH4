@@ -633,7 +633,7 @@ static void nt_init_raster(void)
     int bits=0;
     if (g_ui_raster_ready) return;
     for (u32 i=0; ntos_selawik_b64[i];++i) {
-        int v=nt_b64((unsigned char)ntos_inter_b64[i]);
+        int v=nt_b64((unsigned char)ntos_selawik_b64[i]);
         if (v<0) break;
         acc=(acc<<6)|(u32)v;
         bits+=6;
