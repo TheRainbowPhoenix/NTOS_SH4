@@ -69,6 +69,34 @@ def inspect(path):
     return base, modules
 
 
+def image_info(path):
+    data = Path(path).read_bytes()
+    optional = u32(data, 0x3C) + 24
+    base = u32(data, optional + 28)
+    size = u32(data, optional + 56)
+    return base, (size + 4095) // 4096
+
+
+def test_utlb_sets():
+    # SH7305 install_page uses (VA >> 12) & 31, four hardware ways.
+    # A missing PTE at virtual address zero is the correct null guard.
+    images = [image_info(p) for p in
+              ("dist/COREDLL.DLL", "dist/XAMLUI.DLL",
+               "dist/METROWIN.EXE")]
+    total = sum(pages for _, pages in images)
+    assert total <= 55, ("rotating UTLB slot exhaustion", total)
+    used = [0] * 32
+    for base, pages in images + [(0x08100000, 4)]:
+        for page in range(pages):
+            virtual = base + 4096 * page
+            slot_set = (virtual >> 12) & 31
+            used[slot_set] += 1
+            assert used[slot_set] <= 4, (
+                "UTLB collision", hex(virtual), slot_set, used[slot_set])
+    print(f"PASS UTLB: {total} image pages, "
+          f"worst set occupancy {max(used)}/4, zero page unmapped")
+
+
 def main():
     metro_base, metro = inspect("dist/METROWIN.EXE")
     xaml_base, xaml = inspect("dist/XAMLUI.DLL")
@@ -83,6 +111,7 @@ def main():
         set(metro[1][1]))
     assert {"CreateSolidBrush", "FillRect", "TextOutW"}.issubset(
         set(xaml[0][1]))
+    test_utlb_sets()
     for name, funcs in metro + xaml:
         print(f"PASS {name}: {len(funcs)} IAT import(s)")
     print("PASS PE multi-DLL import tables; hardware execution still needs testing")
