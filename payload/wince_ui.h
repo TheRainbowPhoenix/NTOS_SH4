@@ -121,7 +121,7 @@ static void ui_text(void *dc,int x,int y,const char *s,DWORD color,int large)
  * Keep the UI helper independent of font file structures. */
 static int ui_measure(const char *s)
 {
-    static const unsigned char advances[95]={3,6,7,8,8,8,8,6,7,8,8,8,6,8,6,8,8,8,8,7,8,7,8,8,8,8,6,6,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,6,8,8,8,8,5,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,5,8,8};
+    static const unsigned char advances[95]={3,5,7,9,7,9,9,5,8,7,8,8,6,8,6,8,8,9,7,8,8,8,8,8,8,8,6,6,8,8,8,8,9,9,8,8,8,8,8,8,8,7,7,8,8,8,8,8,8,9,8,8,8,8,9,9,9,9,8,8,8,6,8,9,7,9,8,8,8,8,8,8,8,6,7,8,6,8,8,8,8,8,7,7,8,8,9,9,8,9,8,8,6,8,9};
     int n=0;
     for (; *s; ++s) {
         unsigned c=(unsigned char)*s;
