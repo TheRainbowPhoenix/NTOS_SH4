@@ -19,6 +19,7 @@
 #include <sdk/os/debug.h>
 #include <sdk/os/file.h>
 #include <sdk/os/lcd.h>
+#include <sdk/os/input.h>
 #include <sdk/os/mem.h>
 
 #include "pe.hpp"
@@ -47,20 +48,69 @@ struct NtosApi {
     malloc_fn malloc_;     // [3] Mem_Malloc (12 MiB heap @ 0x8C280000)
     free_fn free_;         // [4] Mem_Free
     getkey_fn get_key;     // [5] blocking key read, packed
+    void (*screen_clear)(uint32_t);                      // [6]
+    void (*pixel)(uint32_t, uint32_t, uint32_t);         // [7]
+    void (*draw_line)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t); // [8]
+    void (*fill_rect)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t); // [9]
+    uint32_t (*read_input)(uint32_t *, uint32_t *);      // [10]
 };
 
 static int cur_row = 0;
 
 // Console output goes through Debug_Printf -- the small font (the big
 // Debug_PrintString glyphs only fit ~28 columns and drown the screen).
+// The SDK printer must receive a P1 resident string, never an untrusted
+// pointer to a transient P0 page or a user stack after the MMU is switched.
 static void ntos_puts(const char *s) {
-    if (cur_row > 22) {
-        cur_row = 0;
-        LCD_Refresh();
-    }
-    Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0, "%s",
-                 s);
+    if (!s) return;
+    char scratch[80];
+    unsigned n = 0;
+    for (; n + 1 < sizeof(scratch) && s[n]; ++n)
+        scratch[n] = s[n];
+    scratch[n] = 0;
+    if (cur_row > 22) cur_row = 0;
+    Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
+                 "%s", scratch);
     LCD_Refresh();
+}
+
+// New fixed-width NTOS call gates; all arguments follow the SH4 scalar ABI.
+// A COREDLL HDC is a synthetic handle, not an SDK device context.
+static void ntos_screen_clear(uint32_t rgb565) {
+    fillScreen(static_cast<uint16_t>(rgb565));
+}
+static void ntos_pixel(uint32_t x, uint32_t y, uint32_t rgb565) {
+    if (x < width && y < height)
+        setPixel(x, y, static_cast<uint16_t>(rgb565));
+}
+static void ntos_line(uint32_t x1, uint32_t y1, uint32_t x2,
+                      uint32_t y2, uint32_t rgb565) {
+    line(static_cast<int>(x1), static_cast<int>(y1),
+         static_cast<int>(x2), static_cast<int>(y2),
+         static_cast<uint16_t>(rgb565));
+}
+static void ntos_fillrect(uint32_t l, uint32_t t, uint32_t r,
+                          uint32_t b, uint32_t rgb565) {
+    if (l >= width || t >= height) return;
+    if (r > width) r = width;
+    if (b > height) b = height;
+    for (uint32_t y = t; y < b; ++y)
+        line(static_cast<int>(l), static_cast<int>(y),
+             static_cast<int>(r - 1), static_cast<int>(y),
+             static_cast<uint16_t>(rgb565));
+}
+// Return 1 for a touch, 2 for CLEAR, 0 for other events. Blocking by design.
+static uint32_t ntos_input(uint32_t *x, uint32_t *y) {
+    Input_Event event{};
+    GetInput(&event, 0xFFFFFFFFu, 0x10);
+    if (event.type == EVENT_TOUCH) {
+        if (x) *x = static_cast<uint32_t>(event.data.touch_single.p1_x);
+        if (y) *y = static_cast<uint32_t>(event.data.touch_single.p1_y);
+        return 1;
+    }
+    if (event.type == EVENT_KEY &&
+        event.data.key.keyCode == KEYCODE_POWER_CLEAR) return 2;
+    return 0;
 }
 
 static uint32_t ntos_getkey(void) {
@@ -77,6 +127,11 @@ static NtosApi g_ntos_api = {
     &Mem_Malloc,  // this one really is an inline function in the SDK
     Mem_Free,
     &ntos_getkey,
+    &ntos_screen_clear,  // [6] clear RGB565
+    &ntos_pixel,         // [7] pixel RGB565
+    &ntos_line,          // [8] line RGB565
+    &ntos_fillrect,      // [9] filled rectangle RGB565
+    &ntos_input,         // [10] touch/key event
 };
 
 // ---------------------------------------------------------------------------
@@ -659,8 +714,8 @@ int main(int argc, char **argv, char **envp) {
         for (int k = 0; sz[k] != '\0' && p < 46; k++)
             line[p++] = sz[k];
         line[p] = '\0';
-        Debug_SetCursorPosition(2, static_cast<unsigned int>(3 + i));
-        Debug_PrintString(line, false);
+        Debug_Printf(0, static_cast<unsigned int>(3 + i), false, 0,
+                     "%s", line);
     }
     LCD_Refresh();
 
