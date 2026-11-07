@@ -264,6 +264,12 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
         /* Hollyhock keycodes match the WinCE VK arrows, Enter and
          * ASCII digit values used by our demos. */
         msg->message=0x0100u; /* WM_KEYDOWN */
+        /* Normalize Hollyhock keypad codes into standard WinCE VK_*. */
+        if (x == 0x0090u) x=0x26u;      /* VK_UP */
+        else if (x == 0x0091u) x=0x28u; /* VK_DOWN */
+        else if (x == 0x0092u) x=0x25u; /* VK_LEFT */
+        else if (x == 0x0093u) x=0x27u; /* VK_RIGHT */
+        else if (x == 0x0094u) x=0x0Du; /* VK_RETURN */
         msg->wParam=x;
         return 1;
     }
@@ -406,10 +412,10 @@ static int narrow_path(const u16 *src, char *dest, u32 capacity)
     if (src[i]) return 0;
     dest[i]=0;
     /* Restrict the initial implementation to the removable flash volume. */
-    return i >= 6u && dest[0]=='\\\\' &&
+    return i >= 6u && dest[0]=='\\' &&
         (dest[1]=='f' || dest[1]=='F') &&
         (dest[2]=='l' || dest[2]=='L') &&
-        (dest[3]=='s' || dest[3]=='S') && dest[4]=='0' && dest[5]=='\\\\';
+        (dest[3]=='s' || dest[3]=='S') && dest[4]=='0' && dest[5]=='\\';
 }
 
 static int handle_fd(void *handle)
