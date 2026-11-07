@@ -16,7 +16,7 @@
  * word points at the syscall table (NTOS rebuilds that window in UTLB
  * slots 0x37..0x3A before the payload runs).
  */
-#include "selawik_ui.h"
+#include "ugui_font.h"
 typedef unsigned int u32;
 
 /* OS330 C1A API window contract: *(0x08100000) = syscall table pointer. */
@@ -594,7 +594,7 @@ void *CreateFontIndirectW(const NT_LOGFONTW *font)
     if (!font) return 0;
     h=font->lfHeight;
     if (h<0) h=-h;
-    return (void *)(NTOS_FONT_HANDLE | ((h>=14) ? 2u : 1u));
+    return (void *)(NTOS_FONT_HANDLE | ((h>=20) ? 2u : 1u));
 }
 void *SelectObject(void *hdc,void *object)
 {
@@ -623,97 +623,61 @@ int SetBkMode(void *hdc,int mode)
     if (hdc && (mode==1 || mode==2)) g_bk_mode=mode;
     return old;
 }
-/* Inter bitmap atlas is stored as Base64 C source data, decoded once
- * into BSS. Each glyph holds 16 scanlines of variable-width, MSB-first
- * pixels; total 1586 bytes. No font files, FPU, heap, or OS font service. */
-static unsigned char g_ui_raster[1648];
-static int g_ui_raster_ready;
-static int nt_b64(unsigned char ch)
-{
-    if (ch>='A' && ch<='Z') return ch-'A';
-    if (ch>='a' && ch<='z') return ch-'a'+26;
-    if (ch>='0' && ch<='9') return ch-'0'+52;
-    if (ch=='+') return 62;
-    if (ch=='/') return 63;
-    return -1;
-}
-static void nt_init_raster(void)
-{
-    u32 acc=0, pos=0;
-    int bits=0;
-    if (g_ui_raster_ready) return;
-    for (u32 i=0; ntos_selawik_b64[i];++i) {
-        int v=nt_b64((unsigned char)ntos_selawik_b64[i]);
-        if (v<0) break;
-        acc=(acc<<6)|(u32)v;
-        bits+=6;
-        if (bits>=8) {
-            bits-=8;
-            if (pos<sizeof(g_ui_raster))
-                g_ui_raster[pos++]=(unsigned char)(acc>>bits);
-        }
-    }
-    g_ui_raster_ready=1;
-}
+/* Proven 8x14 monochrome UGUI atlas. A glyph owns exactly 14
+ * scanline bytes (MSB-left), eliminating the previous packed bitstream
+ * offset error that mixed adjacent glyphs and produced glitchy text.
+ * Integer-only GDI renderer; transparent/opaque background supported. */
 static int nt_fontwidth(u16 ch)
 {
-    return ch>=32 && ch<127 ? ntos_selawik_width[ch-32] : 8;
+    return (ch>=32 && ch<127) ? nt_font_advance[ch-32] : 8;
 }
 static int nt_glyph(void *hdc,int x,int y,u16 ch)
 {
     const void **api=ntapi();
     u32 fg=rgb565(g_text_color),bg=rgb565(g_bk_color);
-    int scale=g_font_scale, w,off=0;
+    int scale=g_font_scale;
     if (!hdc || !api || !api[7]) return 0;
     if (ch<32 || ch>=127) ch='?';
-    w=nt_fontwidth(ch);
-    nt_init_raster();
-    for (int c=32;c<(int)ch;++c)
-        off+=2*nt_fontwidth((u16)c);
-    for (int row=0;row<16;++row) {
-        for (int col=0;col<w;++col) {
-            int bit=row*w+col;
-            int at=off+(bit>>3);
-            int active=(g_ui_raster[at]>>(7-(bit&7)))&1;
+    for (int row=0;row<14;++row) {
+        unsigned bits=nt_font_rows[ch-32][row];
+        for (int col=0;col<8;++col) {
+            int active=(bits >> (7-col)) & 1;
             if (!active && g_bk_mode==1) continue;
-            int xx=x+col*scale, yy=y+row*scale;
-            u32 color=active ? fg : bg;
-            for (int sy=0;sy<scale;++sy)
-                for (int sx=0;sx<scale;++sx)
-                    if (xx+sx>=0 && yy+sy>=0 && xx+sx<320 && yy+sy<528)
+            int xx=x+col*scale,yy=y+row*scale;
+            u32 clr=active ? fg : bg;
+            for(int sy=0;sy<scale;++sy)
+                for(int sx=0;sx<scale;++sx)
+                    if(xx+sx>=0 && yy+sy>=0 && xx+sx<320 && yy+sy<528)
                         ((void (*)(u32,u32,u32))api[7])
-                            ((u32)(xx+sx),(u32)(yy+sy),color);
+                            ((u32)(xx+sx),(u32)(yy+sy),clr);
         }
     }
     return 1;
 }
 int TextOutW(void *hdc,int x,int y,const u16 *text,int n)
 {
-    int i=0;
     if (!hdc || !text || n<0) return 0;
-    while (i<n && text[i] && x<320) {
+    for(int i=0;i<n && text[i] && x<320;++i) {
         nt_glyph(hdc,x,y,text[i]);
         x+=nt_fontwidth(text[i])*g_font_scale;
-        ++i;
     }
     return 1;
 }
 int DrawTextW(void *hdc,const u16 *text,int count,NT_RECT *rect,u32 flags)
 {
     int n=0,w=0,x,y,scale=g_font_scale;
-    if (!hdc || !text || !rect) return 0;
-    while ((count<0 || n<count) && n<255 && text[n]) {
+    if(!hdc || !text || !rect) return 0;
+    while((count<0 || n<count) && n<255 && text[n]) {
         w+=nt_fontwidth(text[n])*scale; ++n;
     }
     x=rect->left;
-    if (flags&1u) x+=(rect->right-rect->left-w)/2; /* DT_CENTER */
-    if (flags&2u) x+=rect->right-rect->left-w; /* DT_RIGHT */
+    if(flags&1u) x+=(rect->right-rect->left-w)/2;
+    if(flags&2u) x+=rect->right-rect->left-w;
     y=rect->top;
-    if (flags&4u) y+=(rect->bottom-rect->top-16*scale)/2;
-    if (!(flags&0x400u)) TextOutW(hdc,x,y,text,n);
-    else { rect->right=rect->left+w;
-           rect->bottom=rect->top+16*scale; }
-    return 16*scale;
+    if(flags&4u) y+=(rect->bottom-rect->top-14*scale)/2;
+    if(!(flags&0x400u)) TextOutW(hdc,x,y,text,n);
+    else { rect->right=rect->left+w; rect->bottom=rect->top+14*scale; }
+    return 14*scale;
 }
 
 int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
