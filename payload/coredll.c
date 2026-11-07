@@ -645,76 +645,6 @@ static int handle_fd(void *handle)
     return (int)(value & 0xFFFFu)-1;
 }
 
-void *CreateFileW(const u16 *path, u32 access, u32 share,
-                  void *security, u32 creation, u32 attributes,
-                  void *template_file)
-{
-    const void **a=ntapi();
-    char narrow[96];
-    u32 flags=0;
-    int fd;
-    (void)share; (void)security; (void)attributes; (void)template_file;
-    if (!a || !a[11] || !narrow_path(path,narrow,sizeof(narrow)))
-        return NT_INVALID_FILE;
-    if (access & NT_GENERIC_READ) flags |= NT_FILE_READ;
-    if (access & NT_GENERIC_WRITE) flags |= NT_FILE_WRITE;
-    if (creation == NT_CREATE_ALWAYS || creation == NT_OPEN_ALWAYS)
-        flags |= NT_FILE_CREATE;
-    else if (creation != NT_OPEN_EXISTING) return NT_INVALID_FILE;
-    if (!(flags & (NT_FILE_READ|NT_FILE_WRITE))) return NT_INVALID_FILE;
-    fd=((int (*)(const char *,u32))a[11])(narrow,flags);
-    if (fd < 0 || fd >= 0xFFFF) return NT_INVALID_FILE;
-    return (void *)(NT_HANDLE_TAG | ((u32)fd+1u));
-}
-
-u32 GetFileSize(void *handle, u32 *high)
-{
-    const void **a=ntapi();
-    int fd=handle_fd(handle);
-    int size;
-    if (high) *high=0;
-    if (fd<0 || !a || !a[17]) return 0xFFFFFFFFu;
-    size=((int (*)(int))a[17])(fd);
-    return size<0 ? 0xFFFFFFFFu : (u32)size;
-}
-
-int ReadFile(void *handle, void *buffer, u32 count, u32 *done, void *overlapped)
-{
-    const void **a=ntapi();
-    int fd=handle_fd(handle), n;
-    if (done) *done=0;
-    if (fd < 0 || !buffer || !a || !a[12] || overlapped || count > 4096u)
-        return 0;
-    n=((int (*)(int,void *,u32))a[12])(fd,buffer,count);
-    if (n < 0) return 0;
-    if (done) *done=(u32)n;
-    return 1;
-}
-
-int WriteFile(void *handle, const void *buffer, u32 count, u32 *done,
-              void *overlapped)
-{
-    const void **a=ntapi();
-    int fd=handle_fd(handle), n;
-    if (done) *done=0;
-    if (fd < 0 || !buffer || !a || !a[13] || overlapped || count > 4096u)
-        return 0;
-    n=((int (*)(int,const void *,u32))a[13])(fd,buffer,count);
-    if (n < 0) return 0;
-    if (done) *done=(u32)n;
-    return 1;
-}
-
-int CloseHandle(void *handle)
-{
-    const void **a=ntapi();
-    int fd=handle_fd(handle);
-    if (fd < 0 || !a || !a[14]) return 0;
-    return ((int (*)(int))a[14])(fd)==0;
-}
-
-/* Additional WinCE filesystem calls. NTOS only exposes the FLS0 volume;
- * these don't emulate WinCE sharing, ACLs or asynchronous I/O. */
 static u32 g_last_error;
 u32 GetLastError(void) { return g_last_error; }
 void SetLastError(u32 err) { g_last_error=err; }
@@ -727,6 +657,90 @@ static u32 nt_file_error(int err)
     return 1;                 /* ERROR_INVALID_FUNCTION / generic failure */
 }
 
+void *CreateFileW(const u16 *path, u32 access, u32 share,
+                  void *security, u32 creation, u32 attributes,
+                  void *template_file)
+{
+    const void **a=ntapi();
+    char narrow[96];
+    u32 flags=0;
+    int fd;
+    (void)share; (void)security; (void)attributes; (void)template_file;
+    if (!a || !a[11] || !narrow_path(path,narrow,sizeof(narrow))) {
+        g_last_error=123;
+        return NT_INVALID_FILE;
+    }
+    if (access & NT_GENERIC_READ) flags |= NT_FILE_READ;
+    if (access & NT_GENERIC_WRITE) flags |= NT_FILE_WRITE;
+    if (creation == NT_CREATE_ALWAYS || creation == NT_OPEN_ALWAYS)
+        flags |= NT_FILE_CREATE;
+    else if (creation != NT_OPEN_EXISTING) {
+        g_last_error=87; return NT_INVALID_FILE;
+    }
+    if (!(flags & (NT_FILE_READ|NT_FILE_WRITE))) {
+        g_last_error=87; return NT_INVALID_FILE;
+    }
+    fd=((int (*)(const char *,u32))a[11])(narrow,flags);
+    if (fd < 0 || fd >= 0xFFFF) {
+        g_last_error=nt_file_error(fd); return NT_INVALID_FILE;
+    }
+    g_last_error=0;
+    return (void *)(NT_HANDLE_TAG | ((u32)fd+1u));
+}
+
+u32 GetFileSize(void *handle, u32 *high)
+{
+    const void **a=ntapi();
+    int fd=handle_fd(handle);
+    int size;
+    if (high) *high=0;
+    if (fd<0 || !a || !a[17]) { g_last_error=87; return 0xFFFFFFFFu; }
+    size=((int (*)(int))a[17])(fd);
+    g_last_error=size<0 ? nt_file_error(size) : 0;
+    return size<0 ? 0xFFFFFFFFu : (u32)size;
+}
+
+int ReadFile(void *handle, void *buffer, u32 count, u32 *done, void *overlapped)
+{
+    const void **a=ntapi();
+    int fd=handle_fd(handle), n;
+    if (done) *done=0;
+    if (fd < 0 || !buffer || !a || !a[12] || overlapped || count > 4096u)
+    { g_last_error=87; return 0; }
+    n=((int (*)(int,void *,u32))a[12])(fd,buffer,count);
+    if (n < 0) { g_last_error=nt_file_error(n); return 0; }
+    if (done) *done=(u32)n;
+    g_last_error=0;
+    return 1;
+}
+
+int WriteFile(void *handle, const void *buffer, u32 count, u32 *done,
+              void *overlapped)
+{
+    const void **a=ntapi();
+    int fd=handle_fd(handle), n;
+    if (done) *done=0;
+    if (fd < 0 || !buffer || !a || !a[13] || overlapped || count > 4096u)
+    { g_last_error=87; return 0; }
+    n=((int (*)(int,const void *,u32))a[13])(fd,buffer,count);
+    if (n < 0) { g_last_error=nt_file_error(n); return 0; }
+    if (done) *done=(u32)n;
+    g_last_error=0;
+    return 1;
+}
+
+int CloseHandle(void *handle)
+{
+    const void **a=ntapi();
+    int fd=handle_fd(handle);
+    if (fd < 0 || !a || !a[14]) { g_last_error=87; return 0; }
+    int result=((int (*)(int))a[14])(fd);
+    g_last_error=result<0 ? nt_file_error(result) : 0;
+    return result==0;
+}
+
+/* Additional WinCE filesystem calls. NTOS only exposes the FLS0 volume;
+ * these don't emulate WinCE sharing, ACLs or asynchronous I/O. */
 u32 SetFilePointer(void *handle,int offset,int *high,u32 move_method)
 {
     const void **a=ntapi();
