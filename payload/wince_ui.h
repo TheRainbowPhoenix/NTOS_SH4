@@ -47,6 +47,7 @@ NT_IMPORT(int,GetMessageW,(MSG *,void *,DWORD,DWORD))
 NT_IMPORT(int,TranslateMessage,(const MSG *))
 NT_IMPORT(int,DispatchMessageW,(const MSG *))
 NT_IMPORT(int,DestroyWindow,(void *))
+NT_IMPORT(void,PostQuitMessage,(int))
 NT_IMPORT(int,GetClientRect,(void *,RECT *))
 NT_IMPORT(void *,BeginPaint,(void *,PAINTSTRUCT *))
 NT_IMPORT(int,EndPaint,(void *,const PAINTSTRUCT *))
@@ -70,6 +71,7 @@ NT_DEFINE(GetMessageW)
 NT_DEFINE(TranslateMessage)
 NT_DEFINE(DispatchMessageW)
 NT_DEFINE(DestroyWindow)
+NT_DEFINE(PostQuitMessage)
 NT_DEFINE(GetClientRect)
 NT_DEFINE(BeginPaint)
 NT_DEFINE(EndPaint)
@@ -115,13 +117,30 @@ static void ui_text(void *dc,int x,int y,const char *s,DWORD color,int large)
     NT_CALL(SetBkMode,(dc,TRANSPARENT));
     NT_CALL(TextOutW,(dc,x,y,w,n));
 }
+/* Proportional Inter 13 px advances, same widths as COREDLL raster.
+ * Keep the UI helper independent of font file structures. */
+static int ui_measure(const char *s)
+{
+    static const unsigned char advances[95]={
+        5,5,7,9,9,14,9,5,6,6,8,10,5,7,5,6,9,6,9,9,9,9,9,8,
+        9,9,5,5,10,10,10,8,14,10,9,11,10,9,9,11,11,4,8,10,
+        8,13,11,11,9,11,9,9,9,11,10,14,10,10,9,6,6,6,7,7,
+        5,8,9,8,9,9,6,9,9,4,4,8,4,12,9,9,9,9,6,8,5,
+        9,8,12,8,8,8,7,5,7,10
+    };
+    int n=0;
+    for (; *s; ++s) {
+        unsigned c=(unsigned char)*s;
+        n+=(c>=32 && c<127) ? advances[c-32] : 8;
+    }
+    return n;
+}
 static void ui_button(void *dc,int l,int t,int r,int b,
                       const char *label,DWORD bg,DWORD fg)
 {
-    int n=0;
+    int tw=ui_measure(label);
     ui_fill(dc,l,t,r,b,bg);
-    while (label[n]) ++n;
-    ui_text(dc,l+(r-l-n*8)/2,t+(b-t-8)/2,label,fg,0);
+    ui_text(dc,l+(r-l-tw)/2,t+(b-t-16)/2,label,fg,0);
 }
 static int ui_run(const WCHAR16 *class_name,const WCHAR16 *title,WNDPROC proc)
 {
