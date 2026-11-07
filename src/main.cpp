@@ -179,7 +179,7 @@ static void ntos_draw_text(uint32_t x, uint32_t y, const char *text) {
     Debug_Printf(x, y, false, 0, "%s", tmp);
 }
 static int32_t ntos_file_size(int32_t fd) {
-    File_Stat st{};
+    struct File_Stat st{};
     if (File_Fstat(fd, &st) < 0) return -1;
     return static_cast<int32_t>(st.fileSize);
 }
@@ -198,7 +198,7 @@ static int32_t ntos_file_mkdir(const char *name) {
     return File_Mkdir(name);
 }
 static int32_t ntos_file_stat(const char *name) {
-    File_Stat st{};
+    struct File_Stat st{};
     return File_Stat(name,&st);
 }
 
