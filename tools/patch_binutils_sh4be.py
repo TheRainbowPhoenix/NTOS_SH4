@@ -165,6 +165,19 @@ def patch_config_bfd(s):
     )
 
 
+def patch_bfd_configure(s):
+    marker = "    sh_pe_le_vec)"
+    if marker not in s:
+        raise RuntimeError("Missing BFD configure target whitelist")
+    return s.replace(
+        marker,
+        '    sh_pe_be_vec)       tb="$tb pe-shbe.lo coff-sh.lo peigen.lo $coff" ;;\n'
+        '    sh_pei_be_vec)      tb="$tb pei-shbe.lo coff-sh.lo peigen.lo $coff" ;;\n'
+        + marker,
+        1,
+    )
+
+
 def patch_ld_tgt(s):
     # Distro binutils versions vary in whitespace around sh-*-pe).
     # The unique emulation assignment is the stable anchor.
@@ -194,6 +207,8 @@ def main():
     pe_source(root, "pei-sh.c", "pei-shbe", "sh_pei_be_vec", "pei-shl")
     edit(root, "bfd/config.bfd", patch_config_bfd)
     edit(root, "bfd/targets.c", patch_targets)
+    edit(root, "bfd/configure", patch_bfd_configure)
+    edit(root, "bfd/configure.ac", patch_bfd_configure)
     edit(root, "bfd/Makefile.am", patch_make_lists)
     edit(root, "bfd/Makefile.in", patch_make_lists)
     edit(root, "ld/configure.tgt", patch_ld_tgt)
