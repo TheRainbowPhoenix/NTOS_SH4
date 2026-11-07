@@ -19,7 +19,8 @@ def le32(b, p):
 
 
 class PE:
-    def __init__(self, path):
+    def __init__(self, path, allow_preinitialized_iat=False):
+        self.allow_preinitialized_iat = allow_preinitialized_iat
         self.path = Path(path)
         self.blob = self.path.read_bytes()
         d = self.blob
@@ -139,9 +140,10 @@ class PE:
                 assert self.section_for(dest)[3] & 0x80000000, (
                     self.path, sym, "IAT target not writable"
                 )
-                assert self.memory[dest:dest + 4] == b"\0" * 4, (
-                    self.path, sym, "IAT not initialized to zero"
-                )
+                if not self.allow_preinitialized_iat:
+                    assert self.memory[dest:dest + 4] == b"\0" * 4, (
+                        self.path, sym, "IAT not initialized to zero"
+                    )
                 funcs.append((sym, dest))
             else:
                 raise AssertionError("unterminated import lookup table")
