@@ -1898,3 +1898,4 @@ wprintf
 wscanf
 wsprintfW
 wvsprintfW
+TextOutW
