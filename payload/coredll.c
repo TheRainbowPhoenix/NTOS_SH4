@@ -23,7 +23,7 @@ typedef unsigned int u32;
 
 /* NtosApi field order == table order:
  *   [0] puts(s) [1] printf [2] refresh [3] malloc(n) [4] free(p)
- *   [5] get_key()
+ *   [5] get_key() [6] clear [7] pixel [8] line [9] fillrect [10] input
  */
 static const void **ntapi(void)
 {
@@ -171,6 +171,168 @@ void GlobalMemoryStatus(MEMSTATUS *ms)
     ms->dwAvailPageFile = avail;
     ms->dwTotalVirtual = total;
     ms->dwAvailVirtual = avail;
+}
+
+/* COREDLL's GDI compatibility layer. NTOS is the kernel behind this API:
+ * handles are synthetic, colors are Win32 COLORREF (0x00BBGGRR), and
+ * the NTOS gates accept 16-bit RGB565. This is not a full window manager. */
+typedef unsigned short u16;
+typedef struct { int left, top, right, bottom; } NT_RECT;
+typedef struct {
+    void *hdc;
+    int erase;
+    NT_RECT rcPaint;
+    int restore, incUpdate;
+    unsigned char reserved[32];
+} NT_PAINT;
+typedef struct { int x, y; } NT_POINT;
+
+static u32 rgb565(u32 colorref)
+{
+    u32 r = colorref & 255u;
+    u32 g = (colorref >> 8) & 255u;
+    u32 b = (colorref >> 16) & 255u;
+    return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+}
+
+void coredll_clear(u32 colorref)
+{
+    const void **a = ntapi();
+    if (a && a[6]) ((void (*)(u32))a[6])(rgb565(colorref));
+}
+
+void coredll_pixel(u32 x, u32 y, u32 colorref)
+{
+    const void **a = ntapi();
+    if (a && a[7]) ((void (*)(u32,u32,u32))a[7])(x,y,rgb565(colorref));
+}
+
+void coredll_line(u32 x1, u32 y1, u32 x2, u32 y2, u32 colorref)
+{
+    const void **a = ntapi();
+    if (a && a[8]) ((void (*)(u32,u32,u32,u32,u32))a[8])
+        (x1,y1,x2,y2,rgb565(colorref));
+}
+
+void coredll_fillrect(u32 l, u32 t, u32 r, u32 b, u32 colorref)
+{
+    const void **a = ntapi();
+    if (a && a[9]) ((void (*)(u32,u32,u32,u32,u32))a[9])
+        (l,t,r,b,rgb565(colorref));
+}
+
+/* Blocking. Returns 1 on touch and 2 on CLEAR, with touch coordinates. */
+u32 coredll_touch(u32 *x, u32 *y)
+{
+    const void **a = ntapi();
+    if (a && a[10]) return ((u32 (*)(u32 *,u32 *))a[10])(x,y);
+    return 2;
+}
+
+void *GetDC(void *hwnd)
+{
+    (void)hwnd;
+    return (void *)1;
+}
+
+int ReleaseDC(void *hwnd, void *hdc)
+{
+    (void)hwnd;
+    if (hdc) coredll_refresh();
+    return hdc ? 1 : 0;
+}
+
+void *BeginPaint(void *hwnd, NT_PAINT *paint)
+{
+    (void)hwnd;
+    if (paint) {
+        paint->hdc = (void *)1;
+        paint->erase = 0;
+        paint->restore = 0;
+        paint->incUpdate = 0;
+    }
+    return (void *)1;
+}
+
+int EndPaint(void *hwnd, const NT_PAINT *paint)
+{
+    (void)hwnd; (void)paint;
+    coredll_refresh();
+    return 1;
+}
+
+u32 SetPixel(void *hdc, int x, int y, u32 colorref)
+{
+    if (hdc && x >= 0 && y >= 0)
+        coredll_pixel((u32)x, (u32)y, colorref);
+    return colorref;
+}
+
+void *CreateSolidBrush(u32 colorref)
+{
+    /* Color is encoded in the synthetic brush handle, bit 24 marks validity. */
+    return (void *)(0x01000000u | rgb565(colorref));
+}
+
+int DeleteObject(void *object)
+{
+    return object != 0;
+}
+
+int FillRect(void *hdc, const NT_RECT *rect, void *brush)
+{
+    if (!hdc || !rect || !brush) return 0;
+    u32 c = (u32)brush & 0xFFFFu;
+    const void **a = ntapi();
+    if (a && a[9] && rect->left >= 0 && rect->top >= 0 &&
+        rect->right > rect->left && rect->bottom > rect->top) {
+        ((void (*)(u32,u32,u32,u32,u32))a[9])
+            ((u32)rect->left, (u32)rect->top,
+             (u32)rect->right, (u32)rect->bottom, c);
+        return 1;
+    }
+    return 0;
+}
+
+static int pen_x, pen_y;
+int MoveToEx(void *hdc, int x, int y, NT_POINT *previous)
+{
+    if (!hdc) return 0;
+    if (previous) { previous->x = pen_x; previous->y = pen_y; }
+    pen_x = x; pen_y = y;
+    return 1;
+}
+
+int LineTo(void *hdc, int x, int y)
+{
+    if (!hdc) return 0;
+    if (pen_x >= 0 && pen_y >= 0 && x >= 0 && y >= 0)
+        coredll_line((u32)pen_x, (u32)pen_y, (u32)x, (u32)y, 0x00FFFFFFu);
+    pen_x = x; pen_y = y;
+    return 1;
+}
+
+int Rectangle(void *hdc, int l, int t, int r, int b)
+{
+    if (!hdc || l < 0 || t < 0 || r <= l || b <= t) return 0;
+    coredll_line((u32)l,(u32)t,(u32)(r-1),(u32)t,0xFFFFFFu);
+    coredll_line((u32)(r-1),(u32)t,(u32)(r-1),(u32)(b-1),0xFFFFFFu);
+    coredll_line((u32)(r-1),(u32)(b-1),(u32)l,(u32)(b-1),0xFFFFFFu);
+    coredll_line((u32)l,(u32)(b-1),(u32)l,(u32)t,0xFFFFFFu);
+    return 1;
+}
+
+void OutputDebugStringW(const u16 *wide)
+{
+    char buf[64];
+    unsigned i = 0;
+    if (!wide) return;
+    while (i < sizeof(buf) - 1 && wide[i]) {
+        buf[i] = (wide[i] < 128) ? (char)wide[i] : '?';
+        ++i;
+    }
+    buf[i] = 0;
+    coredll_puts(buf);
 }
 
 /* ---------------------------------------------------------------------------
