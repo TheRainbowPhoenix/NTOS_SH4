@@ -166,11 +166,11 @@ def patch_config_bfd(s):
 
 
 def patch_ld_tgt(s):
+    # Distro binutils versions vary in whitespace around sh-*-pe).
+    # The unique emulation assignment is the stable anchor.
     return once(
-        s,
-        "sh-*-pe)\t\t\ttarg_emul=shpe ;",
-        'sh-*-pe)\t\t\ttarg_emul=shbepe\n'
-        '\t\t\ttarg_extra_emuls="shpe" ;',
+        s, "targ_emul=shpe",
+        'targ_emul=shbepe\n\t\t\ttarg_extra_emuls="shpe"',
         "GNU ld SH PE emulation",
     )
 
