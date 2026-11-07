@@ -215,7 +215,10 @@ static int load_state(void)
     if (!closed) last_error = NT_CALL(GetLastError, ());
     if (!ok || !closed || count != sizeof(next) ||
         next.magic != 0x4E544C42u || next.color_index >= 6 ||
-        next.brush < 3 || next.brush > 24) return 0;
+        next.brush < 3 || next.brush > 24) {
+        last_error=87; /* malformed/unexpected state file */
+        return 0;
+    }
     /* A whole-struct assignment makes GCC emit ___movmem_i4_even on SH4.
      * Payloads link freestanding (-nostdlib), so copy fields explicitly. */
     state.magic = next.magic;
