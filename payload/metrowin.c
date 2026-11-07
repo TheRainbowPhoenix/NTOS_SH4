@@ -43,6 +43,19 @@ static int screen=0,tab=0,menu_open=0,dialog_open=0,checked=4;
 static int expanded=0,start_page=0,search_mode=0,music_filter=0;
 static int prior_screen=0,contact_selected=0,folder_menu=0;
 static int touch_origin_y=-1,touch_origin_x=-1;
+/* Freestanding SH4, no libgcc signed division support. Inputs are
+ * nonnegative touch coordinates/screen measurements. */
+static unsigned metro_div(unsigned n,unsigned d) {
+    unsigned q=0,r=0;
+    if(!d)return 0;
+    for(int k=31;k>=0;--k) {
+        unsigned top=r>>31;
+        r=(r<<1)|((n>>(unsigned)k)&1u);
+        if(top || r>=d) {r-=d;q|=1u<<(unsigned)k;}
+    }
+    return q;
+}
+
 static int percentages[5]={99,57,15,11,8};
 static const char *names[]={"This Device","Clear browsing data",
                             "MY MUSIC","Offline maps","Music folder"};
@@ -193,7 +206,7 @@ static void draw(void *dc) {
 }
 static void redraw(void *hwnd) {NT_CALL(InvalidateRect,(hwnd,0,1));}
 static void select_menu(int y) {
-    int idx=(y-76)/73;
+    int idx=(int)metro_div((unsigned)(y-76),73u);
     if(idx>=0 && idx<5)screen=idx;
     menu_open=0;tab=0;folder_menu=0;
 }
@@ -209,7 +222,7 @@ static void home_action(void) {
     screen=5;menu_open=0;dialog_open=0;search_mode=0;
 }
 static void select_start_tile(int x,int y) {
-    int col=x>=160, row=(y-79+start_page*270)/129;
+    int col=x>=160, row=(int)metro_div((unsigned)(y-79+start_page*270),129u);
     int which=row*2+col;
     static const int route[6]={1,0,2,4,0,3};
     if(which>=0 && which<6){screen=route[which];tab=0;}
@@ -268,13 +281,13 @@ static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp) {
             int step=expanded?33:39;
             int count=expanded?9:7;
             if(y>=109 && y<109+count*step) {
-                int i=(y-109)/step;
+                int i=(int)metro_div((unsigned)(y-109),(unsigned)step);
                 if(i>=0 && i<count)checked^=1<<i;
             } else if(y>=394 && y<444)expanded=!expanded;
             else if(y>=445 && y<488)dialog_open=1;
         } else if(screen==2) {
             if(y>=52 && y<90) {
-                tab=x/106;if(tab>2)tab=2;
+                tab=(int)metro_div((unsigned)x,106u);if(tab>2)tab=2;
             } else if(y>=100 && y<126)music_filter=!music_filter;
             else if(y>=199 && y<393 && tab!=0)dialog_open=1;
         } else if(screen==3 && y>=399 && y<488)dialog_open=1;
