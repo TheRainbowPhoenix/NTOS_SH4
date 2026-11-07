@@ -808,6 +808,25 @@ int main(int argc, char **argv, char **envp) {
     Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0, "%s",
                  "EXE: pick again   CLEAR: exit");
     LCD_Refresh();
-    Debug_WaitKey();
+    // Debug_WaitKey accepts arbitrary keys, while the prompt promises that
+    // only EXE reopens the picker and CLEAR exits.  Handle both explicitly.
+    // Wait for the launch key to be released so a held EXE cannot relaunch.
+    {
+        uint32_t key1 = 0, key2 = 0;
+        do {
+            getKey(&key1, &key2);
+        } while ((key1 | key2) != 0);
+        for (;;) {
+            getKey(&key1, &key2);
+            if (testKey(key1, key2, KEY_CLEAR))
+                return 0;
+            if (testKey(key1, key2, KEY_EXE))
+                break;
+        }
+        // Consume EXE release before repopulating the selection screen.
+        do {
+            getKey(&key1, &key2);
+        } while ((key1 | key2) != 0);
+    }
     } // relaunch loop: back to the banner + picker
 }
