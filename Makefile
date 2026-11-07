@@ -62,6 +62,9 @@ HELLOCORE_EXE := $(OUTDIR)/HELLOCORE.EXE
 MEMTOOL_OBJ := $(BUILDDIR)/payload/memtool.o
 MEMTOOL_ELF := $(BUILDDIR)/payload/memtool.elf
 MEMTOOL_EXE := $(OUTDIR)/MEMTOOL.EXE
+PAINT_OBJ := $(BUILDDIR)/payload/paintdemo.o
+PAINT_ELF := $(BUILDDIR)/payload/paintdemo.elf
+PAINT_EXE := $(OUTDIR)/PAINT.EXE
 
 AS_SOURCES:=$(shell find $(SOURCEDIR) -name '*.S')
 CC_SOURCES:=$(shell find $(SOURCEDIR) -name '*.c')
@@ -74,7 +77,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) Makefile
 
 all: elf hh3 ntx
 .DEFAULT_GOAL := all
@@ -137,6 +140,18 @@ $(MEMTOOL_ELF): $(MEMTOOL_OBJ) $(PAYLOAD_DIR)/payload.ld
 $(MEMTOOL_EXE): $(MEMTOOL_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(MEMTOOL_ELF) -o $@ --import-module COREDLL.DLL
+
+$(PAINT_OBJ): $(PAYLOAD_DIR)/paintdemo.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(PAINT_ELF): $(PAINT_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(PAINT_OBJ)
+
+$(PAINT_EXE): $(PAINT_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(PAINT_ELF) -o $@ --import-module COREDLL.DLL
 
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
