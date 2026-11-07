@@ -16,7 +16,7 @@ static void draw(void *dc)
     ui_fill(dc,0,0,320,528,RGB(192,192,192));
     ui_fill(dc,4,5,316,40,RGB(10,48,124));
     ui_fill(dc,5,6,10,39,RGB(18,132,181));
-    ui_text(dc,18,14,"NTOS CONTROL",RGB(255,255,255),1);
+    ui_text(dc,18,8,"NTOS CONTROL",RGB(255,255,255),1);
     /* Raised Win98 caption-close control with an unmistakable hit target. */
     ui_fill(dc,278,10,309,34,RGB(255,255,255));
     ui_fill(dc,280,12,307,32,RGB(192,192,192));
