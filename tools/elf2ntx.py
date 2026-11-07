@@ -633,8 +633,8 @@ def make_synthetic_elf(base):
     symtab_data = b"\x00" * 16  # null symbol
     # Sections sit at base+0x200 (the header page), like the real linker
     # scripts, so rva = vma - base and linked absolutes stay valid.
-    # symbol 1: 'main' defined in .text (section 1) at base+0x300
-    symtab_data += struct.pack(">IIIBBH", 1, 0x00400300, 0, (1 << 4) | 2, 0, 1)
+    # symbol 1: 'main' defined in .text (section 1) at base+0x200
+    symtab_data += struct.pack(">IIIBBH", 1, base + 0x200, 0, (1 << 4) | 2, 0, 1)
     # symbol 2: 'coredll_puts' (export test) at base+0x400
     symtab_data += struct.pack(">IIIBBH", 6, 0x00400400, 0, (1 << 4) | 2, 0, 1)
     # symbol 3: '__imp_coredll_puts' (import test) at base+0x208
@@ -722,7 +722,7 @@ def selftest():
     opt_at = fh_at + 20
     entry = struct.unpack_from("<I", out, opt_at + 16)[0]   # AddressOfEntryPoint
     img_base = struct.unpack_from("<I", out, opt_at + 28)[0]  # ImageBase
-    assert entry == 0x100 + off and img_base == base  # 'main' fallback
+    assert entry == off and img_base == base  # 'main' fallback
     soi = struct.unpack_from("<I", out, opt_at + 56)[0]
     assert soi == 0x600, hex(soi)  # header page + .text page + .reloc page
     dir5_rva, dir5_size = struct.unpack_from(
@@ -806,7 +806,7 @@ def selftest():
         return
     pe = pefile.PE(data=out2)
     assert pe.FILE_HEADER.Machine == IMAGE_FILE_MACHINE_SH4BE
-    assert pe.OPTIONAL_HEADER.AddressOfEntryPoint == 0x100 + off
+    assert pe.OPTIONAL_HEADER.AddressOfEntryPoint == off
     assert pe.OPTIONAL_HEADER.ImageBase == base
     assert pe.OPTIONAL_HEADER.Subsystem == IMAGE_SUBSYSTEM_WINDOWS_CE_GUI
     assert [e.name.decode() for e in pe.DIRECTORY_ENTRY_EXPORT.symbols] == \
