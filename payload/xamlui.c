@@ -158,8 +158,10 @@ void xamlui_checkbox(void *dc,int x,int y,const u16 *label,int checked) {
 void xamlui_progress(void *dc,int x,int y,int width,int percent) {
     if(percent<0)percent=0;
     if(percent>100)percent=100;
-    xamlui_tile(dc,x,y,x+width,y+11,RGB(54,54,54));
-    xamlui_tile(dc,x,y,x+(width*percent)/100,y+11,BLUE);
+    /* Windows 10 Mobile: thick total-capacity bar, thin category bars. */
+    int h=(y>=220) ? 7 : 11;
+    xamlui_tile(dc,x,y,x+width,y+h,RGB(54,54,54));
+    xamlui_tile(dc,x,y,x+(width*percent)/100,y+h,BLUE);
 }
 void xamlui_actionbar(void *dc,
                       const u16 *left,const u16 *right) {
