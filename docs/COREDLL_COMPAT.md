@@ -45,9 +45,9 @@ TranslateMessage does not synthesize WM_CHAR events.
 `SelectObject`, `SetTextColor`, `SetBkColor`, `SetBkMode`.
 
 A single synthetic full-screen DC; drawing uses RGB565 conversion and SDK
-pixels/lines. TextOutW uses the Hollyhock debug small font, not TrueType.
+pixels/lines. TextOutW rasterizes 16-row, monochrome Selawik glyphs, not the SDK debug font.
 Brushes are color-coded synthetic handles. There is no clipping region,
-font selection, bitmap/blit pipeline, actual GDI object ownership, or
+full Unicode font selection, bitmap/blit pipeline, actual GDI object ownership, or
 window compositing. BeginPaint/EndPaint currently operate on the same DC.
 
 ### File I/O
@@ -81,10 +81,10 @@ evidence that it is implemented. Before porting an application, inspect
 
 - **GUIWIN.EXE** — Classic Windows-inspired control panel with navy title bar,
   beveled buttons, three tabs, accent swatches, status area and a checkbox.
-  The caption [X] invokes DestroyWindow then PostQuitMessage(WM_QUIT), returning
-  to the NTOS EXE picker.
+  The caption close target posts WM_QUIT; the message loop returns and
+  destroys the window, restoring the NTOS EXE picker.
   Touch controls or use LEFT/RIGHT, ENTER and 0.
-- **METROWIN.EXE** — Metro-inspired dark Settings app with system,
+- **METROWIN.EXE** — Metro-inspired light Settings app with system,
   personalization and about pages; accent colors and interactive on/off
   switches. Changes are in-memory UI demonstrations, not OS preferences.
 - **CALC.EXE** — Integer-only calculator with on-screen digits/operators and
@@ -92,24 +92,37 @@ evidence that it is implemented. Before porting an application, inspect
 
 GUI apps include `payload/wince_ui.h`: a compact Windows CE type/ABI shim
 that imports **existing COREDLL function names**, not private drawing calls.
-The active WinCE GUI font is now a **13-pixel proportional Inter Regular raster**
-stored as compact C data in `payload/inter_ui.h`. Inter is licensed under
-SIL Open Font License 1.1 (https://github.com/rsms/inter).
-The older `payload/font8x8.h` is retained only as an unused reference.
-`TextOutW` and `DrawTextW` render variable-width glyphs through the
-NTOS RGB565 pixel gate, with 1x and 2x scale selected by
-`CreateFontIndirectW` / `SelectObject`. No OpenType library, FPU,
-subpixel antialiasing or font file is needed on the calculator. Supported
-raster glyphs are Basic Latin U+0020–U+007E; other glyphs use '?'.
+The active WinCE GUI font is a **monochrome proportional Selawik Regular**
+bitmap raster generated directly from the user's Microsoft Selawik UFO
+archive. See `payload/selawik_ui.h` and `docs/SELAWIK_OFL_LICENSE.txt`
+(SIL Open Font License 1.1). This is fully 1-bit rasterization with
+**no antialiasing**, subpixel filtering, FPU or runtime font file.
+`TextOutW` and `DrawTextW` use the WinCE GDI calls to draw raster glyphs,
+with 1x and 2x sizes selected by `CreateFontIndirectW` / `SelectObject`.
+The atlas presently covers Basic Latin U+0020–U+007E.
 
-**DLL loading limitation:** the mapped loader currently maps a single
-COREDLL.DLL and resolves all import descriptors against its export table.
-There is no reliable second-DLL loading or per-module import resolution.
-Do not claim XAML-UI.DLL or arbitrary WinCE DLL dependencies work until
-multi-module PE imports, mapping, lifetime and relocation are implemented.
+**Two-module dependency demo:** METROWIN.EXE now imports from both
+`COREDLL.DLL` and `XAMLUI.DLL`. XAMLUI imports WinCE GDI APIs from
+COREDLL. The PE packer emits a separate named
+`IMAGE_IMPORT_DESCRIPTOR` with its own OriginalFirstThunk and FirstThunk
+for each DLL, and NTOS maps XAMLUI at its separate preferred base
+`0x00C00000` (COREDLL is `0x00800000`, EXEs are `0x00400000`).
+It resolves each dependency's imports before enabling the MMU, flushes
+the pages, maps every 4 KiB page into the UTLB, and releases all image
+allocations after the process returns.
+
+This is **static load-time dependency resolution** for the two known
+DLL names, not arbitrary dynamic linking: `LoadLibraryW` /
+`GetProcAddress`, forwarder exports, arbitrary extra DLL discovery,
+and dependency cycles remain unsupported. The module size and available
+UTLB set/way budget also limit which binaries can run. The multi-module
+PE test is in `tools/test_multimodule.py`.
 
 Build: `make clean && make -j4`; deploy `NTOS.hh3`, `COREDLL.DLL`,
-`GUIWIN.EXE`, `METROWIN.EXE`, and `CALC.EXE` together.
+`XAMLUI.DLL`, `GUIWIN.EXE`, `METROWIN.EXE`, and `CALC.EXE`.
+Use `python3 tools/elf2ntx.py --selftest` and
+`python3 tools/test_multimodule.py` to validate the PE metadata.
+Hardware testing is still needed for UTLB mapping and pen-key event delivery.
 
 ## Build and test
 
