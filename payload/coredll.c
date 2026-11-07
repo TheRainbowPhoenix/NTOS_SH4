@@ -16,7 +16,7 @@
  * word points at the syscall table (NTOS rebuilds that window in UTLB
  * slots 0x37..0x3A before the payload runs).
  */
-#include "font8x8.h"
+#include "inter_ui.h"
 typedef unsigned int u32;
 
 /* OS330 C1A API window contract: *(0x08100000) = syscall table pointer. */
@@ -613,17 +613,58 @@ int SetBkMode(void *hdc,int mode)
     if (hdc && (mode==1 || mode==2)) g_bk_mode=mode;
     return old;
 }
+/* Inter bitmap atlas is stored as Base64 C source data, decoded once
+ * into BSS. Each glyph holds 16 scanlines of variable-width, MSB-first
+ * pixels; total 1586 bytes. No font files, FPU, heap, or OS font service. */
+static unsigned char g_ui_raster[1586];
+static int g_ui_raster_ready;
+static int nt_b64(unsigned char ch)
+{
+    if (ch>='A' && ch<='Z') return ch-'A';
+    if (ch>='a' && ch<='z') return ch-'a'+26;
+    if (ch>='0' && ch<='9') return ch-'0'+52;
+    if (ch=='+') return 62;
+    if (ch=='/') return 63;
+    return -1;
+}
+static void nt_init_raster(void)
+{
+    u32 acc=0, pos=0;
+    int bits=0;
+    if (g_ui_raster_ready) return;
+    for (u32 i=0; ntos_inter_b64[i];++i) {
+        int v=nt_b64((unsigned char)ntos_inter_b64[i]);
+        if (v<0) break;
+        acc=(acc<<6)|(u32)v;
+        bits+=6;
+        if (bits>=8) {
+            bits-=8;
+            if (pos<sizeof(g_ui_raster))
+                g_ui_raster[pos++]=(unsigned char)(acc>>bits);
+        }
+    }
+    g_ui_raster_ready=1;
+}
+static int nt_fontwidth(u16 ch)
+{
+    return ch>=32 && ch<127 ? ntos_inter_width[ch-32] : 8;
+}
 static int nt_glyph(void *hdc,int x,int y,u16 ch)
 {
     const void **api=ntapi();
     u32 fg=rgb565(g_text_color),bg=rgb565(g_bk_color);
-    int scale=g_font_scale;
+    int scale=g_font_scale, w,off=0;
     if (!hdc || !api || !api[7]) return 0;
-    if (ch>127) ch='?';
-    for (int row=0;row<8;++row) {
-        u32 bits=ntos_font8x8[ch][row];
-        for (int col=0;col<8;++col) {
-            int active=(bits>>col)&1;
+    if (ch<32 || ch>=127) ch='?';
+    w=nt_fontwidth(ch);
+    nt_init_raster();
+    for (int c=32;c<(int)ch;++c)
+        off+=2*nt_fontwidth((u16)c);
+    for (int row=0;row<16;++row) {
+        for (int col=0;col<w;++col) {
+            int bit=row*w+col;
+            int at=off+(bit>>3);
+            int active=(g_ui_raster[at]>>(7-(bit&7)))&1;
             if (!active && g_bk_mode==1) continue;
             int xx=x+col*scale, yy=y+row*scale;
             u32 color=active ? fg : bg;
@@ -640,26 +681,29 @@ int TextOutW(void *hdc,int x,int y,const u16 *text,int n)
 {
     int i=0;
     if (!hdc || !text || n<0) return 0;
-    while (i<n && text[i] && x+i*8*g_font_scale<320) {
-        nt_glyph(hdc,x+i*8*g_font_scale,y,text[i]);
+    while (i<n && text[i] && x<320) {
+        nt_glyph(hdc,x,y,text[i]);
+        x+=nt_fontwidth(text[i])*g_font_scale;
         ++i;
     }
     return 1;
 }
 int DrawTextW(void *hdc,const u16 *text,int count,NT_RECT *rect,u32 flags)
 {
-    int n=0,x,y,scale=g_font_scale;
+    int n=0,w=0,x,y,scale=g_font_scale;
     if (!hdc || !text || !rect) return 0;
-    while ((count<0 || n<count) && n<255 && text[n]) ++n;
+    while ((count<0 || n<count) && n<255 && text[n]) {
+        w+=nt_fontwidth(text[n])*scale; ++n;
+    }
     x=rect->left;
-    if (flags & 1u) x+=(rect->right-rect->left-n*8*scale)/2; /* DT_CENTER */
-    if (flags & 2u) x+=rect->right-rect->left-n*8*scale; /* DT_RIGHT */
+    if (flags&1u) x+=(rect->right-rect->left-w)/2; /* DT_CENTER */
+    if (flags&2u) x+=rect->right-rect->left-w; /* DT_RIGHT */
     y=rect->top;
-    if (flags & 4u) y+=(rect->bottom-rect->top-8*scale)/2; /* DT_VCENTER */
-    if (!(flags & 0x400u)) TextOutW(hdc,x,y,text,n); /* DT_CALCRECT */
-    else { rect->right=rect->left+n*8*scale;
-           rect->bottom=rect->top+8*scale; }
-    return 8*scale;
+    if (flags&4u) y+=(rect->bottom-rect->top-16*scale)/2;
+    if (!(flags&0x400u)) TextOutW(hdc,x,y,text,n);
+    else { rect->right=rect->left+w;
+           rect->bottom=rect->top+16*scale; }
+    return 16*scale;
 }
 
 int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
