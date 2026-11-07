@@ -136,6 +136,22 @@ static void ui_button(void *dc,int l,int t,int r,int b,
     ui_fill(dc,l,t,r,b,bg);
     ui_text(dc,l+(r-l-tw)/2,t+(b-t-16)/2,label,fg,0);
 }
+/* Faithful Windows 95/98 raised command button: light top/left edge,
+ * dark right/bottom shadow, gray face, proportionally centered caption. */
+static void ui_classic_button(void *dc,int l,int t,int r,int b,
+                              const char *label)
+{
+    const DWORD face=RGB(192,192,192);
+    ui_fill(dc,l,t,r,b,RGB(0,0,0));
+    ui_fill(dc,l,t,r-1,b-1,RGB(255,255,255));
+    ui_fill(dc,l+1,t+1,r-2,b-2,face);
+    ui_fill(dc,r-2,t+1,r-1,b-1,RGB(128,128,128));
+    ui_fill(dc,l+1,b-2,r-1,b-1,RGB(128,128,128));
+    ui_fill(dc,l+2,t+2,r-3,b-3,face);
+    int tw=ui_measure(label);
+    ui_text(dc,l+(r-l-tw)/2,t+(b-t-16)/2,label,
+            RGB(0,0,0),0);
+}
 static int ui_run(const WCHAR16 *class_name,const WCHAR16 *title,WNDPROC proc)
 {
     WNDCLASSW cls={0};
