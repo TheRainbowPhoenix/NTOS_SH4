@@ -237,12 +237,12 @@ static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp) {
     if(msg==WM_KEYDOWN) {
         if(wp==VK_RIGHT) {
             if(screen==5)start_page=1;
-            else if(screen==2)tab=(tab+1)%3;
-            else screen=(screen+1)%5;
+            else if(screen==2)tab=(tab==2?0:tab+1);
+            else screen=(screen==4?0:screen+1);
         } else if(wp==VK_LEFT) {
             if(screen==5)start_page=0;
-            else if(screen==2)tab=(tab+2)%3;
-            else screen=(screen+4)%5;
+            else if(screen==2)tab=(tab==0?2:tab-1);
+            else screen=(screen==0?4:screen-1);
         } else if(wp==VK_UP && screen==5)start_page=0;
         else if(wp==VK_DOWN && screen==5)start_page=1;
         else if(wp==VK_RETURN)menu_open=!menu_open;
