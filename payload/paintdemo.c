@@ -5,8 +5,14 @@
 
 typedef unsigned int u32;
 typedef struct { int left, top, right, bottom; } RECT;
+typedef struct {
+    void *hdc; int erase; RECT rcPaint;
+    int restore, incUpdate; unsigned char reserved[32];
+} PAINTSTRUCT;
 
 NT_IMPORT(void *, GetDC, (void *hwnd))
+NT_IMPORT(void *, BeginPaint, (void *hwnd, PAINTSTRUCT *paint))
+NT_IMPORT(int, EndPaint, (void *hwnd, const PAINTSTRUCT *paint))
 NT_IMPORT(int, ReleaseDC, (void *hwnd, void *hdc))
 NT_IMPORT(u32, SetPixel, (void *hdc, int x, int y, u32 color))
 NT_IMPORT(void *, CreateSolidBrush, (u32 color))
@@ -18,6 +24,8 @@ NT_IMPORT(void, coredll_refresh, (void))
 NT_IMPORT(u32, coredll_touch, (u32 *x, u32 *y))
 
 NT_DEFINE(GetDC)
+NT_DEFINE(BeginPaint)
+NT_DEFINE(EndPaint)
 NT_DEFINE(ReleaseDC)
 NT_DEFINE(SetPixel)
 NT_DEFINE(CreateSolidBrush)
@@ -34,7 +42,8 @@ int main(void)
         0x000000FFu, 0x0000FF00u, 0x00FF0000u,
         0x0000FFFFu, 0x00FF00FFu, 0x00FFFF00u
     };
-    void *dc = NT_CALL(GetDC, (0));
+    PAINTSTRUCT paint = {0};
+    void *dc = NT_CALL(BeginPaint, (0, &paint));
     if (!dc) return 1;
     NT_CALL(coredll_clear, (0x00001020u));
     for (u32 i = 0; i < 6; i++) {
@@ -62,6 +71,6 @@ int main(void)
                     NT_CALL(SetPixel, (dc, (int)x + dx, (int)y + dy, color));
         NT_CALL(coredll_refresh, ());
     }
-    NT_CALL(ReleaseDC, (0, dc));
+    NT_CALL(EndPaint, (0, &paint));
     return 0;
 }
