@@ -824,7 +824,7 @@ done:
 // ---------------------------------------------------------------------------
 // UI
 // ---------------------------------------------------------------------------
-constexpr int kMaxFiles = 12;
+constexpr int kMaxFiles = 24;
 constexpr int kMaxName = 25;
 
 static char_const16_t g_find_pattern_exe[] = {
@@ -902,6 +902,7 @@ int main(int argc, char **argv, char **envp) {
     // coredll module for the loader.
     int pick[kMaxFiles] = {};
     int coredll_idx = -1;
+    int xamlui_idx = -1;
     {
         int npick = 0;
         for (int i = 0; i < count; i++) {
@@ -910,10 +911,26 @@ int main(int argc, char **argv, char **envp) {
             while (stem[k] != '\0' && names[i][k] != '\0' &&
                    (names[i][k] | 0x20) == (stem[k] | 0x20))
                 k++;
-            if (stem[k] != '\0' || names[i][k] != '.')
-                pick[npick++] = i;
-            else
+            if (stem[k] == '\0' && names[i][k] == '.') {
                 coredll_idx = i;
+                continue;
+            }
+            const char xaml_stem[] = "XAMLUI";
+            int x=0;
+            while (xaml_stem[x]!='\0' && names[i][x]!='\0' &&
+                   (names[i][x] | 0x20)==(xaml_stem[x] | 0x20))
+                ++x;
+            if (xaml_stem[x]=='\0' && names[i][x]=='.') {
+                xamlui_idx=i;
+                continue;
+            }
+            // Only actual .EXE files go in the launcher menu.
+            int n=0;while (names[i][n]!='\0') ++n;
+            if (n>=4 && (names[i][n-4]|0x20)=='.' &&
+                (names[i][n-3]|0x20)=='e' &&
+                (names[i][n-2]|0x20)=='x' &&
+                (names[i][n-1]|0x20)=='e')
+                pick[npick++] = i;
         }
         count = npick;
     }
@@ -1040,10 +1057,23 @@ int main(int argc, char **argv, char **envp) {
             core_path = core_path_buf;
             core_size = sizes[coredll_idx];
         }
+        const char *extra_path=nullptr;
+        uint32_t extra_size=0;
+        char extra_path_buf[8+kMaxName+1];
+        if (xamlui_idx>=0) {
+            const char prefix[] = "\\fls0\\";
+            int p=0;
+            for (;prefix[p];++p) extra_path_buf[p]=prefix[p];
+            for (int j=0;names[xamlui_idx][j];++j)
+                extra_path_buf[p++]=names[xamlui_idx][j];
+            extra_path_buf[p]=0;
+            extra_path=extra_path_buf;
+            extra_size=sizes[xamlui_idx];
+        }
         ntos_puts("Mode: UTLB-mapped (preferred base)");
         const char *err = nullptr;
-        if (run_mapped(file, fsize, hdr, core_path, core_size, &ret,
-                       &err) != 0) {
+        if (run_mapped(file,fsize,hdr,core_path,core_size,
+                       extra_path,extra_size,&ret,&err) != 0) {
             Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
                          "Mapped load failed: %s", err);
             LCD_Refresh();
