@@ -95,6 +95,15 @@ elf: $(APP_ELF) Makefile
 ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) Makefile
 
 all: elf hh3 ntx
+
+# GNU binutils is the authoritative SH4BE object/code linker. The bundled
+# cross toolchain does NOT support sh-pe or pei-shl output: do not replace
+# the compatibility PE packer with a format the toolchain cannot emit.
+check-pe: ntx
+	sh tools/test_binutils_parity.sh
+
+probe-pe: ntx
+	sh tools/probe_binutils_pe.sh
 .DEFAULT_GOAL := all
 .SECONDARY: # Prevents intermediate files from being deleted
 
@@ -254,6 +263,6 @@ compile_commands.json:
 	$(MAKE) $(MAKEFLAGS) clean
 	bear -- sh -c "$(MAKE) $(MAKEFLAGS) --keep-going all || exit 0"
 
-.PHONY: elf hh3 ntx all clean compile_commands.json
+.PHONY: elf hh3 ntx all clean compile_commands.json check-pe probe-pe
 
 -include $(DEPFILES)
