@@ -21,7 +21,12 @@
 
 namespace pe {
 
-constexpr uint16_t MACHINE_SH4BE = 0x01A8;  // "SH4 BE" (make_shasm_be.py)
+// No assigned PE machine type exists for SH4 big-endian. Microsoft uses
+// 0x01A6 for SH4 (normally LE) and 0x01A8 for SH5.
+// 0x01A7 is reserved by NTOS for the experimental native SH4BE PE target.
+constexpr uint16_t MACHINE_SH4BE_NATIVE = 0x01A7;
+constexpr uint16_t MACHINE_SH4BE_LEGACY = 0x01A8;
+constexpr uint16_t MACHINE_SH4BE = MACHINE_SH4BE_LEGACY;
 constexpr uint16_t MACHINE_SH4LE = 0x01A6;  // MS standard SH4 (LE)
 
 constexpr uint16_t OPT_MAGIC_PE32 = 0x010B;
@@ -138,7 +143,8 @@ inline int parse(const uint8_t *data, uint32_t size, Image *img) {
     img->fh.opthdr_size     = rd16le(f + 16);
     img->fh.characteristics = rd16le(f + 18);
 
-    if (img->fh.machine != MACHINE_SH4BE)
+    if (img->fh.machine != MACHINE_SH4BE_NATIVE &&
+        img->fh.machine != MACHINE_SH4BE_LEGACY)
         return -2; // not a big-endian SH4 image
     if (img->fh.nsections == 0 || img->fh.nsections > 8)
         return -3;
