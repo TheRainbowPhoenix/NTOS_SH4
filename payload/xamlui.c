@@ -115,6 +115,108 @@ static void nav_icon(void *dc,int what,int cx,int cy) {
             xamlui_tile(dc,cx+3+i,cy+4+i,cx+4+i,cy+5+i,WHITE);
     }
 }
+/* Convex/concave filled polygons via integer scanline intersection.
+ * No floating point, polygon fill and strokes are implemented within
+ * XAMLUI.DLL and ultimately use genuine WinCE GDI FillRect. */
+static void stroke(void *dc,int x0,int y0,int x1,int y1,u32 color) {
+    int dx=x1-x0,dy=y1-y0,sx=1,sy=1,err,e2;
+    if(dx<0){dx=-dx;sx=-1;}
+    if(dy<0){dy=-dy;sy=-1;}
+    err=dx-dy;
+    for(;;) {
+        xamlui_tile(dc,x0,y0,x0+1,y0+1,color);
+        if(x0==x1 && y0==y1)break;
+        e2=2*err;
+        if(e2>-dy){err-=dy;x0+=sx;}
+        if(e2<dx){err+=dx;y0+=sy;}
+    }
+}
+void xamlui_polygon(void *dc,const POINT *pts,int n,u32 fill,u32 border) {
+    if(!dc || !pts || n<3 || n>12)return;
+    int lo=527,hi=0;
+    for(int i=0;i<n;++i) {
+        if(pts[i].y<lo)lo=pts[i].y;
+        if(pts[i].y>hi)hi=pts[i].y;
+    }
+    if(lo<0)lo=0;
+    if(hi>527)hi=527;
+    for(int y=lo;y<=hi;++y) {
+        int inter[12],count=0;
+        for(int i=0;i<n;++i) {
+            const POINT a=pts[i],b=pts[(i+1)%n];
+            int y0=a.y,y1=b.y;
+            if(y0==y1)continue;
+            if(y0>y1){int t=y0;y0=y1;y1=t;}
+            if(y>=y0 && y<y1 && count<12)
+                inter[count++]=a.x+(y-a.y)*(b.x-a.x)/(b.y-a.y);
+        }
+        for(int i=1;i<count;++i) {
+            int t=inter[i],j=i-1;
+            while(j>=0 && inter[j]>t){inter[j+1]=inter[j];--j;}
+            inter[j+1]=t;
+        }
+        for(int i=0;i+1<count;i+=2) {
+            int l=inter[i],r=inter[i+1];
+            if(l<0)l=0;
+            if(r>320)r=320;
+            if(r>l)xamlui_tile(dc,l,y,r,y+1,fill);
+        }
+    }
+    if(border!=0xffffffffu)
+        for(int i=0;i<n;++i) {
+            const POINT a=pts[i],b=pts[(i+1)%n];
+            stroke(dc,a.x,a.y,b.x,b.y,border);
+        }
+}
+void xamlui_folder(void *dc,int x,int y,int width,int height,u32 color) {
+    POINT p[8];
+    p[0]=(POINT){x,y+height/5};
+    p[1]=(POINT){x+width/3,y+height/5};
+    p[2]=(POINT){x+width*2/5,y};
+    p[3]=(POINT){x+width-7,y};
+    p[4]=(POINT){x+width-4,y+height/5};
+    p[5]=(POINT){x+width,y+height/5+3};
+    p[6]=(POINT){x+width,y+height};
+    p[7]=(POINT){x,y+height};
+    xamlui_polygon(dc,p,8,color,RGB(220,164,64));
+    xamlui_tile(dc,x+2,y+height/4,x+width-2,y+height/4+1,
+                RGB(255,244,182));
+}
+void xamlui_start(void *dc,int offset) {
+    /* Two vertical tile screens; caller owns the scroll/page state. */
+    static const u16 title[]={'S','t','a','r','t',0};
+    static const u16 a[]={'P','h','o','n','e',0};
+    static const u16 b[]={'P','e','o','p','l','e',0};
+    static const u16 c[]={'M','u','s','i','c',0};
+    static const u16 d[]={'P','h','o','t','o','s',0};
+    static const u16 e[]={'S','t','o','r','a','g','e',0};
+    static const u16 f[]={'M','a','p','s',0};
+    xamlui_tile(dc,0,0,320,488,BG);
+    xamlui_text(dc,14,22,title,WHITE,1);
+    for(int i=0;i<6;++i) {
+        int x=14+(i%2)*147, y=79+(i/2)*129-offset*270;
+        if(y+116<=57 || y>=488)continue;
+        u32 col=(i%3==0)?RGB(51,103,241):
+                (i%3==1)?RGB(0,143,146):RGB(116,72,178);
+        xamlui_tile(dc,x,y,x+137,y+117,col);
+        const u16 *labels[6]={a,b,c,d,e,f};
+        if(i==0) {
+            for(int j=0;j<3;++j)
+                xamlui_tile(dc,x+53,y+23+j*7,x+83,y+26+j*7,WHITE);
+        } else if(i==3)
+            xamlui_folder(dc,x+44,y+16,47,51,RGB(255,235,151));
+        else {
+            POINT sq[4]={{x+48,y+20},{x+88,y+20},
+                         {x+88,y+65},{x+48,y+65}};
+            xamlui_polygon(dc,sq,4,RGB(255,255,255),0xffffffffu);
+        }
+        xamlui_text(dc,x+11,y+92,labels[i],WHITE,0);
+    }
+    xamlui_tile(dc,0,488,320,528,BG);
+    nav_icon(dc,1,68,509);
+    nav_icon(dc,2,160,509);
+    nav_icon(dc,3,255,509);
+}
 void xamlui_shell(void *dc,const u16 *title,int pivot) {
     xamlui_tile(dc,0,0,320,528,BG);
     xamlui_tile(dc,0,0,320,50,SURFACE);
@@ -183,17 +285,21 @@ void xamlui_dialog(void *dc,const u16 *title,const u16 *message) {
     xamlui_text(dc,200,274,no,WHITE,0);
 }
 void xamlui_menu(void *dc) {
+    static const u16 h[]={'A','L','L',' ','A','P','P','S',0};
     static const u16 a[]={'S','t','o','r','a','g','e',' ','u','s','a','g','e',0};
     static const u16 b[]={'C','l','e','a','r',' ','b','r','o','w','s','i','n','g',0};
     static const u16 c[]={'M','y',' ','m','u','s','i','c',0};
     static const u16 d[]={'O','f','f','l','i','n','e',' ','m','a','p','s',0};
     static const u16 e[]={'F','i','l','e',' ','b','r','o','w','s','e','r',0};
-    static const u16 *items[5]={a,b,c,d,e};
-    xamlui_tile(dc,0,50,239,448,PANEL);
+    const u16 *labels[5]={a,b,c,d,e};
+    xamlui_tile(dc,0,0,320,488,BG);
+    xamlui_tile(dc,0,0,320,50,SURFACE);
+    xamlui_text(dc,18,17,h,WHITE,0);
     for(int i=0;i<5;++i) {
-        int y=65+i*66;
-        xamlui_text(dc,21,y+11,items[i],WHITE,0);
-        xamlui_tile(dc,14,y+56,223,y+57,RGB(64,64,64));
+        int y=76+i*73;
+        xamlui_tile(dc,14,y+7,18,y+34,BLUE);
+        xamlui_text(dc,29,y+13,labels[i],WHITE,0);
+        xamlui_tile(dc,14,y+57,306,y+58,RGB(38,38,38));
     }
 }
 
