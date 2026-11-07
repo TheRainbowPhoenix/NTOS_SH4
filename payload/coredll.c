@@ -386,6 +386,47 @@ void OutputDebugStringW(const u16 *wide)
     coredll_puts(buf);
 }
 
+/* Working WinCE-compatible display helpers (single full-screen DC). */
+int GetClientRect(void *hwnd, NT_RECT *rect)
+{
+    (void)hwnd;
+    if (!rect) return 0;
+    rect->left=0; rect->top=0; rect->right=320; rect->bottom=528;
+    return 1;
+}
+int GetSystemMetrics(int index)
+{
+    if (index==0) return 320; /* SM_CXSCREEN */
+    if (index==1) return 528; /* SM_CYSCREEN */
+    return 0;
+}
+int TextOutW(void *hdc, int x, int y, const u16 *text, int n)
+{
+    const void **a=ntapi();
+    char ansi[64];
+    int i=0;
+    if (!hdc || !text || !a || !a[16] || x<0 || y<0 || n<0) return 0;
+    while (i<n && i<63 && text[i]) {
+        ansi[i]=(text[i]>=32 && text[i]<127) ? (char)text[i] : '?';
+        ++i;
+    }
+    ansi[i]=0;
+    ((void (*)(u32,u32,const char *))a[16])((u32)x,(u32)y,ansi);
+    return 1;
+}
+int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
+{
+    (void)hwnd; (void)rect; (void)erase;
+    /* No async window manager yet; next BeginPaint always repaints. */
+    return 1;
+}
+int UpdateWindow(void *hwnd)
+{
+    (void)hwnd;
+    coredll_refresh();
+    return 1;
+}
+
 /* WinCE file-handle bridge. Handles are tagged SDK file descriptors.
  * Strings from apps are UTF-16; Hollyhock File_Open takes an ANSI path.
  * Only the existing WinCE function names are exposed to PE clients. */
@@ -402,20 +443,26 @@ void OutputDebugStringW(const u16 *wide)
 
 static int narrow_path(const u16 *src, char *dest, u32 capacity)
 {
-    u32 i=0;
-    if (!src) return 0;
-    while (src[i] && i+1 < capacity) {
+    u32 i=0, j=0;
+    if (!src || capacity < 12u) return 0;
+    /* The Hollyhock SDK uses "\\fls0\file" (two leading backslashes).
+     * Accept either the WinCE-style single leading slash or the canonical
+     * SDK spelling, then always pass the canonical form to File_Open. */
+    while (src[i] == '\\' && i < 2u) ++i;
+    if (i == 0 || !((src[i]=='f'||src[i]=='F') &&
+                    (src[i+1]=='l'||src[i+1]=='L') &&
+                    (src[i+2]=='s'||src[i+2]=='S') &&
+                    src[i+3]=='0' && src[i+4]=='\\'))
+        return 0;
+    dest[j++]='\\';
+    dest[j++]='\\';
+    while (src[i] && j+1 < capacity) {
         if (src[i] > 127u) return 0;
-        dest[i]=(char)src[i];
-        ++i;
+        dest[j++]=(char)src[i++];
     }
-    if (src[i]) return 0;
-    dest[i]=0;
-    /* Restrict the initial implementation to the removable flash volume. */
-    return i >= 6u && dest[0]=='\\' &&
-        (dest[1]=='f' || dest[1]=='F') &&
-        (dest[2]=='l' || dest[2]=='L') &&
-        (dest[3]=='s' || dest[3]=='S') && dest[4]=='0' && dest[5]=='\\';
+    if (src[i] != 0) return 0;
+    dest[j]=0;
+    return 1;
 }
 
 static int handle_fd(void *handle)
@@ -446,6 +493,17 @@ void *CreateFileW(const u16 *path, u32 access, u32 share,
     fd=((int (*)(const char *,u32))a[11])(narrow,flags);
     if (fd < 0 || fd >= 0xFFFF) return NT_INVALID_FILE;
     return (void *)(NT_HANDLE_TAG | ((u32)fd+1u));
+}
+
+u32 GetFileSize(void *handle, u32 *high)
+{
+    const void **a=ntapi();
+    int fd=handle_fd(handle);
+    int size;
+    if (high) *high=0;
+    if (fd<0 || !a || !a[17]) return 0xFFFFFFFFu;
+    size=((int (*)(int))a[17])(fd);
+    return size<0 ? 0xFFFFFFFFu : (u32)size;
 }
 
 int ReadFile(void *handle, void *buffer, u32 count, u32 *done, void *overlapped)
