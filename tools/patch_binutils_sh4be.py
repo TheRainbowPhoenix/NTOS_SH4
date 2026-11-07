@@ -64,28 +64,24 @@ def patch_coffcode(s):
 
 
 def patch_coff_sh(s):
-    a = """#ifdef COFF_WITH_PE
+    old = """#ifdef COFF_WITH_PE
 CREATE_LITTLE_COFF_TARGET_VEC (TARGET_SYM, TARGET_SHL_NAME,"""
-    b = """#ifdef COFF_WITH_PE
+    new = """#ifdef COFF_WITH_PE
 #ifdef NTOS_SH4BE_PE
 CREATE_SH4BE_PE_TARGET_VEC (TARGET_SYM, TARGET_SHL_NAME, BFD_IS_RELAXABLE,
                            SEC_CODE | SEC_DATA, '_', NULL, COFF_SWAP_TABLE);
-#else
+#else /* existing little-endian SH PE backend */
 CREATE_LITTLE_COFF_TARGET_VEC (TARGET_SYM, TARGET_SHL_NAME,"""
-    s = once(s, a, b, "coff SH PE vector")
-    suffix = """SEC_CODE | SEC_DATA, '_', NULL, COFF_SWAP_TABLE);
-#else
-CREATE_LITTLE_COFF_TARGET_VEC"""
-    if suffix not in s:
-        # Find trailing #else in target vectors without depending on layout.
-        k = s.index("CREATE_LITTLE_COFF_TARGET_VEC (TARGET_SYM, TARGET_SHL_NAME", s.index("#ifdef NTOS_SH4BE_PE"))
-        next_else = s.index("\n#else", k)
-        s = s[:next_else] + "\n#endif /* NTOS_SH4BE_PE */" + s[next_else:]
-    else:
-        s = s.replace(suffix, """SEC_CODE | SEC_DATA, '_', NULL, COFF_SWAP_TABLE);
-#endif /* NTOS_SH4BE_PE */
-#else
-CREATE_LITTLE_COFF_TARGET_VEC""", 1)
+    s = once(s, old, new, "coff SH PE vector")
+    # Search beyond the *existing* CREATE_LITTLE_COFF_TARGET_VEC.
+    # The first #else after that macro is the COFF_WITH_PE fallback.
+    # It is NOT the new NTOS_SH4BE_PE #else above the macro.
+    start = s.index(
+        "CREATE_LITTLE_COFF_TARGET_VEC (TARGET_SYM, TARGET_SHL_NAME",
+        s.index("#ifdef NTOS_SH4BE_PE"),
+    )
+    outer_else = s.index("\n#else", start)
+    s = s[:outer_else] + "\n#endif /* NTOS_SH4BE_PE */" + s[outer_else:]
     return s
 
 
