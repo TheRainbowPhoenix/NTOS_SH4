@@ -60,6 +60,11 @@ struct NtosApi {
     uint32_t (*read_event)(uint32_t *, uint32_t *, uint32_t *); // [15]
     void (*draw_text)(uint32_t, uint32_t, const char *); // [16] text at pixel pos
     int32_t (*file_size)(int32_t);                     // [17] fstat size
+    int32_t (*file_seek)(int32_t,int32_t,uint32_t);    // [18]
+    int32_t (*file_remove)(const char *);              // [19]
+    int32_t (*file_rename)(const char *,const char *); // [20]
+    int32_t (*file_mkdir)(const char *);               // [21]
+    int32_t (*file_stat)(const char *);                // [22] exists
 };
 
 static int cur_row = 0;
@@ -179,6 +184,24 @@ static int32_t ntos_file_size(int32_t fd) {
     return static_cast<int32_t>(st.fileSize);
 }
 
+static int32_t ntos_file_seek(int32_t fd,int32_t offset,uint32_t whence) {
+    if (whence>2) return -2;
+    return File_Lseek(fd,offset,static_cast<File_Whence>(whence));
+}
+static int32_t ntos_file_remove(const char *name) {
+    return File_Remove(name);
+}
+static int32_t ntos_file_rename(const char *from,const char *to) {
+    return File_Rename(from,to);
+}
+static int32_t ntos_file_mkdir(const char *name) {
+    return File_Mkdir(name);
+}
+static int32_t ntos_file_stat(const char *name) {
+    File_Stat st{};
+    return File_Stat(name,&st);
+}
+
 static uint32_t ntos_getkey(void) {
     uint32_t key1 = 0;
     uint32_t key2 = 0;
@@ -205,6 +228,11 @@ static NtosApi g_ntos_api = {
     &ntos_read_event,    // [15] touch and key event
     &ntos_draw_text,     // [16] text at pixel location
     &ntos_file_size,     // [17] fstat size
+    &ntos_file_seek,     // [18] seek
+    &ntos_file_remove,   // [19] delete
+    &ntos_file_rename,   // [20] rename
+    &ntos_file_mkdir,    // [21] mkdir
+    &ntos_file_stat,     // [22] stat
 };
 
 // ---------------------------------------------------------------------------
