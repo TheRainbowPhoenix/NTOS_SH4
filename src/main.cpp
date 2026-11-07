@@ -705,8 +705,10 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     *reinterpret_cast<void **>(api_block) = &g_ntos_api;
 
     // --- UTLB slot budget ---------------------------------------------------
-    if (exe.npages + dll.npages + extra.npages +
-        mmu::API_WINDOW_PAGES + 1 >
+    // The null page is intentionally NOT mapped: an absent PTE guards it
+    // naturally. Mapping VA 0 consumed a fifth UTLB way in set 0 when the
+    // EXE, COREDLL, XAMLUI and API window each used one way there.
+    if (exe.npages + dll.npages + extra.npages >
         mmu::SLOT_ROTATING_LAST + 1) {
         *err = "images too large for the UTLB slot budget (4 KiB pages)";
         goto done;
@@ -774,10 +776,8 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             *err = "too many pages in one UTLB set";
             goto done;
         }
-    if (!install_page(0, 0, mmu::SLOT_NULL_GUARD)) {
-        *err = "too many pages in one UTLB set";
-        goto done;
-    }
+    // VA 0 must remain unmapped. Installing an identity-mapped null
+    // guard is both unsafe (NULL would be readable) and takes a UTLB way.
 
     // --- enable translation, drop stale P0-indexed cache lines --------------
     mmu::enable_at();
