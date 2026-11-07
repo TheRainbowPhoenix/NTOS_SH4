@@ -27,7 +27,7 @@ sh4a_nofpueb-elf-readelf -h /tmp/ntos-native/hello.elf.o |
 "$OBJDUMP" -f /tmp/ntos-native/hello.pe.o
 # ld must supply MZ, PE headers, section VAs and relocations by itself.
 "$LD" -m shbepe --image-base 0x00400000 -e _main \
-  --subsystem windowsce -o /tmp/ntos-native/native-hello.exe \
+  --subsystem 9 -o /tmp/ntos-native/native-hello.exe \
   /tmp/ntos-native/hello.pe.o
 "$OBJDUMP" -x /tmp/ntos-native/native-hello.exe > /tmp/ntos-native/native-hello.txt
 python3 - <<'PY'
