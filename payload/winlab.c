@@ -36,6 +36,7 @@ NT_IMPORT(int, WriteFile, (void *, const void *, u32, u32 *, void *))
 NT_IMPORT(int, CloseHandle, (void *))
 NT_IMPORT(int, TextOutW, (void *, int, int, const WCHAR16 *, int))
 NT_IMPORT(u32, GetFileSize, (void *, u32 *))
+NT_IMPORT(u32, GetLastError, (void))
 NT_IMPORT(int, GetClientRect, (void *, RECT *))
 
 NT_DEFINE(BeginPaint)
@@ -54,6 +55,7 @@ NT_DEFINE(WriteFile)
 NT_DEFINE(CloseHandle)
 NT_DEFINE(TextOutW)
 NT_DEFINE(GetFileSize)
+NT_DEFINE(GetLastError)
 NT_DEFINE(GetClientRect)
 
 #define SCREEN_W 320
@@ -97,6 +99,7 @@ typedef struct {
 
 static SAVE_STATE state = { 0x4E544C42u, 0, 8, 0, 160, 270 };
 static int status = 0; /* 0 idle, 1 write OK, 2 read OK, 3 IO failed */
+static u32 last_error = 0;
 
 static void fill(void *dc, int l, int t, int r, int b, u32 color)
 {
@@ -124,6 +127,18 @@ static void ring(void *dc, int cx, int cy, int radius, u32 color)
             if (d <= r2 && d >= inner)
                 dot(dc, cx+x, cy+y, color);
         }
+}
+
+static void error_caption(void *dc)
+{
+    WCHAR16 text[16];
+    static const char digits[] = "0123456789ABCDEF";
+    text[0]='E'; text[1]='R'; text[2]='R'; text[3]=' ';
+    text[4]='0'; text[5]='x';
+    for (int i=0;i<8;++i)
+        text[6+i]=(WCHAR16)digits[(last_error >> (28-4*i)) & 15u];
+    text[14]=0;
+    NT_CALL(TextOutW, (dc, 8, 136, text, 14));
 }
 
 static void caption(void *dc, int x, int y, const WCHAR16 *str, int len)
@@ -156,7 +171,7 @@ static void draw_ui(void *dc)
     caption(dc, 215, 109, label_load, 4);
     if (status == 1) caption(dc, 8, 136, label_saved, 15);
     else if (status == 2) caption(dc, 8, 136, label_loaded, 16);
-    else if (status == 3) caption(dc, 8, 136, label_failed, 15);
+    else if (status == 3) error_caption(dc);
     else caption(dc, 8, 136, label_ready, 13);
 }
 
@@ -165,9 +180,15 @@ static int save_state(void)
     u32 count = 0;
     void *h = NT_CALL(CreateFileW, (save_path, FILE_WRITE, 0, 0,
                                    OPEN_ALWAYS, 0, 0));
-    if (h == (void *)-1) return 0;
+    if (h == (void *)-1) {
+        last_error = NT_CALL(GetLastError, ());
+        return 0;
+    }
     int ok = NT_CALL(WriteFile, (h, &state, sizeof(state), &count, 0));
+    if (!ok || count != sizeof(state))
+        last_error = ok ? 87u : NT_CALL(GetLastError, ());
     int closed = NT_CALL(CloseHandle, (h));
+    if (!closed) last_error = NT_CALL(GetLastError, ());
     return ok && closed && count == sizeof(state);
 }
 
@@ -177,14 +198,21 @@ static int load_state(void)
     u32 count = 0;
     void *h = NT_CALL(CreateFileW, (save_path, FILE_READ, 0, 0,
                                    OPEN_EXISTING, 0, 0));
-    if (h == (void *)-1) return 0;
+    if (h == (void *)-1) {
+        last_error = NT_CALL(GetLastError, ());
+        return 0;
+    }
     u32 file_size = NT_CALL(GetFileSize, (h, 0));
     if (file_size != sizeof(next)) {
+        last_error = file_size == 0xFFFFFFFFu ? NT_CALL(GetLastError, ()) : 87u;
         NT_CALL(CloseHandle, (h));
         return 0;
     }
     int ok = NT_CALL(ReadFile, (h, &next, sizeof(next), &count, 0));
+    if (!ok || count != sizeof(next))
+        last_error = ok ? 87u : NT_CALL(GetLastError, ());
     int closed = NT_CALL(CloseHandle, (h));
+    if (!closed) last_error = NT_CALL(GetLastError, ());
     if (!ok || !closed || count != sizeof(next) ||
         next.magic != 0x4E544C42u || next.color_index >= 6 ||
         next.brush < 3 || next.brush > 24) return 0;
