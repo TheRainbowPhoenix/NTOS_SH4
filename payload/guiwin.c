@@ -1,140 +1,95 @@
-/* GUIWIN.EXE: WinCE window-procedure and WM_PAINT demo.
- * One window, click its two buttons or use LEFT/RIGHT to change palette.
- * CLEAR exits through the WinCE-style GetMessageW loop.
- * All imported API names are WinCE APIs, no coredll_* private imports. */
-#include "ntimport.h"
-typedef unsigned int u32;
-typedef unsigned short u16;
-typedef struct { int left, top, right, bottom; } RECT;
-typedef struct { int x,y; } POINT;
-typedef struct {
-    void *hwnd; u32 message,wParam,lParam,time; POINT pt;
-} MSG;
-typedef struct {
-    void *hdc; int erase; RECT rcPaint; int restore,incUpdate;
-    unsigned char reserved[32];
-} PAINTSTRUCT;
-typedef int (*WNDPROC)(void *,u32,u32,u32);
-typedef struct {
-    u32 style; WNDPROC wndproc; int class_extra,window_extra;
-    void *instance,*icon,*cursor,*background;
-    const u16 *menu_name,*class_name;
-} WNDCLASSW;
-
-NT_IMPORT(u32, RegisterClassW, (const WNDCLASSW *))
-NT_IMPORT(void *, CreateWindowExW, (u32,const u16 *,const u16 *,u32,
-                                   int,int,int,int,void *,void *,void *,void *))
-NT_IMPORT(int, ShowWindow, (void *,int))
-NT_IMPORT(int, UpdateWindow, (void *))
-NT_IMPORT(int, InvalidateRect, (void *,const RECT *,int))
-NT_IMPORT(int, GetMessageW, (MSG *,void *,u32,u32))
-NT_IMPORT(int, TranslateMessage, (const MSG *))
-NT_IMPORT(int, DispatchMessageW, (const MSG *))
-NT_IMPORT(int, GetClientRect, (void *,RECT *))
-NT_IMPORT(void *, BeginPaint, (void *,PAINTSTRUCT *))
-NT_IMPORT(int, EndPaint, (void *,const PAINTSTRUCT *))
-NT_IMPORT(void *, CreateSolidBrush, (u32))
-NT_IMPORT(int, FillRect, (void *,const RECT *,void *))
-NT_IMPORT(int, DeleteObject, (void *))
-NT_IMPORT(int, TextOutW, (void *,int,int,const u16 *,int))
-NT_IMPORT(int, DestroyWindow, (void *))
-
-NT_DEFINE(RegisterClassW)
-NT_DEFINE(CreateWindowExW)
-NT_DEFINE(ShowWindow)
-NT_DEFINE(UpdateWindow)
-NT_DEFINE(InvalidateRect)
-NT_DEFINE(GetMessageW)
-NT_DEFINE(TranslateMessage)
-NT_DEFINE(DispatchMessageW)
-NT_DEFINE(GetClientRect)
-NT_DEFINE(BeginPaint)
-NT_DEFINE(EndPaint)
-NT_DEFINE(CreateSolidBrush)
-NT_DEFINE(FillRect)
-NT_DEFINE(DeleteObject)
-NT_DEFINE(TextOutW)
-NT_DEFINE(DestroyWindow)
-
-static const u16 cls[]={'N','T','O','S','G','U','I',0};
-static const u16 title[]={'N','T','O','S',' ','W','i','n','C','E',0};
-static const u16 intro[]={'W','i','n','C','E',' ','W','N','D','P','R','O','C',0};
-static const u16 left_text[]={'P','R','E','V',0};
-static const u16 right_text[]={'N','E','X','T',0};
-static const u16 hint[]={'T','a','p',' ','b','u','t','t','o','n','s',';',
- ' ','L','E','F','T','/','R','I','G','H','T',' ','k','e','y','s',0};
-static const u32 palette[] = {
-    0x00203060u,0x00206030u,0x00603020u,0x00402060u
-};
-static u32 selected;
-
-static void fill(void *dc,int x1,int y1,int x2,int y2,u32 rgb)
+/* GUIWIN.EXE - Win98-inspired settings window.
+ * WinCE WNDCLASS/WM_PAINT/WM_KEYDOWN/WM_LBUTTONDOWN; no FPU. */
+#include "wince_ui.h"
+static const WCHAR16 cls[]={'G','U','I','W','I','N','9','8',0};
+static const WCHAR16 title[]={'N','T','O','S',' ','D','e','s','k','t','o','p',0};
+static const DWORD accent[4]={RGB(0,116,204),RGB(0,128,110),RGB(133,65,166),RGB(176,83,31)};
+static int page=0,choose=0,check=1;
+static void frame(void *dc,int l,int t,int r,int b)
 {
-    RECT rect={x1,y1,x2,y2};
-    void *brush=NT_CALL(CreateSolidBrush,(rgb));
-    if (brush) {
-        NT_CALL(FillRect,(dc,&rect,brush));
-        NT_CALL(DeleteObject,(brush));
-    }
+    ui_fill(dc,l,t,r,b,RGB(105,105,105));
+    ui_fill(dc,l+1,t+1,r-1,b-1,RGB(255,255,255));
+    ui_fill(dc,l+3,t+3,r-3,b-3,RGB(192,192,192));
 }
-static int window_proc(void *hwnd,u32 msg,u32 wparam,u32 lparam)
+static void draw(void *dc)
 {
-    (void)lparam;
-    if (msg==0x000Fu) { /* WM_PAINT */
-        RECT client={0};
-        PAINTSTRUCT ps={0};
-        void *dc;
-        NT_CALL(GetClientRect,(hwnd,&client));
-        dc=NT_CALL(BeginPaint,(hwnd,&ps));
-        if (!dc) return 0;
-        fill(dc,0,0,client.right,client.bottom,0x00161622u);
-        fill(dc,20,30,300,260,palette[selected]);
-        fill(dc,14,305,150,362,0x00505050u);
-        fill(dc,168,305,306,362,0x00505050u);
-        NT_CALL(TextOutW,(dc,16,13,intro,12));
-        NT_CALL(TextOutW,(dc,58,326,left_text,4));
-        NT_CALL(TextOutW,(dc,214,326,right_text,4));
-        NT_CALL(TextOutW,(dc,10,400,hint,27));
-        NT_CALL(EndPaint,(hwnd,&ps));
-        return 0;
+    ui_fill(dc,0,0,320,528,RGB(192,192,192));
+    ui_fill(dc,4,5,316,40,RGB(10,48,124));
+    ui_fill(dc,5,6,10,39,RGB(18,132,181));
+    ui_text(dc,18,14,"NTOS CONTROL",RGB(255,255,255),1);
+    ui_text(dc,245,19,"[X]",RGB(255,255,255),0);
+    ui_text(dc,11,49,"File",RGB(0,0,0),0);
+    ui_text(dc,57,49,"View",RGB(0,0,0),0);
+    ui_text(dc,106,49,"Help",RGB(0,0,0),0);
+    ui_fill(dc,8,70,312,72,RGB(255,255,255));
+    for (int i=0;i<3;++i) {
+        int x=14+i*100;
+        frame(dc,x,83,x+96,111);
+        if (i==page) ui_fill(dc,x+3,85,x+93,109,RGB(236,236,236));
+        ui_text(dc,x+8,92,i==0?"Display":i==1?"Colors":"About",RGB(0,0,0),0);
     }
-    if (msg==0x0201u) { /* WM_LBUTTONDOWN */
-        int x=(short)(lparam & 0xFFFFu);
-        int y=(short)((lparam>>16)&0xFFFFu);
-        if (y>=305 && y<362) {
-            if (x>=14 && x<150) selected=(selected+3u)%4u;
-            if (x>=168 && x<306) selected=(selected+1u)%4u;
-            NT_CALL(InvalidateRect,(hwnd,0,1));
+    frame(dc,10,113,310,370);
+    ui_fill(dc,14,117,306,366,RGB(240,240,240));
+    if (page==0) {
+        ui_text(dc,28,129,"Appearance preview",RGB(0,0,0),0);
+        ui_fill(dc,28,151,292,276,RGB(255,255,255));
+        ui_fill(dc,34,158,286,185,accent[choose]);
+        ui_text(dc,45,165,"Sample window",RGB(255,255,255),0);
+        ui_fill(dc,46,198,274,251,RGB(224,224,224));
+        ui_text(dc,56,209,"Classic desktop theme",RGB(0,0,0),0);
+        ui_button(dc,142,230,250,249,"OK",RGB(192,192,192),RGB(0,0,0));
+        ui_text(dc,30,288,"Enable decorations",RGB(0,0,0),0);
+        ui_fill(dc,30,311,47,328,RGB(255,255,255));
+        if (check) ui_text(dc,33,313,"X",accent[choose],0);
+        ui_text(dc,59,315,check?"Enabled":"Disabled",RGB(60,60,60),0);
+    } else if (page==1) {
+        ui_text(dc,27,133,"Choose an accent color",RGB(0,0,0),0);
+        for (int i=0;i<4;++i) {
+            int x=27+(i%2)*137,y=168+(i/2)*70;
+            ui_fill(dc,x,y,x+120,y+55,accent[i]);
+            if (i==choose) { ui_fill(dc,x,y+48,x+120,y+55,RGB(255,255,255)); }
         }
-        return 0;
+        ui_text(dc,28,331,"Touch a swatch to apply",RGB(60,60,60),0);
+    } else {
+        ui_text(dc,28,142,"NTOS Windows CE layer",RGB(0,0,0),0);
+        ui_text(dc,28,170,"SH4 big-endian / UTLB",RGB(35,35,35),0);
+        ui_text(dc,28,194,"WinCE GDI compatibility",RGB(35,35,35),0);
+        ui_text(dc,28,218,"Bitmap font / RGB565",RGB(35,35,35),0);
+        ui_text(dc,28,250,"No FPU required",RGB(35,35,35),0);
     }
-    if (msg==0x0100u) { /* WM_KEYDOWN */
-        if (wparam==0x25u) selected=(selected+3u)%4u;
-        else if (wparam==0x27u) selected=(selected+1u)%4u;
-        else return 0;
-        NT_CALL(InvalidateRect,(hwnd,0,1));
-        return 0;
-    }
-    return 0;
+    ui_button(dc,14,388,150,434,"< PREVIOUS",RGB(224,224,224),RGB(0,0,0));
+    ui_button(dc,170,388,307,434,"NEXT >",accent[choose],RGB(255,255,255));
+    ui_fill(dc,0,473,320,475,RGB(255,255,255));
+    ui_fill(dc,0,476,320,527,RGB(215,215,215));
+    ui_text(dc,15,490,"Ready - WinCE message loop",RGB(55,55,55),0);
+    ui_text(dc,15,509,"LEFT/RIGHT or touch to navigate",RGB(55,55,55),0);
 }
-int main(void)
+static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp)
 {
-    WNDCLASSW wc={0};
-    void *window;
-    MSG msg={0};
-    wc.wndproc=window_proc;
-    wc.class_name=cls;
-    if (!NT_CALL(RegisterClassW,(&wc))) return 1;
-    window=NT_CALL(CreateWindowExW,(0,cls,title,0,0,0,320,528,0,0,0,0));
-    if (!window) return 2;
-    NT_CALL(ShowWindow,(window,1));
-    NT_CALL(UpdateWindow,(window));
-    for (;;) {
-        int result=NT_CALL(GetMessageW,(&msg,window,0,0));
-        if (result<=0) break;
-        NT_CALL(TranslateMessage,(&msg));
-        NT_CALL(DispatchMessageW,(&msg));
+    if (msg==WM_PAINT) {
+        PAINTSTRUCT ps={0};
+        void *dc=NT_CALL(BeginPaint,(hwnd,&ps));
+        if (dc) { draw(dc); NT_CALL(EndPaint,(hwnd,&ps)); }
+        return 0;
     }
-    NT_CALL(DestroyWindow,(window));
+    if (msg==WM_KEYDOWN) {
+        if (wp==VK_LEFT) page=(page+2)%3;
+        else if (wp==VK_RIGHT || wp==VK_RETURN) page=(page+1)%3;
+        else if (wp=='0') check=!check;
+        else return 0;
+    } else if (msg==WM_LBUTTONDOWN) {
+        int x=(short)(lp&65535u),y=(short)(lp>>16);
+        if (y>=83 && y<111 && x>=14 && x<310) page=(x-14)/100;
+        else if (y>=388 && y<434) {
+            if (x<160) page=(page+2)%3;
+            else page=(page+1)%3;
+        } else if (page==0 && y>=296 && y<=341) check=!check;
+        else if (page==1 && y>=168 && y<293 && x>=27 && x<285) {
+            int col=(x>=164),row=(y>=238);
+            choose=row*2+col;
+        } else return 0;
+    } else return 0;
+    NT_CALL(InvalidateRect,(hwnd,0,1));
     return 0;
 }
+int main(void) { ui_init(); return ui_run(cls,title,wndproc); }
