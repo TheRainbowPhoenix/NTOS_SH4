@@ -58,6 +58,8 @@ struct NtosApi {
     int32_t (*file_write)(int32_t, const void *, uint32_t); // [13]
     int32_t (*file_close)(int32_t);                      // [14]
     uint32_t (*read_event)(uint32_t *, uint32_t *, uint32_t *); // [15]
+    void (*draw_text)(uint32_t, uint32_t, const char *); // [16] text at pixel pos
+    int32_t (*file_size)(int32_t);                     // [17] fstat size
 };
 
 static int cur_row = 0;
@@ -157,6 +159,26 @@ static uint32_t ntos_read_event(uint32_t *x, uint32_t *y,
     return 0;
 }
 
+// Fixed-argument text bridge for WinCE TextOutW. Debug_Printf receives
+// only trusted P1 stack strings; coordinates are bounded to the LCD.
+static void ntos_draw_text(uint32_t x, uint32_t y, const char *text) {
+    if (!text || x >= static_cast<uint32_t>(width) ||
+        y >= static_cast<uint32_t>(height)) return;
+    char tmp[64];
+    uint32_t n=0;
+    while (n+1 < sizeof(tmp) && text[n]) {
+        tmp[n]=text[n];
+        ++n;
+    }
+    tmp[n]=0;
+    Debug_Printf(x, y, false, 0, "%s", tmp);
+}
+static int32_t ntos_file_size(int32_t fd) {
+    File_Stat st{};
+    if (File_Fstat(fd, &st) < 0) return -1;
+    return static_cast<int32_t>(st.fileSize);
+}
+
 static uint32_t ntos_getkey(void) {
     uint32_t key1 = 0;
     uint32_t key2 = 0;
@@ -181,6 +203,8 @@ static NtosApi g_ntos_api = {
     &ntos_file_write,    // [13] file write
     &ntos_file_close,    // [14] file close
     &ntos_read_event,    // [15] touch and key event
+    &ntos_draw_text,     // [16] text at pixel location
+    &ntos_file_size,     // [17] fstat size
 };
 
 // ---------------------------------------------------------------------------
