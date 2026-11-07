@@ -922,8 +922,10 @@ def main():
     if exports:
         extra += f", {len(exports)} export(s)"
     if args.import_module:
+        dependencies = [args.import_module] + [
+            module for _, module in extra_imports]
         extra += (f", {len(collect_import_slots(elf))} import(s) from "
-                  f"{args.import_module}")
+                  + ", ".join(dependencies))
     print(f"wrote {args.output}: {len(out)} bytes, "
           f"{len(sites)} base-reloc site(s), base 0x{base:08X}{extra}")
 
