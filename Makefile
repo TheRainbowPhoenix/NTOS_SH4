@@ -120,7 +120,7 @@ $(HELLO_EXE): $(HELLO_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(HELLO_ELF) -o $@
 
-$(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c $(PAYLOAD_DIR)/selawik_ui.h
+$(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c $(PAYLOAD_DIR)/ugui_font.h
 	@mkdir -p $(dir $@)
 	$(CC) -c $(PAYLOAD_DIR)/coredll.c -o $@ $(PAYLOAD_CFLAGS)
 
