@@ -496,25 +496,25 @@ def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
 
     size_of_image = align_up(reloc_rva + len(reloc_data), 0x200)
 
-    # Entry: trust e_entry, but if ld defaulted it to the section start
-    # ("cannot find entry symbol" warning), fall back to looking up `main`
-    # in the symbol table.
-    entry_va = elf.e_entry
-    if entry_va <= base:
-        defined = [s for s in elf.symbols
-                   if s.shndx != SHN_UNDEF and s.shndx < SHN_LORESERVE
-                   and s.type != STT_SECTION and s.name]
-        for sym in defined:
-            if _unmangle(sym.name).lower() in ("main",):
-                entry_va = sym.value
-                print(f"note: using symbol table entry '{sym.name}' "
-                      f"at 0x{entry_va:08X}")
-                break
-        else:
-            listing = ", ".join(f"{s.name}({hex(s.value)})" for s in defined[:20])
-            print(f"warning: no 'main' symbol (seen: {listing or 'NONE'}); "
-                  "defaulting entry to image start")
-            entry_va = base
+    # The SH4 ELF toolchain prefixes C symbols with '_'.  The linker was
+    # previously given -e,main, which does not exist: ld then silently
+    # chose the start of .text (base+0x200) instead of _main.  That ran an
+    # arbitrary helper function as the PE entry point (notably WINLAB and
+    # MEMTOOL).  Select the actual main symbol, regardless of e_entry.
+    defined = [s for s in elf.symbols
+               if s.shndx != SHN_UNDEF and s.shndx < SHN_LORESERVE
+               and s.type != STT_SECTION and s.name]
+    main_symbols = [s for s in defined if _unmangle(s.name) == "main"]
+    if len(main_symbols) != 1:
+        raise SystemExit("error: expected exactly one defined _main "
+                         f"symbol, found {len(main_symbols)}")
+    entry_va = main_symbols[0].value
+    if not any(sec.sh_addr <= entry_va < sec.sh_addr + sec.sh_size
+               for sec in alloc if sec.sh_flags & SHF_EXECINSTR):
+        raise SystemExit(f"error: main entry 0x{entry_va:08X} "
+                         "is not inside an executable section")
+    print(f"note: PE entry uses {main_symbols[0].name} "
+          f"at 0x{entry_va:08X} (ELF header entry 0x{elf.e_entry:08X})")
     entry_rva = entry_va - base
 
     # --- file assembly -------------------------------------------------------
