@@ -28,6 +28,8 @@ jobs:
     - name: Install python3 (for tools/elf2ntx.py)
       run: apt-get update -qq && apt-get install -y -qq python3
     - run: make -j
+    - name: Validate PE import tables
+      run: python3 tools/elf2ntx.py --selftest && python3 tools/test_multimodule.py
     - uses: actions/upload-artifact@v7
       with:
         path: dist/**
