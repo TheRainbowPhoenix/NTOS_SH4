@@ -53,6 +53,11 @@ struct NtosApi {
     void (*draw_line)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t); // [8]
     void (*fill_rect)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t); // [9]
     uint32_t (*read_input)(uint32_t *, uint32_t *);      // [10]
+    int32_t (*file_open)(const char *, uint32_t);        // [11]
+    int32_t (*file_read)(int32_t, void *, uint32_t);     // [12]
+    int32_t (*file_write)(int32_t, const void *, uint32_t); // [13]
+    int32_t (*file_close)(int32_t);                      // [14]
+    uint32_t (*read_event)(uint32_t *, uint32_t *, uint32_t *); // [15]
 };
 
 static int cur_row = 0;
@@ -113,6 +118,45 @@ static uint32_t ntos_input(uint32_t *x, uint32_t *y) {
     return 0;
 }
 
+// File I/O is mediated by NTOS. Never expose the Hollyhock SDK's
+// function-pointer variables directly to the mapped PE image.
+static int32_t ntos_file_open(const char *name, uint32_t flags) {
+    return File_Open(name, static_cast<int>(flags));
+}
+static int32_t ntos_file_read(int32_t fd, void *data, uint32_t count) {
+    if (!data || count > 4096u) return -2;
+    return File_Read(fd, data, static_cast<int>(count));
+}
+static int32_t ntos_file_write(int32_t fd, const void *data, uint32_t count) {
+    if (!data || count > 4096u) return -2;
+    return File_Write(fd, data, static_cast<int>(count));
+}
+static int32_t ntos_file_close(int32_t fd) { return File_Close(fd); }
+
+// Structured input: kind 1=touch down/drag, 2=CLEAR, 3=key press.
+// On key press x contains the Hollyhock KEYCODE_* value.
+static uint32_t ntos_read_event(uint32_t *x, uint32_t *y,
+                                 uint32_t *direction) {
+    Input_Event event{};
+    GetInput(&event, 0xFFFFFFFFu, 0x10);
+    if (event.type == EVENT_TOUCH) {
+        if (event.data.touch_single.direction != TOUCH_DOWN &&
+            event.data.touch_single.direction != TOUCH_HOLD_DRAG) return 0;
+        if (x) *x = static_cast<uint32_t>(event.data.touch_single.p1_x);
+        if (y) *y = static_cast<uint32_t>(event.data.touch_single.p1_y);
+        if (direction) *direction = static_cast<uint32_t>(event.data.touch_single.direction);
+        return 1;
+    }
+    if (event.type == EVENT_KEY && event.data.key.direction == KEY_PRESSED) {
+        if (event.data.key.keyCode == KEYCODE_POWER_CLEAR) return 2;
+        if (x) *x = static_cast<uint32_t>(event.data.key.keyCode);
+        if (y) *y = 0;
+        if (direction) *direction = 0;
+        return 3;
+    }
+    return 0;
+}
+
 static uint32_t ntos_getkey(void) {
     uint32_t key1 = 0;
     uint32_t key2 = 0;
@@ -132,6 +176,11 @@ static NtosApi g_ntos_api = {
     &ntos_line,          // [8] line RGB565
     &ntos_fillrect,      // [9] filled rectangle RGB565
     &ntos_input,         // [10] touch/key event
+    &ntos_file_open,     // [11] file open
+    &ntos_file_read,     // [12] file read
+    &ntos_file_write,    // [13] file write
+    &ntos_file_close,    // [14] file close
+    &ntos_read_event,    // [15] touch and key event
 };
 
 // ---------------------------------------------------------------------------
