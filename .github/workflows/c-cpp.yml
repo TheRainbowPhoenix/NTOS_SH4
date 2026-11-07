@@ -29,7 +29,7 @@ jobs:
       run: apt-get update -qq && apt-get install -y -qq python3
     - run: make -j
     - name: Validate PE import tables
-      run: python3 tools/elf2ntx.py --selftest && python3 tools/test_multimodule.py
+      run: python3 tools/elf2ntx.py --selftest && python3 tools/test_multimodule.py && python3 tools/preview_native_gdi.py
     - uses: actions/upload-artifact@v7
       with:
         path: dist/**
