@@ -65,6 +65,9 @@ MEMTOOL_EXE := $(OUTDIR)/MEMTOOL.EXE
 PAINT_OBJ := $(BUILDDIR)/payload/paintdemo.o
 PAINT_ELF := $(BUILDDIR)/payload/paintdemo.elf
 PAINT_EXE := $(OUTDIR)/PAINT.EXE
+WINLAB_OBJ := $(BUILDDIR)/payload/winlab.o
+WINLAB_ELF := $(BUILDDIR)/payload/winlab.elf
+WINLAB_EXE := $(OUTDIR)/WINLAB.EXE
 
 AS_SOURCES:=$(shell find $(SOURCEDIR) -name '*.S')
 CC_SOURCES:=$(shell find $(SOURCEDIR) -name '*.c')
@@ -77,7 +80,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) Makefile
 
 all: elf hh3 ntx
 .DEFAULT_GOAL := all
@@ -152,6 +155,18 @@ $(PAINT_ELF): $(PAINT_OBJ) $(PAYLOAD_DIR)/payload.ld
 $(PAINT_EXE): $(PAINT_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(PAINT_ELF) -o $@ --import-module COREDLL.DLL
+
+$(WINLAB_OBJ): $(PAYLOAD_DIR)/winlab.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(WINLAB_ELF): $(WINLAB_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(WINLAB_OBJ)
+
+$(WINLAB_EXE): $(WINLAB_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(WINLAB_ELF) -o $@ --import-module COREDLL.DLL
 
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
