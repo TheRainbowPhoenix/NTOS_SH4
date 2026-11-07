@@ -590,12 +590,16 @@ static int snap_imports(const pe::Image &image_hdr, const MappedImage *image,
 // MMU is disabled, the UTLB flushed and all allocations released.
 static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                       const char *core_path, uint32_t core_size,
+                      const char *extra_path, uint32_t extra_size,
                       int *out_ret, const char **err) {
     *err = "unknown";
     MappedImage exe{};
     MappedImage dll{};
+    MappedImage extra{};
     pe::Image dll_hdr{};
+    pe::Image extra_hdr{};
     uint8_t *dll_file = nullptr;
+    uint8_t *extra_file = nullptr;
     uint8_t *api_raw = nullptr;
     uint8_t *api_block = nullptr;
     uint32_t slot = 0;
@@ -645,6 +649,51 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     if (load_mapped(file, fsize, hdr, &exe, err) != 0)
         goto done;
 
+    // Load XAMLUI only when a PE import descriptor actually requests it.
+    // The module itself can import COREDLL. Modules use fixed, disjoint VAs.
+    {
+        bool needs_extra=false;
+        char module_name[32];
+        for (uint32_t di=0;;++di) {
+            pe::ImportDesc d{};
+            if (!pe::read_import_desc(hdr,exe.image,exe.vsize,di,&d))
+                break;
+            if (pe::rva_string(exe.image,exe.vsize,d.name_rva,
+                               module_name,sizeof(module_name)) &&
+                module_matches(module_name,"XAMLUI.DLL"))
+                needs_extra=true;
+        }
+        if (needs_extra) {
+            if (!extra_path || !extra_size) {
+                *err="XAMLUI.DLL required but missing";goto done;
+            }
+            int fd=File_Open(extra_path,FILE_OPEN_READ);
+            if (fd<0) { *err="cannot open XAMLUI.DLL";goto done; }
+            extra_file=static_cast<uint8_t *>(Mem_Malloc(extra_size));
+            if (!extra_file) {
+                File_Close(fd);*err="OOM reading XAMLUI.DLL";goto done;
+            }
+            int read=File_Read(fd,extra_file,static_cast<int>(extra_size));
+            File_Close(fd);
+            if (read!=static_cast<int>(extra_size) ||
+                pe::parse(extra_file,extra_size,&extra_hdr)!=0) {
+                *err="invalid XAMLUI.DLL PE image";goto done;
+            }
+            if (load_mapped(extra_file,extra_size,extra_hdr,
+                            &extra,err)!=0) goto done;
+        }
+    }
+    // Reject overlapping preferred VAs rather than silently corrupt pages.
+    if ((dll.image && extra.image &&
+         dll.base<extra.base+extra.vsize &&
+         extra.base<dll.base+dll.vsize) ||
+        (dll.image && dll.base<exe.base+exe.vsize &&
+         exe.base<dll.base+dll.vsize) ||
+        (extra.image && extra.base<exe.base+exe.vsize &&
+         exe.base<extra.base+extra.vsize)) {
+        *err="overlapping module virtual addresses";goto done;
+    }
+
     // --- API window block (OS330 MMU_ConfigureAddinApiMappings recipe) ----
     api_raw = static_cast<uint8_t *>(Mem_Malloc(0x4000u + 0xFFFu));
     if (api_raw == nullptr) {
@@ -656,25 +705,38 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     *reinterpret_cast<void **>(api_block) = &g_ntos_api;
 
     // --- UTLB slot budget ---------------------------------------------------
-    if (exe.npages + dll.npages + mmu::API_WINDOW_PAGES + 1 >
+    if (exe.npages + dll.npages + extra.npages +
+        mmu::API_WINDOW_PAGES + 1 >
         mmu::SLOT_ROTATING_LAST + 1) {
         *err = "images too large for the UTLB slot budget (4 KiB pages)";
         goto done;
     }
 
-    // --- import snapping (plain P1 writes, MMU still off) ------------------
-    if (hdr.oh.import_rva != 0) {
-        char modname[24];
-        const char *serr = nullptr;
-        const int snapped =
-            snap_imports(hdr, &exe, &dll_hdr, &dll, modname,
-                         sizeof(modname), &serr);
-        if (snapped < 0) {
-            *err = serr;
-            goto done;
+    // Snap DLL dependencies first, then EXE dependencies. Both resolve
+    // by the exact import descriptor module name, not a global COREDLL.
+    {
+        LinkedModule linked[] = {
+            {"COREDLL.DLL", &dll_hdr, &dll},
+            {"XAMLUI.DLL", &extra_hdr, &extra},
+        };
+        char symbol[96];
+        const char *snap_error=nullptr;
+        int total=0;
+        if (extra.image && extra_hdr.oh.import_rva) {
+            int n=snap_imports(extra_hdr,&extra,linked,2,symbol,
+                               sizeof(symbol),&snap_error);
+            if (n<0) { *err=snap_error;goto done; }
+            total+=n;
         }
-        Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
-                     "Snapped %d import(s) from COREDLL", snapped);
+        if (hdr.oh.import_rva) {
+            int n=snap_imports(hdr,&exe,linked,2,symbol,
+                               sizeof(symbol),&snap_error);
+            if (n<0) { *err=snap_error;goto done; }
+            total+=n;
+        }
+        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                     "Snapped %d import(s), %d DLL(s)",
+                     total,extra.image ? 2 : (dll.image ? 1 : 0));
         LCD_Refresh();
     }
 
@@ -682,6 +744,8 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     flush_image(exe.image, exe.vsize);
     if (dll.image != nullptr)
         flush_image(dll.image, dll.vsize);
+    if (extra.image != nullptr)
+        flush_image(extra.image, extra.vsize);
     flush_image(api_block, 0x4000);
 
     // --- install UTLB entries (AT is still off) ------------------------------
@@ -691,6 +755,11 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                           mmu::phys_addr(dll.image + p * 0x1000u), slot)) {
             *err = "too many pages in one UTLB set";
             goto done;
+        }
+    for (uint32_t p=0;p<extra.npages;p++,slot++)
+        if (!install_page(extra.base+p*0x1000u,
+                          mmu::phys_addr(extra.image+p*0x1000u),slot)) {
+            *err="UTLB conflict mapping XAMLUI.DLL";goto done;
         }
     for (uint32_t p = 0; p < exe.npages; p++, slot++)
         if (!install_page(exe.base + p * 0x1000u,
@@ -717,6 +786,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     if (dll.image != nullptr)
         mmu::cache_flush_invalidate_block(reinterpret_cast<void *>(dll.base),
                                           dll.vsize);
+    if (extra.image != nullptr)
+        mmu::cache_flush_invalidate_block(reinterpret_cast<void *>(extra.base),
+                                          extra.vsize);
     mmu::cache_flush_invalidate_block(
         reinterpret_cast<void *>(mmu::VA_API_WINDOW), 0x4000);
 
@@ -740,8 +812,12 @@ done:
         Mem_Free(exe.raw);
     if (dll.raw != nullptr)
         Mem_Free(dll.raw);
+    if (extra.raw != nullptr)
+        Mem_Free(extra.raw);
     if (dll_file != nullptr)
         Mem_Free(dll_file);
+    if (extra_file != nullptr)
+        Mem_Free(extra_file);
     return rc;
 }
 
