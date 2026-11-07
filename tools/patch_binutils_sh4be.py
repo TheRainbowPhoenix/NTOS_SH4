@@ -184,6 +184,53 @@ def patch_ld_tgt(s):
     )
 
 
+
+def patch_pe_em(s):
+    # GNU's PE emulation only enables --dll, --out-implib and .def
+    # processing for a few named targets. Register our own emulation.
+    s = once(
+        s, "defined(TARGET_IS_shpe)",
+        "(defined(TARGET_IS_shpe) || defined(TARGET_IS_shbepe))",
+        "PE DLL_SUPPORT",
+    )
+    s = once(
+        s,
+        '#ifdef TARGET_IS_shpe\n  pe_dll_id_target ("pei-shl");\n#endif',
+        '#ifdef TARGET_IS_shpe\n  pe_dll_id_target ("pei-shl");\n#endif\n'
+        '#ifdef TARGET_IS_shbepe\n  pe_dll_id_target ("pei-shbe");\n#endif',
+        "PE recognized-file hook",
+    )
+    s = s.replace(
+        "#if defined(TARGET_IS_shpe)",
+        "#if defined(TARGET_IS_shpe) || defined(TARGET_IS_shbepe)",
+    )
+    s = s.replace(
+        "#if !defined(TARGET_IS_shpe)",
+        "#if !defined(TARGET_IS_shpe) && !defined(TARGET_IS_shbepe)",
+    )
+    return s
+
+
+def patch_pe_dll(s):
+    # The DLL symbol/export/import builder uses a per-target table.
+    # Keep SH-specific RVA relocation=16 and big data byte order.
+    needle = (
+        '    "pei-shl",\n'
+        '    "pe-shl",\n'
+        '    16 /* R_SH_IMAGEBASE */,\n'
+        '    PE_ARCH_sh,\n'
+        '    bfd_arch_sh,\n'
+        '    TRUE,\n'
+        '    autofilter_symbollist_generic\n'
+        '  },'
+    )
+    if needle not in s:
+        raise RuntimeError("Missing SH PE DLL target table entry")
+    new = needle.replace('"pei-shl"', '"pei-shbe"').replace(
+        '"pe-shl"', '"pe-shbe"')
+    return s.replace(needle, new + '\n  {\n' + needle, 1)
+
+
 def patch_ld_make(s):
     # GNU generates the emulation from ld/emulparams/shbepe.sh.
     return once(s, "\teshpe.c \\", "\teshbepe.c \\\n\teshpe.c \\", "ld emulation list")
@@ -210,6 +257,8 @@ def main():
     edit(root, "ld/configure.tgt", patch_ld_tgt)
     edit(root, "ld/Makefile.am", patch_ld_make)
     edit(root, "ld/Makefile.in", patch_ld_make)
+    edit(root, "ld/emultempl/pe.em", patch_pe_em)
+    edit(root, "ld/pe-dll.c", patch_pe_dll)
     params = root / "ld" / "emulparams" / "shbepe.sh"
     params.write_text(
         "# Native NTOS SH4BE PE emulation; based on upstream shpe.sh\n"
