@@ -17,7 +17,14 @@ static void draw(void *dc)
     ui_fill(dc,4,5,316,40,RGB(10,48,124));
     ui_fill(dc,5,6,10,39,RGB(18,132,181));
     ui_text(dc,18,14,"NTOS CONTROL",RGB(255,255,255),1);
-    ui_text(dc,245,19,"[X]",RGB(255,255,255),0);
+    /* Raised Win98 caption-close control with an unmistakable hit target. */
+    ui_fill(dc,278,10,309,34,RGB(255,255,255));
+    ui_fill(dc,280,12,307,32,RGB(192,192,192));
+    ui_fill(dc,306,12,309,35,RGB(79,79,79));
+    for (int p=0;p<9;++p) {
+        ui_fill(dc,289+p,17+p,291+p,19+p,RGB(0,0,0));
+        ui_fill(dc,297-p,17+p,299-p,19+p,RGB(0,0,0));
+    }
     ui_text(dc,11,49,"File",RGB(0,0,0),0);
     ui_text(dc,57,49,"View",RGB(0,0,0),0);
     ui_text(dc,106,49,"Help",RGB(0,0,0),0);
@@ -79,6 +86,10 @@ static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp)
         else return 0;
     } else if (msg==WM_LBUTTONDOWN) {
         int x=(short)(lp&65535u),y=(short)(lp>>16);
+        if (x>=278 && x<310 && y>=10 && y<36) {
+            NT_CALL(DestroyWindow,(hwnd));
+            return 0;
+        }
         if (y>=83 && y<111 && x>=14 && x<310) page=(x-14)/100;
         else if (y>=388 && y<434) {
             if (x<160) page=(page+2)%3;
