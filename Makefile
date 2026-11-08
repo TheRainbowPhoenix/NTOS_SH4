@@ -303,7 +303,7 @@ $(BUILDDIR)/payload/stress_$(1).elf: $(BUILDDIR)/payload/stress_$(1).o $(PAYLOAD
 	$$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/xamlui.ld -o $$@ $$<
 $(OUTDIR)/ST$(1).DLL: $(BUILDDIR)/payload/stress_$(1).elf tools/elf2ntx.py
 	@mkdir -p $$(dir $$@)
-	$$(PYTHON) tools/elf2ntx.py $$< -o $$@ --base 0x10000000 --dll --dll-name ST$(1).DLL --import-module COREDLL.DLL --exports stress_d$(1) $$(STRESS_EXTRA_$(1))
+	$$(PYTHON) tools/elf2ntx.py $$< -o $$@ --base 0x10000000 --dll --dll-name ST$(1).DLL --exports stress_d$(1) $(if $(filter-out ,$(STRESS_EXTRA_$(1))),--import-module COREDLL.DLL) $(STRESS_EXTRA_$(1))
 endef
 $(foreach node,$(STRESS_NAMES),$(eval $(call STRESS_LIBRARY_RULE,$(node))))
 
