@@ -23,6 +23,7 @@
 #include <sdk/os/mem.h>
 
 #include "pe.hpp"
+#include "pe_rebase.hpp"
 #include "mmu.hpp"
 
 APP_NAME("NTOS")
@@ -425,7 +426,7 @@ struct MappedImage {
     uint8_t *raw;    // unaligned allocation (for Mem_Free)
     uint8_t *image;  // 4 KiB-aligned copy
     uint32_t vsize;
-    uint32_t base;   // preferred virtual base
+    uint32_t base;   // assigned virtual base (may differ from PE ImageBase)
     uint32_t npages;
 };
 
@@ -683,15 +684,58 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                             &extra,err)!=0) goto done;
         }
     }
-    // Reject overlapping preferred VAs rather than silently corrupt pages.
-    if ((dll.image && extra.image &&
-         dll.base<extra.base+extra.vsize &&
-         extra.base<dll.base+dll.vsize) ||
-        (dll.image && dll.base<exe.base+exe.vsize &&
-         exe.base<dll.base+dll.vsize) ||
-        (extra.image && extra.base<exe.base+exe.vsize &&
-         exe.base<extra.base+extra.vsize)) {
-        *err="overlapping module virtual addresses";goto done;
+    // --- Assign disjoint P0 virtual addresses BEFORE snapping imports. ----
+    // The PE preferred ImageBase is a hint, not a reservation. WinCE may
+    // relocate DLLs that are linked at the same base. The ClassPad has only
+    // four UTLB ways per virtual-page set, so placement also checks that
+    // hardware constraint (including the four API-window mappings).
+    {
+        ntos_rebase::Region used[3] = {};
+        unsigned count=0;
+        uint32_t selected=0;
+        // Prefer the EXE's own base, then COREDLL, then other DLLs.
+        if (!ntos_rebase::choose_base(exe.base,exe.npages,used,count,
+                                     &selected)) {
+            *err="no UTLB-compatible EXE virtual address";goto done;
+        }
+        exe.base=selected;
+        used[count++]={exe.base,exe.npages};
+        if (dll.image) {
+            if (!ntos_rebase::choose_base(dll.base,dll.npages,used,count,
+                                         &selected)) {
+                *err="no UTLB-compatible COREDLL base";goto done;
+            }
+            dll.base=selected;
+            used[count++]={dll.base,dll.npages};
+        }
+        if (extra.image) {
+            if (!ntos_rebase::choose_base(extra.base,extra.npages,used,count,
+                                         &selected)) {
+                *err="no UTLB-compatible dependency DLL base";goto done;
+            }
+            extra.base=selected;
+            used[count++]={extra.base,extra.npages};
+        }
+    }
+    // Patch every ABSOLUTE/HIGHLOW relocation site in its own image.
+    // PE .reloc headers are LE, but SH4 pointer sites are BE. No IAT has
+    // been snapped yet. The relocation helper validates all blocks twice
+    // before modifying bytes, and refuses unsupported relocation kinds.
+    if (!ntos_rebase::apply(hdr,exe.image,exe.vsize,exe.base,err))
+        goto done;
+    if (dll.image &&
+        !ntos_rebase::apply(dll_hdr,dll.image,dll.vsize,dll.base,err))
+        goto done;
+    if (extra.image &&
+        !ntos_rebase::apply(extra_hdr,extra.image,extra.vsize,extra.base,err))
+        goto done;
+    if ((dll.image && dll.base!=dll_hdr.oh.image_base) ||
+        (extra.image && extra.base!=extra_hdr.oh.image_base)) {
+        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                     "DLL rebased: core=%08lX xaml=%08lX",
+                     static_cast<unsigned long>(dll.base),
+                     static_cast<unsigned long>(extra.base));
+        LCD_Refresh();
     }
 
     // --- API window block (OS330 MMU_ConfigureAddinApiMappings recipe) ----
