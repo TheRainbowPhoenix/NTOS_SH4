@@ -9,7 +9,7 @@
 !   PTEH   0xFF000000   VA page (low 10 bits = ASID, we keep 0)
 !   PTEL   0xFF000004   PA page | flags; OS330 writes pa|0x6C|0x110 = 0x17C
 !   CCR    0xFF00001C   bit 0 set to invalidate caches (OS330's own flow)
-!   URC    MMUCR bits 12:10, cleared with mask 0xFFFF03FF (decompiled value)
+!   URC    MMUCR bits 15:10, cleared with mask 0xFFFF03FF (decompiled value)
 !
 ! ldtlb commits PTEH/PTEL into the UTLB entry selected by URC. Entry flags
 ! used by NTOS: 0x17C = SH|PR1|PR0|D|C|V, SZ=00 (4 KiB on SH4A).
@@ -20,41 +20,32 @@
 ! ---------------------------------------------------------------------------
 ! void tlb_install_entry(u32 va   [r4],
 !                        u32 pa   [r5],
-!                        u32 pte_flags [r6],   ! bits 17:16 = UTLB way
+!                        u32 pte_flags [r6],
 !                        u32 slot [r7])
 !
 ! OS330 MMU_InstallTLBEntryRotating / MMU_InstallTLBEntryAtIndex recipe:
 ! URC=slot -> cache invalidate -> PTEH=va -> PTEL=pa|flags -> ldtlb ->
 ! cache invalidate.
 !
-! pte_flags bits 17:16 carry the UTLB way (0..3) for set+way indexed UTLBs
-! (the way is also programmed into MMUCR.RC, bits 5:4). They are masked
-! off before PTEL is written.
+! SH7305 UTLB is fully associative with 64 entries. MMUCR.URC selects
+! the slot; there is no UTLB "way" field. Bits 5:4 are LRUI (ITLB LRU).
+! Do NOT modify them. WinCE/gint/CP400 firmware use URC alone here.
 ! ---------------------------------------------------------------------------
     .global _tlb_install_entry
 _tlb_install_entry:
     mov.l   r8, @-r15
-    mov.l   r9, @-r15
-    sts.l   pr, @-r15
+     sts.l   pr, @-r15
     mov     r7, r8                  ! r8 = slot
 
-    ! MMUCR: URC = slot (bits 12:10), RC = way (bits 5:4)
+    ! MMUCR: URC = slot (bits 15:10); preserve hardware-managed LRUI
     mov.l   .Lmmucr, r0
     mov.l   @r0, r1
     mov.l   .Lurcmask, r2
-    and     r2, r1                  ! clear URC (bits 12:10)
-    mov.l   .Lrcmask, r2
-    and     r2, r1                  ! clear RC  (bits 5:4)
+    and     r2, r1                  ! clear URC (bits 15:10)
     mov     r8, r3
     shll8   r3
     shll2   r3                      ! slot << 10
     or      r3, r1
-    mov     r6, r9
-    shlr8   r9
-    shlr8   r9                      ! way = flags >> 16
-    shll2   r9
-    shll2   r9                      ! way << 4
-    or      r9, r1
     mov.l   r1, @r0
 
     ! CCR |= 1 (cache invalidate, hardware auto-clear)
@@ -84,7 +75,6 @@ _tlb_install_entry:
     mov.l   r0, @r1
 
     lds.l   @r15+, pr
-    mov.l   @r15+, r9
     mov.l   @r15+, r8
     rts
     nop
@@ -147,5 +137,4 @@ _cache_flush_invalidate_block:
 .Lptel:     .long 0xFF000004
 .Lccr:      .long 0xFF00001C
 .Lurcmask:  .long 0xFFFF03FF
-.Lrcmask:   .long 0xFFFFFFCF
-.Lptelflags:.long 0x000001FF
+ .Lptelflags:.long 0x000001FF
