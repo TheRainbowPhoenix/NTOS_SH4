@@ -431,7 +431,7 @@ static int32_t ntos_page_hint(uint32_t va) {
 #if NTOS_ENABLE_TLB_MISS_PAGER
     auto &ctx=ntos_hw::g_context;
     if(!ctx.installed || !mmu::at_enabled())return -1;
-    ++ctx.hint_calls;
+    ctx.hint_calls=ctx.hint_calls+1u;
     return ntos_hw::prime(va,false) ? 0 : -2;
 #else
     (void)va;
