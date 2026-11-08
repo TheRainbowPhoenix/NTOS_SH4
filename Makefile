@@ -118,7 +118,7 @@ collision-test: ntx
 
 .NOTPARALLEL: clean
 clean:
-	rm -rf $(BUILDDIR) $(OUTDIR) $(DEPDIR)
+	rm -rf $(BUILDDIR) $(OUTDIR) $(DEPDIR) dist_collision
 
 %.hh3: %.elf
 	$(STRIP) -o $@ $^
