@@ -711,7 +711,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     uint8_t *api_raw=nullptr;
     uint8_t *api_block=nullptr;
     int rc=-1;
+#if !NTOS_ENABLE_TLB_MISS_PAGER
     uint8_t set_ways[32]={};
+#endif
 
     nodes[0].hdr=hdr;
     nodes[0].file=file;
