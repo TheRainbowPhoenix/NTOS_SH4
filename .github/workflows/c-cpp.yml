@@ -105,3 +105,20 @@ jobs:
         test -s dist/MEMTOOL.EXE
         make check-pe
         echo "PASS HH3 v2.2.1: NTOS and all DLL/EXE images built and verified"
+
+  # Experimental P1 RAM-backed MMU fault vector. Compile-only: NEVER
+  # execute VBR ownership changes in CI or default device artifacts.
+  build-experimental-tlb-fault:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.1
+    steps:
+    - uses: actions/checkout@v7
+    - name: Install PE packaging support
+      run: apt-get update -qq && apt-get install -y -qq --no-install-recommends python3
+    - name: Compile gated SH4A exception vector and physical page pager
+      run: |
+        export PATH=/toolchain/bin:$PATH
+        make -j4 DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1"
+        test -s dist/NTOS.hh3
+        echo "PASS opt-in TLB VBR vector compiled (NOT hardware tested)"
