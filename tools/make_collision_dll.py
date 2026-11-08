@@ -8,9 +8,9 @@ directory RVAs and other PE metadata remain unchanged.
 
 Example:
   python3 tools/make_collision_dll.py dist/XAMLUI.DLL \
-      -o dist_collision/XAMLUI.DLL --base 0x00800000
+      -o dist_collision/XAMLUI.DLL --base 0x01000000
 Deploy this test XAMLUI.DLL instead of the production one; NTOS must
-relocate it to another VA because COREDLL.DLL already owns 0x00800000.
+relocate it to another VA because NTOS maps COREDLL.DLL there.
 """
 import argparse
 from pathlib import Path
@@ -29,7 +29,7 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("image",type=Path)
     ap.add_argument("-o","--output",required=True,type=Path)
-    ap.add_argument("--base",type=lambda v:int(v,0),default=0x00800000)
+    ap.add_argument("--base",type=lambda v:int(v,0),default=0x01000000)
     args=ap.parse_args()
     if args.base<0x00100000 or args.base&4095:
         ap.error("--base must be a page-aligned P0 virtual address")
