@@ -103,10 +103,10 @@ all: elf hh3 ntx
 # cross toolchain does NOT support sh-pe or pei-shl output: do not replace
 # the compatibility PE packer with a format the toolchain cannot emit.
 check-pe: ntx
-	sh tools/test_binutils_parity.sh
+	@sed 's/\r$//' tools/test_binutils_parity.sh | sh
 
 probe-pe: ntx
-	sh tools/probe_binutils_pe.sh
+	@sed 's/\r$//' tools/probe_binutils_pe.sh | sh
 
 # Optional device regression: both DLLs now claim preferred 0x00800000.
 # Install dist_collision/XAMLUI.DLL in place of dist/XAMLUI.DLL only when
