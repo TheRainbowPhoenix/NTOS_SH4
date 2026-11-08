@@ -362,34 +362,15 @@ static int load_coff(const uint8_t *file, uint32_t file_size,
         Mem_Memcpy(image + sh.rva, file + sh.raw_offset, sh.raw_size);
     }
 
-    // PE base relocations: add delta = actual_base - preferred_base to
-    // every HIGHLOW site.
-    const uint32_t delta =
-        reinterpret_cast<uint32_t>(image) - out_hdr->oh.image_base;
-    uint32_t off = out_hdr->oh.basereloc_rva;
-    const uint32_t end = off + out_hdr->oh.basereloc_size;
-    while (off + 8 <= end && off + 8 <= vsize) {
-        const uint32_t page_rva   = pe::rd32le(image + off);
-        const uint32_t block_size = pe::rd32le(image + off + 4);
-        if (block_size < 8 || off + block_size > end ||
-            off + block_size > vsize)
-            break;
-        const uint32_t n_entries = (block_size - 8) / 2;
-        for (uint32_t k = 0; k < n_entries; k++) {
-            const uint16_t e = pe::rd16le(image + off + 8 + k * 2);
-            const uint8_t type = static_cast<uint8_t>(e >> 12);
-            const uint16_t ofs = static_cast<uint16_t>(e & 0x0FFFu);
-            if (type == pe::BRELOC_ABSOLUTE)
-                continue;
-            if (type == pe::BRELOC_HIGHLOW) {
-                uint8_t *at = image + page_rva + ofs;
-                if (at + 4 > image + vsize)
-                    continue;
-                pe::wr32be(at, pe::rd32be(at) + delta);
-            }
-            // other types ignored
-        }
-        off += block_size;
+    // Copy-load fallback and UTLB-mapped loader now use the SAME strict
+    // WinCE-style fixup engine. PE block records are LE, pointer words
+    // are SH4BE; invalid or unsupported fixups abort before execution.
+    const char *reloc_error=nullptr;
+    if (!ntos_rebase::apply(*out_hdr,image,vsize,
+                reinterpret_cast<uint32_t>(image),&reloc_error)) {
+        *err=reloc_error;
+        Mem_Free(image);
+        return -5;
     }
 
     flush_image(image, vsize);
