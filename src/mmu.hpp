@@ -11,12 +11,11 @@
 //                                        PTEL = pa | 0x6C | 0x110 (= 0x17C),
 //                                        ldtlb, CCR |= 1 around it.
 //
-// PTEL 0x17C = SH(bit6) | PR1(bit5) | PR0(bit4) | D(bit3) | C(bit2)
-//             | SZ0(bit4, 4 KiB) | V(bit8).
-// WinCE's mem_shx.h arrives at the same value for a 4 KiB user RW cacheable
-// page (PG_4K|PG_VALID|PG_DIRTY|PG_CACHE|PG_PROT_WRITE = 0x17D -- WinCE also
-// sets the WT bit 0, which OS330 leaves clear); the bit *positions* differ
-// per CPU so we follow the hardware we actually run on (SH7305).
+// PTEL 0x17C = V(bit8) | PR=3(bits6:5) | SZ2(bit4, 4 KiB)
+//             | C(bit3) | D(bit2); SH(bit1)=0 and WT(bit0)=0.
+// See gint's SH7305 utlb_data_t and the CP400 firmware's
+// mmu_replace_entry_4k(): it ORs the encoded flags with 0x110.
+// This is writable, cached and dirty, with separate ASID sharing disabled.
 //
 // SH7305 has 64 fully associative UTLB entries, selected by MMUCR.URC
 // (bits 15:10), and four ITLB entries. MMUCR bits 5:4 are hardware
