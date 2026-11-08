@@ -1,26 +1,27 @@
 // mmu.hpp -- SH7305 (SH4A) MMU/UTLB control for the NTOS loader.
 //
-// Encodings are the OS330-verified ones (ClassPad 330 MMU_* cluster,
-// decompiled from OS330P_03.10.7000.fls; the same cluster exists in the
-// fx-CP400 OS_02.01.2000.fls at ~0x8002a38e..0x8002b91e):
+// Encodings checked against CP400 OS_02.01.7002.fls.c mmu_enable(),
+// mmu_disable(), mmu_replace_entry_4k(), and gint SH7305 MMU definitions:
 //
 //   MMU_EnableAddressTranslation      -> MMUCR = 0x00FC0101
 //   MMU_DisableAddinAddressSpace      -> MMUCR = 0x00FC0104 (bit 2 = TI,
 //                                        TLB invalidate, hardware auto-clears)
-//   => on the SH7305 the MMU enable (AT) bit is MMUCR bit 0, *not* bit 7 as
-//      on the SH7750. Bit 8 (0x100) is set in both baseline values.
+//   AT is bit 0; bit 8 (0x100) is SV single virtual mode.
 //   UTLB install                      -> URC = slot, PTEH = va,
 //                                        PTEL = pa | 0x6C | 0x110 (= 0x17C),
 //                                        ldtlb, CCR |= 1 around it.
 //
-// PTEL 0x17C = SH(bit6) | PR1(bit5) | PR0(bit4) | D(bit3) | C(bit2) | V(bit8).
+// PTEL 0x17C = SH(bit6) | PR1(bit5) | PR0(bit4) | D(bit3) | C(bit2)
+//             | SZ0(bit4, 4 KiB) | V(bit8).
 // WinCE's mem_shx.h arrives at the same value for a 4 KiB user RW cacheable
 // page (PG_4K|PG_VALID|PG_DIRTY|PG_CACHE|PG_PROT_WRITE = 0x17D -- WinCE also
 // sets the WT bit 0, which OS330 leaves clear); the bit *positions* differ
 // per CPU so we follow the hardware we actually run on (SH7305).
 //
-// Page size: SZ = 00 on the SH7305 is 4 KiB (SH4A dropped 1 KiB pages), and
-// every OS330 entry relies on exactly that.
+// SH7305 has 64 fully associative UTLB entries, selected by MMUCR.URC
+// (bits 15:10), and four ITLB entries. MMUCR bits 5:4 are hardware
+// instruction-TLB LRU state, NOT a 4-way UTLB selector. CP400 firmware
+// writes only URC for LDTLB, preserving those low bits.
 #pragma once
 
 #include <stdint.h>
@@ -92,14 +93,12 @@ inline void flush_tlb(void) {
     cache_invalidate_all();
 }
 
-// Install one 4 KiB page mapping at a fixed UTLB slot. `pa` must already be
-// the physical page base (P1 identity: pa = va & PA_MASK). `way` (0..3) is
-// the UTLB way for CPUs/emulators that index the TLB as 32 sets x 4 ways:
-// two pages whose VA bits 16:12 land in the same set must get different
-// ways or they overwrite each other. The caller tracks per-set usage.
+// Install one 4 KiB page mapping at a fixed UTLB slot. `pa` is a
+// physical page base, generally derived from a P1 address using PA_MASK.
+// The legacy final parameter is ignored: SH7305 has no 4-way UTLB index.
 inline void map_page_at_index(uint32_t va, uint32_t pa, uint32_t slot,
-                              uint32_t way) {
-    tlb_install_entry(va, pa & PA_MASK, PTEL_PAGE | (way << 16), slot);
+                              uint32_t /*unused_way*/) {
+    tlb_install_entry(va, pa & PA_MASK, PTEL_PAGE, slot);
 }
 
 // Physical address of a P1 (cached identity) pointer.
