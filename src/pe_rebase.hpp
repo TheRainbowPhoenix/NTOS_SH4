@@ -4,9 +4,8 @@
 // big-endian. Keep imports/exports RVA-based until the distinct module bases
 // are selected; snap IATs only AFTER rebasing each image.
 //
-// Supported relocation types: IMAGE_REL_BASED_ABSOLUTE (0, padding) and
-// IMAGE_REL_BASED_HIGHLOW (3, full 32-bit big-endian word). Reject all other
-// types rather than silently launching a corrupted relocated module.
+// Supports ABSOLUTE(0), HIGH(1), LOW(2), HIGHLOW(3), HIGHADJ(4),
+// including WinCE's paired HIGH/LOW logic. Rejects other records.
 #pragma once
 #include <stdint.h>
 #include "pe.hpp"
@@ -70,53 +69,141 @@ inline bool choose_base(uint32_t preferred, uint32_t pages,
     }
     return false;
 }
-inline bool apply(const pe::Image &hdr,uint8_t *image,uint32_t image_size,
-                  uint32_t actual_base,const char **error) {
+// NT 3.x / WinCE-compatible PE32 relocation primitives. The *headers*
+// always use LE byte order; the target's instructions/data use their CPU
+// byte order. Our on-device SH4A-DSP target is BE, while host tests can
+// inspect the supplied WinCE SH4LE images without executing them.
+inline uint16_t load16(const uint8_t *p,bool be) {
+    return be ? static_cast<uint16_t>((uint32_t(p[0])<<8)|p[1])
+              : pe::rd16le(p);
+}
+inline void store16(uint8_t *p,uint16_t v,bool be) {
+    p[be?0:1]=static_cast<uint8_t>(v>>8);
+    p[be?1:0]=static_cast<uint8_t>(v);
+}
+inline uint32_t load32(const uint8_t *p,bool be) {
+    return be ? pe::rd32be(p) : pe::rd32le(p);
+}
+inline void store32(uint8_t *p,uint32_t v,bool be) {
+    if (be) pe::wr32be(p,v);
+    else {
+        p[0]=static_cast<uint8_t>(v);
+        p[1]=static_cast<uint8_t>(v>>8);
+        p[2]=static_cast<uint8_t>(v>>16);
+        p[3]=static_cast<uint8_t>(v>>24);
+    }
+}
+// The two passes ensure that malformed relocation metadata never leaves
+// the image partially modified. C++ arithmetic is unsigned modulo 2^32,
+// matching PE HIGHLOW rebasing even for negative load deltas.
+inline bool apply_with_endian(const pe::Image &hdr,uint8_t *image,
+        uint32_t image_size,uint32_t actual_base,bool data_big_endian,
+        const char **error) {
     if (!image || !error) return false;
     *error="ok";
-    uint32_t delta=actual_base-hdr.oh.image_base;
-    if (delta==0u) return true;
-    const uint32_t begin=hdr.oh.basereloc_rva;
+    const uint32_t delta=actual_base-hdr.oh.image_base;
+    if (!delta) return true;
+    const uint32_t start=hdr.oh.basereloc_rva;
     const uint32_t length=hdr.oh.basereloc_size;
-    if (!begin || length<8u || begin>=image_size ||
-        length>image_size-begin) {
+    if (!start || length<8u || start>=image_size ||
+        length>image_size-start) {
         *error="rebasing requires valid PE .reloc directory";
         return false;
     }
-    uint32_t offset=begin,end=begin+length;
-    // Validate all blocks/sites/types before changing any bytes, making
-    // a rejected relocated image unable to leave a half-applied fixup set.
-    for (unsigned pass=0; pass<2u; ++pass) {
-        offset=begin;
-        while (offset<end) {
-            if (end-offset<8u) {
+    const uint32_t end=start+length;
+    for (unsigned pass=0;pass<2u;++pass) {
+        uint32_t pos=start;
+        // WinCE SH relocations may use HIGH followed by LOW for a
+        // split absolute address. HIGHADJ consumes its following WORD.
+        uint32_t pending_high=0;
+        bool has_high=false;
+        auto finish_high=[&]() {
+            if (has_high && pass==1u) {
+                uint8_t *at=image+pending_high;
+                store16(at,static_cast<uint16_t>(
+                    load16(at,data_big_endian)+(delta>>16)),
+                    data_big_endian);
+            }
+            has_high=false;
+        };
+        while(pos<end) {
+            if(end-pos<8u) {
                 *error="truncated PE relocation block";return false;
             }
-            uint32_t page=pe::rd32le(image+offset);
-            uint32_t size=pe::rd32le(image+offset+4u);
-            if (size<8u || (size&1u) || size>end-offset) {
-                *error="invalid PE relocation block size";return false;
+            const uint32_t page=pe::rd32le(image+pos);
+            const uint32_t block=pe::rd32le(image+pos+4u);
+            if(block<8u || (block&3u) || block>end-pos ||
+               (page&(PAGE-1u))) {
+                *error="invalid PE relocation page/block";return false;
             }
-            for (uint32_t i=8u;i<size;i+=2u) {
-                uint16_t e=pe::rd16le(image+offset+i);
-                uint32_t type=e>>12,ofs=e&0xfffu;
-                if (type==pe::BRELOC_ABSOLUTE) continue;
-                if (type!=pe::BRELOC_HIGHLOW) {
-                    *error="unsupported PE base relocation type";return false;
+            for(uint32_t off=8u;off<block;off+=2u) {
+                const uint16_t entry=pe::rd16le(image+pos+off);
+                const uint32_t type=entry>>12;
+                if(type==0u) continue;  // ABSOLUTE padding
+                const uint32_t site=page+(entry&0xfffu);
+                const uint32_t needed=(type==3u)?4u:2u;
+                if (type!=1u && type!=2u && type!=3u && type!=4u) {
+                    *error="unsupported SH4 PE relocation type";return false;
                 }
-                if (page>image_size || ofs>image_size-page ||
-                    4u>image_size-page-ofs) {
+                if(page>image_size || site<page ||
+                   site>image_size || needed>image_size-site) {
                     *error="PE relocation target outside loaded image";
                     return false;
                 }
-                if (pass==1u) {
-                    uint8_t *at=image+page+ofs;
-                    pe::wr32be(at,pe::rd32be(at)+delta);
+                uint16_t adj=0;
+                if(type==4u) {
+                    if(off+4u>block) {
+                        *error="truncated PE HIGHADJ addend";return false;
+                    }
+                    adj=pe::rd16le(image+pos+off+2u);
+                    off+=2u;
+                }
+                if(pass==0u) continue;
+                uint8_t *at=image+site;
+                if(type==1u) {
+                    finish_high();
+                    pending_high=site;
+                    has_high=true;
+                } else if(type==2u && has_high) {
+                    uint8_t *hi=image+pending_high;
+                    // From CE NK/KERNEL/loader.c RelocatePage():
+                    // full = (HI<<16) + LOW + delta, with rounded HI.
+                    uint32_t v=(uint32_t(load16(hi,data_big_endian))<<16)
+                               +load16(at,data_big_endian)+delta;
+                    store16(hi,static_cast<uint16_t>((v+0x8000u)>>16),
+                            data_big_endian);
+                    store16(at,static_cast<uint16_t>(v),data_big_endian);
+                    has_high=false;
+                } else {
+                    finish_high();
+                    if(type==2u) {
+                        store16(at,static_cast<uint16_t>(
+                                load16(at,data_big_endian)+delta),
+                                data_big_endian);
+                    } else if(type==3u) {
+                        store32(at,load32(at,data_big_endian)+delta,
+                                data_big_endian);
+                    } else if(type==4u) {
+                        const int32_t signed_low=
+                            static_cast<int16_t>(adj);
+                        const uint32_t increment=
+                            (delta+static_cast<uint32_t>(signed_low)+
+                             0x8000u)>>16;
+                        store16(at,static_cast<uint16_t>(
+                            load16(at,data_big_endian)+increment),
+                            data_big_endian);
+                    }
                 }
             }
-            offset+=size;
+            pos+=block;
         }
+        finish_high();
     }
     return true;
 }
+inline bool apply(const pe::Image &hdr,uint8_t *image,uint32_t image_size,
+                  uint32_t actual_base,const char **error) {
+    return apply_with_endian(hdr,image,image_size,actual_base,true,error);
+}
+
 } // namespace ntos_rebase
