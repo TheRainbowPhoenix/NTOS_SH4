@@ -33,6 +33,7 @@ constexpr uint16_t OPT_MAGIC_PE32 = 0x010B;
 constexpr uint16_t SUBSYSTEM_WINDOWS_CE = 9;
 
 // File header characteristics
+constexpr uint16_t F_RELOCS_STRIPPED  = 0x0001; // fixed at preferred base
 constexpr uint16_t F_EXECUTABLE_IMAGE = 0x0002;
 constexpr uint16_t F_32BIT_MACHINE    = 0x0104;
 constexpr uint16_t F_DLL              = 0x2000;
