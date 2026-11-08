@@ -1029,7 +1029,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         if(eager_experiment) {
             // Match the normal loader: all reachable code, data and IAT
             // pages are resident before the first P0 instruction executes.
-            // The set-aware base allocator above guarantees <=4 ways/set.
+            // The fixed-slot policy allows all pages to be pinned here.
             for(unsigned i=0u;i<count;++i) {
                 const MappedImage &m=nodes[i].mapped;
                 for(uint32_t p=0u;p<m.npages;++p)
@@ -1139,6 +1139,17 @@ done:
                  static_cast<unsigned long>(ntos_hw::g_context.hint_calls),
                  static_cast<unsigned long>(ntos_hw::g_context.table.evictions),
                  static_cast<unsigned long>(ntos_hw::g_context.fault_error));
+    if(ntos_hw::g_context.hw_faults!=0u) {
+        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                     "TEA=%08lX EV=%03lX SPC=%08lX",
+                     static_cast<unsigned long>(ntos_hw::g_context.last_tea),
+                     static_cast<unsigned long>(ntos_hw::g_context.last_expevt),
+                     static_cast<unsigned long>(ntos_hw::g_context.last_spc));
+        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                     "SSR=%08lX MMUCR=%08lX",
+                     static_cast<unsigned long>(ntos_hw::g_context.last_ssr),
+                     static_cast<unsigned long>(ntos_hw::g_context.last_mmucr));
+    }
     LCD_Refresh();
 #endif
     if(api_raw) Mem_Free(api_raw);
