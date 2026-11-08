@@ -38,7 +38,7 @@ jobs:
         g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 \
             tests/pe_rebase_test.cpp -o /tmp/ntos-pe-rebase-test
         python3 tools/make_collision_dll.py dist/XAMLUI.DLL \
-            -o dist_collision/XAMLUI.DLL --base 0x00800000
+            -o dist_collision/XAMLUI.DLL --base 0x01000000
         /tmp/ntos-pe-rebase-test \
             dist/COREDLL.DLL dist/XAMLUI.DLL dist/METROWIN.EXE \
             dist_collision/XAMLUI.DLL
