@@ -103,6 +103,10 @@ inline bool apply_with_endian(const pe::Image &hdr,uint8_t *image,
     *error="ok";
     const uint32_t delta=actual_base-hdr.oh.image_base;
     if (!delta) return true;
+    if ((hdr.fh.characteristics & pe::F_RELOCS_STRIPPED)!=0u) {
+        *error="PE marks image fixed: relocations stripped";
+        return false;
+    }
     const uint32_t start=hdr.oh.basereloc_rva;
     const uint32_t length=hdr.oh.basereloc_size;
     if (!start || length<8u || start>=image_size ||
