@@ -1016,9 +1016,14 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         // 0..54 range. The SH7305 UTLB has no virtual-set/way collisions.
         for(uint32_t p=0u;p<mmu::API_WINDOW_PAGES;++p) {
             const uint32_t va=mmu::VA_API_WINDOW+p*0x1000u;
-            mmu::map_page_at_index(va,
-                mmu::phys_addr(api_block+p*0x1000u),
-                mmu::SLOT_API_FIRST+p,0u);
+            const uint32_t pa=mmu::phys_addr(api_block+p*0x1000u);
+            mmu::map_page_at_index(va,pa,mmu::SLOT_API_FIRST+p,0u);
+#if NTOS_VERIFY_UTLB_SLOTS
+            if(!mmu::verify_slot(mmu::SLOT_API_FIRST+p,va,pa)) {
+                *err="SH7305 P4 UTLB API slot readback mismatch";
+                goto done;
+            }
+#endif
         }
         for(unsigned i=0u;i<count;++i)
             if(!ntos_hw::add_module(nodes[i].mapped.base,
