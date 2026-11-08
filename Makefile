@@ -35,7 +35,7 @@ APP_HH3 := $(APP_ELF:.elf=.hh3)
 
 # --- payloads (standard PE EXEs/DLLs, machine 0x01A8 SH4 BE) ----------------
 #   HELLO.EXE      self-contained hello (copy-load fallback or UTLB-mapped)
-#   COREDLL.DLL    stub COREDLL module, /FIXED at 0x00800000, PE exports
+#   COREDLL.DLL    WinCE-style shared preferred base 0x10000000; relocatable
 #   HELLOCORE.EXE  EXE importing from COREDLL (exercises UTLB + import snap)
 
 PAYLOAD_DIR := payload
@@ -108,11 +108,12 @@ check-pe: ntx
 probe-pe: ntx
 	@sed 's/\r$//' tools/probe_binutils_pe.sh | sh
 
-# Optional device regression: both DLLs now claim preferred 0x00800000.
+# Optional device regression: both DLLs already request preferred 0x10000000.
+# The fixture instead requests 0x01000000 (the first fallback slot).
 # Install dist_collision/XAMLUI.DLL in place of dist/XAMLUI.DLL only when
 # testing the mapped loader; default dist/XAMLUI.DLL remains untouched.
 collision-test: ntx
-	$(PYTHON) tools/make_collision_dll.py $(XAMLUI_DLL) -o dist_collision/XAMLUI.DLL --base 0x00800000
+	$(PYTHON) tools/make_collision_dll.py $(XAMLUI_DLL) -o dist_collision/XAMLUI.DLL --base 0x01000000
 .DEFAULT_GOAL := all
 .SECONDARY: # Prevents intermediate files from being deleted
 
@@ -148,9 +149,9 @@ $(COREDLL_ELF): $(COREDLL_OBJ) $(PAYLOAD_DIR)/coredll.ld
 
 $(COREDLL_DLL): $(COREDLL_ELF) tools/elf2ntx.py tools/coredll_exports.txt
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x00800000 --dll 		--exports coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free 		--exports-file tools/coredll_exports.txt --stub-symbol coredll_stub 		--dll-name COREDLL.DLL
+	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x10000000 --dll 		--exports coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free 		--exports-file tools/coredll_exports.txt --stub-symbol coredll_stub 		--dll-name COREDLL.DLL
 
-# XAMLUI is a genuine second PE DLL at 0x00C00000; it imports COREDLL.
+# XAMLUI is a second PE DLL with the SAME preferred 0x10000000 base.
 $(XAMLUI_OBJ): $(PAYLOAD_DIR)/xamlui.c $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
 	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
@@ -161,7 +162,7 @@ $(XAMLUI_ELF): $(XAMLUI_OBJ) $(PAYLOAD_DIR)/xamlui.ld
 
 $(XAMLUI_DLL): $(XAMLUI_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $(XAMLUI_ELF) -o $@ --base 0x00C00000 --dll --dll-name XAMLUI.DLL --import-module COREDLL.DLL --exports xamlui_tile,xamlui_label,xamlui_switch,xamlui_text,xamlui_shell,xamlui_pivot,xamlui_row,xamlui_checkbox,xamlui_progress,xamlui_actionbar,xamlui_dialog,xamlui_menu,xamlui_polygon,xamlui_folder,xamlui_start
+	$(PYTHON) tools/elf2ntx.py $(XAMLUI_ELF) -o $@ --base 0x10000000 --dll --dll-name XAMLUI.DLL --import-module COREDLL.DLL --exports xamlui_tile,xamlui_label,xamlui_switch,xamlui_text,xamlui_shell,xamlui_pivot,xamlui_row,xamlui_checkbox,xamlui_progress,xamlui_actionbar,xamlui_dialog,xamlui_menu,xamlui_polygon,xamlui_folder,xamlui_start
 
 $(HELLOCORE_OBJ): $(PAYLOAD_DIR)/hello_core.c $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
