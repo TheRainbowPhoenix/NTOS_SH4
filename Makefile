@@ -92,6 +92,12 @@ STRESS_DLLS := $(addprefix $(OUTDIR)/ST,$(addsuffix .DLL,$(STRESS_NAMES)))
 STRESS_OBJ := $(BUILDDIR)/payload/stress_exec.o
 STRESS_ELF := $(BUILDDIR)/payload/stress_exec.elf
 STRESS_EXE := $(OUTDIR)/STRESSEXEC.EXE
+PAGERSTRESS_OBJ := $(BUILDDIR)/payload/pagerstress.o
+PAGERSTRESS_ELF := $(BUILDDIR)/payload/pagerstress.elf
+PAGERSTRESS_DLL := $(OUTDIR)/PAGERSTRESS.DLL
+PAGERSTRESS_TEST_OBJ := $(BUILDDIR)/payload/pagerstress_test.o
+PAGERSTRESS_TEST_ELF := $(BUILDDIR)/payload/pagerstress_test.elf
+PAGERSTRESS_TEST_EXE := $(OUTDIR)/PAGERTEST.EXE
 STRESS_EXTRA_01 := --extra-import-prefix stress_d02:ST02.DLL --extra-import-prefix stress_d03:ST03.DLL --extra-import-prefix stress_d04:ST04.DLL --extra-import-prefix stress_d05:ST05.DLL
 STRESS_EXTRA_02 := --extra-import-prefix stress_d06:ST06.DLL --extra-import-prefix stress_d07:ST07.DLL
 STRESS_EXTRA_03 := --extra-import-prefix stress_d08:ST08.DLL --extra-import-prefix stress_d09:ST09.DLL
@@ -110,7 +116,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -318,6 +324,33 @@ $(STRESS_ELF): $(STRESS_OBJ) $(PAYLOAD_DIR)/payload.ld
 $(STRESS_EXE): $(STRESS_ELF) $(STRESS_DLLS) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(STRESS_ELF) -o $@ --import-module ST01.DLL
+
+# 80-BSS-page DLL: rejected by default eager loader, but RAM-backed
+# experimental SH4A VBR path should fault pages transparently and persist
+# changes through UTLB eviction. Both share WinCE-style DLL ImageBase.
+$(PAGERSTRESS_OBJ): $(PAYLOAD_DIR)/pagerstress.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(PAGERSTRESS_ELF): $(PAGERSTRESS_OBJ) $(PAYLOAD_DIR)/xamlui.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/xamlui.ld -o $@ $<
+
+$(PAGERSTRESS_DLL): $(PAGERSTRESS_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name PAGERSTRESS.DLL --exports pager_touch
+
+$(PAGERSTRESS_TEST_OBJ): $(PAYLOAD_DIR)/pagerstress_test.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(PAGERSTRESS_TEST_ELF): $(PAGERSTRESS_TEST_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $<
+
+$(PAGERSTRESS_TEST_EXE): $(PAGERSTRESS_TEST_ELF) $(PAGERSTRESS_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module PAGERSTRESS.DLL
 
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
