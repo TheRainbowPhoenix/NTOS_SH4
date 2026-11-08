@@ -36,6 +36,8 @@ def main():
         "CHAIN.DLL":PE("dist/CHAIN.DLL"),
         "METROWIN.EXE":PE("dist/METROWIN.EXE"),
         "CHAINTEST.EXE":PE("dist/CHAINTEST.EXE"),
+        "STRESSEXEC.EXE":PE("dist/STRESSEXEC.EXE"),
+        **{f"ST{i:02}.DLL":PE(f"dist/ST{i:02}.DLL") for i in range(1,13)},
     }
     imports={name:list(img.imports()) for name,img in images.items()}
     assert imports["CHAINTEST.EXE"]==["CHAIN.DLL"],imports
@@ -45,6 +47,13 @@ def main():
     metro=discover("metrowin.exe",imports)
     assert metro==["METROWIN.EXE","COREDLL.DLL","XAMLUI.DLL"],metro
 
+    stress=discover("STRESSEXEC.EXE",imports,limit=16)
+    assert stress[0]=="STRESSEXEC.EXE"
+    assert set(stress)==({"STRESSEXEC.EXE","COREDLL.DLL"} |
+                        {f"ST{i:02}.DLL" for i in range(1,13)}),stress
+    assert set(imports["ST01.DLL"])=={
+        "ST02.DLL","ST03.DLL","ST04.DLL","ST05.DLL"}
+    print("PASS 12 stress DLLs plus COREDLL, four-way import fanout")
     synthetic={"A.EXE":["B.DLL","C.DLL"],
                "B.DLL":["C.DLL"],"C.DLL":["B.DLL"]}
     assert discover("A.EXE",synthetic)==["A.EXE","B.DLL","C.DLL"]
