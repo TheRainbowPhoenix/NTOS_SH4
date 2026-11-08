@@ -318,6 +318,50 @@ inline bool export_lookup(const Image &img, const uint8_t *image,
     return false;
 }
 
+// Export lookup without discarding forwarder RVAs. A forwarder's RVA
+// points into the export directory and contains "OTHERDLL.Func" or
+// "OTHERDLL.#123"; WinCE resolves this recursively through its loader.
+inline bool export_address(const Image &img,const uint8_t *memory,
+                           uint32_t length,const char *symbol,
+                           uint32_t ordinal,bool by_ordinal,
+                           uint32_t *rva) {
+    if(!rva || (!by_ordinal && !symbol))return false;
+    ExportDir ed{};
+    if(!read_export_dir(img,memory,length,&ed))return false;
+    uint32_t index=0u;
+    if(by_ordinal) {
+        if(ordinal<ed.ordinal_base ||
+           ordinal-ed.ordinal_base>=ed.nfuncs)return false;
+        index=ordinal-ed.ordinal_base;
+    } else {
+        bool found=false;
+        for(uint32_t n=0;n<ed.nnames;++n) {
+            const uint32_t name_rva=rd32le(
+                memory+ed.addrnames_rva+n*4u);
+            if(!name_rva || name_rva>=length)continue;
+            uint32_t k=0u;
+            for(;k<128u && k<length-name_rva;++k) {
+                unsigned char left=memory[name_rva+k];
+                unsigned char right=static_cast<unsigned char>(symbol[k]);
+                if(left!=right || !left)break;
+            }
+            if(k>=128u || k>=length-name_rva ||
+               memory[name_rva+k] || symbol[k])continue;
+            const uint32_t candidate=rd16le(
+                memory+ed.addrords_rva+n*2u);
+            if(candidate>=ed.nfuncs)return false;
+            index=candidate;
+            found=true;break;
+        }
+        if(!found)return false;
+    }
+    const uint32_t result=rd32le(
+        memory+ed.addrfuncs_rva+index*4u);
+    if(!result || result>=length)return false;
+    *rva=result;
+    return true;
+}
+
 struct ImportDesc {
     uint32_t oft_rva;   // OriginalFirstThunk (hint/name array)
     uint32_t name_rva;  // module name
