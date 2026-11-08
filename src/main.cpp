@@ -524,6 +524,95 @@ static bool module_matches(const char *a, const char *b) {
     }
     return *a == *b;
 }
+// Resolve WinCE forwarder chains such as OTHERDLL.Func and OTHERDLL.#7,
+// including the .DLL suffix when omitted. Only the DLLs registered in the
+// module graph are eligible. The caller discovers indirect dependencies
+// before starting import binding. Depth bounds prevent cyclic forwarders.
+static bool resolve_export_chain(const LinkedModule *modules,
+                                 unsigned module_count,
+                                 const LinkedModule *start,
+                                 const char *symbol,uint32_t ordinal,
+                                 bool by_ordinal,uint32_t *address,
+                                 const char **err) {
+    const LinkedModule *target=start;
+    const char *name=symbol;
+    char forward_name[128]{};
+    for(unsigned depth=0;depth<12u;++depth) {
+        if(!target || !target->mapping || !target->mapping->image) {
+            *err="forwarded PE dependency not loaded";
+            return false;
+        }
+        uint32_t function_rva=0u;
+        if(!pe::export_address(*target->hdr,target->mapping->image,
+                               target->mapping->vsize,name,ordinal,
+                               by_ordinal,&function_rva)) {
+            *err="named/ordinal WinCE export missing";return false;
+        }
+        const uint32_t export_begin=target->hdr->oh.export_rva;
+        const uint32_t export_len=target->hdr->oh.export_size;
+        if(function_rva<export_begin ||
+           function_rva-export_begin>=export_len) {
+            *address=target->mapping->base+function_rva;
+            return true;
+        }
+        if(!pe::rva_string(target->mapping->image,
+                           target->mapping->vsize,function_rva,
+                           forward_name,sizeof(forward_name))) {
+            *err="truncated WinCE forwarded export";return false;
+        }
+        unsigned split=0u;
+        for(unsigned i=0u;forward_name[i];++i)
+            if(forward_name[i]=='.')split=i;
+        if(!split || !forward_name[split+1u]) {
+            *err="malformed forwarded PE symbol";return false;
+        }
+        // Forwarder string may use "FOO.Bar" or "FOO.DLL.Bar".
+        char dependency[40]{};
+        if(split>=sizeof(dependency)-5u) {
+            *err="forwarded DLL filename too long";return false;
+        }
+        unsigned n=0u;
+        for(;n<split;++n)dependency[n]=forward_name[n];
+        dependency[n]=0;
+        if(n<4u || !module_matches(dependency+n-4u,".DLL")) {
+            dependency[n++]='.';dependency[n++]='D';
+            dependency[n++]='L';dependency[n++]='L';
+            dependency[n]=0;
+        }
+        target=nullptr;
+        for(unsigned i=0;i<module_count;++i)
+            if(module_matches(modules[i].name,dependency)) {
+                target=&modules[i];break;
+            }
+        if(!target) {
+            *err="forwarder DLL missing from dependency graph";
+            return false;
+        }
+        name=forward_name+split+1u;
+        if(name[0]=='#') {
+            uint32_t value=0u;
+            if(!name[1]) {
+                *err="invalid forwarded ordinal";return false;
+            }
+            for(unsigned i=1u;name[i];++i) {
+                if(name[i]<'0' || name[i]>'9' ||
+                   value>65535u/10u) {
+                    *err="invalid forwarded ordinal";return false;
+                }
+                value=value*10u+static_cast<uint32_t>(name[i]-'0');
+                if(value>65535u) {
+                    *err="invalid forwarded ordinal";return false;
+                }
+            }
+            ordinal=value;by_ordinal=true;
+        } else {
+            by_ordinal=false;
+        }
+    }
+    *err="cyclic or overly deep PE forwarder chain";
+    return false;
+}
+
 // Resolve each PE import descriptor against its OWN named DLL. Import
 // directories are LE; patched SH4 .idata pointers must be written BE.
 static int snap_imports(const pe::Image &image_hdr, const MappedImage *image,
@@ -552,47 +641,40 @@ static int snap_imports(const pe::Image &image_hdr, const MappedImage *image,
             *err="missing import module (install dependency DLL)";
             return -2;
         }
-        pe::ExportDir ed{};
-        if (!pe::read_export_dir(*target->hdr,target->mapping->image,
-                                 target->mapping->vsize,&ed)) {
-            *err="dependency DLL lacks PE exports";
-            return -3;
-        }
         for (uint32_t i=0;;++i) {
-            // PE metadata is LE even for SH4BE code and data.
-            uint32_t oft=(d.oft_rva ? d.oft_rva : d.ft_rva)+i*4u;
-            uint32_t ft=d.ft_rva+i*4u;
-            if (oft+4>image->vsize || ft+4>image->vsize) {
+            // PE metadata is LE even for SH4BE code and data. The
+            // import address slots are written as SH4BE pointer words.
+            const uint32_t oft_base=d.oft_rva ? d.oft_rva:d.ft_rva;
+            if(i>image->vsize/4u || i>0x4000u ||
+               oft_base>image->vsize ||
+               d.ft_rva>image->vsize ||
+               i*4u>image->vsize-oft_base ||
+               i*4u>image->vsize-d.ft_rva ||
+               4u>image->vsize-oft_base-i*4u ||
+               4u>image->vsize-d.ft_rva-i*4u) {
                 *err="truncated PE thunk array";return -4;
             }
-            uint32_t entry=pe::rd32le(image->image+oft);
-            if (!entry) break;
-            uint32_t func_rva=0;
-            if (entry&0x80000000u) {
-                uint32_t ord=entry&0xFFFFu;
-                if (ord<ed.ordinal_base || ord-ed.ordinal_base>=ed.nfuncs) {
-                    *err="invalid ordinal in PE import";return -5;
-                }
-                func_rva=pe::rd32le(target->mapping->image+ed.addrfuncs_rva+
-                                   (ord-ed.ordinal_base)*4);
-            } else {
-                if (entry+2>=image->vsize ||
-                    !pe::rva_string(image->image,image->vsize,entry+2,
-                                    scratch,scratch_size)) {
+            const uint32_t oft=oft_base+i*4u;
+            const uint32_t ft=d.ft_rva+i*4u;
+            const uint32_t entry=pe::rd32le(image->image+oft);
+            if(!entry)break;
+            bool ordinal_import=(entry&0x80000000u)!=0u;
+            const uint32_t ordinal=entry&0xffffu;
+            if(!ordinal_import) {
+                if(entry>=image->vsize ||
+                   2u>image->vsize-entry ||
+                   !pe::rva_string(image->image,image->vsize,
+                                   entry+2u,scratch,scratch_size)) {
                     *err="invalid import-by-name entry";return -6;
                 }
-                if (!pe::export_lookup(*target->hdr,target->mapping->image,
-                                       target->mapping->vsize,scratch,
-                                       &func_rva)) {
-                    *err="import not exported by named DLL";return -7;
-                }
             }
-            if (func_rva>=target->hdr->oh.export_rva &&
-                func_rva<target->hdr->oh.export_rva+
-                         target->hdr->oh.export_size) {
-                *err="forwarded export unsupported";return -8;
-            }
-            pe::wr32be(image->image+ft,target->mapping->base+func_rva);
+            uint32_t absolute=0u;
+            if(!resolve_export_chain(modules,module_count,target,
+                                     ordinal_import ? nullptr:scratch,
+                                     ordinal,ordinal_import,
+                                     &absolute,err))
+                return -7;
+            pe::wr32be(image->image+ft,absolute);
             ++total;
         }
     }
