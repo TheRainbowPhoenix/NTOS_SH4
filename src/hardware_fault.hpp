@@ -77,7 +77,7 @@ extern "C" int ntos_pager_exception_callback(uint32_t tea,uint32_t expevt) {
     ctx.last_spc=spc;
     ctx.last_ssr=ssr;
     ctx.last_mmucr=mmu::read_mmucr();
-    ++ctx.hw_faults;
+    ctx.hw_faults=ctx.hw_faults+1u;
     if(expevt!=0x40u && expevt!=0x60u) {
         ++ctx.fault_error;
         ctx.failed_address=tea;
