@@ -32,6 +32,12 @@ jobs:
       run: python3 tools/elf2ntx.py --selftest && python3 tools/test_multimodule.py && python3 tools/preview_native_gdi.py
     - name: Validate GNU BFD parity and all PE DLL imports
       run: sh tools/test_binutils_parity.sh
+    - name: Validate WinCE SH relocation kinds and large image tables
+      run: |
+        apt-get update -qq && apt-get install -y -qq --no-install-recommends g++
+        g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 \
+            tests/pe_fixup_types_test.cpp -o /tmp/ntos-pe-fixup-types
+        /tmp/ntos-pe-fixup-types
     - name: Test overlapping-base DLL relocation with native PE images
       run: |
         apt-get update -qq && apt-get install -y -qq --no-install-recommends g++
