@@ -32,6 +32,8 @@ jobs:
       run: python3 tools/elf2ntx.py --selftest && python3 tools/test_multimodule.py && python3 tools/preview_native_gdi.py
     - name: Validate GNU BFD parity and all PE DLL imports
       run: sh tools/test_binutils_parity.sh
+    - name: Audit native SH4BE PE image headers as WinCE binaries
+      run: python3 tools/audit_wince_pe.py dist/COREDLL.DLL dist/XAMLUI.DLL dist/METROWIN.EXE
     - name: Validate WinCE SH relocation kinds and large image tables
       run: |
         apt-get update -qq && apt-get install -y -qq --no-install-recommends g++
