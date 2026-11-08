@@ -1303,24 +1303,33 @@ int main(int argc, char **argv, char **envp) {
     int fd = File_Open(path, FILE_OPEN_READ);
     if (fd < 0) {
         ntos_puts("File_Open failed");
+        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                     "Any key: program list   CLEAR: quit");
+        LCD_Refresh();
         Debug_WaitKey();
-        return 1;
+        continue;
     }
     uint32_t fsize = sizes[pick[selected]];
     auto *file = static_cast<uint8_t *>(Mem_Malloc(fsize != 0 ? fsize : 1));
     if (file == nullptr) {
         ntos_puts("OOM reading file");
         File_Close(fd);
+        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                     "Any key: program list   CLEAR: quit");
+        LCD_Refresh();
         Debug_WaitKey();
-        return 1;
+        continue;
     }
     if (File_Read(fd, file, static_cast<int>(fsize)) !=
         static_cast<int>(fsize)) {
         ntos_puts("File_Read failed");
         Mem_Free(file);
         File_Close(fd);
+        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                     "Any key: program list   CLEAR: quit");
+        LCD_Refresh();
         Debug_WaitKey();
-        return 1;
+        continue;
     }
     File_Close(fd);
 
@@ -1329,8 +1338,11 @@ int main(int argc, char **argv, char **envp) {
     if (pe::parse(file, fsize, &hdr) != 0) {
         ntos_puts("Bad PE header (not SH4BE 0x01A8?)");
         Mem_Free(file);
+        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                     "Any key: program list   CLEAR: quit");
+        LCD_Refresh();
         Debug_WaitKey();
-        return 2;
+        continue;
     }
 
     int ret;
@@ -1373,8 +1385,11 @@ int main(int argc, char **argv, char **envp) {
                          "Mapped load failed: %s", err);
             LCD_Refresh();
             Mem_Free(file);
-            Debug_WaitKey();
-            return 2;
+            Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                     "Any key: program list   CLEAR: quit");
+        LCD_Refresh();
+        Debug_WaitKey();
+        continue;
         }
     } else {
         if (mmu::at_enabled())
@@ -1388,8 +1403,11 @@ int main(int argc, char **argv, char **envp) {
                          "Load failed: %s", err);
             LCD_Refresh();
             Mem_Free(file);
-            Debug_WaitKey();
-            return 2;
+            Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                     "Any key: program list   CLEAR: quit");
+        LCD_Refresh();
+        Debug_WaitKey();
+        continue;
         }
 
         Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
