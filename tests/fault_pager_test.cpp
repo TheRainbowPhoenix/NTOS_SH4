@@ -66,6 +66,18 @@ int main() {
     assert(!page.servicing);
     assert(!page.fault(0x08000000u,install,&sink));
     assert(!page.fault(0x01000000u,nullptr,&sink));
+    // Regression: 55 virtual pages with identical VPN[16:12] must still
+    // fit 55 independent SH7305 UTLB slots. A fake 4-way TLB fails this.
+    ntos_fault::Pager associative{};
+    Sink same_set{};
+    assert(associative.add(0x04000000u,0x01000000u,2048u));
+    for(unsigned i=0;i<55u;++i) {
+        const uint32_t va=0x04000000u+i*0x20000u;
+        assert(associative.fault(va,install,&same_set,true));
+    }
+    assert(same_set.installations==55u);
+    assert(associative.evictions==0u);
+    assert(!associative.fault(0x04700000u,install,&same_set));
     ntos_rebase::Region regions[16]={};
     regions[0]={0x00400000u,1u};
     uint32_t base=0;
