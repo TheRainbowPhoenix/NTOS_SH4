@@ -59,7 +59,11 @@ static bool commit_translation(void *,uint32_t va,uint32_t pa,
                                unsigned slot,unsigned way) {
     if(slot>=mmu::SLOT_ROTATING_LAST+1u || way>3u)return false;
     mmu::map_page_at_index(va,pa,slot,way);
+#if NTOS_VERIFY_UTLB_SLOTS
+    return mmu::verify_slot(slot,va,pa);
+#else
     return true;
+#endif
 }
 } // namespace ntos_hw
 
