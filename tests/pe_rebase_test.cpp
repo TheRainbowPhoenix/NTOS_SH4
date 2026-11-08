@@ -56,7 +56,7 @@ static uint32_t first_fixup(const TestImage &im) {
     assert(false && "missing HIGHLOW fixups");return 0;
 }
 int main(int argc,char **argv) {
-    assert(argc==4);
+    assert(argc==4 || argc==5);
     TestImage core(argv[1]),xaml(argv[2]),exe(argv[3]);
     using namespace ntos_rebase;
     assert(core.hdr.oh.image_base==0x00800000u);
@@ -132,5 +132,23 @@ int main(int argc,char **argv) {
     assert(!fits(0,1,used,count));
     assert(!fits(API_BASE,1,used,count));
     printf("PASS malformed PE relocation rejection and UTLB set allocation\n");
+    if(argc==5) {
+        TestImage collision(argv[4]);
+        assert(collision.hdr.oh.image_base==corebase);
+        const uint32_t crva=first_fixup(collision);
+        const uint32_t c_before=pe::rd32be(collision.memory.data()+crva);
+        ntos_rebase::Region busy[2]={{base,used[0].pages},
+                                      {corebase,used[1].pages}};
+        uint32_t shifted=0;
+        assert(choose_base(collision.hdr.oh.image_base,
+                           (uint32_t)(collision.memory.size()+4095u)>>12,
+                           busy,2,&shifted));
+        assert(shifted!=corebase);
+        assert(apply(collision.hdr,collision.memory.data(),
+                     (uint32_t)collision.memory.size(),shifted,&error));
+        assert(pe::rd32be(collision.memory.data()+crva)
+               ==c_before+(shifted-corebase));
+        printf("PASS real same-base XAMLUI PE file rebased to %08x\n",shifted);
+    }
     return 0;
 }
