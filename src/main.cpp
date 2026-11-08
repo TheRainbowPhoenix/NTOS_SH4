@@ -441,10 +441,11 @@ static int load_mapped(const uint8_t *file, uint32_t file_size,
                        const pe::Image &hdr, MappedImage *out_mi,
                        const char **err) {
     *err = "unknown";
-    if (hdr.oh.magic != pe::OPT_MAGIC_PE32 || hdr.oh.image_base == 0 ||
-        hdr.oh.image_base < 0x00100000u ||
-        hdr.oh.image_base > 0x07FF0000u) {
-        *err = "no valid preferred base (needs PE32 optional header)";
+    // The PE ImageBase is only a *preference*. Windows CE commonly links
+    // every DLL to 0x10000000, outside our smaller P0 UTLB arena. The
+    // allocator selects an appropriate SH7305 VA and applies .reloc later.
+    if (hdr.oh.magic != pe::OPT_MAGIC_PE32 || hdr.oh.image_base == 0) {
+        *err = "no valid PE32 preferred image base";
         return -1;
     }
     uint32_t vsize = hdr.oh.size_of_image;
@@ -454,12 +455,8 @@ static int load_mapped(const uint8_t *file, uint32_t file_size,
         *err = "empty image";
         return -1;
     }
-    // Keep clear of the reserved P0 windows: the API window and page 0.
-    if (hdr.oh.image_base + vsize > mmu::VA_API_WINDOW &&
-        hdr.oh.image_base < mmu::VA_API_WINDOW + 0x4000u) {
-        *err = "preferred base collides with the 0x08100000 API window";
-        return -1;
-    }
+    // Preferred-base conflicts (including the API window) are resolved
+    // by choose_base(). Do not reject relocatable images here.
 
     // The UTLB maps complete 4 KiB pages even when PE SizeOfImage is not
     // page-aligned (e.g. COREDLL 0xDE00). Reserve/zero the entire final
