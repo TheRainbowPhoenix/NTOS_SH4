@@ -47,3 +47,25 @@ jobs:
         path: |
           dist/**
           dist_collision/**
+
+  build-hh3-v221:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.1
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@v7
+    - name: Install Python for PE packaging
+      run: apt-get update -qq && apt-get install -y -qq --no-install-recommends python3
+    - name: Build with the exact user Podman toolchain
+      run: |
+        export PATH=/toolchain/bin:$PATH
+        make -j4
+        test -s dist/NTOS.hh3
+        test -s dist/COREDLL.DLL
+        test -s dist/XAMLUI.DLL
+        test -s dist/METROWIN.EXE
+        test -s dist/MEMTOOL.EXE
+        echo "PASS HH3 v2.2.1: NTOS and all DLL/EXE images built"
