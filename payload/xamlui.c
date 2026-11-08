@@ -332,4 +332,5 @@ void xamlui_menu(void *dc) {
     }
 }
 
-int main(void) { return 0; }
+/* WinCE DLL entry must return nonzero for PROCESS_ATTACH. */
+int main(void) { return 1; }
