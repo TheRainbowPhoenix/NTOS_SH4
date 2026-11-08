@@ -30,6 +30,8 @@ jobs:
     - run: make -j
     - name: Validate PE import tables
       run: python3 tools/elf2ntx.py --selftest && python3 tools/test_multimodule.py && python3 tools/preview_native_gdi.py
+    - name: Test recursive PE dependency closure
+      run: python3 tools/test_dependency_graph.py
     - name: Validate GNU BFD parity and all PE DLL imports
       run: sh tools/test_binutils_parity.sh
     - name: Test IRQ ownership remains disabled in host mode
