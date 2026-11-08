@@ -762,6 +762,38 @@ static bool read_module_file(const char *path,uint8_t **dst,
     *dst=buf;*bytes=n;return true;
 }
 
+static bool require_dependency(const char *dependency,ModuleNode *nodes,
+                               unsigned *count,const char **err) {
+    if(!safe_dll_name(dependency)) {
+        *err="invalid DLL dependency filename";return false;
+    }
+    for(unsigned k=1u;k<*count;++k)
+        if(module_matches(dependency,nodes[k].name))
+            return true;
+    if(*count>=NTOS_MAX_MODULES) {
+        *err="module graph exceeds loader registry capacity";return false;
+    }
+    ModuleNode &module=nodes[*count];
+    unsigned j=0u;
+    while(dependency[j]) {module.name[j]=dependency[j];++j;}
+    module.name[j]=0;
+    char path[64];
+    if(!dll_path(path,sizeof(path),module.name)) {
+        *err="invalid DLL filename";return false;
+    }
+    if(!read_module_file(path,&module.file,&module.file_bytes,err))
+        return false;
+    if(pe::parse(module.file,module.file_bytes,&module.hdr)!=0 ||
+       !(module.hdr.fh.characteristics&pe::F_DLL)) {
+        *err="dependency is not a valid SH4BE PE DLL";return false;
+    }
+    if(load_mapped(module.file,module.file_bytes,module.hdr,
+                   &module.mapped,err)!=0)
+        return false;
+    ++*count;
+    return true;
+}
+
 // Full eager-mapped implementation of the recursively discovered PE import
 // graph. A later pager can replace the mapping backend without changing
 // module discovery, base allocation or name/ordinal import resolution.
@@ -809,57 +841,71 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     // A->B->A cycles and duplicate import descriptors cannot recurse forever.
     for(unsigned index=0u;index<count;++index) {
         const ModuleNode &requester=nodes[index];
-        if(!requester.hdr.oh.import_rva) continue;
-        if(requester.hdr.oh.import_size<20u ||
-           requester.hdr.oh.import_size/20u>256u) {
-            *err="invalid or oversized PE import directory";goto done;
-        }
-        bool terminated=false;
-        for(uint32_t di=0u;di<requester.hdr.oh.import_size/20u;++di) {
-            pe::ImportDesc d{};
-            if(!pe::read_import_desc(requester.hdr,requester.mapped.image,
-                                     requester.mapped.vsize,di,&d)) {
-                terminated=true;break;
+        if(requester.hdr.oh.import_rva) {
+            if(requester.hdr.oh.import_size<20u ||
+               requester.hdr.oh.import_size/20u>256u) {
+                *err="invalid or oversized PE import directory";goto done;
             }
-            char dependency[40]={};
-            if(!pe::rva_string(requester.mapped.image,
-                               requester.mapped.vsize,d.name_rva,
-                               dependency,sizeof(dependency)) ||
-               !safe_dll_name(dependency)) {
-                *err="unsafe or malformed PE dependency name";goto done;
-            }
-            bool found=false;
-            for(unsigned k=1u;k<count;++k)
-                if(module_matches(dependency,nodes[k].name)) {
-                    found=true;break;
+            bool terminated=false;
+            for(uint32_t di=0u;di<requester.hdr.oh.import_size/20u;++di) {
+                pe::ImportDesc d{};
+                if(!pe::read_import_desc(requester.hdr,
+                                         requester.mapped.image,
+                                         requester.mapped.vsize,di,&d)) {
+                    terminated=true;break;
                 }
-            if(found) continue;
-            if(count>=NTOS_MAX_MODULES) {
-                *err="module graph exceeds loader registry capacity";
+                char dependency[40]={};
+                if(!pe::rva_string(requester.mapped.image,
+                                   requester.mapped.vsize,d.name_rva,
+                                   dependency,sizeof(dependency)) ||
+                   !require_dependency(dependency,nodes,&count,err))
+                    goto done;
+            }
+            if(!terminated) {
+                *err="unterminated PE dependency descriptor array";
                 goto done;
             }
-            ModuleNode &module=nodes[count];
-            // Keep the PE's original module spelling for import matching.
-            unsigned j=0;
-            while(dependency[j]) {module.name[j]=dependency[j];++j;}
-            module.name[j]=0;
-            char path[64];
-            if(!dll_path(path,sizeof(path),module.name)) {
-                *err="invalid DLL filename";goto done;
-            }
-            if(!read_module_file(path,&module.file,&module.file_bytes,err))
-                goto done;
-            if(pe::parse(module.file,module.file_bytes,&module.hdr)!=0 ||
-               !(module.hdr.fh.characteristics&0x2000u)) {
-                *err="dependency is not a valid SH4BE PE DLL";goto done;
-            }
-            if(load_mapped(module.file,module.file_bytes,module.hdr,
-                           &module.mapped,err)!=0)
-                goto done;
-            ++count;
         }
-        if(!terminated) {
-            *err="unterminated PE dependency descriptor array";goto done;
+        // WinCE also loads forwarded-export targets. Discover their named
+        // target DLLs before import snapping; this handles forwarders even
+        // when the target isn't named in the EXE's import directory.
+        if(index==0u || !requester.hdr.oh.export_rva)continue;
+        pe::ExportDir ed{};
+        if(!pe::read_export_dir(requester.hdr,requester.mapped.image,
+                                requester.mapped.vsize,&ed)) {
+            *err="malformed PE dependency export directory";goto done;
+        }
+        const uint32_t export_first=requester.hdr.oh.export_rva;
+        const uint32_t export_bytes=requester.hdr.oh.export_size;
+        for(uint32_t i=0u;i<ed.nfuncs;++i) {
+            uint32_t function=pe::rd32le(
+                requester.mapped.image+ed.addrfuncs_rva+i*4u);
+            if(function<export_first ||
+               function-export_first>=export_bytes)continue;
+            char forward[128]{};
+            if(!pe::rva_string(requester.mapped.image,
+                               requester.mapped.vsize,function,
+                               forward,sizeof(forward))) {
+                *err="invalid forwarded export string";goto done;
+            }
+            unsigned dot=0u;
+            for(unsigned k=0u;forward[k];++k)
+                if(forward[k]=='.')dot=k;
+            if(!dot || !forward[dot+1u] ||
+               dot>=35u) {
+                *err="malformed forwarded DLL name";goto done;
+            }
+            char dependency[40]{};
+            unsigned n=0u;
+            for(;n<dot;++n)dependency[n]=forward[n];
+            dependency[n]=0;
+            if(n<4u || !module_matches(dependency+n-4u,".DLL")) {
+                dependency[n++]='.';dependency[n++]='D';
+                dependency[n++]='L';dependency[n++]='L';
+                dependency[n]=0;
+            }
+            if(!require_dependency(dependency,nodes,&count,err))
+                goto done;
         }
     }
 
