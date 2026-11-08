@@ -407,6 +407,13 @@ pager-experiment:
 	$(MAKE) -j4 BUILDDIR=obj_pager OUTDIR=dist_pager DEPDIR=.deps_pager DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1" hh3
 	@echo "EXPERIMENTAL PAGER: dist_pager/NTOS.hh3 (VBR fault handler unverified on hardware)"
 
-.PHONY: elf hh3 ntx all clean compile_commands.json check-pe probe-pe collision-test pager-experiment
+# Optional emulator diagnostic. Reads SH7305 UTLB P4 address/data arrays
+# after each LDTLB. Some emulators do not support these P4 readbacks:
+# NEVER replace the regular experimental image with this diagnostic.
+pager-verify:
+	$(MAKE) -j4 BUILDDIR=obj_pager_verify OUTDIR=dist_pager_verify DEPDIR=.deps_pager_verify DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_VERIFY_UTLB_SLOTS=1" hh3
+	@echo "UTLB READBACK DIAGNOSTIC: dist_pager_verify/NTOS.hh3 (emulator only)"
+
+.PHONY: elf hh3 ntx all clean compile_commands.json check-pe probe-pe collision-test pager-experiment pager-verify
 
 -include $(DEPFILES)
