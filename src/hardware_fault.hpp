@@ -66,7 +66,7 @@ extern "C" int ntos_pager_exception_callback(uint32_t tea,uint32_t expevt) {
         ctx.failed_address=tea;
         return 0;
     }
-    if(!ctx.table.fault(tea,&ntos_hw::commit_translation,nullptr)) {
+    if(!ctx.table.fault(tea,&ntos_hw::commit_translation,nullptr,false,true)) {
         ++ctx.fault_error;
         ctx.failed_address=tea;
         return 0;
