@@ -925,15 +925,46 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         reinterpret_cast<void *>(mmu::VA_API_WINDOW),0x4000u);
 #endif
 
+    // WinCE loader invokes each DLL entry after its dependencies have
+    // been relocated and imports snapped, and before EXE entry. Reverse
+    // BFS gives a dependency-first order for the acyclic part of the graph;
+    // cyclic DLLs are supported for imports, but their init order remains
+    // deterministic rather than arbitrarily re-entrant. On failure,
+    // detach the DLLs that already accepted PROCESS_ATTACH.
     {
-        using entry_fn=int (*)(const NtosApi *,char **,char **);
-        entry_fn entry=reinterpret_cast<entry_fn>(
-            nodes[0].mapped.base+hdr.oh.entry_rva);
-        const int exit_code=entry(&g_ntos_api,nullptr,nullptr);
-        *out_ret=exit_code;
+        using dll_entry=int (*)(uint32_t,uint32_t,void *);
+        using exe_entry=int (*)(const NtosApi *,char **,char **);
+        bool attached[NTOS_MAX_MODULES]={};
+        bool attach_ok=true;
+        // DLL_PROCESS_ATTACH=1, DLL_PROCESS_DETACH=0 from WinCE SDK.
+        for(unsigned i=count;i-->1u;) {
+            const auto &mod=nodes[i];
+            if(!mod.hdr.oh.entry_rva)continue;
+            dll_entry entry=reinterpret_cast<dll_entry>(
+                mod.mapped.base+mod.hdr.oh.entry_rva);
+            if(!entry(mod.mapped.base,1u,nullptr)) {
+                attach_ok=false;
+                *err="DLL_PROCESS_ATTACH returned FALSE";
+                break;
+            }
+            attached[i]=true;
+        }
+        if(attach_ok) {
+            exe_entry entry=reinterpret_cast<exe_entry>(
+                nodes[0].mapped.base+hdr.oh.entry_rva);
+            *out_ret=entry(&g_ntos_api,nullptr,nullptr);
+            *err="ok";
+            rc=0;
+        }
+        // Opposite of attach order: release all initialized modules.
+        for(unsigned i=1u;i<count;++i) {
+            if(!attached[i])continue;
+            const auto &mod=nodes[i];
+            dll_entry entry=reinterpret_cast<dll_entry>(
+                mod.mapped.base+mod.hdr.oh.entry_rva);
+            (void)entry(mod.mapped.base,0u,nullptr);
+        }
     }
-    *err="ok";
-    rc=0;
 
 done:
     mmu::disable_at_flush();
