@@ -32,6 +32,11 @@ jobs:
       run: python3 tools/elf2ntx.py --selftest && python3 tools/test_multimodule.py && python3 tools/preview_native_gdi.py
     - name: Validate GNU BFD parity and all PE DLL imports
       run: sh tools/test_binutils_parity.sh
+    - name: Test IRQ ownership remains disabled in host mode
+      run: |
+        g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 \
+            tests/irq_handoff_test.cpp -o /tmp/ntos-irq-handoff
+        /tmp/ntos-irq-handoff
     - name: Test on-demand PE page materializer (fault handler disabled)
       run: |
         apt-get update -qq && apt-get install -y -qq --no-install-recommends g++
