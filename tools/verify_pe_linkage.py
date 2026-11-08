@@ -174,13 +174,14 @@ def main():
         "COREDLL.DLL": PE("dist/COREDLL.DLL"),
         "XAMLUI.DLL": PE("dist/XAMLUI.DLL"),
         "CHAIN.DLL": PE("dist/CHAIN.DLL"),
+        **{f"ST{i:02}.DLL": PE(f"dist/ST{i:02}.DLL") for i in range(1, 13)},
     }
     programs = {
         name: PE("dist/" + name)
         for name in (
             "HELLO.EXE", "HELLOCORE.EXE", "MEMTOOL.EXE", "PAINT.EXE",
             "WINLAB.EXE", "GUIWIN.EXE", "METROWIN.EXE", "CALC.EXE",
-            "CHAINTEST.EXE"
+            "CHAINTEST.EXE", "STRESSEXEC.EXE"
         )
     }
     assert dlls["COREDLL.DLL"].dll and dlls["XAMLUI.DLL"].dll
@@ -205,6 +206,11 @@ def main():
         if name == "CHAINTEST.EXE":
             assert set(imports) == {"CHAIN.DLL"}
             assert "chain_echo" in exports["CHAIN.DLL"]
+        if name == "STRESSEXEC.EXE":
+            assert set(imports) == {"ST01.DLL"}
+        if name == "ST01.DLL":
+            assert set(imports) == {"ST02.DLL", "ST03.DLL",
+                                    "ST04.DLL", "ST05.DLL"}
         for module, functions in imports.items():
             assert module in dlls, (name, "missing import module", module)
             for symbol, iat_rva in functions:
