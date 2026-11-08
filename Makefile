@@ -80,6 +80,12 @@ METROWIN_EXE := $(OUTDIR)/METROWIN.EXE
 CALC_OBJ := $(BUILDDIR)/payload/calc.o
 CALC_ELF := $(BUILDDIR)/payload/calc.elf
 CALC_EXE := $(OUTDIR)/CALC.EXE
+CHAIN_OBJ := $(BUILDDIR)/payload/chain.o
+CHAIN_ELF := $(BUILDDIR)/payload/chain.elf
+CHAIN_DLL := $(OUTDIR)/CHAIN.DLL
+CHAINTEST_OBJ := $(BUILDDIR)/payload/chain_test.o
+CHAINTEST_ELF := $(BUILDDIR)/payload/chain_test.elf
+CHAINTEST_EXE := $(OUTDIR)/CHAINTEST.EXE
 
 AS_SOURCES:=$(shell find $(SOURCEDIR) -name '*.S')
 CC_SOURCES:=$(shell find $(SOURCEDIR) -name '*.c')
@@ -92,7 +98,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CHAIN_DLL) $(CHAINTEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -248,6 +254,31 @@ $(CALC_ELF): $(CALC_OBJ) $(PAYLOAD_DIR)/payload.ld
 $(CALC_EXE): $(CALC_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(CALC_ELF) -o $@ --import-module COREDLL.DLL
+
+# A third named DLL with its own recursive import: CHAIN.DLL -> COREDLL.
+$(CHAIN_OBJ): $(PAYLOAD_DIR)/chain.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(CHAIN_ELF): $(CHAIN_OBJ) $(PAYLOAD_DIR)/xamlui.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/xamlui.ld -o $@ $(CHAIN_OBJ)
+
+$(CHAIN_DLL): $(CHAIN_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(CHAIN_ELF) -o $@ --base 0x10000000 --dll --dll-name CHAIN.DLL --import-module COREDLL.DLL --exports chain_echo
+
+$(CHAINTEST_OBJ): $(PAYLOAD_DIR)/chain_test.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(CHAINTEST_ELF): $(CHAINTEST_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(CHAINTEST_OBJ)
+
+$(CHAINTEST_EXE): $(CHAINTEST_ELF) $(CHAIN_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(CHAINTEST_ELF) -o $@ --import-module CHAIN.DLL
 
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
