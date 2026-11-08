@@ -461,13 +461,21 @@ static int load_mapped(const uint8_t *file, uint32_t file_size,
         return -1;
     }
 
-    auto *raw = static_cast<uint8_t *>(Mem_Malloc(vsize + 0xFFFu));
+    // The UTLB maps complete 4 KiB pages even when PE SizeOfImage is not
+    // page-aligned (e.g. COREDLL 0xDE00). Reserve/zero the entire final
+    // page, otherwise it can map bytes beyond the heap allocation.
+    const uint32_t mapped_bytes=(vsize+0xFFFu)&~0xFFFu;
+    if (mapped_bytes<vsize || mapped_bytes>8u*1024u*1024u+0x1000u) {
+        *err="PE image size overflows mapped pages";
+        return -1;
+    }
+    auto *raw=static_cast<uint8_t *>(Mem_Malloc(mapped_bytes+0xFFFu));
     if (raw == nullptr) {
         *err = "out of memory";
         return -2;
     }
     auto *image = static_cast<uint8_t *>(align_page(raw));
-    Mem_Memset(image, 0, vsize);
+    Mem_Memset(image, 0, mapped_bytes);
 
     for (uint32_t i = 0; i < hdr.section_count; i++) {
         const pe::SectionHeader &sh = hdr.sections[i];
