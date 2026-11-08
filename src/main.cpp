@@ -586,290 +586,283 @@ static int snap_imports(const pe::Image &image_hdr, const MappedImage *image,
 // Full UTLB-mapped run. Returns 0 on success (payload return value in
 // *out_ret) or -1 on loader error with `err` set. On every exit path the
 // MMU is disabled, the UTLB flushed and all allocations released.
+// The on-device module graph is intentionally bounded by the physical UTLB
+// capacity. Discovery is recursive, by the *actual PE import descriptor name*;
+// it is no longer a hardcoded COREDLL + optional XAMLUI pair.
+constexpr unsigned NTOS_MAX_MODULES=10u;  // EXE + nine distinct DLLs
+constexpr uint32_t NTOS_MAX_FILE_BYTES=1024u*1024u;
+struct ModuleNode {
+    char name[40];
+    pe::Image hdr;
+    MappedImage mapped;
+    uint8_t *file;
+    uint32_t file_bytes;
+};
+
+static bool safe_dll_name(const char *name) {
+    if (!name) return false;
+    uint32_t n=0;
+    for(;name[n] && n<38u;++n) {
+        const char c=name[n];
+        // Reject path separators, drive syntax, spaces and traversal.
+        // DLL files are resolved within \fls0, not arbitrary SDK paths.
+        if (!((c>='A' && c<='Z') || (c>='a' && c<='z') ||
+              (c>='0' && c<='9') || c=='_' || c=='-' || c=='.'))
+            return false;
+        if (n>0 && name[n-1]=='.' && c=='.') return false;
+    }
+    if(n<5u || n>38u || name[n]) return false;
+    const char *suffix=name+n-4u;
+    return module_matches(suffix,".DLL");
+}
+
+static bool dll_path(char *dst,uint32_t capacity,const char *name) {
+    static const char root[]="\\fls0\\";
+    if (!safe_dll_name(name)) return false;
+    uint32_t pos=0;
+    for(unsigned i=0;root[i];++i) {
+        if(pos+1u>=capacity) return false;
+        dst[pos++]=root[i];
+    }
+    for(unsigned i=0;name[i];++i) {
+        if(pos+1u>=capacity) return false;
+        dst[pos++]=name[i];
+    }
+    dst[pos]=0;
+    return true;
+}
+static bool read_module_file(const char *path,uint8_t **dst,
+                             uint32_t *bytes,const char **error) {
+    *dst=nullptr;*bytes=0u;
+    int fd=File_Open(path,FILE_OPEN_READ);
+    if(fd<0){ *error="missing dependency DLL on fls0";return false; }
+    struct File_Stat st{};
+    if(File_Fstat(fd,&st)<0 || st.fileSize<512u ||
+       st.fileSize>NTOS_MAX_FILE_BYTES) {
+        *error="invalid DLL length or exceeds staging file limit";
+        File_Close(fd);return false;
+    }
+    const uint32_t n=static_cast<uint32_t>(st.fileSize);
+    uint8_t *buf=static_cast<uint8_t *>(Mem_Malloc(n));
+    if(!buf) {
+        *error="out of memory staging DLL";
+        File_Close(fd);return false;
+    }
+    uint32_t off=0u;
+    while(off<n) {
+        uint32_t wanted=n-off;
+        if(wanted>4096u) wanted=4096u;
+        int count=File_Read(fd,buf+off,static_cast<int>(wanted));
+        if(count<=0 || static_cast<uint32_t>(count)>wanted) break;
+        off+=static_cast<uint32_t>(count);
+    }
+    File_Close(fd);
+    if(off!=n) {
+        Mem_Free(buf);*error="short read staging dependency";return false;
+    }
+    *dst=buf;*bytes=n;return true;
+}
+
+// Full eager-mapped implementation of the recursively discovered PE import
+// graph. A later pager can replace the mapping backend without changing
+// module discovery, base allocation or name/ordinal import resolution.
+//
+// This code deliberately does NOT enable the interrupt/pager prototypes:
+// without an installed privileged TLB-miss handler, a nonresident code page
+// would hang or soft-reset the calculator. The current limit is 55 pages.
 static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                       const char *core_path, uint32_t core_size,
                       const char *extra_path, uint32_t extra_size,
                       int *out_ret, const char **err) {
-    *err = "unknown";
-    // Stage0 stays in P1 and uses the host SDK. Keep host exception,
-    // global-base and status registers for restoration after PE returns.
+    (void)core_path;(void)core_size;(void)extra_path;(void)extra_size;
+    *err="unknown";
     const host_world::Snapshot host_state=host_world::capture();
-    if ((host_state.mmucr&1u)!=0u) {
-        *err="host MMU already owns translation; mapped world unsafe";
-        return -1;
+    if((host_state.mmucr&1u)!=0u) {
+        *err="host MMU is already active";return -1;
     }
-    MappedImage exe{};
-    MappedImage dll{};
-    MappedImage extra{};
-    pe::Image dll_hdr{};
-    pe::Image extra_hdr{};
-    uint8_t *dll_file = nullptr;
-    uint8_t *extra_file = nullptr;
-    uint8_t *api_raw = nullptr;
-    uint8_t *api_block = nullptr;
-    uint32_t slot = 0;
-    int rc = -1;
-    // Set+way bookkeeping for the UTLB install (see below): pages whose VA
-    // bits 16:12 land in the same of the 32 UTLB sets must occupy different
-    // ways -- the set is derived from the VPN, the slot only matters on
-    // fully-associative hardware.
-    uint8_t set_ways[32] = {};
-    auto install_page = [&](uint32_t va, uint32_t pa, uint32_t page_slot) {
-        const uint32_t set = (va >> 12) & 0x1Fu;
-        if (set_ways[set] > 3)
-            return false;
-        mmu::map_page_at_index(va, pa, page_slot, set_ways[set]++);
-        return true;
-    };
+    ModuleNode nodes[NTOS_MAX_MODULES]={};
+    LinkedModule exports[NTOS_MAX_MODULES]={};
+    ntos_rebase::Region reservations[NTOS_MAX_MODULES]={};
+    unsigned count=1u;
+    uint32_t image_pages=0u;
+    uint8_t *api_raw=nullptr;
+    uint8_t *api_block=nullptr;
+    int rc=-1;
+    uint8_t set_ways[32]={};
 
-    // --- coredll copy ---------------------------------------------------
-    if (core_path != nullptr) {
-        int fd = File_Open(core_path, FILE_OPEN_READ);
-        if (fd < 0) {
-            *err = "File_Open(COREDLL.DLL) failed";
-            goto done;
-        }
-        dll_file = static_cast<uint8_t *>(Mem_Malloc(core_size));
-        if (dll_file == nullptr) {
-            File_Close(fd);
-            *err = "OOM reading COREDLL.DLL";
-            goto done;
-        }
-        if (File_Read(fd, dll_file, static_cast<int>(core_size)) !=
-            static_cast<int>(core_size)) {
-            File_Close(fd);
-            *err = "File_Read(COREDLL.DLL) failed";
-            goto done;
-        }
-        File_Close(fd);
-        if (pe::parse(dll_file, core_size, &dll_hdr) != 0) {
-            *err = "COREDLL.DLL: bad PE header";
-            goto done;
-        }
-        if (load_mapped(dll_file, core_size, dll_hdr, &dll, err) != 0)
-            goto done;
-    }
-
-    // --- EXE copy ---------------------------------------------------------
-    if (load_mapped(file, fsize, hdr, &exe, err) != 0)
+    nodes[0].hdr=hdr;
+    nodes[0].file=file;
+    nodes[0].file_bytes=fsize;
+    // Main EXE is owned by the caller; only dependency buffers are freed.
+    if(load_mapped(file,fsize,hdr,&nodes[0].mapped,err)!=0)
         goto done;
 
-    // Load XAMLUI only when a PE import descriptor actually requests it.
-    // The module itself can import COREDLL. Modules use fixed, disjoint VAs.
-    {
-        bool needs_extra=false;
-        char module_name[32];
-        for (uint32_t di=0;;++di) {
+    // Breadth-first walk of the transitive DLL import graph. A module is
+    // entered into the registry BEFORE its imports are scanned, so
+    // A->B->A cycles and duplicate import descriptors cannot recurse forever.
+    for(unsigned index=0u;index<count;++index) {
+        const ModuleNode &requester=nodes[index];
+        if(!requester.hdr.oh.import_rva) continue;
+        if(requester.hdr.oh.import_size<20u ||
+           requester.hdr.oh.import_size/20u>256u) {
+            *err="invalid or oversized PE import directory";goto done;
+        }
+        bool terminated=false;
+        for(uint32_t di=0u;di<requester.hdr.oh.import_size/20u;++di) {
             pe::ImportDesc d{};
-            if (!pe::read_import_desc(hdr,exe.image,exe.vsize,di,&d))
-                break;
-            if (pe::rva_string(exe.image,exe.vsize,d.name_rva,
-                               module_name,sizeof(module_name)) &&
-                module_matches(module_name,"XAMLUI.DLL"))
-                needs_extra=true;
+            if(!pe::read_import_desc(requester.hdr,requester.mapped.image,
+                                     requester.mapped.vsize,di,&d)) {
+                terminated=true;break;
+            }
+            char dependency[40]={};
+            if(!pe::rva_string(requester.mapped.image,
+                               requester.mapped.vsize,d.name_rva,
+                               dependency,sizeof(dependency)) ||
+               !safe_dll_name(dependency)) {
+                *err="unsafe or malformed PE dependency name";goto done;
+            }
+            bool found=false;
+            for(unsigned k=1u;k<count;++k)
+                if(module_matches(dependency,nodes[k].name)) {
+                    found=true;break;
+                }
+            if(found) continue;
+            if(count>=NTOS_MAX_MODULES) {
+                *err="module graph exceeds loader registry capacity";
+                goto done;
+            }
+            ModuleNode &module=nodes[count];
+            // Keep the PE's original module spelling for import matching.
+            unsigned j=0;
+            while(dependency[j]) {module.name[j]=dependency[j];++j;}
+            module.name[j]=0;
+            char path[64];
+            if(!dll_path(path,sizeof(path),module.name)) {
+                *err="invalid DLL filename";goto done;
+            }
+            if(!read_module_file(path,&module.file,&module.file_bytes,err))
+                goto done;
+            if(pe::parse(module.file,module.file_bytes,&module.hdr)!=0 ||
+               !(module.hdr.fh.characteristics&0x2000u)) {
+                *err="dependency is not a valid SH4BE PE DLL";goto done;
+            }
+            if(load_mapped(module.file,module.file_bytes,module.hdr,
+                           &module.mapped,err)!=0)
+                goto done;
+            ++count;
         }
-        if (needs_extra) {
-            if (!extra_path || !extra_size) {
-                *err="XAMLUI.DLL required but missing";goto done;
-            }
-            int fd=File_Open(extra_path,FILE_OPEN_READ);
-            if (fd<0) { *err="cannot open XAMLUI.DLL";goto done; }
-            extra_file=static_cast<uint8_t *>(Mem_Malloc(extra_size));
-            if (!extra_file) {
-                File_Close(fd);*err="OOM reading XAMLUI.DLL";goto done;
-            }
-            int read=File_Read(fd,extra_file,static_cast<int>(extra_size));
-            File_Close(fd);
-            if (read!=static_cast<int>(extra_size) ||
-                pe::parse(extra_file,extra_size,&extra_hdr)!=0) {
-                *err="invalid XAMLUI.DLL PE image";goto done;
-            }
-            if (load_mapped(extra_file,extra_size,extra_hdr,
-                            &extra,err)!=0) goto done;
+        if(!terminated) {
+            *err="unterminated PE dependency descriptor array";goto done;
         }
     }
-    // --- Assign disjoint P0 virtual addresses BEFORE snapping imports. ----
-    // The PE preferred ImageBase is a hint, not a reservation. WinCE may
-    // relocate DLLs that are linked at the same base. The ClassPad has only
-    // four UTLB ways per virtual-page set, so placement also checks that
-    // hardware constraint (including the four API-window mappings).
+
+    // Reserve all virtual ranges before applying any relocation. The same
+    // allocator handles DLLs sharing ImageBase, including 0x10000000.
+    for(unsigned i=0u;i<count;++i) {
+        uint32_t actual=0;
+        if(!ntos_rebase::choose_base(nodes[i].hdr.oh.image_base,
+                                      nodes[i].mapped.npages,
+                                      reservations,i,&actual)) {
+            *err="no UTLB-compatible address for PE dependency";
+            goto done;
+        }
+        nodes[i].mapped.base=actual;
+        reservations[i]={actual,nodes[i].mapped.npages};
+        image_pages+=nodes[i].mapped.npages;
+    }
+    if(image_pages>mmu::SLOT_ROTATING_LAST+1u) {
+        *err="DLL graph exceeds resident UTLB page budget";goto done;
+    }
+    for(unsigned i=0u;i<count;++i) {
+        if(!ntos_rebase::apply(nodes[i].hdr,nodes[i].mapped.image,
+                               nodes[i].mapped.vsize,nodes[i].mapped.base,err))
+            goto done;
+        exports[i]={i==0u ? "" : nodes[i].name,
+                    &nodes[i].hdr,&nodes[i].mapped};
+    }
+    // Always resolve by the individual import descriptor's DLL name.
+    // Forward dependencies, shared dependencies and cyclic DLL references
+    // are supported because *all* modules are registered before snapping.
     {
-        ntos_rebase::Region used[3] = {};
-        unsigned count=0;
-        uint32_t selected=0;
-        // Prefer the EXE's own base, then COREDLL, then other DLLs.
-        if (!ntos_rebase::choose_base(exe.base,exe.npages,used,count,
-                                     &selected)) {
-            *err="no UTLB-compatible EXE virtual address";goto done;
-        }
-        exe.base=selected;
-        used[count++]={exe.base,exe.npages};
-        if (dll.image) {
-            if (!ntos_rebase::choose_base(dll.base,dll.npages,used,count,
-                                         &selected)) {
-                *err="no UTLB-compatible COREDLL base";goto done;
-            }
-            dll.base=selected;
-            used[count++]={dll.base,dll.npages};
-        }
-        if (extra.image) {
-            if (!ntos_rebase::choose_base(extra.base,extra.npages,used,count,
-                                         &selected)) {
-                *err="no UTLB-compatible dependency DLL base";goto done;
-            }
-            extra.base=selected;
-            used[count++]={extra.base,extra.npages};
-        }
-    }
-    // Patch every ABSOLUTE/HIGHLOW relocation site in its own image.
-    // PE .reloc headers are LE, but SH4 pointer sites are BE. No IAT has
-    // been snapped yet. The relocation helper validates all blocks twice
-    // before modifying bytes, and refuses unsupported relocation kinds.
-    if (!ntos_rebase::apply(hdr,exe.image,exe.vsize,exe.base,err))
-        goto done;
-    if (dll.image &&
-        !ntos_rebase::apply(dll_hdr,dll.image,dll.vsize,dll.base,err))
-        goto done;
-    if (extra.image &&
-        !ntos_rebase::apply(extra_hdr,extra.image,extra.vsize,extra.base,err))
-        goto done;
-    if ((dll.image && dll.base!=dll_hdr.oh.image_base) ||
-        (extra.image && extra.base!=extra_hdr.oh.image_base)) {
-        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "DLL rebased: core=%08lX xaml=%08lX",
-                     static_cast<unsigned long>(dll.base),
-                     static_cast<unsigned long>(extra.base));
-        LCD_Refresh();
-    }
-
-    // --- API window block (OS330 MMU_ConfigureAddinApiMappings recipe) ----
-    api_raw = static_cast<uint8_t *>(Mem_Malloc(0x4000u + 0xFFFu));
-    if (api_raw == nullptr) {
-        *err = "OOM for the API window block";
-        goto done;
-    }
-    api_block = static_cast<uint8_t *>(align_page(api_raw));
-    Mem_Memset(api_block, 0, 0x4000);
-    *reinterpret_cast<void **>(api_block) = &g_ntos_api;
-
-    // --- UTLB slot budget ---------------------------------------------------
-    // The null page is intentionally NOT mapped: an absent PTE guards it
-    // naturally. Mapping VA 0 consumed a fifth UTLB way in set 0 when the
-    // EXE, COREDLL, XAMLUI and API window each used one way there.
-    if (exe.npages + dll.npages + extra.npages >
-        mmu::SLOT_ROTATING_LAST + 1) {
-        *err = "images too large for the UTLB slot budget (4 KiB pages)";
-        goto done;
-    }
-
-    // Snap DLL dependencies first, then EXE dependencies. Both resolve
-    // by the exact import descriptor module name, not a global COREDLL.
-    {
-        LinkedModule linked[] = {
-            {"COREDLL.DLL", &dll_hdr, &dll},
-            {"XAMLUI.DLL", &extra_hdr, &extra},
-        };
         char symbol[96];
-        const char *snap_error=nullptr;
         int total=0;
-        if (extra.image && extra_hdr.oh.import_rva) {
-            int n=snap_imports(extra_hdr,&extra,linked,2,symbol,
-                               sizeof(symbol),&snap_error);
-            if (n<0) { *err=snap_error;goto done; }
-            total+=n;
-        }
-        if (hdr.oh.import_rva) {
-            int n=snap_imports(hdr,&exe,linked,2,symbol,
-                               sizeof(symbol),&snap_error);
-            if (n<0) { *err=snap_error;goto done; }
+        for(unsigned i=0u;i<count;++i) {
+            if(!nodes[i].hdr.oh.import_rva) continue;
+            int n=snap_imports(nodes[i].hdr,&nodes[i].mapped,
+                               exports+1u,count-1u,symbol,
+                               sizeof(symbol),err);
+            if(n<0) goto done;
             total+=n;
         }
         Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Snapped %d import(s), %d DLL(s)",
-                     total,extra.image ? 2 : (dll.image ? 1 : 0));
+                     "Linked %d import(s), %u DLL(s)",total,count-1u);
         LCD_Refresh();
     }
+    api_raw=static_cast<uint8_t *>(Mem_Malloc(0x4000u+0xFFFu));
+    if(!api_raw){*err="API mapping allocation failed";goto done;}
+    api_block=static_cast<uint8_t *>(align_page(api_raw));
+    Mem_Memset(api_block,0,0x4000u);
+    *reinterpret_cast<void **>(api_block)=&g_ntos_api;
 
-    // --- write back the copies through P1 ----------------------------------
-    flush_image(exe.image, exe.vsize);
-    if (dll.image != nullptr)
-        flush_image(dll.image, dll.vsize);
-    if (extra.image != nullptr)
-        flush_image(extra.image, extra.vsize);
-    flush_image(api_block, 0x4000);
+    for(unsigned i=0u;i<count;++i)
+        flush_image(nodes[i].mapped.image,nodes[i].mapped.vsize);
+    flush_image(api_block,0x4000u);
 
-    // --- install UTLB entries (AT is still off) ------------------------------
-    mmu::disable_at_flush(); // flush the UTLB; AT guaranteed off here
-    for (uint32_t p = 0; p < dll.npages; p++, slot++)
-        if (!install_page(dll.base + p * 0x1000u,
-                          mmu::phys_addr(dll.image + p * 0x1000u), slot)) {
-            *err = "too many pages in one UTLB set";
-            goto done;
-        }
-    for (uint32_t p=0;p<extra.npages;p++,slot++)
-        if (!install_page(extra.base+p*0x1000u,
-                          mmu::phys_addr(extra.image+p*0x1000u),slot)) {
-            *err="UTLB conflict mapping XAMLUI.DLL";goto done;
-        }
-    for (uint32_t p = 0; p < exe.npages; p++, slot++)
-        if (!install_page(exe.base + p * 0x1000u,
-                          mmu::phys_addr(exe.image + p * 0x1000u), slot)) {
-            *err = "too many pages in one UTLB set";
-            goto done;
-        }
-    for (uint32_t i = 0; i < mmu::API_WINDOW_PAGES; i++)
-        if (!install_page(mmu::VA_API_WINDOW + i * 0x1000u,
-                          mmu::phys_addr(api_block + i * 0x1000u),
-                          mmu::SLOT_API_FIRST + i)) {
-            *err = "too many pages in one UTLB set";
-            goto done;
-        }
-    // VA 0 must remain unmapped. Installing an identity-mapped null
-    // guard is both unsafe (NULL would be readable) and takes a UTLB way.
-
-    // --- enable translation, drop stale P0-indexed cache lines --------------
-    mmu::enable_at();
-    mmu::cache_flush_invalidate_block(reinterpret_cast<void *>(exe.base),
-                                      exe.vsize);
-    if (dll.image != nullptr)
-        mmu::cache_flush_invalidate_block(reinterpret_cast<void *>(dll.base),
-                                          dll.vsize);
-    if (extra.image != nullptr)
-        mmu::cache_flush_invalidate_block(reinterpret_cast<void *>(extra.base),
-                                          extra.vsize);
-    mmu::cache_flush_invalidate_block(
-        reinterpret_cast<void *>(mmu::VA_API_WINDOW), 0x4000);
-
-    // --- run ------------------------------------------------------------------
+    // Install pages into the four-way SH7305 UTLB while AT=0.
+    mmu::disable_at_flush();
     {
-        using entry_fn = int (*)(const NtosApi *, char **, char **);
-        entry_fn entry =
-            reinterpret_cast<entry_fn>(exe.base + hdr.oh.entry_rva);
-        rc = entry(&g_ntos_api, nullptr, nullptr);
+        uint32_t slot=0u;
+        for(unsigned i=0u;i<count;++i) {
+            const MappedImage &m=nodes[i].mapped;
+            for(uint32_t p=0u;p<m.npages;++p,++slot) {
+                const uint32_t va=m.base+p*0x1000u;
+                const uint32_t set=(va>>12)&31u;
+                if(set_ways[set]>=4u) {
+                    *err="too many modules in UTLB set";goto done;
+                }
+                mmu::map_page_at_index(va,
+                    mmu::phys_addr(m.image+p*0x1000u),
+                    slot,set_ways[set]++);
+            }
+        }
+        for(uint32_t p=0u;p<mmu::API_WINDOW_PAGES;++p) {
+            const uint32_t va=mmu::VA_API_WINDOW+p*0x1000u;
+            const uint32_t set=(va>>12)&31u;
+            if(set_ways[set]>=4u) {
+                *err="UTLB API window set collision";goto done;
+            }
+            mmu::map_page_at_index(va,
+                mmu::phys_addr(api_block+p*0x1000u),
+                mmu::SLOT_API_FIRST+p,set_ways[set]++);
+        }
     }
-    *out_ret = rc;
-    *err = "ok";
-    rc = 0;
+
+    mmu::enable_at();
+    for(unsigned i=0u;i<count;++i)
+        mmu::cache_flush_invalidate_block(
+             reinterpret_cast<void *>(nodes[i].mapped.base),
+             nodes[i].mapped.vsize);
+    mmu::cache_flush_invalidate_block(
+        reinterpret_cast<void *>(mmu::VA_API_WINDOW),0x4000u);
+
+    {
+        using entry_fn=int (*)(const NtosApi *,char **,char **);
+        entry_fn entry=reinterpret_cast<entry_fn>(
+            nodes[0].mapped.base+hdr.oh.entry_rva);
+        const int exit_code=entry(&g_ntos_api,nullptr,nullptr);
+        *out_ret=exit_code;
+    }
+    *err="ok";
+    rc=0;
 
 done:
-    // Restore the system exactly as we found it: AT off + UTLB flushed.
     mmu::disable_at_flush();
-    // Following gint's world-switch discipline, return control of
-    // exception vectors / global base / interrupt mask to Hollyhock
-    // BEFORE invoking SDK File/Mem APIs during stage0 cleanup.
     host_world::restore(host_state);
-    if (api_raw != nullptr)
-        Mem_Free(api_raw);
-    if (exe.raw != nullptr)
-        Mem_Free(exe.raw);
-    if (dll.raw != nullptr)
-        Mem_Free(dll.raw);
-    if (extra.raw != nullptr)
-        Mem_Free(extra.raw);
-    if (dll_file != nullptr)
-        Mem_Free(dll_file);
-    if (extra_file != nullptr)
-        Mem_Free(extra_file);
+    if(api_raw) Mem_Free(api_raw);
+    for(unsigned i=0u;i<NTOS_MAX_MODULES;++i) {
+        if(nodes[i].mapped.raw) Mem_Free(nodes[i].mapped.raw);
+        if(i && nodes[i].file) Mem_Free(nodes[i].file);
+    }
     return rc;
 }
 
