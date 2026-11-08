@@ -98,6 +98,12 @@ PAGERSTRESS_DLL := $(OUTDIR)/PAGERSTRESS.DLL
 PAGERSTRESS_TEST_OBJ := $(BUILDDIR)/payload/pagerstress_test.o
 PAGERSTRESS_TEST_ELF := $(BUILDDIR)/payload/pagerstress_test.elf
 PAGERSTRESS_TEST_EXE := $(OUTDIR)/PAGERTEST.EXE
+# Control image: identical 80-page DLL with NO explicit prefetch hints.
+# Run FAULTTEST only after PAGERTEST confirms UTLB installs work.
+FAULTSTRESS_OBJ := $(BUILDDIR)/payload/faultstress.o
+FAULTSTRESS_ELF := $(BUILDDIR)/payload/faultstress.elf
+FAULTSTRESS_DLL := $(OUTDIR)/FAULTSTRESS.DLL
+FAULTTEST_EXE := $(OUTDIR)/FAULTTEST.EXE
 STRESS_EXTRA_01 := --extra-import-prefix stress_d02:ST02.DLL --extra-import-prefix stress_d03:ST03.DLL --extra-import-prefix stress_d04:ST04.DLL --extra-import-prefix stress_d05:ST05.DLL
 STRESS_EXTRA_02 := --extra-import-prefix stress_d06:ST06.DLL --extra-import-prefix stress_d07:ST07.DLL
 STRESS_EXTRA_03 := --extra-import-prefix stress_d08:ST08.DLL --extra-import-prefix stress_d09:ST09.DLL
@@ -116,7 +122,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -351,6 +357,24 @@ $(PAGERSTRESS_TEST_ELF): $(PAGERSTRESS_TEST_OBJ) $(PAYLOAD_DIR)/payload.ld
 $(PAGERSTRESS_TEST_EXE): $(PAGERSTRESS_TEST_ELF) $(PAGERSTRESS_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module PAGERSTRESS.DLL
+
+# Same DLL image and function, but no per-page prefault. If this hangs
+# while the instrumented PAGERTEST passes, VBR exception delivery is broken.
+$(FAULTSTRESS_OBJ): $(PAYLOAD_DIR)/pagerstress.c
+	@mkdir -p $(dir $@)
+	$(CC) -DPAGER_USE_HINTS=0 -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(FAULTSTRESS_ELF): $(FAULTSTRESS_OBJ) $(PAYLOAD_DIR)/xamlui.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/xamlui.ld -o $@ $<
+
+$(FAULTSTRESS_DLL): $(FAULTSTRESS_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name FAULTSTRESS.DLL --exports pager_touch
+
+$(FAULTTEST_EXE): $(PAGERSTRESS_TEST_ELF) $(FAULTSTRESS_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(PAGERSTRESS_TEST_ELF) -o $@ --import-module FAULTSTRESS.DLL
 
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
