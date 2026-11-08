@@ -604,7 +604,7 @@ static int snap_imports(const pe::Image &image_hdr, const MappedImage *image,
 // The on-device module graph is intentionally bounded by the physical UTLB
 // capacity. Discovery is recursive, by the *actual PE import descriptor name*;
 // it is no longer a hardcoded COREDLL + optional XAMLUI pair.
-constexpr unsigned NTOS_MAX_MODULES=10u;  // EXE + nine distinct DLLs
+constexpr unsigned NTOS_MAX_MODULES=16u;  // EXE + fifteen distinct DLLs
 constexpr uint32_t NTOS_MAX_FILE_BYTES=1024u*1024u;
 struct ModuleNode {
     char name[40];
