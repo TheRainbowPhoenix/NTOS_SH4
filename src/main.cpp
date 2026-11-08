@@ -1015,14 +1015,10 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         if(!irq_owner.prepare(host_state,callbacks)) {
             *err="cannot prepare IRQ handoff";goto done;
         }
-        // The API window occupies way 0 in virtual sets 0..3 and uses the
-        // OS330 dedicated slots 0x37-0x3A. Never evict those translations.
+        // Four API pages occupy UTLB slots 55..58, outside the pager's
+        // 0..54 range. The SH7305 UTLB has no virtual-set/way collisions.
         for(uint32_t p=0u;p<mmu::API_WINDOW_PAGES;++p) {
             const uint32_t va=mmu::VA_API_WINDOW+p*0x1000u;
-            const unsigned set=(va>>12)&31u;
-            if(!ntos_hw::g_context.table.reserve_way(set,0u)) {
-                *err="cannot reserve API mapping way";goto done;
-            }
             mmu::map_page_at_index(va,
                 mmu::phys_addr(api_block+p*0x1000u),
                 mmu::SLOT_API_FIRST+p,0u);
