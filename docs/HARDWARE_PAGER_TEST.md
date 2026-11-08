@@ -137,6 +137,41 @@ experimental. Do not install the experimental HH3 on a physical CP400
 before its emulator exceptions and rollback paths are verified.
 
 
+## SH7305 field correction and optional emulator MMU array probe
+
+**Corrected MMUCR bit layout:** URC occupies bits 15:10; URB occupies
+bits 23:18; ITLB LRUI occupies bits 31:26. **Bits 5:4 are reserved
+on SH7305** (the SH7705's way selector was previously misidentified as
+an SH7305 LRUI field). The LDTLB writer preserves all of these
+fields except the explicitly chosen URC. OS 02.01.7002 at 8002A820
+and 8002A878 and OS330 at 8002A5F0 and 8002A648 match the
+URC-mask-and-shift recipe. The ROMs rotate slots 0..54 as an
+allocation *policy*: the SH7305 hardware has 64 entries.
+
+The default `make pager-experiment` still builds `dist_pager/NTOS.hh3`
+without extra P4 reads. For investigation **in the emulator only**:
+
+```sh
+make pager-verify
+```
+
+This builds `dist_pager_verify/NTOS.hh3` in independent directories.
+It reads the gint-documented SH7305 UTLB arrays at
+`0xF6000000 + (slot << 8)` and `0xF7000000 + (slot << 8)`
+after each installation, checking VPN, PPN, valid bits and 4 KiB page
+flags. A mismatch reported during loader setup is an NTOS- or
+emulator-mapping issue *before* exception delivery. A fatal error on
+the diagnostic P4 read itself is an emulator limitation or a
+privileged-access problem; the normal experimental build deliberately
+does not require these readbacks. The readback cannot validate the
+VBR exception path on its own.
+
+If the VBR callback runs and eventually returns to NTOS, the stage0
+diagnostics additionally print last TEA, EXPEVT, SPC, SSR and MMUCR,
+with all SDK display calls made after VBR restoration. A crash without
+any callback still requires emulator-side tracing (the postmortem
+display cannot run after an emulator abort).
+
 ## Current build validation and exact CP400 source cross-check
 
 The uploaded `OS_02.01.7002.fls.c` shows `mmu_replace_entry_4k()`
