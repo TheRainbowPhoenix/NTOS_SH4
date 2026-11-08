@@ -66,7 +66,15 @@ Do not mix an old COREDLL with newly rebuilt PE files.
    A `0xBAD10001` return means the first pass could not map a
    writable page; `0xBAD10002` means the second pass failed to
    restore a page before reading it.
-5. Run PAGERTEST a second time. Then press CLEAR to quit NTOS and
+5. **Only if PAGERTEST succeeds**, run `FAULTTEST.EXE` with
+   `FAULTSTRESS.DLL` installed. This second DLL is the same 80-page
+   workload compiled **without any page hints**, so it tests whether
+   the emulator actually dispatches the SuperH VBR+0x400 exception.
+   Expected checksum is also `0xE0000CA8`; expect PF>0, BAD=0.
+   If it crashes but PAGERTEST passes, the remaining issue is the
+   emulator's missing/incorrect hardware exception delivery or the
+   SH4 VBR trampoline, rather than ordinary UTLB mapping.
+6. Run PAGERTEST a second time. Then press CLEAR to quit NTOS and
    exercise the original Hollyhock UI and input. Host state restoration
    is an essential part of the test.
 
