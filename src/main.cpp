@@ -1174,6 +1174,16 @@ static void tiny_utoa(uint32_t v, char *buf) {
     buf[n] = '\0';
 }
 
+// A pressed EXE used to acknowledge a load error must be released before
+// the picker is redrawn, or the next scan immediately relaunches that EXE.
+static void wait_error_key_release(void) {
+    Debug_WaitKey();
+    uint32_t key1=0u,key2=0u;
+    do {
+        getKey(&key1,&key2);
+    } while ((key1|key2)!=0u);
+}
+
 int main(int argc, char **argv, char **envp) {
     (void)argc;
     (void)argv;
@@ -1324,9 +1334,9 @@ int main(int argc, char **argv, char **envp) {
     if (fd < 0) {
         ntos_puts("File_Open failed");
         Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: program list   CLEAR: quit");
+                     "Any key: return to EXE list");
         LCD_Refresh();
-        Debug_WaitKey();
+        wait_error_key_release();
         continue;
     }
     uint32_t fsize = sizes[pick[selected]];
@@ -1335,9 +1345,9 @@ int main(int argc, char **argv, char **envp) {
         ntos_puts("OOM reading file");
         File_Close(fd);
         Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: program list   CLEAR: quit");
+                     "Any key: return to EXE list");
         LCD_Refresh();
-        Debug_WaitKey();
+        wait_error_key_release();
         continue;
     }
     if (File_Read(fd, file, static_cast<int>(fsize)) !=
@@ -1346,9 +1356,9 @@ int main(int argc, char **argv, char **envp) {
         Mem_Free(file);
         File_Close(fd);
         Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: program list   CLEAR: quit");
+                     "Any key: return to EXE list");
         LCD_Refresh();
-        Debug_WaitKey();
+        wait_error_key_release();
         continue;
     }
     File_Close(fd);
@@ -1359,9 +1369,9 @@ int main(int argc, char **argv, char **envp) {
         ntos_puts("Bad PE header (not SH4BE 0x01A8?)");
         Mem_Free(file);
         Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: program list   CLEAR: quit");
+                     "Any key: return to EXE list");
         LCD_Refresh();
-        Debug_WaitKey();
+        wait_error_key_release();
         continue;
     }
 
@@ -1406,9 +1416,9 @@ int main(int argc, char **argv, char **envp) {
             LCD_Refresh();
             Mem_Free(file);
             Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: program list   CLEAR: quit");
+                     "Any key: return to EXE list");
         LCD_Refresh();
-        Debug_WaitKey();
+        wait_error_key_release();
         continue;
         }
     } else {
@@ -1424,9 +1434,9 @@ int main(int argc, char **argv, char **envp) {
             LCD_Refresh();
             Mem_Free(file);
             Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: program list   CLEAR: quit");
+                     "Any key: return to EXE list");
         LCD_Refresh();
-        Debug_WaitKey();
+        wait_error_key_release();
         continue;
         }
 
