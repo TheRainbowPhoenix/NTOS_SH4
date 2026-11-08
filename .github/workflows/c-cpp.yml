@@ -76,4 +76,5 @@ jobs:
         test -s dist/XAMLUI.DLL
         test -s dist/METROWIN.EXE
         test -s dist/MEMTOOL.EXE
-        echo "PASS HH3 v2.2.1: NTOS and all DLL/EXE images built"
+        make check-pe
+        echo "PASS HH3 v2.2.1: NTOS and all DLL/EXE images built and verified"
