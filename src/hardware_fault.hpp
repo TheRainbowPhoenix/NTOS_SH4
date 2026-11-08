@@ -110,9 +110,12 @@ static bool prepare(void *opaque) {
     ntos_saved_tlb_vector=ctx.host.vbr+0x400u;
     ntos_saved_irq_vector=ctx.host.vbr+0x600u;
     Mem_Memcpy(ctx.vectors,ntos_vbr_template_start,size);
-    // The literals and P1 stack must be coherent when VBR changes.
-    mmu::cache_flush_invalidate_block(ctx.vectors,size);
-    mmu::cache_flush_invalidate_block(stack,0x2000u);
+    Mem_Memset(stack,0,0x2000u);
+    // The copied vector contains dirty D-cache lines. SH4 OCBr
+    // invalidation WITHOUT writeback could silently discard the handler.
+    // Flush with ocbwb+icbi, mirroring our proven ELF/PE image staging.
+    flush_image(ctx.vectors,size);
+    flush_image(stack,0x2000u);
     return true;
 }
 static bool install(void *opaque) {
