@@ -17,8 +17,6 @@ constexpr uint32_t VA_MAX = 0x07FF0000u; // exclusive
 constexpr uint32_t FALLBACK = 0x01000000u;
 constexpr uint32_t API_BASE = 0x08100000u;
 constexpr uint32_t API_PAGES = 4u;
-constexpr unsigned SET_COUNT = 32u;
-constexpr unsigned SET_WAYS = 4u;
 struct Region { uint32_t base; uint32_t pages; };
 
 inline bool overlap(uint32_t a, uint32_t apages,
@@ -34,23 +32,12 @@ inline bool fits(uint32_t candidate, uint32_t pages,
         return false;
     if (overlap(candidate,pages,API_BASE,API_PAGES))
         return false;
-    unsigned occupancy[SET_COUNT] = {};
-    // The API mapping consumes four rotating-index ways, one per set 0..3.
-    for (uint32_t p=0; p<API_PAGES; ++p)
-        ++occupancy[((API_BASE >> 12)+p)&(SET_COUNT-1u)];
-    for (unsigned j=0; j<nused; ++j) {
-        if (used[j].pages == 0u) continue;
-        if (overlap(candidate,pages,used[j].base,used[j].pages))
+    // The 64-entry SH7305 UTLB is fully associative. The caller enforces
+    // the 55 resident-image slot budget; VA placement only needs to avoid
+    // overlap. No SH7705-style 32-set/four-way placement restriction.
+    for (unsigned j=0; j<nused; ++j)
+        if(used[j].pages && overlap(candidate,pages,used[j].base,used[j].pages))
             return false;
-        for (uint32_t p=0; p<used[j].pages; ++p) {
-            unsigned set=((used[j].base >> 12)+p)&(SET_COUNT-1u);
-            if (++occupancy[set]>SET_WAYS) return false;
-        }
-    }
-    for (uint32_t p=0; p<pages; ++p) {
-        unsigned set=((candidate >> 12)+p)&(SET_COUNT-1u);
-        if (++occupancy[set]>SET_WAYS) return false;
-    }
     return true;
 }
 inline bool choose_base(uint32_t preferred, uint32_t pages,
@@ -60,8 +47,7 @@ inline bool choose_base(uint32_t preferred, uint32_t pages,
     if (fits(preferred,pages,used,nused)) {
         *selected=preferred; return true;
     }
-    // First-fit walk on 4 KiB boundaries, not 4 MiB increments: skewing
-    // virtual-page set indices is sometimes necessary to avoid 4-way clashes.
+    // First-fit walk on 4 KiB boundaries for compact disjoint VA regions.
     for (uint32_t va=FALLBACK; va<VA_MAX; va+=PAGE) {
         if (fits(va,pages,used,nused)) {
             *selected=va; return true;
