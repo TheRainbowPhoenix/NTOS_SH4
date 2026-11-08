@@ -34,6 +34,12 @@ jobs:
       run: python3 tools/test_dependency_graph.py
     - name: Validate GNU BFD parity and all PE DLL imports
       run: sh tools/test_binutils_parity.sh
+    - name: Test hardware UTLB fault replacement model and 12-DLL virtual memory
+      run: |
+        apt-get update -qq && apt-get install -y -qq --no-install-recommends g++
+        g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 \
+            tests/fault_pager_test.cpp -o /tmp/ntos-fault-pager
+        /tmp/ntos-fault-pager
     - name: Test IRQ ownership remains disabled in host mode
       run: |
         apt-get update -qq && apt-get install -y -qq --no-install-recommends g++
