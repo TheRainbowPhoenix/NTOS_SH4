@@ -127,10 +127,11 @@ struct Image {
 // header and section table from `data`. Returns 0 on success, negative
 // error code otherwise.
 inline int parse(const uint8_t *data, uint32_t size, Image *img) {
-    if (size < 0x40 || data[0] != 'M' || data[1] != 'Z')
+    if(!data || !img || size < 0x40u ||
+       data[0] != 'M' || data[1] != 'Z')
         return -1;
     const uint32_t lfanew = rd32le(data + 0x3C);
-    if (lfanew + 4 + 20 > size ||
+    if (lfanew > size || 24u > size - lfanew ||
         data[lfanew] != 'P' || data[lfanew + 1] != 'E' ||
         data[lfanew + 2] != 0 || data[lfanew + 3] != 0)
         return -1; // missing PE\0\0 signature
@@ -149,8 +150,14 @@ inline int parse(const uint8_t *data, uint32_t size, Image *img) {
         return -2; // not a big-endian SH4 image
     if (img->fh.nsections == 0 || img->fh.nsections > 8)
         return -3;
-    if (lfanew + 4 + 20u + img->fh.opthdr_size +
-        img->fh.nsections * 40u > size)
+    // Validate without ever constructing a potentially wrapped
+    // 32-bit pointer or optional-header/section-table offset.
+    const uint32_t after_file_header=lfanew+24u;
+    const uint32_t section_bytes=
+        static_cast<uint32_t>(img->fh.nsections)*40u;
+    if (img->fh.opthdr_size<144u ||
+        img->fh.opthdr_size>size-after_file_header ||
+        section_bytes>size-after_file_header-img->fh.opthdr_size)
         return -4;
 
     if (img->fh.opthdr_size >= 28) {
@@ -209,11 +216,26 @@ inline int parse(const uint8_t *data, uint32_t size, Image *img) {
         sh.raw_size    = rd32le(s + i * 40 + 16);
         sh.raw_offset  = rd32le(s + i * 40 + 20);
         sh.characteristics = rd32le(s + i * 40 + 36);
-        uint32_t span = sh.rva + (sh.vsize > sh.raw_size ? sh.vsize
-                                                         : sh.raw_size);
-        if (span > img->image_end)
-            img->image_end = span;
+        const uint32_t bytes=sh.vsize>sh.raw_size ?
+                              sh.vsize:sh.raw_size;
+        if(sh.raw_size &&
+           (sh.raw_offset>size || sh.raw_size>size-sh.raw_offset))
+            return -5;
+        if(sh.rva>img->oh.size_of_image ||
+           bytes>img->oh.size_of_image-sh.rva)
+            return -5;
+        const uint32_t span=sh.rva+bytes;
+        if(span>img->image_end)
+            img->image_end=span;
     }
+    if(img->oh.magic!=OPT_MAGIC_PE32 ||
+       img->oh.image_base==0u ||
+       img->oh.section_align==0u ||
+       img->oh.size_of_image==0u ||
+       img->oh.size_of_headers>size ||
+       img->oh.size_of_headers>img->oh.size_of_image ||
+       img->oh.entry_rva>=img->oh.size_of_image)
+        return -5;
     return 0;
 }
 
