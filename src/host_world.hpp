@@ -18,6 +18,8 @@ struct Snapshot {
     uint32_t gbr;
     uint32_t dbr; // UBC exception handler DBR (user supplied breakpoint demo)
     uint32_t mmucr;
+    uint32_t pteh;
+    uint32_t ptel;
 };
 inline Snapshot capture() {
     Snapshot s{};
@@ -29,16 +31,17 @@ inline Snapshot capture() {
 #endif
 #if defined(__sh__)
     s.mmucr=mmu::read_mmucr();
+    s.pteh=*reinterpret_cast<volatile uint32_t *>(mmu::REG_PTEH);
+    s.ptel=*reinterpret_cast<volatile uint32_t *>(mmu::REG_PTEL);
 #else
     s.mmucr=0u; // Host unit tests have no SH4 MMU.
 #endif
     return s;
 }
-// Call only after exiting mapped P0 execution and disabling the added TLB
-// entries. Temporarily mask maskable interrupts while restoring VBR/GBR;
-// the original SR (including original IMASK and bank flags) goes back last.
-// We do not restore AT=1 or host TLB contents: NTOS only takes this path
-// from the HH3 execution environment with AT=0.
+// Call only after leaving mapped P0 execution, disabling AT, and
+// uninstalling NTOS's experimental VBR. Host AT must have been off at
+// capture time (checked in run_mapped). Restore even if SR/VBR/GBR/DBR
+// already match: NTOS changed MMUCR, PTEH, and PTEL during installation.
 inline void restore(const Snapshot &s) {
 #if defined(__sh__)
     uint32_t sr,vbr,gbr,dbr;
@@ -46,13 +49,23 @@ inline void restore(const Snapshot &s) {
     __asm__ volatile("stc vbr,%0" : "=r"(vbr) :: "memory");
     __asm__ volatile("stc gbr,%0" : "=r"(gbr) :: "memory");
     __asm__ volatile("stc dbr,%0" : "=r"(dbr) :: "memory");
-    // No changes in the normal P1/host-driver path. Avoid gratuitous
-    // writes to SR and VBR; only a payload that altered CPU world
-    // registers requires the exceptional repair path.
-    if(sr==s.sr && vbr==s.vbr && gbr==s.gbr && dbr==s.dbr)
+    const uint32_t mmucr=mmu::read_mmucr();
+    const uint32_t pteh=
+        *reinterpret_cast<volatile uint32_t *>(mmu::REG_PTEH);
+    const uint32_t ptel=
+        *reinterpret_cast<volatile uint32_t *>(mmu::REG_PTEL);
+    if(sr==s.sr && vbr==s.vbr && gbr==s.gbr && dbr==s.dbr &&
+       mmucr==s.mmucr && pteh==s.pteh && ptel==s.ptel)
         return;
-    const uint32_t masked=sr|0x000000f0u; // SR.IMASK=15
+    // Never restore a live host address-translation environment using this
+    // primitive: reconstructing preexisting UTLB contents is not supported.
+    if((s.mmucr&1u)!=0u)return;
+    const uint32_t masked=sr|0x000000f0u; // maskable IRQs disabled
     __asm__ volatile("ldc %0,sr" :: "r"(masked) : "memory");
+    // PTEH and PTEL are staging registers; neither write executes LDTLB.
+    *reinterpret_cast<volatile uint32_t *>(mmu::REG_PTEH)=s.pteh;
+    *reinterpret_cast<volatile uint32_t *>(mmu::REG_PTEL)=s.ptel;
+    *reinterpret_cast<volatile uint32_t *>(mmu::REG_MMUCR)=s.mmucr;
     __asm__ volatile("ldc %0,vbr" :: "r"(s.vbr) : "memory");
     __asm__ volatile("ldc %0,gbr" :: "r"(s.gbr) : "memory");
     __asm__ volatile("ldc %0,dbr" :: "r"(s.dbr) : "memory");
