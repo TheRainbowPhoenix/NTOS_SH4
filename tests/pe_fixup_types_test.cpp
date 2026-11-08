@@ -80,6 +80,12 @@ static void check_invalid_transactional() {
     assert(!ntos_rebase::apply(h,mem.data(),
            static_cast<uint32_t>(mem.size()),0x10020000u,&err));
     assert(ntos_rebase::load32(mem.data()+0x1040u,true)==0x10001400u);
+    // PE images marked IMAGE_FILE_RELOCS_STRIPPED are fixed even if a
+    // malformed producer left a relocation directory behind.
+    h.fh.characteristics=pe::F_RELOCS_STRIPPED;
+    assert(!ntos_rebase::apply(h,mem.data(),
+           static_cast<uint32_t>(mem.size()),0x10020000u,&err));
+    h.fh.characteristics=0;
     // Explicit invalid block size: don't read beyond mapped image.
     le32(mem.data()+0x3000u+4u,0xffffff00u);
     assert(!ntos_rebase::apply(h,mem.data(),
