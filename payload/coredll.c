@@ -963,8 +963,8 @@ int coredll_stub(void)
     return 0;
 }
 
-/* Entry point -- real DLLs have no meaningful one; NTOS never calls it. */
+/* PE DLL_PROCESS_ATTACH/DETACH: no OS-side initialization yet. */
 int main(void)
 {
-    return 0;
+    return 1; /* BOOL TRUE, WinCE DLL initialization contract */
 }
