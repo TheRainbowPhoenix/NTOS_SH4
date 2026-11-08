@@ -4,7 +4,7 @@ OUTDIR = dist
 DEPDIR = .deps
 
 AS:=sh4a_nofpueb-elf-gcc
-AS_FLAGS:=-gdwarf-5
+AS_FLAGS=-gdwarf-5 $(DEFINES)
 
 SDK_DIR?=/sdk
 
