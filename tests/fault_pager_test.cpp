@@ -18,9 +18,7 @@ static bool install(void *ctx,uint32_t va,uint32_t pa,
 int main() {
     ntos_fault::Pager page{};
     Sink sink{};
-    for(unsigned i=0;i<4u;++i)
-        assert(page.reserve_way(i,0u)); // OS330 API window fixed slots
-    assert(!page.reserve_way(0u,0u)); // duplicate reservation rejected
+    // API window uses dedicated UTLB slots 55..58 outside Pager::entries.
     assert(page.add(0x01000000u,0x00100000u,512u)); // 2MB DLL
     assert(page.add(0x02000000u,0x00300000u,512u)); // second 2MB DLL
     for(unsigned m=0;m<12;++m)
@@ -55,19 +53,14 @@ int main() {
         for(unsigned p=0;p<8;++p)
             assert(page.fault(0x03000000u+m*0x10000u+p*4096u,
                               install,&sink));
-    for(unsigned s=0;s<ntos_fault::SETS;++s) {
-        unsigned ways=0,mask=0;
-        for(unsigned i=0;i<ntos_fault::SLOTS;++i) {
-            const auto &e=page.entries[i];
-            if(e.present && e.set==s) {
-                assert(e.way<4u);
-                if(s<4u)assert(e.way!=0u);
-                assert(!(mask&(1u<<e.way)));
-                mask|=1u<<e.way;
-                ++ways;
-            }
-        }
-        assert(ways<=4u);
+    // SH7305 slots are fully associative: repeated VPNs must not occupy
+    // multiple slots; there is no fabricated 32-set / four-way limit.
+    for(unsigned i=0;i<ntos_fault::SLOTS;++i) {
+        const auto &e=page.entries[i];
+        if(!e.present)continue;
+        assert(e.va%ntos_fault::PAGE==0u);
+        for(unsigned j=0;j<i;++j)
+            assert(!page.entries[j].present || page.entries[j].va!=e.va);
     }
     assert(sink.installations==page.misses+1u);
     assert(!page.servicing);
@@ -83,6 +76,6 @@ int main() {
     assert(base!=regions[1].base);
     std::printf("PASS 14-module fault graph, 1024 resident faults + "
                 "96 stress pages, %u evictions\n",page.evictions);
-    std::puts("PASS 55-slot set/way constrained LRU, pinned pages and VA allocation");
+    std::puts("PASS 55-slot fully associative LRU, pinned pages and VA allocation");
     return 0;
 }
