@@ -27,7 +27,23 @@ jobs:
         submodules: true
     - name: Install python3 (for tools/elf2ntx.py)
       run: apt-get update -qq && apt-get install -y -qq python3
-    - run: make -j
+    - name: Build standard NTOS and every PE payload
+      run: |
+        make -j
+        test -s dist/NTOS.hh3
+        test -s dist/FAULTTEST.EXE
+        test -s dist/FAULTSTRESS.DLL
+    - name: Build both opt-in SH7305 paging images for download
+      run: |
+        make pager-experiment
+        make pager-verify
+        test -s dist_pager/NTOS.hh3
+        test -s dist_pager_verify/NTOS.hh3
+        sh4a_nofpueb-elf-nm dist_pager/NTOS.elf | grep -q ntos_vbr_template_start
+        sh4a_nofpueb-elf-nm dist_pager_verify/NTOS.elf | grep -q ntos_pager_exception_callback
+        # These must be separately configured HH3 files, not copies of dist/NTOS.hh3.
+        ! cmp -s dist/NTOS.hh3 dist_pager/NTOS.hh3
+        ! cmp -s dist_pager/NTOS.hh3 dist_pager_verify/NTOS.hh3
     - name: Validate PE import tables
       run: python3 tools/elf2ntx.py --selftest && python3 tools/test_multimodule.py && python3 tools/preview_native_gdi.py
     - name: Test recursive PE dependency closure
@@ -77,10 +93,15 @@ jobs:
         /tmp/ntos-pe-rebase-test \
             dist/COREDLL.DLL dist/XAMLUI.DLL dist/METROWIN.EXE \
             dist_collision/XAMLUI.DLL
-    - uses: actions/upload-artifact@v7
+    - name: Upload standard, exception-pager and UTLB-verify distributions
+      uses: actions/upload-artifact@v7
       with:
+        name: ntos-sh4-all-builds
+        if-no-files-found: error
         path: |
           dist/**
+          dist_pager/**
+          dist_pager_verify/**
           dist_collision/**
 
   build-hh3-v221:
