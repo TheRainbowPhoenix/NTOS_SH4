@@ -30,8 +30,8 @@ extern "C" {
     uint32_t ntos_saved_tlb_vector=0u;
     uint32_t ntos_saved_irq_vector=0u;
     uint32_t ntos_exception_stack_top=0u;
-    extern uint8_t ntos_vbr_template_start;
-    extern uint8_t ntos_vbr_template_end;
+    extern uint8_t ntos_vbr_template_start[];
+    extern uint8_t ntos_vbr_template_end[];
 }
 namespace ntos_hw {
 struct Context {
@@ -92,7 +92,7 @@ inline void update_vbr(uint32_t newvbr) {
 static bool prepare(void *opaque) {
     Context &ctx=*static_cast<Context *>(opaque);
     const uint32_t size=static_cast<uint32_t>(
-        &ntos_vbr_template_end-&ntos_vbr_template_start);
+        ntos_vbr_template_end-ntos_vbr_template_start);
     if(size!=0x800u || ctx.vectors_raw || ctx.stack_raw)
         return false;
     ctx.vectors_raw=static_cast<uint8_t *>(Mem_Malloc(0x1000u+0xFFFu));
@@ -109,7 +109,7 @@ static bool prepare(void *opaque) {
     ntos_saved_general_vector=ctx.host.vbr+0x100u;
     ntos_saved_tlb_vector=ctx.host.vbr+0x400u;
     ntos_saved_irq_vector=ctx.host.vbr+0x600u;
-    Mem_Memcpy(ctx.vectors,&ntos_vbr_template_start,size);
+    Mem_Memcpy(ctx.vectors,ntos_vbr_template_start,size);
     // The literals and P1 stack must be coherent when VBR changes.
     mmu::cache_flush_invalidate_block(ctx.vectors,size);
     mmu::cache_flush_invalidate_block(stack,0x2000u);
