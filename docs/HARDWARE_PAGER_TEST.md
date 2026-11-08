@@ -33,7 +33,8 @@ Install `dist/NTOS.hh3` and the required files under `\\fls0\\`.
   including the four-way fanout of ST01.
 - `PAGERTEST.EXE` and `PAGERSTRESS.DLL`: **expected clean rejection**
   with `PE too large for 55-page UTLB budget (needs pager)`.
-  It should not hang or crash.
+  It should not hang or crash. **Press any key to return to the NTOS
+  EXE list**, then CLEAR to exit the host.
 - Test GUIWIN and METROWIN for regression, then EXE/CLEAR navigation
   returning to the host without screen corruption.
 
@@ -47,13 +48,24 @@ Do not mix an old COREDLL with newly rebuilt PE files.
 1. Launch CHAINTEST. Expected `0x373F373F`.
 2. Launch STRESSEXEC with all ST01..ST12 DLLs and COREDLL.
    Expected `0x1234004E`.
-3. Launch PAGERTEST. PAGERSTRESS.DLL touches and rewrites 80 separate
-   4 KiB virtual pages (larger than the 55-entry UTLB capacity) and
-   verifies the values after eviction. Expected `0xE0000CA8`.
-4. The stage0 diagnostic `PF=<count> EV=<count> BAD=<count>` should show
-   a nonzero PF and EV on PAGERTEST, with BAD=0. Fault/eviction
-   counts are dependent on the emulator and compiler and are not
-   required to match one fixed number.
+3. Launch PAGERTEST. The current PAGERSTRESS.DLL is **instrumented**
+   with an NTOS-private page-hint gate. It explicitly asks the P1
+   resident fault service to map each of the 80 virtual BSS pages
+   before the SH4BE code touches it. This tests actual UTLB entry
+   programming and eviction even if the emulator doesn't deliver VBR
+   exceptions. Expected result `0xE0000CA8`.
+4. The stage0 diagnostic now displays
+   `PF=<hardware exceptions> HINT=<explicit hints> EV=<evictions> BAD=<failed faults>`.
+   The instrumented test should show **HINT>=160, EV>0 and BAD=0**.
+   PF=0 is acceptable if the emulator never forwards missing mappings
+   as real TLB-miss exceptions. This would confirm a limitation in
+   exception delivery, not demonstrate working hardware fault paging.
+   The firmware must report nonzero PF on a true unhinted miss before
+   its interrupt handler is considered functional.
+
+   A `0xBAD10001` return means the first pass could not map a
+   writable page; `0xBAD10002` means the second pass failed to
+   restore a page before reading it.
 5. Run PAGERTEST a second time. Then press CLEAR to quit NTOS and
    exercise the original Hollyhock UI and input. Host state restoration
    is an essential part of the test.
@@ -77,3 +89,25 @@ tests are not proof of a correct privileged exception return. No
 claim of full WinCE NK parity or perfect hardware interrupt ownership
 is made. Stock WinCE SH4LE PE files also remain incompatible with the
 ClassPad's big-endian instruction execution.
+
+## Diagnosing the user's original crash
+
+The recorded emulator state has faulting `PC=0x01000208` and a
+write to `0x01001400`, which belongs to the first BSS page of
+PAGERSTRESS.DLL. However, `SPC=0x8CFF08DC` rather than the current
+faulting PC, so the screenshot alone does **not** show that the CPU
+actually entered our VBR+0x400 trap. Some emulator access guards can
+report protected memory directly without delivering a SuperH exception.
+
+The explicit hint mode lets us separate these possible failures:
+
+- Hint mode succeeds, PF=0: UTLB slot installation works, but the
+  emulator doesn't deliver missing-P0 accesses to NTOS's exception vector.
+- Hint mode fails at `0x01001400`: investigate UTLB permissions, cache
+  synchronization and VA/PA mapping, not the VBR trampoline alone.
+- PF>0 and BAD>0: the exception callback was reached but rejected
+  the fault. Capture TEA, EXPEVT, SSR, SPC, and the last stage0 message.
+
+This is not yet a disk-backed WinCE NK fault pager, and the VBR path is
+experimental. Do not install the experimental HH3 on a physical CP400
+before its emulator exceptions and rollback paths are verified.
