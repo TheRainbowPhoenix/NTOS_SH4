@@ -174,6 +174,8 @@ def main():
         "COREDLL.DLL": PE("dist/COREDLL.DLL"),
         "XAMLUI.DLL": PE("dist/XAMLUI.DLL"),
         "CHAIN.DLL": PE("dist/CHAIN.DLL"),
+        "PAGERSTRESS.DLL": PE("dist/PAGERSTRESS.DLL"),
+        "FAULTSTRESS.DLL": PE("dist/FAULTSTRESS.DLL"),
         **{f"ST{i:02}.DLL": PE(f"dist/ST{i:02}.DLL") for i in range(1, 13)},
     }
     programs = {
@@ -181,7 +183,8 @@ def main():
         for name in (
             "HELLO.EXE", "HELLOCORE.EXE", "MEMTOOL.EXE", "PAINT.EXE",
             "WINLAB.EXE", "GUIWIN.EXE", "METROWIN.EXE", "CALC.EXE",
-            "CHAINTEST.EXE", "STRESSEXEC.EXE"
+            "CHAINTEST.EXE", "STRESSEXEC.EXE",
+            "PAGERTEST.EXE", "FAULTTEST.EXE"
         )
     }
     assert dlls["COREDLL.DLL"].dll and dlls["XAMLUI.DLL"].dll
@@ -208,6 +211,10 @@ def main():
             assert "chain_echo" in exports["CHAIN.DLL"]
         if name == "STRESSEXEC.EXE":
             assert set(imports) == {"ST01.DLL"}
+        if name == "PAGERTEST.EXE":
+            assert set(imports) == {"PAGERSTRESS.DLL"}
+        if name == "FAULTTEST.EXE":
+            assert set(imports) == {"FAULTSTRESS.DLL"}
         if name == "ST01.DLL":
             assert set(imports) == {"ST02.DLL", "ST03.DLL",
                                     "ST04.DLL", "ST05.DLL"}
