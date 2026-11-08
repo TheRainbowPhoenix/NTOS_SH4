@@ -1,15 +1,14 @@
 /* coredll.ld -- fixed layout for the NTOS stub COREDLL.
  *
- * Links at the preferred base 0x00800200. NTOS UTLB-maps the image at
- * exactly this address (WinCE XIP semantics: e32_vbase is honored, no
- * relocation is ever applied), so absolute constants and PC-relative code
- * both work with zero fixups. Sections are 0x200-aligned for the PE packer
+ * Shares the WinCE-style preferred DLL base 0x10000000 with XAMLUI.
+ * NTOS assigns disjoint P0 addresses and relocates SH4BE HIGHLOW words
+ * before snapping imports. GNU ld emits the required relocation metadata. Sections are 0x200-aligned for the PE packer
  * (see payload.ld).
  */
 ENTRY(main)
 SECTIONS
 {
-  . = 0x00800200;
+  . = 0x10000200;
 
   .text : ALIGN(0x200) { *(.text*) }
   .rodata : ALIGN(0x200) { *(.rodata*) }
