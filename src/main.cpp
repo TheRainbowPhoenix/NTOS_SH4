@@ -26,6 +26,7 @@
 #include "pe_rebase.hpp"
 #include "pe_pager.hpp"
 #include "host_world.hpp"
+#include "irq_handoff.hpp"
 #include "mmu.hpp"
 
 APP_NAME("NTOS")
@@ -691,6 +692,10 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     (void)core_path;(void)core_size;(void)extra_path;(void)extra_size;
     *err="unknown";
     const host_world::Snapshot host_state=host_world::capture();
+    ntos_irq::Owner irq_owner{};
+    // Stage0 records ownership intent without installing an ISR. The host
+    // retains VBR/UBC interrupts and the TLB miss path (gated OFF).
+    irq_owner.prepare(host_state,ntos_irq::Hooks{});
     if((host_state.mmucr&1u)!=0u) {
         *err="host MMU is already active";return -1;
     }
@@ -871,6 +876,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 
 done:
     mmu::disable_at_flush();
+    irq_owner.release();
     host_world::restore(host_state);
     if(api_raw) Mem_Free(api_raw);
     for(unsigned i=0u;i<NTOS_MAX_MODULES;++i) {
