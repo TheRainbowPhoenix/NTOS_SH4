@@ -59,8 +59,8 @@ int main(int argc,char **argv) {
     assert(argc==4 || argc==5);
     TestImage core(argv[1]),xaml(argv[2]),exe(argv[3]);
     using namespace ntos_rebase;
-    assert(core.hdr.oh.image_base==0x00800000u);
-    assert(xaml.hdr.oh.image_base==0x00C00000u);
+    assert(core.hdr.oh.image_base==0x10000000u);
+    assert(xaml.hdr.oh.image_base==0x10000000u);
     assert(exe.hdr.oh.image_base==0x00400000u);
     Region used[3]={};
     unsigned count=0;
@@ -73,32 +73,30 @@ int main(int argc,char **argv) {
                        (uint32_t)(core.memory.size()+4095u)>>12,
                        used,count,&corebase));
     used[count++]={corebase,(uint32_t)(core.memory.size()+4095u)>>12};
-    assert(corebase==0x00800000u);
-
-    // Simulate two DLLs genuinely linked at the SAME preferred ImageBase:
-    // relocate a copy from XAML's original 0xC00000 to 0x800000, change
-    // the simulated PE preferred header to 0x800000, then ask NTOS to
-    // load it with COREDLL already owning the address range.
-    uint32_t fixup=first_fixup(xaml);
-    const uint32_t before=pe::rd32be(xaml.memory.data()+fixup);
+    assert(corebase==0x01000000u);
     const char *error=nullptr;
-    assert(apply(xaml.hdr,xaml.memory.data(),
-                 (uint32_t)xaml.memory.size(),0x00800000u,&error));
-    assert(pe::rd32be(xaml.memory.data()+fixup)
-           ==before+(0x00800000u-0x00C00000u));
-    pe::Image same_base=xaml.hdr;
-    same_base.oh.image_base=0x00800000u;
+    uint32_t core_fix=first_fixup(core);
+    uint32_t original_core=pe::rd32be(core.memory.data()+core_fix);
+    assert(apply(core.hdr,core.memory.data(),
+                 (uint32_t)core.memory.size(),corebase,&error));
+    assert(pe::rd32be(core.memory.data()+core_fix)
+           ==original_core+(corebase-0x10000000u));
+
+    // The two shipping DLLs really use the SAME 0x10000000 preferred base.
+    // Both must be independently relocated to disjoint SH7305 mappings.
+    const uint32_t fixup=first_fixup(xaml);
+    const uint32_t before=pe::rd32be(xaml.memory.data()+fixup);
     const uint32_t pages=(uint32_t)(xaml.memory.size()+4095u)>>12;
-    assert(choose_base(same_base.oh.image_base,pages,used,count,&selected));
-    assert(selected!=corebase);
+    assert(choose_base(xaml.hdr.oh.image_base,pages,used,count,&selected));
+    assert(selected!=corebase && selected!=xaml.hdr.oh.image_base);
     assert(!overlap(selected,pages,corebase,used[1].pages));
     used[count++]={selected,pages};
     assert(fits(selected,pages,used,count-1));
-    assert(apply(same_base,xaml.memory.data(),
+    assert(apply(xaml.hdr,xaml.memory.data(),
                  (uint32_t)xaml.memory.size(),selected,&error));
     assert(pe::rd32be(xaml.memory.data()+fixup)
-           ==before+(selected-0x00C00000u));
-    printf("PASS DLL conflict: COREDLL=%08x XAMLUI relocated=%08x\n",
+           ==before+(selected-0x10000000u));
+    printf("PASS DLL conflict: both link=10000000, COREDLL=%08x XAMLUI=%08x\n",
            corebase,selected);
 
     // Relocated import thunks must point to the ACTUAL module base, not
@@ -115,12 +113,12 @@ int main(int argc,char **argv) {
 
     // Invalid or absent relocation metadata must never allow rebasing.
     auto bad=xaml.memory;
-    auto meta=same_base;
+    auto meta=xaml.hdr;
     meta.oh.basereloc_size=0;
     assert(!apply(meta,bad.data(),(uint32_t)bad.size(),
                   selected+PAGE,&error));
     assert(error!=nullptr);
-    meta=same_base;
+    meta=xaml.hdr;
     uint32_t reloc=meta.oh.basereloc_rva;
     bad=xaml.memory;
     // First relocation block size is LE, and must be validated.
