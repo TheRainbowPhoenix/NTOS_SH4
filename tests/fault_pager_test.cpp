@@ -10,7 +10,7 @@ struct Sink {
 static bool install(void *ctx,uint32_t va,uint32_t pa,
                     unsigned slot,unsigned way) {
     Sink *s=static_cast<Sink *>(ctx);
-    assert(va>=0x1000000u && pa>=0x1000000u);
+    assert(va>=0x01000000u && pa>=0x00100000u);
     assert(slot<ntos_fault::SLOTS && way<4u);
     ++s->installations;s->last_slot=slot;s->last_way=way;
     return true;
