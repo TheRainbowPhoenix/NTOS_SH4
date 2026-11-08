@@ -107,6 +107,12 @@ check-pe: ntx
 
 probe-pe: ntx
 	sh tools/probe_binutils_pe.sh
+
+# Optional device regression: both DLLs now claim preferred 0x00800000.
+# Install dist_collision/XAMLUI.DLL in place of dist/XAMLUI.DLL only when
+# testing the mapped loader; default dist/XAMLUI.DLL remains untouched.
+collision-test: ntx
+	$(PYTHON) tools/make_collision_dll.py $(XAMLUI_DLL) -o dist_collision/XAMLUI.DLL --base 0x00800000
 .DEFAULT_GOAL := all
 .SECONDARY: # Prevents intermediate files from being deleted
 
@@ -266,6 +272,6 @@ compile_commands.json:
 	$(MAKE) $(MAKEFLAGS) clean
 	bear -- sh -c "$(MAKE) $(MAKEFLAGS) --keep-going all || exit 0"
 
-.PHONY: elf hh3 ntx all clean compile_commands.json check-pe probe-pe
+.PHONY: elf hh3 ntx all clean compile_commands.json check-pe probe-pe collision-test
 
 -include $(DEPFILES)
