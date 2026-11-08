@@ -1,5 +1,5 @@
 #!/bin/sh
-# Cross-check the compiler's native SH4BE executable bytes with:
+# This script MUST be checked out with LF endings (.gitattributes) for\n# MSYS/Git Bash users invoking `sh tools/test_binutils_parity.sh`.\n# Cross-check the compiler's native SH4BE executable bytes with:
 # (1) GNU objcopy's big-endian SH COFF writer and
 # (2) the PE images consumed by NTOS.
 # PE import/export tables are checked independently by verify_pe_linkage.py.
