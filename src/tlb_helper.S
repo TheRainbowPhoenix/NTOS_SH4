@@ -34,7 +34,7 @@
     .global _tlb_install_entry
 _tlb_install_entry:
     mov.l   r8, @-r15
-     sts.l   pr, @-r15
+    sts.l   pr, @-r15
     mov     r7, r8                  ! r8 = slot
 
     ! MMUCR: URC = slot (bits 15:10); preserve hardware-managed LRUI
@@ -66,7 +66,7 @@ _tlb_install_entry:
     mov.l   .Lptel, r1
     mov.l   r0, @r1
 
-    ldtlb                           ! commit into UTLB[URC/RC]
+    ldtlb                           ! commit into UTLB[URC]
 
     ! CCR |= 1 again (OS330 invalidates after LDTLB too)
     mov.l   .Lccr, r1
