@@ -150,6 +150,12 @@ inline bool apply_with_endian(const pe::Image &hdr,uint8_t *image,
                     *error="PE relocation target outside loaded image";
                     return false;
                 }
+                // Never allow a fixup to modify yet-unprocessed .reloc
+                // descriptors during the second validation/write pass.
+                if(site<end && start<site+needed) {
+                    *error="PE fixup overlaps relocation directory";
+                    return false;
+                }
                 uint16_t adj=0;
                 if(type==4u) {
                     if(off+4u>block) {
