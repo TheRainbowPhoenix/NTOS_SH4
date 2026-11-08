@@ -376,6 +376,13 @@ compile_commands.json:
 	$(MAKE) $(MAKEFLAGS) clean
 	bear -- sh -c "$(MAKE) $(MAKEFLAGS) --keep-going all || exit 0"
 
-.PHONY: elf hh3 ntx all clean compile_commands.json check-pe probe-pe collision-test
+# Isolated *experimental* firmware. Never reuses the default output or
+# object directories: cross-build flag changes cannot silently mix objects.
+# Deploy dist_pager/NTOS.hh3 ONLY after emulator verification.
+pager-experiment:
+	$(MAKE) -j4 BUILDDIR=obj_pager OUTDIR=dist_pager DEPDIR=.deps_pager DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1" hh3
+	@echo "EXPERIMENTAL PAGER: dist_pager/NTOS.hh3 (VBR fault handler unverified on hardware)"
+
+.PHONY: elf hh3 ntx all clean compile_commands.json check-pe probe-pe collision-test pager-experiment
 
 -include $(DEPFILES)
