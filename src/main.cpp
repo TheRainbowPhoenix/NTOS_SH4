@@ -842,6 +842,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     ntos_rebase::Region reservations[NTOS_MAX_MODULES]={};
     unsigned count=1u;
     uint32_t image_pages=0u;
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    bool eager_experiment=false;
+#endif
     uint8_t *api_raw=nullptr;
     uint8_t *api_block=nullptr;
     int rc=-1;
@@ -929,14 +932,28 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         }
     }
 
+    // For <=55-page graphs, the experimental image uses the same fully
+    // resident bootstrap as the proven regular loader. Unhinted small
+    // programs (CHAINTEST, GUI) must not depend on an emulator delivering
+    // missing-P0 access exceptions. Only larger graphs use the demand
+    // pager, still requiring genuine VBR delivery or diagnostic hints.
+    for(unsigned i=0u;i<count;++i)
+        image_pages+=nodes[i].mapped.npages;
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    eager_experiment=(image_pages<=mmu::SLOT_ROTATING_LAST+1u);
+#endif
     // Reserve all virtual ranges before applying any relocation. The same
     // allocator handles DLLs sharing ImageBase, including 0x10000000.
     for(unsigned i=0u;i<count;++i) {
         uint32_t actual=0;
 #if NTOS_ENABLE_TLB_MISS_PAGER
-        if(!ntos_fault::choose_virtual(nodes[i].hdr.oh.image_base,
+        if(eager_experiment
+           ? !ntos_rebase::choose_base(nodes[i].hdr.oh.image_base,
                                       nodes[i].mapped.npages,
-                                      reservations,i,&actual)) {
+                                      reservations,i,&actual)
+           : !ntos_fault::choose_virtual(nodes[i].hdr.oh.image_base,
+                                        nodes[i].mapped.npages,
+                                        reservations,i,&actual)) {
 #else
         if(!ntos_rebase::choose_base(nodes[i].hdr.oh.image_base,
                                       nodes[i].mapped.npages,
@@ -947,7 +964,6 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         }
         nodes[i].mapped.base=actual;
         reservations[i]={actual,nodes[i].mapped.npages};
-        image_pages+=nodes[i].mapped.npages;
     }
 #if !NTOS_ENABLE_TLB_MISS_PAGER
     if(image_pages>mmu::SLOT_ROTATING_LAST+1u) {
@@ -1017,14 +1033,28 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                                     nodes[i].mapped.npages)) {
                 *err="cannot register virtual DLL backing";goto done;
             }
-        // Pin the first page of the EXE and DLLs (most have their initial
-        // .text and IAT in that page) and the actual EXE entry page.
-        for(unsigned i=0u;i<count;++i)
-            if(!ntos_hw::prime(nodes[i].mapped.base,true)) {
-                *err="no UTLB way for DLL bootstrap page";goto done;
+        if(eager_experiment) {
+            // Match the normal loader: all reachable code, data and IAT
+            // pages are resident before the first P0 instruction executes.
+            // The set-aware base allocator above guarantees <=4 ways/set.
+            for(unsigned i=0u;i<count;++i) {
+                const MappedImage &m=nodes[i].mapped;
+                for(uint32_t p=0u;p<m.npages;++p)
+                    if(!ntos_hw::prime(m.base+p*0x1000u,true)) {
+                        *err="cannot install eager experimental page";
+                        goto done;
+                    }
             }
-        if(!ntos_hw::prime(nodes[0].mapped.base+hdr.oh.entry_rva,true)) {
-            *err="no UTLB way for EXE entry";goto done;
+        } else {
+            // Oversized graphs need the experimental miss path. Only their
+            // entry/bootstrap pages are pinned to leave eviction capacity.
+            for(unsigned i=0u;i<count;++i)
+                if(!ntos_hw::prime(nodes[i].mapped.base,true)) {
+                    *err="no UTLB way for DLL bootstrap page";goto done;
+                }
+            if(!ntos_hw::prime(nodes[0].mapped.base+hdr.oh.entry_rva,true)) {
+                *err="no UTLB way for EXE entry";goto done;
+            }
         }
         // Never call Hollyhock Debug_Printf/LCD_Refresh while our
         // experimental VBR+0x400 exception handler owns VBR. SDK output
