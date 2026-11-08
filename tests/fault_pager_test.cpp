@@ -18,6 +18,9 @@ static bool install(void *ctx,uint32_t va,uint32_t pa,
 int main() {
     ntos_fault::Pager page{};
     Sink sink{};
+    for(unsigned i=0;i<4u;++i)
+        assert(page.reserve_way(i,0u)); // OS330 API window fixed slots
+    assert(!page.reserve_way(0u,0u)); // duplicate reservation rejected
     assert(page.add(0x01000000u,0x00100000u,512u)); // 2MB DLL
     assert(page.add(0x02000000u,0x00300000u,512u)); // second 2MB DLL
     for(unsigned m=0;m<12;++m)
@@ -48,6 +51,7 @@ int main() {
             const auto &e=page.entries[i];
             if(e.present && e.set==s) {
                 assert(e.way<4u);
+                if(s<4u)assert(e.way!=0u);
                 assert(!(mask&(1u<<e.way)));
                 mask|=1u<<e.way;
                 ++ways;
