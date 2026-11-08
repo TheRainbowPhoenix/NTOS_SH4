@@ -970,6 +970,16 @@ done:
     mmu::disable_at_flush();
     irq_owner.release();
     host_world::restore(host_state);
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    // All host UI work occurs AFTER restoring the original VBR and SR.
+    // Report the actual fault/eviction count when emulator testing PAGERTEST.
+    Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                 "PF=%lu EV=%lu BAD=%lu",
+                 static_cast<unsigned long>(ntos_hw::g_context.table.misses),
+                 static_cast<unsigned long>(ntos_hw::g_context.table.evictions),
+                 static_cast<unsigned long>(ntos_hw::g_context.fault_error));
+    LCD_Refresh();
+#endif
     if(api_raw) Mem_Free(api_raw);
     for(unsigned i=0u;i<NTOS_MAX_MODULES;++i) {
         if(nodes[i].mapped.raw) Mem_Free(nodes[i].mapped.raw);
