@@ -24,6 +24,7 @@
 
 #include "pe.hpp"
 #include "pe_rebase.hpp"
+#include "pe_pager.hpp"
 #include "host_world.hpp"
 #include "mmu.hpp"
 
@@ -417,6 +418,21 @@ static void *align_page(void *p) {
         (reinterpret_cast<uint32_t>(p) + 0xFFFu) & ~0xFFFu);
 }
 
+// The eager mapper uses the exact same file-to-page materializer as the
+// future demand pager. It runs with MMU translation disabled and does not
+// install any exception vectors. The source is still buffered in P1 RAM;
+// the upcoming fault backend will replace this Reader with safe file I/O.
+struct PeMemoryReader {
+    const uint8_t *bytes;
+    uint32_t count;
+};
+static bool pe_memory_read(void *ctx,uint32_t pos,uint8_t *dst,uint32_t len) {
+    auto *r=static_cast<PeMemoryReader *>(ctx);
+    if(!r || !dst || pos>r->count || len>r->count-pos)
+        return false;
+    Mem_Memcpy(dst,r->bytes+pos,len);
+    return true;
+}
 // Copy an image into 4 KiB-aligned heap memory without applying any
 // relocations -- it will execute at its preferred base via the UTLB.
 static int load_mapped(const uint8_t *file, uint32_t file_size,
@@ -462,19 +478,17 @@ static int load_mapped(const uint8_t *file, uint32_t file_size,
     auto *image = static_cast<uint8_t *>(align_page(raw));
     Mem_Memset(image, 0, mapped_bytes);
 
-    for (uint32_t i = 0; i < hdr.section_count; i++) {
-        const pe::SectionHeader &sh = hdr.sections[i];
-        if ((sh.characteristics & pe::SCN_CNT_UNINITIALIZED_DATA) ||
-            sh.raw_size == 0)
-            continue;
-        if (sh.raw_offset > file_size ||
-            sh.raw_size > file_size - sh.raw_offset ||
-            sh.rva + sh.raw_size > vsize) {
-            *err = "section data out of bounds";
+    // Populate each page from file-backed sections plus zero-fill,
+    // using the read-at backend that will also serve future demand faults.
+    PeMemoryReader reader{file,file_size};
+    ntos_pager::Source src{&hdr,&reader,&pe_memory_read,file_size,
+                            hdr.oh.image_base,true};
+    for(uint32_t page=0u;page<mapped_bytes/0x1000u;++page) {
+        if(!ntos_pager::materialize(src,page,
+                 image+page*0x1000u,err)) {
             Mem_Free(raw);
             return -3;
         }
-        Mem_Memcpy(image + sh.rva, file + sh.raw_offset, sh.raw_size);
     }
 
     out_mi->raw = raw;
