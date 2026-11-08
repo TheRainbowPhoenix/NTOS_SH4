@@ -49,7 +49,10 @@ def main():
     secs=[]
     for i in range(count):
         p=sec+i*40
-        va,virt,raw,rawsize=struct.unpack_from("<IIII",data,p+12)[:1][0],u32(data,p+8),u32(data,p+20),u32(data,p+16)
+        va=u32(data,p+12)
+        virt=u32(data,p+8)
+        raw=u32(data,p+20)
+        rawsize=u32(data,p+16)
         secs.append((va,max(virt,rawsize),raw,rawsize))
     headers=u32(data,optional+60)
     def offset(rva,needed):
