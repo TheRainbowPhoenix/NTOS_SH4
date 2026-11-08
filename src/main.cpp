@@ -24,6 +24,7 @@
 
 #include "pe.hpp"
 #include "pe_rebase.hpp"
+#include "host_world.hpp"
 #include "mmu.hpp"
 
 APP_NAME("NTOS")
@@ -609,6 +610,13 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                       const char *extra_path, uint32_t extra_size,
                       int *out_ret, const char **err) {
     *err = "unknown";
+    // Stage0 stays in P1 and uses the host SDK. Keep host exception,
+    // global-base and status registers for restoration after PE returns.
+    const host_world::Snapshot host_state=host_world::capture();
+    if ((host_state.mmucr&1u)!=0u) {
+        *err="host MMU already owns translation; mapped world unsafe";
+        return -1;
+    }
     MappedImage exe{};
     MappedImage dll{};
     MappedImage extra{};
@@ -865,6 +873,10 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 done:
     // Restore the system exactly as we found it: AT off + UTLB flushed.
     mmu::disable_at_flush();
+    // Following gint's world-switch discipline, return control of
+    // exception vectors / global base / interrupt mask to Hollyhock
+    // BEFORE invoking SDK File/Mem APIs during stage0 cleanup.
+    host_world::restore(host_state);
     if (api_raw != nullptr)
         Mem_Free(api_raw);
     if (exe.raw != nullptr)
