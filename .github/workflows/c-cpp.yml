@@ -116,9 +116,11 @@ jobs:
     - uses: actions/checkout@v7
     - name: Install PE packaging support
       run: apt-get update -qq && apt-get install -y -qq --no-install-recommends python3
-    - name: Compile gated SH4A exception vector and physical page pager
+    - name: Compile isolated opt-in SH4A exception pager
       run: |
         export PATH=/toolchain/bin:$PATH
-        make -j4 DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1"
-        test -s dist/NTOS.hh3
-        echo "PASS opt-in TLB VBR vector compiled (NOT hardware tested)"
+        make pager-experiment
+        test -s dist_pager/NTOS.hh3
+        sh4a_nofpueb-elf-nm dist_pager/NTOS.elf | grep -q ntos_vbr_template_start
+        sh4a_nofpueb-elf-nm dist_pager/NTOS.elf | grep -q ntos_pager_exception_callback
+        echo "PASS isolated pager VBR+0x400 vector and callback linked (NOT hardware tested)"
