@@ -848,9 +848,6 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     uint8_t *api_raw=nullptr;
     uint8_t *api_block=nullptr;
     int rc=-1;
-#if !NTOS_ENABLE_TLB_MISS_PAGER
-    uint8_t set_ways[32]={};
-#endif
 
     nodes[0].hdr=hdr;
     nodes[0].file=file;
@@ -1061,30 +1058,20 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     }
 #else
     {
+        // A SH7305 UTLB is fully associative: map at fixed slot numbers,
+        // exactly as CP400 OS_02.01.7002 mmu_replace_entry_4k() does.
         uint32_t slot=0u;
         for(unsigned i=0u;i<count;++i) {
             const MappedImage &m=nodes[i].mapped;
-            for(uint32_t p=0u;p<m.npages;++p,++slot) {
-                const uint32_t va=m.base+p*0x1000u;
-                const uint32_t set=(va>>12)&31u;
-                if(set_ways[set]>=4u) {
-                    *err="too many modules in UTLB set";goto done;
-                }
-                mmu::map_page_at_index(va,
-                    mmu::phys_addr(m.image+p*0x1000u),
-                    slot,set_ways[set]++);
-            }
+            for(uint32_t p=0u;p<m.npages;++p,++slot)
+                mmu::map_page_at_index(m.base+p*0x1000u,
+                    mmu::phys_addr(m.image+p*0x1000u),slot,0u);
         }
-        for(uint32_t p=0u;p<mmu::API_WINDOW_PAGES;++p) {
-            const uint32_t va=mmu::VA_API_WINDOW+p*0x1000u;
-            const uint32_t set=(va>>12)&31u;
-            if(set_ways[set]>=4u) {
-                *err="UTLB API window set collision";goto done;
-            }
-            mmu::map_page_at_index(va,
+        for(uint32_t p=0u;p<mmu::API_WINDOW_PAGES;++p)
+            mmu::map_page_at_index(
+                mmu::VA_API_WINDOW+p*0x1000u,
                 mmu::phys_addr(api_block+p*0x1000u),
-                mmu::SLOT_API_FIRST+p,set_ways[set]++);
-        }
+                mmu::SLOT_API_FIRST+p,0u);
     }
 #endif
 
