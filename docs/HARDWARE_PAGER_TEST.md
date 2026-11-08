@@ -40,12 +40,25 @@ Install `dist/NTOS.hh3` and the required files under `\\fls0\\`.
 
 ## Emulator test B: experimental RAM-backed UTLB miss handler
 
+**2026-11-08 SH7305 correction:** the CP400 uses a 64-entry *fully
+associative* UTLB, not a 32-set/4-way UTLB. The experimental pager now
+manages 55 rotating entries by MMUCR.URC only; bits 5:4 are preserved.
+Small PE graphs (55 or fewer total mapped pages) are fully primed before
+execution, exactly as in normal NTOS. This should eliminate the
+previous CHAINTEST/GUI fetch crash on unmapped code pages even in an
+emulator that drops real TLB-miss exceptions. Large graphs remain
+partially mapped: FAULTTEST is deliberately **not** changed to use hints.
+These changes require fresh emulator verification.
+
 **Emulator only until further validation.**
 
 Install `dist_pager/NTOS.hh3` with all the standard PE files.
 Do not mix an old COREDLL with newly rebuilt PE files.
 
-1. Launch CHAINTEST. Expected `0x373F373F`.
+1. Launch CHAINTEST. Expected `0x373F373F`, PF=0, HINT=0,
+   BAD=0. This is now an eager-mapped regression and does **not**
+   demonstrate interrupt delivery. If it still crashes, capture the
+   UTLB slot contents and MMUCR/EXPEVT/TEA/SPC, not only PC.
 2. Launch STRESSEXEC with all ST01..ST12 DLLs and COREDLL.
    Expected `0x1234004E`.
 3. Launch PAGERTEST. The current PAGERSTRESS.DLL is **instrumented**
@@ -109,8 +122,11 @@ report protected memory directly without delivering a SuperH exception.
 
 The explicit hint mode lets us separate these possible failures:
 
-- Hint mode succeeds, PF=0: UTLB slot installation works, but the
-  emulator doesn't deliver missing-P0 accesses to NTOS's exception vector.
+- Hint mode succeeds, PF=0: UTLB slot installation works. This does
+  **not** on its own prove emulator exception delivery is broken.
+  A real CPU TLB miss must update TEA/EXPEVT/SPC/SSR and branch to
+  VBR+0x400. The reported crash's SPC remains a host 0x8CFFxxxx
+  address rather than the missing P0 instruction address.
 - Hint mode fails at `0x01001400`: investigate UTLB permissions, cache
   synchronization and VA/PA mapping, not the VBR trampoline alone.
 - PF>0 and BAD>0: the exception callback was reached but rejected
@@ -119,3 +135,26 @@ The explicit hint mode lets us separate these possible failures:
 This is not yet a disk-backed WinCE NK fault pager, and the VBR path is
 experimental. Do not install the experimental HH3 on a physical CP400
 before its emulator exceptions and rollback paths are verified.
+
+
+## Current build validation and exact CP400 source cross-check
+
+The uploaded `OS_02.01.7002.fls.c` shows `mmu_replace_entry_4k()`
+writing `MMUCR = (MMUCR & 0xffff03ff) | (urc << 10)`, then PTEH/PTEL
+and LDTLB; it does **not** write a UTLB-way value into bits 5:4.
+The uploaded gint MMU driver identifies SH7305 UTLB address/data arrays
+at P4 `0xF6000000`/`0xF7000000`, 64 entries (plus a separate
+4-entry ITLB). This also matches the SH4A MMU architecture manual.
+
+Rebuild on the latest `main`, rerun CHAINTEST and PAGERTEST in this
+order, then FAULTTEST last. C/C++ CI success means the toolchain and
+host-side test suite pass, **not** that the emulator has dispatched
+a UTLB-miss exception. Expected counters for hint mode need not have
+the exact old eviction count (105) after adopting fully associative
+replacement; they must still show HINT>=160, EV>0, BAD=0 and correct
+checksum. For FAULTTEST, the core discriminator is SPC: on a hardware
+write miss at `0x01000208` to `0x01001400`, the CPU must capture
+SPC=`0x01000208`, EXPEVT=`0x060`, TEA=`0x01001400` and jump to
+VBR+0x400 before NTOS can handle it. If SPC remains at the old
+host address and the emulator immediately aborts, exception injection
+must be investigated in the emulator MMU backend.
