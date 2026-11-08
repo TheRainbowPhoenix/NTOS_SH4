@@ -17,10 +17,12 @@
 // mmu_replace_entry_4k(): it ORs the encoded flags with 0x110.
 // This is writable, cached and dirty, with separate ASID sharing disabled.
 //
-// SH7305 has 64 fully associative UTLB entries, selected by MMUCR.URC
-// (bits 15:10), and four ITLB entries. MMUCR bits 5:4 are hardware
-// instruction-TLB LRU state, NOT a 4-way UTLB selector. CP400 firmware
-// writes only URC for LDTLB, preserving those low bits.
+// SH7305 has 64 fully associative UTLB entries selected by MMUCR.URC
+// (bits 15:10), with an independent 4-entry ITLB. MMUCR.URB is bits
+// 23:18, and ITLB replacement history LRUI is bits 31:26.
+// MMUCR bits 5:4 are RESERVED on SH7305 (they select RC/way on SH7705).
+// Never write a SH7705 way value here. Both CP400 ROM 02.01.7002 and
+// OS330 ROM clear URC with 0xFFFF03FF, then insert index << 10.
 #pragma once
 
 #include <stdint.h>
@@ -32,6 +34,20 @@ constexpr uint32_t REG_PTEH  = 0xFF000000u;
 constexpr uint32_t REG_PTEL  = 0xFF000004u;
 constexpr uint32_t REG_MMUCR = 0xFF000010u;
 constexpr uint32_t REG_CCR   = 0xFF00001Cu;
+constexpr uint32_t REG_TEA   = 0xFF00000Cu;
+constexpr uint32_t REG_EXPEVT= 0xFF000024u;
+
+// SH7305 MMUCR (see gint/mpu/mmu.h, SH7305 block; not SH7705).
+constexpr uint32_t MMUCR_AT       = 0x00000001u;
+constexpr uint32_t MMUCR_TI       = 0x00000004u;
+constexpr uint32_t MMUCR_URC_MASK = 0x0000FC00u;
+constexpr uint32_t MMUCR_URB_MASK = 0x00FC0000u;
+constexpr uint32_t MMUCR_LRUI_MASK= 0xFC000000u;
+constexpr uint32_t MMUCR_RESERVED_5_4 = 0x00000030u;
+constexpr uint32_t UTLB_ENTRIES=64u;
+static_assert((MMUCR_URC_MASK>>10)==0x3fu);
+static_assert((MMUCR_URB_MASK>>18)==0x3fu);
+static_assert((MMUCR_LRUI_MASK>>26)==0x3fu);
 
 // OS330 baseline values (see header comment)
 constexpr uint32_t MMUCR_ENABLE  = 0x00FC0101u; // AT on
@@ -70,7 +86,18 @@ inline uint32_t read_mmucr(void) {
     return *reinterpret_cast<volatile uint32_t *>(REG_MMUCR);
 }
 
-inline bool at_enabled(void) { return (read_mmucr() & 1u) != 0; }
+inline bool at_enabled(void) {
+    return (read_mmucr() & MMUCR_AT) != 0;
+}
+inline uint32_t read_urc(void) {
+    return (read_mmucr() & MMUCR_URC_MASK)>>10;
+}
+inline uint32_t read_urb(void) {
+    return (read_mmucr() & MMUCR_URB_MASK)>>18;
+}
+inline uint32_t read_lrui(void) {
+    return (read_mmucr() & MMUCR_LRUI_MASK)>>26;
+}
 
 // Enable address translation (OS330 MMU_EnableAddressTranslation).
 inline void enable_at(void) {
@@ -97,6 +124,10 @@ inline void flush_tlb(void) {
 // The legacy final parameter is ignored: SH7305 has no 4-way UTLB index.
 inline void map_page_at_index(uint32_t va, uint32_t pa, uint32_t slot,
                               uint32_t /*unused_way*/) {
+    // Protect the fixed API and rotating mappings from accidental slot
+    // overflow. The caller owns slot allocation, and this never infers
+    // a slot from VPN bits.
+    if(slot>=UTLB_ENTRIES) return;
     tlb_install_entry(va, pa & PA_MASK, PTEL_PAGE, slot);
 }
 
