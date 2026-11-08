@@ -234,7 +234,9 @@ struct ExportDir {
 inline bool read_export_dir(const Image &img, const uint8_t *image,
                             uint32_t image_size, ExportDir *out) {
     if (img.oh.magic != OPT_MAGIC_PE32 || img.oh.export_rva == 0 ||
-        img.oh.export_size < 40 || img.oh.export_rva + 40 > image_size)
+        img.oh.export_size < 40 || img.oh.export_rva > image_size ||
+        40u > image_size - img.oh.export_rva ||
+        img.oh.export_size > image_size - img.oh.export_rva)
         return false;
     const uint8_t *e = image + img.oh.export_rva;
     out->ordinal_base    = rd32le(e + 16);
@@ -243,9 +245,14 @@ inline bool read_export_dir(const Image &img, const uint8_t *image,
     out->addrfuncs_rva   = rd32le(e + 28);
     out->addrnames_rva   = rd32le(e + 32);
     out->addrords_rva    = rd32le(e + 36);
-    if (out->addrfuncs_rva + out->nfuncs * 4 > image_size ||
-        out->addrnames_rva + out->nnames * 4 > image_size ||
-        out->addrords_rva + out->nnames * 2 > image_size)
+    if (out->nfuncs == 0u || out->nfuncs > image_size/4u ||
+        out->nnames > image_size/2u ||
+        out->addrfuncs_rva > image_size ||
+        out->addrnames_rva > image_size ||
+        out->addrords_rva > image_size ||
+        out->nfuncs * 4u > image_size - out->addrfuncs_rva ||
+        out->nnames * 4u > image_size - out->addrnames_rva ||
+        out->nnames * 2u > image_size - out->addrords_rva)
         return false;
     return out->nfuncs != 0;
 }
@@ -261,14 +268,17 @@ inline bool export_lookup(const Image &img, const uint8_t *image,
         const uint32_t name_rva = rd32le(image + ed.addrnames_rva + i * 4);
         if (name_rva == 0 || name_rva >= image_size)
             continue;
-        const uint8_t *s = image + name_rva;
-        const uint8_t *t = reinterpret_cast<const uint8_t *>(name);
-        while (*s != 0 && *t != 0 &&
-               (*s == *t || (*s | 0x20) == (*t | 0x20))) {
-            s++;
-            t++;
+        uint32_t n=0;
+        const uint8_t *t=reinterpret_cast<const uint8_t *>(name);
+        for (; name_rva+n<image_size && n<128u; ++n) {
+            char x=static_cast<char>(image[name_rva+n]);
+            char y=static_cast<char>(t[n]);
+            if (x>='A' && x<='Z') x=static_cast<char>(x+32);
+            if (y>='A' && y<='Z') y=static_cast<char>(y+32);
+            if (x!=y || !x) break;
         }
-        if (*s != 0 || *t != 0)
+        if (name_rva+n>=image_size || n>=128u ||
+            image[name_rva+n] || t[n])
             continue;
         const uint32_t ord = rd16le(image + ed.addrords_rva + i * 2);
         if (ord >= ed.nfuncs)
@@ -296,8 +306,15 @@ inline bool read_import_desc(const Image &img, const uint8_t *image,
                              ImportDesc *out) {
     if (img.oh.magic != OPT_MAGIC_PE32 || img.oh.import_rva == 0)
         return false;
-    const uint32_t off = img.oh.import_rva + index * 20;
-    if (off + 20 > image_size)
+    // Import descriptors are 20 bytes, bounded by the PE data directory.
+    // Prevent integer wrap or wandering into unrelated mapped sections.
+    if (img.oh.import_size<20u ||
+        index >= img.oh.import_size/20u ||
+        img.oh.import_rva>image_size ||
+        index > (image_size-img.oh.import_rva)/20u)
+        return false;
+    const uint32_t off=img.oh.import_rva+index*20u;
+    if (off>image_size || 20u>image_size-off)
         return false;
     const uint8_t *d = image + off;
     out->oft_rva  = rd32le(d + 0);
@@ -311,14 +328,18 @@ inline bool read_import_desc(const Image &img, const uint8_t *image,
 // when out of bounds. `buf` receives up to bufsize-1 chars.
 inline const char *rva_string(const uint8_t *image, uint32_t image_size,
                               uint32_t rva, char *buf, uint32_t bufsize) {
-    if (rva == 0 || rva >= image_size)
+    if (!image || !buf || bufsize<2u ||
+        rva==0u || rva>=image_size)
         return nullptr;
-    uint32_t k = 0;
-    while (rva + k < image_size && image[rva + k] != 0 && k + 1 < bufsize) {
-        buf[k] = static_cast<char>(image[rva + k]);
-        k++;
+    uint32_t k=0;
+    while (k+1u<bufsize && k<image_size-rva &&
+           image[rva+k]) {
+        buf[k]=static_cast<char>(image[rva+k]);
+        ++k;
     }
-    buf[k] = '\0';
+    // A truncated or non-terminated WinCE import/export name is invalid.
+    if (k>=image_size-rva || image[rva+k]) return nullptr;
+    buf[k]='\0';
     return buf;
 }
 
