@@ -458,9 +458,15 @@ static int load_mapped(const uint8_t *file, uint32_t file_size,
     // Preferred-base conflicts (including the API window) are resolved
     // by choose_base(). Do not reject relocatable images here.
 
+    // The SH7305 hardware has only 55 rotating UTLB slots. Reject large
+    // WinCE DLLs *before* allocating MBs of backing RAM; those need true
+    // demand paging, a separate interrupt/world-switch milestone.
+    if (vsize > (mmu::SLOT_ROTATING_LAST+1u)*0x1000u) {
+        *err="PE too large for 55-page UTLB budget (needs pager)";
+        return -1;
+    }
     // The UTLB maps complete 4 KiB pages even when PE SizeOfImage is not
-    // page-aligned (e.g. COREDLL 0xDE00). Reserve/zero the entire final
-    // page, otherwise it can map bytes beyond the heap allocation.
+    // page-aligned (e.g. COREDLL). Reserve/zero the full final page.
     const uint32_t mapped_bytes=(vsize+0xFFFu)&~0xFFFu;
     if (mapped_bytes<vsize || mapped_bytes>8u*1024u*1024u+0x1000u) {
         *err="PE image size overflows mapped pages";
