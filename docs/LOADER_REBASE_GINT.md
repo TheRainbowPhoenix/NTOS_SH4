@@ -26,13 +26,48 @@ paths rather than depending on every DLL occupying the preferred VA.
 
 CE 4.2 and CE 3.0 loaders contain related versions of that logic.
 
-**Important architecture distinction:** WinCE's SH architecture also
-supports paired HIGH/LOW relocation kinds and other CPU-specific
-relocation records. Our SH4BE PE compatibility format currently emits
-`IMAGE_REL_BASED_HIGHLOW` (3) for each absolute **big-endian** 32-bit
-pointer, and `IMAGE_REL_BASED_ABSOLUTE` (0) for padding. This is not
-a claim of full compatibility with every stock Windows CE SH DLL.
-`ntos_rebase::apply` intentionally rejects other relocation kinds.
+**Important architecture distinction:** On-device NTOS remains SH4BE
+and now handles PE32 base fixups ABSOLUTE(0), HIGH(1), LOW(2),
+HIGHLOW(3), and HIGHADJ(4), including WinCE's SH paired HIGH/LOW
+adjustment. PE metadata is little-endian; each payload's data words
+are big-endian on this machine. The same relocation engine can be
+host-tested with little-endian data words. Other relocations are
+rejected, never silently skipped.
+
+The supplied sample WinCE binaries have PE machine `0x01A6`,
+**SH4 little-endian**, so they CANNOT execute directly on the
+SH4 big-endian ClassPad even after applying relocations.
+
+### Actual uploaded WinCE binary audit
+
+| File | Preferred ImageBase | Image size | PE HIGHLOW records | NTOS limitation |
+| --- | --- | ---: | ---: | --- |
+| TOOLHELP.DLL | 0x10000000 | 0x6000 | 31 | SH4LE code |
+| DEMODISP.DLL | 0x10000000 | 0x5000 | 45 | SH4LE code |
+| TCPSTK.DLL | 0x10000000 | 0x44000 | 4,951 | SH4LE + exceeds 55 pages |
+| HWXCHS.DLL | 0x10000000 | 0x389000 | 1,253 | SH4LE + exceeds 55 pages |
+| CERAMDRV.EXE | 0x00010000 | 0x4000 | none | fixed-base SH4LE |
+| LOADDBG.EXE | 0x00010000 | 0x4000 | none | fixed-base SH4LE |
+
+These are source-file-derived facts from the six uploaded PE binaries.
+The read-only `tools/audit_wince_pe.py` can audit more specimens:
+
+```sh
+python3 tools/audit_wince_pe.py TOOLHELP.DLL TCPSTK.DLL HWXCHS.DLL
+```
+
+NTOS now links **both COREDLL and XAMLUI at the same preferred
+`0x10000000` DLL address** to match WinCE conventions. The
+SH7305 P0 first-fit allocator maps them to disjoint virtual ranges
+(e.g. `0x01000000` and the next free aligned range), applies each
+image's HIGHLOW relocations, then resolves the EXE and DLL imports
+against their actual allocated virtual addresses. EXEs may use the
+WinCE default `0x00010000` base if the P0 range is free.
+
+The 55-slot UTLB limit remains: large 260 KiB and 3.7 MiB DLLs
+require demand paging and an interrupt/TLB-miss service before they
+can be executed even with native big-endian instructions.
+
 
 ## NTOS implementation
 
@@ -45,9 +80,10 @@ a claim of full compatibility with every stock Windows CE SH DLL.
   addresses, and excess occupancy in any of the 32 virtual-page sets.
   Accounts for the four pages of the API window at `0x08100000`.
 - `apply`: validates every little-endian PE `.reloc` block and
-  record **before writing**, then applies 32-bit big-endian HIGHLOW
-  adjustments. Fails closed for malformed, missing, truncated or
-  unsupported fixups when rebasing is necessary.
+  record **before writing**, then applies SH4BE HIGHLOW, standalone
+  HIGH/LOW, paired HIGH+LOW, and HIGHADJ fixups. The independent
+  `apply_with_endian` entry point also tests SH4LE record semantics
+  offline, without claiming LE execution compatibility.
 
 `src/main.cpp` chooses bases for the EXE, COREDLL, then XAMLUI;
 applies each module's relocation table; snaps DLL dependencies in
@@ -79,7 +115,8 @@ make collision-test
 
 This writes `dist_collision/XAMLUI.DLL`. It is an otherwise normal
 PE XAMLUI.DLL with its preferred base and existing HIGHLOW fixups
-retargeted to `0x00800000`, the SAME base as COREDLL.DLL. This
+retargeted to `0x01000000`, COREDLL's first actual P0 mapping.
+Both shipping DLLs already share preferred `0x10000000`. This
 file is **not used by the default build**. To try it on hardware,
 install the normal NTOS.hh3, COREDLL.DLL, METROWIN.EXE and the
 `dist_collision/XAMLUI.DLL` in place of the normal XAMLUI.DLL.
@@ -115,5 +152,23 @@ relies on Hollyhock's file, LCD and input SDK calls returning through
 the host OS. Swapping interrupt worlds prematurely risks a hard crash
 or leaving the host in a broken state.
 
-The present change is therefore limited to **PE DLL rebasing and
-build reliability**; there is no new interrupt takeover code.
+`src/host_world.hpp` now adds a conservative gint-inspired **stage0
+CPU context fence**: it captures the host SR, VBR, GBR and MMUCR
+before mapping PE modules, rejects attempting mapped execution when
+the host MMU already owns translation, and restores VBR/GBR/SR with
+maskable interrupts masked before calling SDK memory services on exit.
+It does **not** install a new ISR or repurpose gint driver handlers.
+
+The uploaded `fxsdk-dev.zip` uses `-m4-nofpu -mb` for ClassPad,
+and `gint-test/fxcp_hh3.ld.c` locates the initial HH3 image in
+the host-provided P1 RAM region. NTOS retains that P1-resident stage0
+model and its Hollyhock file/input/LCD bridge. gint's
+`hhk3_start.c` resolves HHK symbol-table entries from `envp`;
+NTOS instead uses its existing SDK/NTOS API bridge.
+
+**Not yet implemented:** true driver-state save/restore, VBR interrupt
+takeover, TLB-miss demand pager, large-image on-demand mapping,
+arbitrary recursive DLL discovery, SH4LE instruction translation or
+running unmodified stock Windows CE applications. Those require
+separate hardware exercises; the current additions are compile- and
+host-test verified, not verified on a physical ClassPad.
