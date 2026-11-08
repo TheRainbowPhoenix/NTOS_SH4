@@ -37,6 +37,7 @@ using Install=bool (*)(void *,uint32_t,uint32_t,unsigned,unsigned);
 struct Pager {
     Area modules[MAX_MODULES]{};
     Entry entries[SLOTS]{};
+    uint8_t reserved_ways[SETS]{}; // MMU API window and host-pinned slots
     unsigned modules_used=0u;
     uint32_t clock=0u,misses=0u,evictions=0u;
     bool servicing=false;
@@ -52,6 +53,16 @@ struct Pager {
                 modules[i].va,modules[i].pages))
                 return false;
         modules[modules_used++]={va,pages,pa};
+        return true;
+    }
+    bool reserve_way(unsigned set,unsigned way) {
+        if(set>=SETS || way>=WAYS)return false;
+        uint8_t bit=static_cast<uint8_t>(1u<<way);
+        if(reserved_ways[set]&bit)return false;
+        for(unsigned i=0;i<SLOTS;++i)
+            if(entries[i].present && entries[i].set==set &&
+               entries[i].way==way)return false;
+        reserved_ways[set]|=bit;
         return true;
     }
     bool backing(uint32_t va,uint32_t *pa) const {
@@ -92,8 +103,10 @@ struct Pager {
             return true;
         }
         const unsigned set=(vpn>>12u)&(SETS-1u);
-        uint8_t ways=0u;
+        uint8_t ways=reserved_ways[set];
         unsigned occupancy=0u;
+        for(unsigned w=0;w<WAYS;++w)
+            if(ways&(1u<<w))++occupancy;
         for(unsigned i=0;i<SLOTS;++i) {
             const Entry &e=entries[i];
             if(e.present && e.set==set) {
