@@ -12,7 +12,7 @@
 
 namespace ntos_rebase {
 constexpr uint32_t PAGE = 0x1000u;
-constexpr uint32_t VA_MIN = 0x00100000u;
+constexpr uint32_t VA_MIN = 0x00010000u; // WinCE EXE preferred base
 constexpr uint32_t VA_MAX = 0x07FF0000u; // exclusive
 constexpr uint32_t FALLBACK = 0x01000000u;
 constexpr uint32_t API_BASE = 0x08100000u;
