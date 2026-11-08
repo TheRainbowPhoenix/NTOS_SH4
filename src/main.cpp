@@ -950,7 +950,7 @@ done:
 // ---------------------------------------------------------------------------
 // UI
 // ---------------------------------------------------------------------------
-constexpr int kMaxFiles = 24;
+constexpr int kMaxFiles = 64; // 12 stress DLLs plus runtime DLLs and EXEs
 constexpr int kMaxName = 25;
 
 static char_const16_t g_find_pattern_exe[] = {
