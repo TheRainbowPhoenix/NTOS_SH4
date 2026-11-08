@@ -12,7 +12,7 @@
 !   URC    MMUCR bits 15:10, cleared with mask 0xFFFF03FF (decompiled value)
 !
 ! ldtlb commits PTEH/PTEL into the UTLB entry selected by URC. Entry flags
-! used by NTOS: 0x17C = SH|PR1|PR0|D|C|V, SZ=00 (4 KiB on SH4A).
+! used by NTOS: 0x17C = V|PR=3|SZ0(4KiB)|C|D, SH=0, WT=0.
 
     .section .text
     .align 2
@@ -28,8 +28,9 @@
 ! cache invalidate.
 !
 ! SH7305 UTLB is fully associative with 64 entries. MMUCR.URC selects
-! the slot; there is no UTLB "way" field. Bits 5:4 are LRUI (ITLB LRU).
-! Do NOT modify them. WinCE/gint/CP400 firmware use URC alone here.
+! the slot; there is no UTLB "way" field. Bits 5:4 are RESERVED.
+! ITLB LRUI is bits 31:26; URB is bits 23:18. Do not modify
+! either field when installing a chosen slot. CP400 firmware uses URC.
 ! ---------------------------------------------------------------------------
     .global _tlb_install_entry
 _tlb_install_entry:
@@ -37,7 +38,7 @@ _tlb_install_entry:
     sts.l   pr, @-r15
     mov     r7, r8                  ! r8 = slot
 
-    ! MMUCR: URC = slot (bits 15:10); preserve hardware-managed LRUI
+    ! MMUCR: URC = slot (bits 15:10); preserve LRUI, URB and reserved bits
     mov.l   .Lmmucr, r0
     mov.l   @r0, r1
     mov.l   .Lurcmask, r2
@@ -137,4 +138,4 @@ _cache_flush_invalidate_block:
 .Lptel:     .long 0xFF000004
 .Lccr:      .long 0xFF00001C
 .Lurcmask:  .long 0xFFFF03FF
- .Lptelflags:.long 0x000001FF
+.Lptelflags:.long 0x000001FF
