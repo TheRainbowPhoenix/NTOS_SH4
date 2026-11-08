@@ -33,9 +33,16 @@ inline Snapshot capture() {
 // from the HH3 execution environment with AT=0.
 inline void restore(const Snapshot &s) {
 #if defined(__sh__)
-    uint32_t masked;
-    __asm__ volatile("stc sr,%0" : "=r"(masked) :: "memory");
-    masked |= 0x000000f0u; // SH4 SR.IMASK=15, temporarily mask IRQs
+    uint32_t sr,vbr,gbr;
+    __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+    __asm__ volatile("stc vbr,%0" : "=r"(vbr) :: "memory");
+    __asm__ volatile("stc gbr,%0" : "=r"(gbr) :: "memory");
+    // No changes in the normal P1/host-driver path. Avoid gratuitous
+    // writes to SR and VBR; only a payload that altered CPU world
+    // registers requires the exceptional repair path.
+    if(sr==s.sr && vbr==s.vbr && gbr==s.gbr)
+        return;
+    const uint32_t masked=sr|0x000000f0u; // SR.IMASK=15
     __asm__ volatile("ldc %0,sr" :: "r"(masked) : "memory");
     __asm__ volatile("ldc %0,vbr" :: "r"(s.vbr) : "memory");
     __asm__ volatile("ldc %0,gbr" :: "r"(s.gbr) : "memory");
