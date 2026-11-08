@@ -127,10 +127,10 @@ all: elf hh3 ntx
 # cross toolchain does NOT support sh-pe or pei-shl output: do not replace
 # the compatibility PE packer with a format the toolchain cannot emit.
 check-pe: ntx
-	@sed 's/\r$//' tools/test_binutils_parity.sh | sh
+	@tr -d '\r' < tools/test_binutils_parity.sh | sh
 
 probe-pe: ntx
-	@sed 's/\r$//' tools/probe_binutils_pe.sh | sh
+	@tr -d '\r' < tools/probe_binutils_pe.sh | sh
 
 # Optional device regression: both DLLs already request preferred 0x10000000.
 # The fixture instead requests 0x01000000 (the first fallback slot).
