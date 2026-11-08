@@ -69,6 +69,7 @@ struct NtosApi {
     int32_t (*file_rename)(const char *,const char *); // [20]
     int32_t (*file_mkdir)(const char *);               // [21]
     int32_t (*file_stat)(const char *);                // [22] exists
+    int32_t (*page_hint)(uint32_t);                   // [23] private pager experiment
 };
 
 static int cur_row = 0;
@@ -256,6 +257,8 @@ static uint32_t ntos_getkey(void) {
     return (key1 << 8) | (key2 & 0xFFu);
 }
 
+static int32_t ntos_page_hint(uint32_t va);
+
 static NtosApi g_ntos_api = {
     &ntos_puts,
     Debug_Printf, // SDK declares these as function pointers, not functions
@@ -280,6 +283,7 @@ static NtosApi g_ntos_api = {
     &ntos_file_rename,   // [20] rename
     &ntos_file_mkdir,    // [21] mkdir
     &ntos_file_stat,     // [22] stat
+    &ntos_page_hint,     // [23] experiment: explicit software page prefault
 };
 
 // ---------------------------------------------------------------------------
@@ -419,6 +423,22 @@ static void *align_page(void *p) {
         (reinterpret_cast<uint32_t>(p) + 0xFFFu) & ~0xFFFu);
 }
 #include "hardware_fault.hpp"
+
+// This private NTOS API is a diagnostic only: a payload can ask the P1
+// stage0 to install a known backing page BEFORE accessing it. Emulator
+// fault delivery and genuine VBR exceptions are counted separately.
+static int32_t ntos_page_hint(uint32_t va) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    auto &ctx=ntos_hw::g_context;
+    if(!ctx.installed || !mmu::at_enabled())return -1;
+    ++ctx.hint_calls;
+    return ntos_hw::prime(va,false) ? 0 : -2;
+#else
+    (void)va;
+    return -1;
+#endif
+}
+
 
 // The eager mapper uses the exact same file-to-page materializer as the
 // future demand pager. It runs with MMU translation disabled and does not
@@ -1102,8 +1122,9 @@ done:
     // All host UI work occurs AFTER restoring the original VBR and SR.
     // Report the actual fault/eviction count when emulator testing PAGERTEST.
     Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                 "PF=%lu EV=%lu BAD=%lu",
-                 static_cast<unsigned long>(ntos_hw::g_context.table.misses),
+                 "PF=%lu HINT=%lu EV=%lu BAD=%lu",
+                 static_cast<unsigned long>(ntos_hw::g_context.hw_faults),
+                 static_cast<unsigned long>(ntos_hw::g_context.hint_calls),
                  static_cast<unsigned long>(ntos_hw::g_context.table.evictions),
                  static_cast<unsigned long>(ntos_hw::g_context.fault_error));
     LCD_Refresh();
