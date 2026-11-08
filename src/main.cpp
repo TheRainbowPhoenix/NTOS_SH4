@@ -536,7 +536,9 @@ static int snap_imports(const pe::Image &image_hdr, const MappedImage *image,
         pe::ImportDesc d{};
         if (!pe::read_import_desc(image_hdr,image->image,image->vsize,di,&d))
             break;
-        if (!d.name_rva || !d.oft_rva || !d.ft_rva ||
+        // In a stock WinCE PE, OriginalFirstThunk may be zero: the
+        // pre-binding hints/names then reside in FirstThunk itself.
+        if (!d.name_rva || !d.ft_rva ||
             !pe::rva_string(image->image,image->vsize,d.name_rva,
                             scratch,scratch_size)) {
             *err="invalid module import descriptor";
@@ -558,7 +560,9 @@ static int snap_imports(const pe::Image &image_hdr, const MappedImage *image,
             return -3;
         }
         for (uint32_t i=0;;++i) {
-            uint32_t oft=d.oft_rva+i*4,ft=d.ft_rva+i*4;
+            // PE metadata is LE even for SH4BE code and data.
+            uint32_t oft=(d.oft_rva ? d.oft_rva : d.ft_rva)+i*4u;
+            uint32_t ft=d.ft_rva+i*4u;
             if (oft+4>image->vsize || ft+4>image->vsize) {
                 *err="truncated PE thunk array";return -4;
             }
