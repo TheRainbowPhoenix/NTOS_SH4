@@ -131,6 +131,29 @@ inline void map_page_at_index(uint32_t va, uint32_t pa, uint32_t slot,
     tlb_install_entry(va, pa & PA_MASK, PTEL_PAGE, slot);
 }
 
+// Opt-in diagnostic only. gint's SH7305 (NOT SH7705) arrays expose
+// UTLB[entry] at F6000000/F7000000 + entry*0x100. Some emulators may
+// reject P4 array reads; keep this out of the default dist_pager image.
+#ifndef NTOS_VERIFY_UTLB_SLOTS
+#define NTOS_VERIFY_UTLB_SLOTS 0
+#endif
+#if NTOS_VERIFY_UTLB_SLOTS && defined(__sh__)
+inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa) {
+    if(slot>=UTLB_ENTRIES)return false;
+    const uint32_t addr=*reinterpret_cast<volatile const uint32_t *>(
+        0xF6000000u+(slot<<8));
+    const uint32_t data=*reinterpret_cast<volatile const uint32_t *>(
+        0xF7000000u+(slot<<8));
+    // The P4 array stores VPN in bits 31:10, valid in bit 8.
+    // The translated 4 KiB physical PPN is in data bits 28:12.
+    return (addr&0xFFFFF000u)==(va&0xFFFFF000u) &&
+           (addr&0x00000100u)!=0u &&
+           (data&0x00000100u)!=0u &&
+           (data&0x1FFFF000u)==(pa&0x1FFFF000u) &&
+           (data&PTEL_PAGE)==PTEL_PAGE;
+}
+#endif
+
 // Physical address of a P1 (cached identity) pointer.
 inline uint32_t phys_addr(const void *p) {
     return reinterpret_cast<uint32_t>(p) & PA_MASK;
