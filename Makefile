@@ -86,6 +86,18 @@ CHAIN_DLL := $(OUTDIR)/CHAIN.DLL
 CHAINTEST_OBJ := $(BUILDDIR)/payload/chain_test.o
 CHAINTEST_ELF := $(BUILDDIR)/payload/chain_test.elf
 CHAINTEST_EXE := $(OUTDIR)/CHAINTEST.EXE
+# 12 PE DLLs at identical preferred bases; ST01 fans out to four DLLs.
+STRESS_NAMES := 01 02 03 04 05 06 07 08 09 10 11 12
+STRESS_DLLS := $(addprefix $(OUTDIR)/ST,$(addsuffix .DLL,$(STRESS_NAMES)))
+STRESS_OBJ := $(BUILDDIR)/payload/stress_exec.o
+STRESS_ELF := $(BUILDDIR)/payload/stress_exec.elf
+STRESS_EXE := $(OUTDIR)/STRESSEXEC.EXE
+STRESS_EXTRA_01 := --extra-import-prefix stress_d02:ST02.DLL --extra-import-prefix stress_d03:ST03.DLL --extra-import-prefix stress_d04:ST04.DLL --extra-import-prefix stress_d05:ST05.DLL
+STRESS_EXTRA_02 := --extra-import-prefix stress_d06:ST06.DLL --extra-import-prefix stress_d07:ST07.DLL
+STRESS_EXTRA_03 := --extra-import-prefix stress_d08:ST08.DLL --extra-import-prefix stress_d09:ST09.DLL
+STRESS_EXTRA_04 := --extra-import-prefix stress_d10:ST10.DLL --extra-import-prefix stress_d11:ST11.DLL
+STRESS_EXTRA_05 := --extra-import-prefix stress_d12:ST12.DLL
+
 
 AS_SOURCES:=$(shell find $(SOURCEDIR) -name '*.S')
 CC_SOURCES:=$(shell find $(SOURCEDIR) -name '*.c')
@@ -98,7 +110,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CHAIN_DLL) $(CHAINTEST_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -279,6 +291,33 @@ $(CHAINTEST_ELF): $(CHAINTEST_OBJ) $(PAYLOAD_DIR)/payload.ld
 $(CHAINTEST_EXE): $(CHAINTEST_ELF) $(CHAIN_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(CHAINTEST_ELF) -o $@ --import-module CHAIN.DLL
+
+# Stress PE DLL graph: recursive imports across 12 DLLs (+ COREDLL).
+# Generated rules still compile and link with our normal GNU SH4BE tools.
+define STRESS_LIBRARY_RULE
+$(BUILDDIR)/payload/stress_$(1).o: $(PAYLOAD_DIR)/stress_$(1).c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $$(dir $$@)
+	$$(CC) -c $$< -o $$@ $$(PAYLOAD_CFLAGS)
+$(BUILDDIR)/payload/stress_$(1).elf: $(BUILDDIR)/payload/stress_$(1).o $(PAYLOAD_DIR)/xamlui.ld
+	@mkdir -p $$(dir $$@)
+	$$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/xamlui.ld -o $$@ $$<
+$(OUTDIR)/ST$(1).DLL: $(BUILDDIR)/payload/stress_$(1).elf tools/elf2ntx.py
+	@mkdir -p $$(dir $$@)
+	$$(PYTHON) tools/elf2ntx.py $$< -o $$@ --base 0x10000000 --dll --dll-name ST$(1).DLL --import-module COREDLL.DLL --exports stress_d$(1) $$(STRESS_EXTRA_$(1))
+endef
+$(foreach node,$(STRESS_NAMES),$(eval $(call STRESS_LIBRARY_RULE,$(node))))
+
+$(STRESS_OBJ): $(PAYLOAD_DIR)/stress_exec.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(STRESS_ELF): $(STRESS_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $<
+
+$(STRESS_EXE): $(STRESS_ELF) $(STRESS_DLLS) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(STRESS_ELF) -o $@ --import-module ST01.DLL
 
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
