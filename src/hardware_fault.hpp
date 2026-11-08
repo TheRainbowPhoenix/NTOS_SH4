@@ -43,8 +43,15 @@ struct Context {
     bool installed=false;
     uint32_t fault_error=0u;
     uint32_t failed_address=0u;
-    uint32_t hw_faults=0u;
-    uint32_t hint_calls=0u;
+    volatile uint32_t hw_faults=0u;
+    volatile uint32_t hint_calls=0u;
+    // Only written inside the P1-resident exception callback. Read and
+    // printed after VBR returns to Hollyhock, never via SDK in the ISR.
+    volatile uint32_t last_tea=0u;
+    volatile uint32_t last_expevt=0u;
+    volatile uint32_t last_spc=0u;
+    volatile uint32_t last_ssr=0u;
+    volatile uint32_t last_mmucr=0u;
 };
 static Context g_context{};
 
@@ -60,6 +67,16 @@ extern "C" int ntos_pager_exception_callback(uint32_t tea,uint32_t expevt) {
     // Called only from the assembly VBR miss vector on the P1 fault stack.
     // Host syscall, File_Read, Mem_Malloc, printf, exceptions forbidden.
     auto &ctx=ntos_hw::g_context;
+    uint32_t spc=0u,ssr=0u;
+    __asm__ volatile("stc spc,%0" : "=r"(spc) :: "memory");
+    __asm__ volatile("stc ssr,%0" : "=r"(ssr) :: "memory");
+    // Snapshot first; if the callback ever runs, its interrupted PC must
+    // be visible even when the pager rejects the fault and chains to OS.
+    ctx.last_tea=tea;
+    ctx.last_expevt=expevt;
+    ctx.last_spc=spc;
+    ctx.last_ssr=ssr;
+    ctx.last_mmucr=mmu::read_mmucr();
     ++ctx.hw_faults;
     if(expevt!=0x40u && expevt!=0x60u) {
         ++ctx.fault_error;
@@ -151,6 +168,11 @@ inline ntos_irq::Hooks hooks(const host_world::Snapshot &host) {
     ctx.failed_address=0u;
     ctx.hw_faults=0u;
     ctx.hint_calls=0u;
+    ctx.last_tea=0u;
+    ctx.last_expevt=0u;
+    ctx.last_spc=0u;
+    ctx.last_ssr=0u;
+    ctx.last_mmucr=0u;
     Mem_Memset(&ctx.table,0,sizeof(ctx.table));
     return {&ctx,&prepare,&install,&verify,&uninstall};
 }
