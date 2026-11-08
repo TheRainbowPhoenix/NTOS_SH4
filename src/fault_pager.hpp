@@ -16,8 +16,6 @@
 namespace ntos_fault {
 constexpr unsigned MAX_MODULES=16u;
 constexpr unsigned SLOTS=55u;
-constexpr unsigned SETS=32u;
-constexpr unsigned WAYS=4u;
 constexpr uint32_t PAGE=4096u;
 struct Area {
     uint32_t va;
@@ -28,16 +26,16 @@ struct Entry {
     uint32_t va;
     uint32_t pa;
     uint32_t age;
-    uint8_t set;
-    uint8_t way;
     bool present;
     bool pinned;
 };
+// The SH7305 has a 64-entry fully associative UTLB, not the SH7705's
+// 32 sets x 4 ways. Slots 0..54 are NTOS-owned; 55..58 map the API window.
+// The final callback argument is reserved for ABI compatibility and is 0.
 using Install=bool (*)(void *,uint32_t,uint32_t,unsigned,unsigned);
 struct Pager {
     Area modules[MAX_MODULES]{};
     Entry entries[SLOTS]{};
-    uint8_t reserved_ways[SETS]{}; // MMU API window and host-pinned slots
     unsigned modules_used=0u;
     uint32_t clock=0u,misses=0u,evictions=0u;
     bool servicing=false;
@@ -55,16 +53,6 @@ struct Pager {
         modules[modules_used++]={va,pages,pa};
         return true;
     }
-    bool reserve_way(unsigned set,unsigned way) {
-        if(set>=SETS || way>=WAYS)return false;
-        uint8_t bit=static_cast<uint8_t>(1u<<way);
-        if(reserved_ways[set]&bit)return false;
-        for(unsigned i=0;i<SLOTS;++i)
-            if(entries[i].present && entries[i].set==set &&
-               entries[i].way==way)return false;
-        reserved_ways[set]|=bit;
-        return true;
-    }
     bool backing(uint32_t va,uint32_t *pa) const {
         if(!pa)return false;
         const uint32_t aligned=va&~(PAGE-1u);
@@ -79,8 +67,6 @@ struct Pager {
         }
         return false;
     }
-    // A given VPN can appear in at most one slot. A write fault does not
-    // demand a page copy because the RAM backing frame persists.
     int lookup(uint32_t va) const {
         va&=~(PAGE-1u);
         for(unsigned i=0;i<SLOTS;++i)
@@ -98,73 +84,39 @@ struct Pager {
         const int existing=lookup(vpn);
         if(existing>=0) {
             Entry &e=entries[static_cast<unsigned>(existing)];
-            // Software metadata is not proof of current hardware residency.
-            // A genuine TLB miss on a tracked VPN must reinstall its old
-            // translation. Explicit hints, however, are cheap cache hits.
+            // ITLB and UTLB residency are independent. An actual miss
+            // on a tracked page still requires LDTLB, even if NTOS
+            // previously installed that mapping.
             if(hardware_miss &&
-               !install(ctx,e.va,e.pa,static_cast<unsigned>(existing),e.way)) {
-                servicing=false;
-                return false;
+               !install(ctx,e.va,e.pa,static_cast<unsigned>(existing),0u)) {
+                servicing=false;return false;
             }
             e.age=++clock;
             if(pin)e.pinned=true;
             servicing=false;
             return true;
         }
-        const unsigned set=(vpn>>12u)&(SETS-1u);
-        uint8_t ways=reserved_ways[set];
-        unsigned occupancy=0u;
-        for(unsigned w=0;w<WAYS;++w)
-            if(ways&(1u<<w))++occupancy;
-        for(unsigned i=0;i<SLOTS;++i) {
-            const Entry &e=entries[i];
-            if(e.present && e.set==set) {
-                ways|=static_cast<uint8_t>(1u<<e.way);
-                ++occupancy;
-            }
-        }
-        // If this VPN's set already occupies four ways, replace one
-        // unpinned way *in that set*. Otherwise pick a free global slot,
-        // or evict an old slot in any set.
+        // Fully associative replacement: an empty NTOS-owned slot first,
+        // otherwise the oldest unpinned page anywhere in the 55 slots.
         int victim=-1;
-        if(occupancy>=WAYS) {
+        for(unsigned i=0;i<SLOTS;++i)
+            if(!entries[i].present) {
+                victim=static_cast<int>(i);break;
+            }
+        if(victim<0)
             for(unsigned i=0;i<SLOTS;++i) {
                 const Entry &e=entries[i];
-                if(!e.present || e.set!=set || e.pinned)continue;
+                if(e.pinned)continue;
                 if(victim<0 || e.age<entries[victim].age)
                     victim=static_cast<int>(i);
             }
-        } else {
-            for(unsigned i=0;i<SLOTS;++i)
-                if(!entries[i].present) {
-                    victim=static_cast<int>(i);break;
-                }
-            if(victim<0)
-                for(unsigned i=0;i<SLOTS;++i) {
-                    const Entry &e=entries[i];
-                    if(e.pinned)continue;
-                    if(victim<0 || e.age<entries[victim].age)
-                        victim=static_cast<int>(i);
-                }
-        }
         if(victim<0){servicing=false;return false;}
         Entry &out=entries[static_cast<unsigned>(victim)];
-        const bool occupied=out.present;
-        unsigned way=0u;
-        if(occupied && out.set==set)
-            way=out.way;
-        else {
-            while(way<WAYS && (ways&(1u<<way))) ++way;
-            if(way>=WAYS){servicing=false;return false;}
-        }
-        // Install callback must update the SH7305 UTLB slot synchronously.
-        // Publish software metadata only AFTER the hardware install works.
-        if(!install(ctx,vpn,pa,static_cast<unsigned>(victim),way)) {
+        if(!install(ctx,vpn,pa,static_cast<unsigned>(victim),0u)) {
             servicing=false;return false;
         }
-        if(occupied)++evictions;
-        out={vpn,pa,++clock,static_cast<uint8_t>(set),
-             static_cast<uint8_t>(way),true,pin};
+        if(out.present)++evictions;
+        out={vpn,pa,++clock,true,pin};
         ++misses;
         servicing=false;
         return true;
