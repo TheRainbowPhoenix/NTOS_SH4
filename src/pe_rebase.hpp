@@ -56,7 +56,7 @@ inline bool fits(uint32_t candidate, uint32_t pages,
 inline bool choose_base(uint32_t preferred, uint32_t pages,
                         const Region *used, unsigned nused,
                         uint32_t *selected) {
-    if (!selected || nused>8u) return false;
+    if (!selected || !used || nused>32u) return false;
     if (fits(preferred,pages,used,nused)) {
         *selected=preferred; return true;
     }
