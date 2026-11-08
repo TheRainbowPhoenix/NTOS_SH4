@@ -94,7 +94,10 @@ hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
 ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) Makefile
 
-# Basic builds must work with the older HH3 v2.2.1 toolchain too.\n# The BFD/COFF parity suite is a diagnostic target (and a CI gate), not\n# a prerequisite for deploying NTOS.\nall: elf hh3 ntx
+# Basic builds must work with the older HH3 v2.2.1 toolchain too.
+# The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
+# a prerequisite for deploying NTOS.
+all: elf hh3 ntx
 
 # GNU binutils is the authoritative SH4BE object/code linker. The bundled
 # cross toolchain does NOT support sh-pe or pei-shl output: do not replace
