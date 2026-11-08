@@ -418,6 +418,7 @@ static void *align_page(void *p) {
     return reinterpret_cast<void *>(
         (reinterpret_cast<uint32_t>(p) + 0xFFFu) & ~0xFFFu);
 }
+#include "hardware_fault.hpp"
 
 // The eager mapper uses the exact same file-to-page materializer as the
 // future demand pager. It runs with MMU translation disabled and does not
@@ -457,13 +458,14 @@ static int load_mapped(const uint8_t *file, uint32_t file_size,
     // Preferred-base conflicts (including the API window) are resolved
     // by choose_base(). Do not reject relocatable images here.
 
-    // The SH7305 hardware has only 55 rotating UTLB slots. Reject large
-    // WinCE DLLs *before* allocating MBs of backing RAM; those need true
-    // demand paging, a separate interrupt/world-switch milestone.
+    // Normal host mode maps every page eagerly; experimental VBR mode
+    // retains all physical RAM backing but faults virtual pages on demand.
+#if !NTOS_ENABLE_TLB_MISS_PAGER
     if (vsize > (mmu::SLOT_ROTATING_LAST+1u)*0x1000u) {
         *err="PE too large for 55-page UTLB budget (needs pager)";
         return -1;
     }
+#endif
     // The UTLB maps complete 4 KiB pages even when PE SizeOfImage is not
     // page-aligned (e.g. COREDLL). Reserve/zero the full final page.
     const uint32_t mapped_bytes=(vsize+0xFFFu)&~0xFFFu;
@@ -605,7 +607,7 @@ static int snap_imports(const pe::Image &image_hdr, const MappedImage *image,
 // capacity. Discovery is recursive, by the *actual PE import descriptor name*;
 // it is no longer a hardcoded COREDLL + optional XAMLUI pair.
 constexpr unsigned NTOS_MAX_MODULES=16u;  // EXE + fifteen distinct DLLs
-constexpr uint32_t NTOS_MAX_FILE_BYTES=1024u*1024u;
+constexpr uint32_t NTOS_MAX_FILE_BYTES=8u*1024u*1024u;
 struct ModuleNode {
     char name[40];
     pe::Image hdr;
@@ -695,7 +697,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     ntos_irq::Owner irq_owner{};
     // Stage0 records ownership intent without installing an ISR. The host
     // retains VBR/UBC interrupts and the TLB miss path (gated OFF).
+#if !NTOS_ENABLE_TLB_MISS_PAGER
     irq_owner.prepare(host_state,ntos_irq::Hooks{});
+#endif
     if((host_state.mmucr&1u)!=0u) {
         *err="host MMU is already active";return -1;
     }
@@ -779,9 +783,15 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     // allocator handles DLLs sharing ImageBase, including 0x10000000.
     for(unsigned i=0u;i<count;++i) {
         uint32_t actual=0;
+#if NTOS_ENABLE_TLB_MISS_PAGER
+        if(!ntos_fault::choose_virtual(nodes[i].hdr.oh.image_base,
+                                      nodes[i].mapped.npages,
+                                      reservations,i,&actual)) {
+#else
         if(!ntos_rebase::choose_base(nodes[i].hdr.oh.image_base,
                                       nodes[i].mapped.npages,
                                       reservations,i,&actual)) {
+#endif
             *err="no UTLB-compatible address for PE dependency";
             goto done;
         }
@@ -789,9 +799,11 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         reservations[i]={actual,nodes[i].mapped.npages};
         image_pages+=nodes[i].mapped.npages;
     }
+#if !NTOS_ENABLE_TLB_MISS_PAGER
     if(image_pages>mmu::SLOT_ROTATING_LAST+1u) {
         *err="DLL graph exceeds resident UTLB page budget";goto done;
     }
+#endif
     for(unsigned i=0u;i<count;++i) {
         if(!ntos_rebase::apply(nodes[i].hdr,nodes[i].mapped.image,
                                nodes[i].mapped.vsize,nodes[i].mapped.base,err))
@@ -827,8 +839,52 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         flush_image(nodes[i].mapped.image,nodes[i].mapped.vsize);
     flush_image(api_block,0x4000u);
 
-    // Install pages into the four-way SH7305 UTLB while AT=0.
+    // Regular mode installs every page. Experimental fault mode installs
+    // only the API window and each DLL's first page and EXE entry page;
+    // the VBR+0x400 trampoline installs the remaining pages on demand.
     mmu::disable_at_flush();
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    {
+        ntos_irq::Hooks callbacks=ntos_hw::hooks(host_state);
+        if(!irq_owner.prepare(host_state,callbacks)) {
+            *err="cannot prepare IRQ handoff";goto done;
+        }
+        // The API window occupies way 0 in virtual sets 0..3 and uses the
+        // OS330 dedicated slots 0x37-0x3A. Never evict those translations.
+        for(uint32_t p=0u;p<mmu::API_WINDOW_PAGES;++p) {
+            const uint32_t va=mmu::VA_API_WINDOW+p*0x1000u;
+            const unsigned set=(va>>12)&31u;
+            if(!ntos_hw::g_context.table.reserve_way(set,0u)) {
+                *err="cannot reserve API mapping way";goto done;
+            }
+            mmu::map_page_at_index(va,
+                mmu::phys_addr(api_block+p*0x1000u),
+                mmu::SLOT_API_FIRST+p,0u);
+        }
+        for(unsigned i=0u;i<count;++i)
+            if(!ntos_hw::add_module(nodes[i].mapped.base,
+                                    nodes[i].mapped.image,
+                                    nodes[i].mapped.npages)) {
+                *err="cannot register virtual DLL backing";goto done;
+            }
+        // Pin the first page of the EXE and DLLs (most have their initial
+        // .text and IAT in that page) and the actual EXE entry page.
+        for(unsigned i=0u;i<count;++i)
+            if(!ntos_hw::prime(nodes[i].mapped.base,true)) {
+                *err="no UTLB way for DLL bootstrap page";goto done;
+            }
+        if(!ntos_hw::prime(nodes[0].mapped.base+hdr.oh.entry_rva,true)) {
+            *err="no UTLB way for EXE entry";goto done;
+        }
+        if(!irq_owner.acquire()) {
+            *err="VBR exception ownership install failed";goto done;
+        }
+        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
+                     "RAM page faults armed: %lu pages / %u slots",
+                     static_cast<unsigned long>(image_pages),
+                     static_cast<unsigned>(mmu::SLOT_ROTATING_LAST+1u));
+    }
+#else
     {
         uint32_t slot=0u;
         for(unsigned i=0u;i<count;++i) {
@@ -855,14 +911,17 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                 mmu::SLOT_API_FIRST+p,set_ways[set]++);
         }
     }
+#endif
 
     mmu::enable_at();
+#if !NTOS_ENABLE_TLB_MISS_PAGER
     for(unsigned i=0u;i<count;++i)
         mmu::cache_flush_invalidate_block(
              reinterpret_cast<void *>(nodes[i].mapped.base),
              nodes[i].mapped.vsize);
     mmu::cache_flush_invalidate_block(
         reinterpret_cast<void *>(mmu::VA_API_WINDOW),0x4000u);
+#endif
 
     {
         using entry_fn=int (*)(const NtosApi *,char **,char **);
