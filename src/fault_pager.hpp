@@ -88,7 +88,8 @@ struct Pager {
                 return static_cast<int>(i);
         return -1;
     }
-    bool fault(uint32_t va,Install install,void *ctx,bool pin=false) {
+    bool fault(uint32_t va,Install install,void *ctx,bool pin=false,
+               bool hardware_miss=false) {
         if(servicing || !install)return false;
         servicing=true;
         uint32_t pa=0;
@@ -97,6 +98,14 @@ struct Pager {
         const int existing=lookup(vpn);
         if(existing>=0) {
             Entry &e=entries[static_cast<unsigned>(existing)];
+            // Software metadata is not proof of current hardware residency.
+            // A genuine TLB miss on a tracked VPN must reinstall its old
+            // translation. Explicit hints, however, are cheap cache hits.
+            if(hardware_miss &&
+               !install(ctx,e.va,e.pa,static_cast<unsigned>(existing),e.way)) {
+                servicing=false;
+                return false;
+            }
             e.age=++clock;
             if(pin)e.pinned=true;
             servicing=false;
