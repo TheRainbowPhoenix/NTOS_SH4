@@ -121,6 +121,8 @@ jobs:
         export PATH=/toolchain/bin:$PATH
         make pager-experiment
         test -s dist_pager/NTOS.hh3
+        make pager-verify
+        test -s dist_pager_verify/NTOS.hh3
         sh4a_nofpueb-elf-nm dist_pager/NTOS.elf | grep -q ntos_vbr_template_start
         sh4a_nofpueb-elf-nm dist_pager/NTOS.elf | grep -q ntos_pager_exception_callback
-        echo "PASS isolated pager VBR+0x400 vector and callback linked (NOT hardware tested)"
+        echo "PASS regular + P4-readback diagnostic pager binaries linked (NOT hardware tested)"
