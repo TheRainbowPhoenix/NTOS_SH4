@@ -43,6 +43,8 @@ struct Context {
     bool installed=false;
     uint32_t fault_error=0u;
     uint32_t failed_address=0u;
+    uint32_t hw_faults=0u;
+    uint32_t hint_calls=0u;
 };
 static Context g_context{};
 
@@ -58,6 +60,7 @@ extern "C" int ntos_pager_exception_callback(uint32_t tea,uint32_t expevt) {
     // Called only from the assembly VBR miss vector on the P1 fault stack.
     // Host syscall, File_Read, Mem_Malloc, printf, exceptions forbidden.
     auto &ctx=ntos_hw::g_context;
+    ++ctx.hw_faults;
     if(expevt!=0x40u && expevt!=0x60u) {
         ++ctx.fault_error;
         ctx.failed_address=tea;
@@ -146,6 +149,8 @@ inline ntos_irq::Hooks hooks(const host_world::Snapshot &host) {
     ctx.host=host;
     ctx.fault_error=0u;
     ctx.failed_address=0u;
+    ctx.hw_faults=0u;
+    ctx.hint_calls=0u;
     Mem_Memset(&ctx.table,0,sizeof(ctx.table));
     return {&ctx,&prepare,&install,&verify,&uninstall};
 }
