@@ -1177,8 +1177,17 @@ static void tiny_utoa(uint32_t v, char *buf) {
 // A pressed EXE used to acknowledge a load error must be released before
 // the picker is redrawn, or the next scan immediately relaunches that EXE.
 static void wait_error_key_release(void) {
-    Debug_WaitKey();
+    // The picker uses the level-based getKey API. Debug_WaitKey uses a
+    // different event path and can block after the picker consumed EXE.
+    // Wait for the launch key to go up, then require a NEW press.
     uint32_t key1=0u,key2=0u;
+    do {
+        getKey(&key1,&key2);
+    } while ((key1|key2)!=0u);
+    do {
+        getKey(&key1,&key2);
+    } while ((key1|key2)==0u);
+    // Do not let the acknowledging key leak into the next picker.
     do {
         getKey(&key1,&key2);
     } while ((key1|key2)!=0u);
