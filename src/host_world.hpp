@@ -7,7 +7,9 @@
 // snapshot/restore for the P1-resident stage0, not a second gint kernel.
 #pragma once
 #include <stdint.h>
+#if defined(__sh__)
 #include "mmu.hpp"
+#endif
 
 namespace host_world {
 struct Snapshot {
@@ -25,7 +27,11 @@ inline Snapshot capture() {
     __asm__ volatile("stc gbr,%0" : "=r"(s.gbr) :: "memory");
     __asm__ volatile("stc dbr,%0" : "=r"(s.dbr) :: "memory");
 #endif
+#if defined(__sh__)
     s.mmucr=mmu::read_mmucr();
+#else
+    s.mmucr=0u; // Host unit tests have no SH4 MMU.
+#endif
     return s;
 }
 // Call only after exiting mapped P0 execution and disabling the added TLB
