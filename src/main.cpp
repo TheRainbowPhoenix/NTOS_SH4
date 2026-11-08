@@ -1026,13 +1026,12 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         if(!ntos_hw::prime(nodes[0].mapped.base+hdr.oh.entry_rva,true)) {
             *err="no UTLB way for EXE entry";goto done;
         }
+        // Never call Hollyhock Debug_Printf/LCD_Refresh while our
+        // experimental VBR+0x400 exception handler owns VBR. SDK output
+        // can temporarily switch MMU/interrupt worlds behind our back.
         if(!irq_owner.acquire()) {
             *err="VBR exception ownership install failed";goto done;
         }
-        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "RAM page faults armed: %lu pages / %u slots",
-                     static_cast<unsigned long>(image_pages),
-                     static_cast<unsigned>(mmu::SLOT_ROTATING_LAST+1u));
     }
 #else
     {
