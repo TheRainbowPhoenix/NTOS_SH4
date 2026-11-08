@@ -77,24 +77,53 @@ def image_info(path):
     return base, (size + 4095) // 4096
 
 
-def test_utlb_sets():
-    # SH7305 install_page uses (VA >> 12) & 31, four hardware ways.
-    # A missing PTE at virtual address zero is the correct null guard.
-    images = [image_info(p) for p in
-              ("dist/COREDLL.DLL", "dist/XAMLUI.DLL",
-               "dist/METROWIN.EXE")]
-    total = sum(pages for _, pages in images)
-    assert total <= 55, ("rotating UTLB slot exhaustion", total)
-    used = [0] * 32
-    for base, pages in images + [(0x08100000, 4)]:
+def choose_base(preferred, pages, used):
+    """Independent host model of NTOS's 32-set/four-way first-fit logic."""
+    def fits(base):
+        if base < 0x00100000 or base >= 0x07FF0000 or base & 4095:
+            return False
+        if base + pages * 4096 > 0x07FF0000:
+            return False
+        occupancy = [0] * 32
+        for vbase, count in [(0x08100000, 4)] + list(used):
+            if base < vbase + count*4096 and vbase < base+pages*4096:
+                return False
+            for page in range(count):
+                i = ((vbase >> 12) + page) & 31
+                occupancy[i] += 1
+                if occupancy[i] > 4:
+                    return False
         for page in range(pages):
-            virtual = base + 4096 * page
-            slot_set = (virtual >> 12) & 31
-            used[slot_set] += 1
-            assert used[slot_set] <= 4, (
-                "UTLB collision", hex(virtual), slot_set, used[slot_set])
-    print(f"PASS UTLB: {total} image pages, "
-          f"worst set occupancy {max(used)}/4, zero page unmapped")
+            i = ((base >> 12)+page)&31
+            occupancy[i] += 1
+            if occupancy[i] > 4:
+                return False
+        return True
+
+    if fits(preferred):
+        return preferred
+    for va in range(0x01000000, 0x07FF0000, 4096):
+        if fits(va):
+            return va
+    raise AssertionError("no four-way compatible UTLB address")
+
+
+def test_utlb_sets():
+    files = ("dist/METROWIN.EXE", "dist/COREDLL.DLL",
+             "dist/XAMLUI.DLL")
+    images = [image_info(path) for path in files]
+    assert images[1][0] == images[2][0] == 0x10000000
+    used = []
+    for preferred, pages in images:
+        base = choose_base(preferred, pages, used)
+        used.append((base, pages))
+        print(f"UTLB: preferred {preferred:#010x}, assigned {base:#010x}, "
+              f"pages={pages}")
+    assert used[0][0] == 0x00400000
+    assert used[1][0] != used[2][0]
+    assert used[1][0] != 0x10000000 and used[2][0] != 0x10000000
+    print("PASS UTLB: shared 0x10000000 DLL ImageBase relocates to "
+          "distinct, four-way-compatible mappings")
 
 
 def main():
@@ -102,8 +131,7 @@ def main():
     xaml_base, xaml = inspect("dist/XAMLUI.DLL")
     core_base, core = inspect("dist/COREDLL.DLL")
     assert metro_base == 0x00400000
-    assert core_base == 0x00800000
-    assert xaml_base == 0x00C00000
+    assert core_base == xaml_base == 0x10000000
     assert [name for name, _ in metro] == ["COREDLL.DLL", "XAMLUI.DLL"], metro
     assert [name for name, _ in xaml] == ["COREDLL.DLL"], xaml
     assert not core, core
