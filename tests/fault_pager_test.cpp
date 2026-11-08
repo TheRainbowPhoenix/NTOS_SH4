@@ -38,6 +38,16 @@ int main() {
     assert(page.misses==512u);
     assert(page.evictions>400u);
     assert(page.lookup(0x01000000u)>=0); // pinned entry protected
+    // A spontaneous hardware eviction of a pinned mapping must be
+    // repairable without a new logical allocation or eviction.
+    const unsigned before_refault=sink.installations;
+    const uint32_t before_misses=page.misses;
+    assert(page.fault(0x01000000u,install,&sink,false,true));
+    assert(sink.installations==before_refault+1u);
+    assert(page.misses==before_misses);
+    // An ordinary explicit hint on the same VPN is still a no-op.
+    assert(page.fault(0x01000000u,install,&sink));
+    assert(sink.installations==before_refault+1u);
     for(uint32_t p=0;p<512u;++p)
         assert(page.fault(0x02000000u+p*4096u,install,&sink));
     assert(page.lookup(0x01000000u)>=0);
@@ -59,7 +69,7 @@ int main() {
         }
         assert(ways<=4u);
     }
-    assert(sink.installations==page.misses);
+    assert(sink.installations==page.misses+1u);
     assert(!page.servicing);
     assert(!page.fault(0x08000000u,install,&sink));
     assert(!page.fault(0x01000000u,nullptr,&sink));
