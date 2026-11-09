@@ -7,18 +7,22 @@
 NT_IMPORT(int, svf_SVFDrawTint, (void *, const void *, DWORD, int, int, int, int, DWORD))
 NT_IMPORT(void *, CreateFileW, (const WCHAR16 *, DWORD, DWORD, void *, DWORD, DWORD, void *))
 NT_IMPORT(int, WriteFile, (void *, const void *, DWORD, DWORD *, void *))
+NT_IMPORT(int, ReadFile, (void *, void *, DWORD, DWORD *, void *))
 NT_IMPORT(int, CloseHandle, (void *))
 NT_DEFINE(CreateFileW)
 NT_DEFINE(WriteFile)
+NT_DEFINE(ReadFile)
 NT_DEFINE(CloseHandle)
 /* Keep all COREDLL IAT entries contiguous; external SVF follows last. */
+NT_IMPORT(int, svf_SVFValidate, (const void *, DWORD))
 NT_DEFINE(svf_SVFDrawTint)
+NT_DEFINE(svf_SVFValidate)
 
 static const WCHAR16 clsname[] = {'S','V','F','E','D','I','T','O','R',0};
 static const WCHAR16 title[] = {'S','V','F',' ','E','d','i','t','o','r',0};
 static const WCHAR16 file_name[] = {'\\','f','l','s','0','\\','I','C','O','N','.','S','V','F',0};
 static unsigned char bytes[1024];
-static unsigned used, shapes;
+static unsigned used, shapes, shape_undo[51];
 static int tool = 0, tone, down_x, down_y, touching, pressed = -1, saved = -1;
 static void put8(unsigned char c) { if (used < sizeof(bytes)) bytes[used++] = c; }
 static void put16(int v) { put8((unsigned char)((unsigned)v >> 8)); put8((unsigned char)v); }
@@ -45,6 +49,7 @@ static void append_shape(int ax, int ay, int bx, int by)
         return;
     /* Explicit two-tone model: 0x7fff primary / 0x4210 half-black.
      * Fills are transparent except rectangles, so shapes stay editable. */
+    shape_undo[shapes] = used;
     put8(1); put16(tool == 0 ? (tone ? 0x4210 : 0x7fff) : 0xffff);
     put16(tone ? 0x4210 : 0x7fff);
     if (tool == 0) {
@@ -87,13 +92,42 @@ static void save_doc(void)
             written == used + 1;
     NT_CALL(CloseHandle, (handle));
 }
+static void load_doc(void)
+{
+    void *handle = NT_CALL(CreateFileW, (file_name, 0x80000000u, 0, 0, 3, 0, 0));
+    if (!handle || handle == (void *)-1) {
+        saved = 0;
+        return;
+    }
+    unsigned char loaded[1024];
+    DWORD count = 0;
+    int ok = NT_CALL(ReadFile, (handle, loaded, sizeof(loaded), &count, 0));
+    NT_CALL(CloseHandle, (handle));
+    if (!ok || count < 10 || count >= sizeof(bytes) ||
+        !NT_CALL(svf_SVFValidate, (loaded, count)) || loaded[count - 1] != 0) {
+        saved = 0;
+        return;
+    }
+    for (DWORD i = 0; i + 1 < count; ++i)
+        bytes[i] = loaded[i];
+    used = count - 1;
+    shapes = 0; /* Loaded layers are preserved; Undo affects new strokes only. */
+    saved = 2;
+}
+static void undo_shape(void)
+{
+    if (shapes) {
+        used = shape_undo[--shapes];
+        saved = -1;
+    }
+}
 static void frame(void *dc)
 {
     static const char *tools[] = {"Rect", "Line", "Circle", "Arc"};
     const DWORD ink = RGB(22, 27, 34), weak = RGB(120, 127, 136);
     ui_fill(dc, 0, 24, 320, 488, RGB(245, 249, 252));
     ui_fill(dc, 0, 24, 320, 55, RGB(223, 233, 243));
-    ui_text(dc, 11, 31, "File  Edit  View", ink, 0);
+    ui_text(dc, 11, 31, "File    Undo      SVF Editor", ink, 0);
     for (int i = 0; i < 4; ++i) {
         int x = 8 + 77 * i;
         ui_fill(dc, x + (pressed == i), 64 + (pressed == i),
@@ -119,8 +153,10 @@ static void frame(void *dc)
     ui_fill(dc, 214, 411, 309, 443, pressed == 6 ? RGB(158, 182, 205) :
             RGB(195, 215, 232));
     ui_text(dc, 229, 418, "Save", ink, 0);
-    ui_text(dc, 12, 458,
-            saved < 0 ? "Tap and drag to draw" : saved ? "Saved: ICON.SVF" : "Storage write failed",
+    ui_fill(dc, 109, 449, 205, 478, RGB(210, 223, 235));
+    ui_text(dc, 123, 455, "Load", ink, 0);
+    ui_text(dc, 12, 456,
+            saved < 0 ? "Draw / save" : saved == 1 ? "Saved" : saved == 2 ? "Loaded" : "File error",
             saved == 0 ? RGB(175, 52, 42) : weak, 0);
 }
 static int procedure(void *hwnd, DWORD msg, DWORD wp, DWORD lp)
@@ -141,7 +177,11 @@ static int procedure(void *hwnd, DWORD msg, DWORD wp, DWORD lp)
         int x = (short)(lp & 0xffff), y = (short)(lp >> 16);
         if (msg == WM_LBUTTONDOWN) {
             pressed = -1;
-            if (y >= 64 && y < 96)
+            if (y >= 24 && y < 55 && x >= 62 && x < 120)
+                pressed = 8;
+            else if (y >= 449 && y < 478 && x >= 109 && x < 205)
+                pressed = 7;
+            else if (y >= 64 && y < 96)
                 pressed = (x - 8) / 77;
             else if (y >= 411 && y < 443)
                 pressed = x < 105 ? 4 : x < 211 ? 5 : 6;
@@ -160,6 +200,8 @@ static int procedure(void *hwnd, DWORD msg, DWORD wp, DWORD lp)
             else if (pressed == 4) tone = !tone;
             else if (pressed == 5) reset_doc();
             else if (pressed == 6) save_doc();
+            else if (pressed == 7) load_doc();
+            else if (pressed == 8) undo_shape();
             pressed = -1;
         }
         NT_CALL(InvalidateRect, (hwnd, 0, 1));
