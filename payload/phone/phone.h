@@ -17,6 +17,7 @@ typedef struct {
 #define BLUE RGB_(40, 121, 181)
 /* NTOS light-default palette: low-glare ivory/slate surfaces with muted blue. */
 #define INK RGB_(29, 42, 58)
+#define NAV_INK RGB_(12, 16, 22)
 #define SURFACE RGB_(242, 247, 251)
 #define PANEL RGB_(218, 233, 244)
 #define CARD RGB_(231, 241, 249)
