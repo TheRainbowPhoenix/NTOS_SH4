@@ -83,11 +83,11 @@ make msvc-abi-coredll
 | Real four-export COREDLL subset | \`dist_msvc_coredll/COREDLLABI.EXE\` + \`COREDLL.DLL\` | \`0xAB1C0500\` |
 
 **Use separate storage directories or swap one pair at a time.**
-The experimental COREDLL only exports four functions and must
+The experimental COREDLL only exports four real services plus a five-argument ABI marker and must
 never replace the normal production \`dist/COREDLL.DLL\` for
 other apps. The COREDLLABI fixture calls actual NTOS console,
 malloc and free services, checks writable allocated memory,
-and does not invoke blocking \`getkey\`.
+and does not invoke blocking \`getkey\`. Its coredll_abi5 marker checks the fifth stack argument and distinguishes a correctly wrapped COREDLL from a plain GCC-only DLL.
 
 \`ABITYPED.EXE\` returns \`0xAB1E0001\` through \`0xAB1E0012\`
 to identify the first failing of eighteen signatures, in the
