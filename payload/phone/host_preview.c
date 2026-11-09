@@ -4,7 +4,23 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
 #include <io.h>
+#else
+#include <dirent.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#define _A_SUBDIR 16
+struct _finddata_t {unsigned attrib;unsigned long size;char name[260];};
+typedef struct {DIR *dir;char base[1200];} HostSearch;
+static int _findnext(intptr_t fd,struct _finddata_t *out){HostSearch *s=(HostSearch *)fd;struct dirent *d=readdir(s->dir);if(!d)return -1;
+ char path[1536];snprintf(path,sizeof(path),"%s/%s",s->base,d->d_name);struct stat st;if(stat(path,&st))return -1;
+ out->attrib=S_ISDIR(st.st_mode)?16u:0u;out->size=(unsigned long)st.st_size;strncpy(out->name,d->d_name,259);out->name[259]=0;return 0;}
+static intptr_t _findfirst(const char *pattern,struct _finddata_t *out){HostSearch *s=calloc(1,sizeof(*s));if(!s)return -1;
+ strncpy(s->base,pattern,sizeof(s->base)-1);size_t n=strlen(s->base);if(n&&s->base[n-1]=='*')s->base[n-1]=0;s->dir=opendir(s->base);
+ if(!s->dir){free(s);return -1;}if(_findnext((intptr_t)s,out)){closedir(s->dir);free(s);return -1;}return (intptr_t)s;}
+static int _findclose(intptr_t fd){HostSearch *s=(HostSearch *)fd;int result=closedir(s->dir);free(s);return result;}
+#endif
 #include "phone_io.h"
 static uint16_t pixels[320*528];
 const Render *render_SpGetThreadContext(void);
@@ -91,6 +107,7 @@ int main(int argc,char **argv){assert(argc==3);strncpy(fsroot,argv[2],sizeof(fsr
  named_snap(m,ch,argv[1],"home");m->input(WM_KEY_,0x28,0);m->input(WM_KEY_,0x28,0);assert(m->scroll()>0);named_snap(m,ch,argv[1],"home-scrolled");
  m->input(WM_KEY_,0x27,0);named_snap(m,ch,argv[1],"all-apps");
  m->input(WM_DOWN_,0,pos(80,350));m->input(WM_MOVE_,0,pos(80,160));assert(m->scroll()>0);
+ for(unsigned i=0;i<4;++i)m->input(WM_KEY_,0x26,0);
  m->input(WM_DOWN_,0,pos(20,44));assert(sip_flags&1u);named_snap(m,ch,argv[1],"keyboard-lower");
  assert(kb->input(WM_DOWN_,0,pos(15,340))=='q');kb->input(WM_DOWN_,0,pos(20,445));assert(kb->page()==3);
  named_snap(m,ch,argv[1],"keyboard-caps");assert(kb->input(WM_DOWN_,0,pos(15,340))=='Q');

@@ -88,6 +88,9 @@ static int pin_save(void){unsigned char bytes[8+MAX_APPS*8];bytes[0]='P';bytes[1
  return save_("\\fls0\\home.dat",bytes,8+cat.pin_count*8);}
 static void pack_pins(void){unsigned char used[64][6];for(unsigned y=0;y<64;++y)for(unsigned x=0;x<6;++x)used[y][x]=0;
  for(unsigned i=0;i<cat.pin_count;++i){Pin *p=&cat.pins[i];unsigned s=p->size;int placed=0;
+  if(p->x+s<=6&&p->y+s<=64){int fits=1;
+   for(unsigned yy=0;yy<s;++yy)for(unsigned xx=0;xx<s;++xx)if(used[p->y+yy][p->x+xx])fits=0;
+   if(fits){for(unsigned yy=0;yy<s;++yy)for(unsigned xx=0;xx<s;++xx)used[p->y+yy][p->x+xx]=1;placed=1;}}
   for(unsigned y=0;y+s<=64&&!placed;++y)for(unsigned x=0;x+s<=6;++x){int fits=1;
    for(unsigned yy=0;yy<s;++yy)for(unsigned xx=0;xx<s;++xx)if(used[y+yy][x+xx])fits=0;
    if(!fits)continue;p->x=(unsigned char)x;p->y=(unsigned char)y;
@@ -102,13 +105,13 @@ int CatalogReload(void){cat.count=cat.pin_count=0;scan_dir(root,0);
   unsigned count=be16_(work+4);if(count<=MAX_APPS&&8+count*8==(unsigned)n)for(unsigned i=0;i<count;++i){
    unsigned id=be16_(work+8+i*8),size=work[10+i*8];int duplicate=0;
    for(unsigned j=0;j<cat.pin_count;++j)if(cat.pins[j].id==id)duplicate=1;
-   if(!duplicate&&byid(id)&&(size==1||size==2)){Pin *p=&cat.pins[cat.pin_count++];p->id=(unsigned short)id;p->size=(unsigned char)size;}}}
- else {for(unsigned i=0;i<cat.count&&cat.pin_count<16;++i){Pin *p=&cat.pins[cat.pin_count++];p->id=cat.apps[i].id;p->size=cat.apps[i].size;}}
+   if(!duplicate&&byid(id)&&(size==1||size==2)){Pin *p=&cat.pins[cat.pin_count++];p->id=(unsigned short)id;p->size=(unsigned char)size;p->x=work[11+i*8];p->y=work[12+i*8];}}}
+ else {for(unsigned i=0;i<cat.count&&cat.pin_count<16;++i){Pin *p=&cat.pins[cat.pin_count++];p->id=cat.apps[i].id;p->size=cat.apps[i].size;p->x=p->y=255;}}
  pack_pins();return (int)cat.count;}
 int CatalogPin(unsigned id,unsigned size){if(!byid(id)||size>2)return 0;
  unsigned i=0;while(i<cat.pin_count&&cat.pins[i].id!=id)++i;
  if(size==0){if(i==cat.pin_count)return 1;for(unsigned j=i+1;j<cat.pin_count;++j)cat.pins[j-1]=cat.pins[j];--cat.pin_count;}
- else {if(i==cat.pin_count){if(i>=MAX_APPS)return 0;++cat.pin_count;}cat.pins[i].id=(unsigned short)id;cat.pins[i].size=(unsigned char)size;}
+ else {if(i==cat.pin_count){if(i>=MAX_APPS)return 0;++cat.pin_count;cat.pins[i].x=cat.pins[i].y=255;}cat.pins[i].id=(unsigned short)id;cat.pins[i].size=(unsigned char)size;}
  pack_pins();return pin_save();}
 void CatalogDrawIcon(void *dc,unsigned index,int x,int y,int size){if(index>=cat.count)return;
  AppEntry *a=&cat.apps[index];if(a->icon_len&&CALL(svf_SVFDraw,(dc,a->icon,a->icon_len,x,y,size,size)))return;
@@ -117,9 +120,12 @@ void CatalogDrawIcon(void *dc,unsigned index,int x,int y,int size){if(index>=cat
   if(f!=(void *)(intptr_t)-1)CALL(CloseHandle,(f));
   if(ok&&a->pe_icon_size>=40&&le32_(work)==40){unsigned w=le32_(work+4),h=le32_(work+8)>>1;
    if(w&&h&&w<=32&&h<=32&&work[14]==32&&work[15]==0&&le32_(work+16)==0&&40+w*h*4<=a->pe_icon_size){
+    int alpha=0;for(unsigned i=0;i<w*h;++i)if(work[40+i*4+3]){alpha=1;break;}
+    unsigned mask=40+w*h*4,stride=((w+31u)>>5)*4;int has_mask=mask+stride*h<=a->pe_icon_size;
     for(int yy=0;yy<size;++yy)for(int xx=0;xx<size;++xx){unsigned px=udiv_((unsigned)xx*w,(unsigned)size),py=udiv_((unsigned)yy*h,(unsigned)size);
      const unsigned char *p=work+40+((h-1-py)*w+px)*4;
-     if(p[3]||p[0]||p[1]||p[2])r->fill(dc,x+xx,y+yy,x+xx+1,y+yy+1,RGB_(p[2],p[1],p[0]));}return;}}}
+     int opaque=alpha?p[3]>=128:!has_mask||!(work[mask+(h-1-py)*stride+(px>>3)]&(128u>>(px&7)));
+     if(opaque)r->fill(dc,x+xx,y+yy,x+xx+1,y+yy+1,RGB_(p[2],p[1],p[0]));}return;}}}
  char initial[2]={a->name[0],0};r->text(dc,x+size/5,y,initial,WHITE,size>=30?28:18);
 }
 int phone_unsupported(void){return NOTIMPL;}

@@ -121,6 +121,7 @@ def main():
         binary,_=pack.emit_ntx(elf,0x400000,import_module='COREDLL.DLL',extra_imports=list(groups.items()))
         (device/'Apps'/slug/(slug+'.exe')).write_bytes(add_icon_resource(binary,icon(slug)))
     if (out/'NTOS.hh3').exists():shutil.copyfile(out/'NTOS.hh3',device/'NTOS.hh3')
+    shutil.copyfile(HERE/'README.md',device/'README.md')
     print('Generated',len(records),'real SH4 app EXEs with embedded SVF and binary sidecars')
     print('Phone modules:',sum(r['bytes'] for r in report),'bytes; COREDLL supplied by make ntx/phone')
 

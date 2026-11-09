@@ -88,9 +88,11 @@ def generate_assets(out):
  # Install defaults only if no user preferences exist. Regenerating apps
  # must never overwrite pin edits made on a mounted device/package.
  prefs=out/'home.dat'
- if not prefs.exists():
-  ids=[18,10,11,1,16,17,5,19,22,8,13,23,14,12,2,9,24,20,6,15]
-  prefs.write_bytes(b'PIN1'+struct.pack('>H',len(ids))+b'\0\0'+b''.join(struct.pack('>HBBBBH',i,1 if i in [18,10,11,24,20,6,15] else 2,0,0,0,0) for i in ids))
+ ids=[18,10,11,1,16,17,5,19,22,8,13,23,14,12,2,9,24,20,6,15]
+ old=b'PIN1'+struct.pack('>H',len(ids))+b'\0\0'+b''.join(struct.pack('>HBBBBH',i,1 if i in [18,10,11,24,20,6,15] else 2,0,0,0,0) for i in ids)
+ positions=[(0,0),(0,1),(1,1),(2,0),(4,0),(0,2),(2,2),(4,2),(0,4),(2,4),(4,4),(0,6),(2,6),(4,6),(0,8),(2,8),(4,8),(5,8),(4,9),(5,9)]
+ if not prefs.exists() or prefs.read_bytes()==old:
+  prefs.write_bytes(b'PIN1'+struct.pack('>H',len(ids))+b'\0\0'+b''.join(struct.pack('>HBBBBH',i,1 if i in [18,10,11,24,20,6,15] else 2,x,y,0,0) for i,(x,y) in zip(ids,positions)))
  return records
 if __name__=='__main__':
  generate_headers()
