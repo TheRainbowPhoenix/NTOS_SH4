@@ -110,6 +110,14 @@ jobs:
         assert expected <= imports,expected-imports
         PY
         echo "PASS stress EXE + conservative PE conversion tests (SH4 emulator still required)"
+    - name: Assemble and verify a single pager-enabled phone and WinCE-native bundle
+      run: |
+        make unified
+        test -s dist_unified/NTOS.hh3
+        test -s dist_unified/COREDLL.DLL
+        cmp dist_pager/NTOS.hh3 dist_unified/NTOS.hh3
+        cmp dist_unified/COREDLL.DLL dist_unified/phone-device/COREDLL.DLL
+        python3 tools/check_unified_bundle.py dist_unified
     - name: Verify all phone apps, launcher ABI and native Settings/input views
       run: |
         python3 payload/phone/check_phone.py
@@ -185,6 +193,7 @@ jobs:
           dist_msvc_thunks/**
           dist_msvc_typed/**
           dist_msvc_coredll/**
+          dist_unified/**
           dist_collision/**
 
   build-hh3-v221:
