@@ -55,6 +55,13 @@ def main():
  with (out/'draw-profile.csv').open(newline='') as handle:
   records=list(csv.DictReader(handle))
  assert len(records)>=15, 'expected multiple real phone UI paint scenes'
+ by_scene={row['scene']:row for row in records}
+ # Regression guard for the full-screen notification shade: do not waste
+ # time painting Start/keyboard under an entirely opaque overlay.
+ for scene in ('notifications.ppm','notification-toggle.ppm'):
+  assert scene in by_scene, 'missing profile '+scene
+  assert int(by_scene[scene]['fill_calls'])<2800, 'hidden Start menu repainted: '+scene
+  assert int(by_scene[scene]['painted_pixels'])<300000, 'too much shade overdraw: '+scene
  ordered=sorted(records,key=lambda row:int(row['fill_calls']),reverse=True)
  print('Highest GDI rectangle counts (host preview, not device timings):')
  for row in ordered[:8]:
