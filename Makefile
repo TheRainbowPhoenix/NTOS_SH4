@@ -579,5 +579,58 @@ msvc-abi-typed: $(TYPED_DIST)/ABITYPED.DLL $(TYPED_DIST)/ABITYPED.EXE
 
 .PHONY: msvc-abi-typed
 
+# Opt-in ABI-wrapped *real* COREDLL subset. This is not a release
+# replacement for the ~1900 exported COREDLL symbols: unclassified
+# signatures must never be passed as if they were scalar ABI functions.
+CE_CORE_GEN := obj_msvc_coredll/generated
+CE_CORE_OBJ := obj_msvc_coredll
+CE_CORE_DIST := dist_msvc_coredll
+
+$(CE_CORE_GEN)/stamp: tools/gen_sh4_msvc_typed.py payload/coredll_msvc_manifest.json
+	$(PYTHON) tools/gen_sh4_msvc_typed.py --manifest payload/coredll_msvc_manifest.json --outdir $(CE_CORE_GEN)
+	@touch $@
+
+$(CE_CORE_OBJ)/native.o: payload/coredll.c $(CE_CORE_GEN)/stamp
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS) \
+	  -Dcoredll_puts=nt_native_coredll_puts \
+	  -Dcoredll_getkey=nt_native_coredll_getkey \
+	  -Dcoredll_malloc=nt_native_coredll_malloc \
+	  -Dcoredll_free=nt_native_coredll_free
+
+$(CE_CORE_OBJ)/body.o: $(CE_CORE_GEN)/stamp
+	$(CC) -c $(CE_CORE_GEN)/abi_export_body.c -o $@ -I$(CE_CORE_GEN) $(PAYLOAD_CFLAGS)
+
+$(CE_CORE_OBJ)/export.o: $(CE_CORE_GEN)/stamp
+	$(AS) -c $(CE_CORE_GEN)/abi_export.S -o $@ $(AS_FLAGS)
+
+$(CE_CORE_OBJ)/import.o: $(CE_CORE_GEN)/stamp
+	$(CC) -c $(CE_CORE_GEN)/abi_import.c -o $@ -I$(CE_CORE_GEN) $(PAYLOAD_CFLAGS)
+
+$(CE_CORE_OBJ)/call.o: $(CE_CORE_GEN)/stamp
+	$(AS) -c $(CE_CORE_GEN)/abi_call.S -o $@ $(AS_FLAGS)
+
+$(CE_CORE_OBJ)/test.o: payload/coredll_msvc_test.c $(CE_CORE_GEN)/stamp
+	$(CC) -c $< -o $@ -I$(CE_CORE_GEN) $(PAYLOAD_CFLAGS)
+
+$(CE_CORE_DIST)/COREDLL.elf: $(CE_CORE_OBJ)/native.o $(CE_CORE_OBJ)/body.o $(CE_CORE_OBJ)/export.o payload/coredll.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/coredll.ld -o $@ $(CE_CORE_OBJ)/native.o $(CE_CORE_OBJ)/body.o $(CE_CORE_OBJ)/export.o
+
+$(CE_CORE_DIST)/COREDLL.DLL: $(CE_CORE_DIST)/COREDLL.elf tools/elf2ntx.py
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name COREDLL.DLL --exports coredll_puts,coredll_getkey,coredll_malloc,coredll_free
+
+$(CE_CORE_DIST)/COREDLLABI.elf: $(CE_CORE_OBJ)/test.o $(CE_CORE_OBJ)/import.o $(CE_CORE_OBJ)/call.o payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(CE_CORE_OBJ)/test.o $(CE_CORE_OBJ)/import.o $(CE_CORE_OBJ)/call.o
+
+$(CE_CORE_DIST)/COREDLLABI.EXE: $(CE_CORE_DIST)/COREDLLABI.elf $(CE_CORE_DIST)/COREDLL.DLL tools/elf2ntx.py
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+msvc-abi-coredll: $(CE_CORE_DIST)/COREDLL.DLL $(CE_CORE_DIST)/COREDLLABI.EXE
+	@echo "REAL COREDLL MSVC ABI SUBSET: COREDLLABI.EXE expects 0xAB1C0500"
+
+.PHONY: msvc-abi-coredll
+
 # Native WinCE-first phone launcher.
 include payload/phone/phone.mk
