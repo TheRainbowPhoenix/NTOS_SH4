@@ -110,10 +110,8 @@ def main():
                        'implemented':implemented,'stubbed':stubbed})
         print(f'{module}: {len(binary)} bytes, {len(sites)} relocations, {len(implemented)} implemented, {len(stubbed)} stubs')
     (out/'phone-build.json').write_text(json.dumps(report,indent=2)+'\n')
-    device=out/'phone-device';device.mkdir(exist_ok=True)
-    for name in [r['module'] for r in report]+['COREDLL.DLL']:
-        if (out/name).exists():shutil.copyfile(out/name,device/name)
-    records=generate_assets(device)
+    # One installation root: no duplicated COREDLL, HH3, or phone-device tree.
+    records=generate_assets(out)
     for app in records:
         slug=app['slug'];id_=app['id'];elf_path=obj/('app-'+slug+'.elf');o=obj/('app-'+slug+'.o')
         if not args.pack_only:
@@ -122,9 +120,8 @@ def main():
         elf=pack.Elf(elf_path.read_bytes());groups={'mobile_':'UIXMOBILE.DLL','menu_':'STARTMENU.DLL'}
         binary,_=pack.emit_ntx(elf,0x400000,import_module='COREDLL.DLL',extra_imports=list(groups.items()))
         if slug=='calc':binary=(out/'CALC.EXE').read_bytes()
-        (device/'Apps'/slug/(slug+'.exe')).write_bytes(add_icon_resource(binary,icon(slug)))
-    if (out/'NTOS.hh3').exists():shutil.copyfile(out/'NTOS.hh3',device/'NTOS.hh3')
-    shutil.copyfile(HERE/'README.md',device/'README.md')
+        (out/'Apps'/slug/(slug+'.exe')).write_bytes(add_icon_resource(binary,icon(slug)))
+    shutil.copyfile(HERE/'README.md',out/'README-phone.md')
     print('Generated',len(records),'real SH4 app EXEs with embedded SVF and binary sidecars')
     print('Phone modules:',sum(r['bytes'] for r in report),'bytes; COREDLL supplied by make ntx/phone')
 
