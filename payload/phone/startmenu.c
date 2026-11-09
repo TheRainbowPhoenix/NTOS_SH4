@@ -3,7 +3,6 @@ IMP(const Render *, render_SpGetThreadContext, (void))
 IMP(const Catalog *, catalog_CatalogGet, (void))
 IMP(int, catalog_CatalogReload, (void))
 IMP(int, catalog_CatalogPin, (unsigned, unsigned))
-IMP(void, catalog_CatalogDrawIcon, (void *, unsigned, int, int, int))
 IMP(void, catalog_CatalogDrawIconTint, (void *, unsigned, int, int, int, U32))
 IMP(const Settings *, settings_SettingsGetView, (void))
 IMP(int, coredll_launch, (const char *))
@@ -76,10 +75,6 @@ static int home_end(void)
             row = last;
     }
     return 28 + row * 52 + 28;
-}
-static void icon(void *dc, unsigned i, int x, int y, int size)
-{
-    CALL(catalog_CatalogDrawIcon, (dc, i, x, y, size));
 }
 static void icon_on_light(void *dc, unsigned i, int x, int y, int size)
 {
