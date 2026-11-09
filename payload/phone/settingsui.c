@@ -62,9 +62,9 @@ static void toggle(void *dc, const Render *r, int y, int on)
 {
     U32 c = on ? BLUE : GRAY;
     r->fill(dc, 12, y, 56, y + 20, c);
-    r->fill(dc, 14, y + 2, 54, y + 18, on ? BLUE : 0);
+    r->fill(dc, 14, y + 2, 54, y + 18, on ? BLUE : CARD);
     r->fill(dc, on ? 40 : 16, y + 4, on ? 52 : 28, y + 16, WHITE);
-    r->text(dc, 68, y + 2, on ? "On" : "Off", WHITE, 14);
+    r->text(dc, 68, y + 2, on ? "On" : "Off", INK, 14);
 }
 static void slider(void *dc, const Render *r, int y, int value)
 {
@@ -79,8 +79,8 @@ static void paint(void *dc)
 {
     const Render *r = CALL(render_SpGetThreadContext, ());
     r->clip(0, 24, 320, 528);
-    r->fill(dc, 0, 24, 320, 528, view >= 2 && view != 4 ? 0 : RGB_(23, 23, 23));
-    r->fill(dc, 0, 24, 320, 72, RGB_(23, 23, 23));
+    r->fill(dc, 0, 24, 320, 528, view >= 2 && view != 4 ? SURFACE : PANEL);
+    r->fill(dc, 0, 24, 320, 72, PANEL);
     icon(dc, 8, 12, 36, 24);
     r->text(dc, 48, 40,
             view == 2   ? "Display"
@@ -93,9 +93,9 @@ static void paint(void *dc)
     if (view == 0 || view == 1 || view == 4) {
         r->fill(dc, 12, 80, 308, 112, BLUE);
         r->fill(dc, 14, 82, 306, 110, WHITE);
-        r->text(dc, 23, 89, len ? query : search ? "" : "Find a setting", search ? 0 : GRAY, 14);
+        r->text(dc, 23, 89, len ? query : search ? "" : "Find a setting", search ? INK : MUTED, 14);
         if (search)
-            r->fill(dc, 23 + len * 7, 87, 24 + len * 7, 102, 0);
+            r->fill(dc, 23 + len * 7, 87, 24 + len * 7, 102, INK);
         r->ellipse(dc, 292, 93, 5, 5, GRAY, 1);
         r->line(dc, 296, 97, 300, 101, GRAY);
     }
@@ -107,7 +107,7 @@ static void paint(void *dc)
                 continue;
             int y = 132 + row++ * 64 - scroll_y;
             icon(dc, i < 8 ? i : 8, 12, y + 4, 32);
-            r->text(dc, 54, y + 3, names[i], WHITE, 14);
+            r->text(dc, 54, y + 3, names[i], INK, 14);
             r->text(dc, 54, y + 24, details[i], GRAY, 12);
         }
     } else if (view == 1) {
@@ -116,65 +116,65 @@ static void paint(void *dc)
         for (unsigned i = 0; i < 7; ++i) {
             int y = 186 + (int)i * 48 - scroll_y;
             icon(dc, 9 + i, 12, y + 2, 17);
-            r->text(dc, 39, y + 4, system_names[i], WHITE, 14);
+            r->text(dc, 39, y + 4, system_names[i], INK, 14);
         }
     } else if (view == 2) {
-        r->text(dc, 12, 98, "Display", WHITE, 22);
-        r->text(dc, 12, 147, "Adjust brightness level", WHITE, 14);
+        r->text(dc, 12, 98, "Display", INK, 22);
+        r->text(dc, 12, 147, "Adjust brightness level", INK, 14);
         slider(dc, r, 181, brightness);
-        r->text(dc, 12, 211, "Change brightness automatically when", WHITE, 14);
-        r->text(dc, 12, 232, "lighting changes", WHITE, 14);
+        r->text(dc, 12, 211, "Change brightness automatically when", INK, 14);
+        r->text(dc, 12, 232, "lighting changes", INK, 14);
         toggle(dc, r, 257, automatic);
-        r->text(dc, 12, 302, "Rotation lock", WHITE, 14);
+        r->text(dc, 12, 302, "Rotation lock", INK, 14);
         toggle(dc, r, 327, rotation);
-        r->text(dc, 12, 371, "Size of text, apps, and items on this display", WHITE, 14);
+        r->text(dc, 12, 371, "Size of text, apps, and items on this display", INK, 14);
         slider(dc, r, 413, scale);
-        r->fill(dc, 12, 439, 102, 471, RGB_(46, 46, 46));
-        r->text(dc, 38, 449, "Apply", WHITE, 14);
-        r->fill(dc, 122, 439, 212, 471, RGB_(46, 46, 46));
-        r->text(dc, 145, 449, "Cancel", WHITE, 14);
-        r->text(dc, 12, 503, "Show a dot on the connected display when", WHITE, 14);
+        r->fill(dc, 12, 439, 102, 471, CARD);
+        r->text(dc, 38, 449, "Apply", INK, 14);
+        r->fill(dc, 122, 439, 212, 471, CARD);
+        r->text(dc, 145, 449, "Cancel", INK, 14);
+        r->text(dc, 12, 503, "Show a dot on the connected display when", INK, 14);
     } else if (view == 4) {
         r->text(dc, 12, 143, "Update & security", GRAY, 14);
         r->clip(0, 178, 320, 528);
         for (unsigned i = 0; i < 6; ++i) {
             int y = 186 + (int)i * 48 - scroll_y;
             icon(dc, i == 2 ? 7 : 8, 12, y + 2, 17);
-            r->text(dc, 39, y + 4, update_names[i], WHITE, 14);
+            r->text(dc, 39, y + 4, update_names[i], INK, 14);
         }
     } else if (view == 5) {
-        r->text(dc, 12, 101, "Use developer features", WHITE, 22);
-        r->text(dc, 12, 148, "These settings are intended for", WHITE, 14);
-        r->text(dc, 12, 169, "development use only.", WHITE, 14);
+        r->text(dc, 12, 101, "Use developer features", INK, 22);
+        r->text(dc, 12, 148, "These settings are intended for", INK, 14);
+        r->text(dc, 12, 169, "development use only.", INK, 14);
         r->text(dc, 12, 199, "Learn more", BLUE, 14);
         static const char *choices[] = {"Windows Store apps", "Sideload apps", "Developer mode"};
         for (int i = 0; i < 3; ++i) {
             int y = 238 + i * 90;
             r->fill(dc, 12, y, 31, y + 19, GRAY);
-            r->fill(dc, 14, y + 2, 29, y + 17, 0);
+            r->fill(dc, 14, y + 2, 29, y + 17, SURFACE);
             if (developer == i)
                 r->fill(dc, 18, y + 6, 25, y + 13, BLUE);
-            r->text(dc, 40, y + 2, choices[i], WHITE, 14);
+            r->text(dc, 40, y + 2, choices[i], INK, 14);
         }
         r->text(dc, 40, 272, "Only install verified apps.", GRAY, 14);
         r->text(dc, 40, 362, "Install apps from other sources.", GRAY, 14);
     } else if (view == 6) {
-        r->text(dc, 12, 101, "Device encryption", WHITE, 22);
-        r->text(dc, 12, 148, "Device encryption helps protect your files", WHITE, 14);
-        r->text(dc, 12, 169, "and folders from unauthorized access.", WHITE, 14);
+        r->text(dc, 12, 101, "Device encryption", INK, 22);
+        r->text(dc, 12, 148, "Device encryption helps protect your files", INK, 14);
+        r->text(dc, 12, 169, "and folders from unauthorized access.", INK, 14);
         toggle(dc, r, 213, encryption);
         r->text(dc, 12, 267, "Preview only; storage is not encrypted.", GRAY, 12);
     } else if (view == 7) {
-        r->text(dc, 12, 101, "Update status", WHITE, 22);
-        r->text(dc, 12, 148, "No updates are available.", WHITE, 14);
-        r->fill(dc, 12, 216, 172, 248, RGB_(46, 46, 46));
-        r->text(dc, 23, 225, "Check for updates", WHITE, 14);
-        r->text(dc, 12, 333, "Update settings", WHITE, 22);
+        r->text(dc, 12, 101, "Update status", INK, 22);
+        r->text(dc, 12, 148, "No updates are available.", INK, 14);
+        r->fill(dc, 12, 216, 172, 248, CARD);
+        r->text(dc, 23, 225, "Check for updates", INK, 14);
+        r->text(dc, 12, 333, "Update settings", INK, 22);
         r->text(dc, 12, 382, "Updates are not installed in this demo.", GRAY, 14);
         r->text(dc, 12, 435, "Change active hours", BLUE, 14);
         r->text(dc, 12, 478, "Restart options", BLUE, 14);
     } else {
-        r->text(dc, 12, 101, view == 8 ? leaf : names[category], WHITE, 22);
+        r->text(dc, 12, 101, view == 8 ? leaf : names[category], INK, 22);
     }
     if (view == 0) {
         int max = 9 * 64 - 396;
