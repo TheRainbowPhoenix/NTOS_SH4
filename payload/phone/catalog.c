@@ -1,6 +1,7 @@
 #include "phone.h"
 IMP(int, svf_SVFValidate, (const void *, unsigned))
 IMP(int, svf_SVFDraw, (void *, const void *, unsigned, int, int, int, int))
+IMP(int, svf_SVFDrawTint, (void *, const void *, unsigned, int, int, int, int, U32))
 IMP(const Render *, render_SpGetThreadContext, (void))
 #include "phone_io.h"
 static Catalog cat;
@@ -574,12 +575,15 @@ int CatalogPin(unsigned id, unsigned size)
     pack_pins();
     return pin_save();
 }
-void CatalogDrawIcon(void *dc, unsigned index, int x, int y, int size)
+static void draw_icon(void *dc, unsigned index, int x, int y, int size, U32 tint)
 {
     if (index >= cat.count)
         return;
     AppEntry *a = &cat.apps[index];
-    if (a->icon_len && CALL(svf_SVFDraw, (dc, a->icon, a->icon_len, x, y, size, size)))
+    if (a->icon_len &&
+        (tint == 0xffffffffu
+             ? CALL(svf_SVFDraw, (dc, a->icon, a->icon_len, x, y, size, size))
+             : CALL(svf_SVFDrawTint, (dc, a->icon, a->icon_len, x, y, size, size, tint))))
         return;
     const Render *r = CALL(render_SpGetThreadContext, ());
     if (a->pe_icon_type) {
@@ -618,6 +622,14 @@ void CatalogDrawIcon(void *dc, unsigned index, int x, int y, int size)
     }
     char initial[2] = {a->name[0], 0};
     r->text(dc, x + size / 5, y, initial, WHITE, size >= 30 ? 28 : 18);
+}
+void CatalogDrawIconTint(void *dc, unsigned index, int x, int y, int size, U32 tint)
+{
+    draw_icon(dc, index, x, y, size, tint);
+}
+void CatalogDrawIcon(void *dc, unsigned index, int x, int y, int size)
+{
+    draw_icon(dc, index, x, y, size, 0xffffffffu);
 }
 int phone_unsupported(void)
 {
