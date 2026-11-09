@@ -532,7 +532,7 @@ msvc-abi-tests: msvc-abi-global msvc-abi-thunks
 TYPED_GEN := obj_msvc_typed/generated
 TYPED_OBJ := obj_msvc_typed
 TYPED_DIST := dist_msvc_typed
-TYPED_EXPORTS := abi_typed_5,abi_typed_8,abi_typed_s3,abi_typed_s3split,abi_typed_u64,abi_typed_u64split,abi_typed_ret_s3,abi_typed_ret_u64,abi_typed_ret_bytes3,abi_typed_bytes3,abi_typed_ret_s16,abi_typed_ret_u16,abi_typed_ptr,abi_typed_zero
+TYPED_EXPORTS := abi_typed_5,abi_typed_8,abi_typed_s3,abi_typed_s3split,abi_typed_u64,abi_typed_u64split,abi_typed_ret_s3,abi_typed_ret_u64,abi_typed_ret_bytes3,abi_typed_bytes3,abi_typed_ret_s16,abi_typed_ret_u16,abi_typed_ptr,abi_typed_zero,abi_typed_ret_bytes1,abi_typed_ret_bytes4,abi_typed_ret_s8,abi_typed_ret_u8
 
 $(TYPED_GEN)/stamp: tools/gen_sh4_msvc_typed.py payload/abi_typed_manifest.json
 	$(PYTHON) tools/gen_sh4_msvc_typed.py --manifest payload/abi_typed_manifest.json --outdir $(TYPED_GEN)
