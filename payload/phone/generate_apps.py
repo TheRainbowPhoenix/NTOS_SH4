@@ -81,7 +81,11 @@ def generate_assets(out):
  out=Path(out);root=out/'Apps';root.mkdir(parents=True,exist_ok=True);records=[]
  for app_id,(slug,name) in enumerate(APPS,1):
   folder=root/slug;folder.mkdir(exist_ok=True);svf=icon(slug)
-  color={'excel':0x426f1c,'powerpoint':0x1f42c5,'note':0x782d81,'weather':0xb16400,'news':0x495b18}.get(slug,0xff6039)
+  # VEC1 app icons are mostly white legacy glyphs; soft light tiles use
+  # slate/ink glyphs with subtle category color instead of harsh blue fields.
+  color={'excel':0xd9efdd,'powerpoint':0xdbe5f7,'note':0xf3e1f4,
+         'weather':0xd6edf9,'news':0xe3f0e1,'alarm':0xf3e9d5,
+         'settings':0xe8e6f5,'calc':0xe7f1f9}.get(slug,0xf8f0e5)
   flags=1 if slug=='news' else 0
   b=b'PAM1'+struct.pack('>HBBIBBH',app_id,flags,2,color,len(name.encode()),0,len(svf))+name.encode()+svf
   (folder/(slug+'.exe.manifest')).write_bytes(b);(folder/(slug+'.svf')).write_bytes(svf)
