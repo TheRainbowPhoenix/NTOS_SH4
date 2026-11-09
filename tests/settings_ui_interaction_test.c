@@ -99,7 +99,7 @@ int main(void)
     assert(s && s->profile == PROFILE);
     s->reset();
     s->paint((void *)1);
-    assert(tinted_icons && last_icon_tint == INK);
+    assert(tinted_icons && last_icon_tint == NAV_INK);
     tap(s, 85, 145); /* System */
     assert(s->page() == 1);
     tap(s, 85, 190); /* Display */
@@ -118,6 +118,22 @@ int main(void)
     assert(s->input(WM_UP_, 0, pos(70, 449)) == 1);
     s->paint((void *)1);
     assert(button_color == (int)RGB_(195, 215, 232));
+    /* Scale and layout uses a proper pushed XAML-style dropdown. */
+    tap(s, 280, 412);
+    tap(s, 88, 278); /* 125% entry; editing is a preview, not real DPI. */
+    assert(s->page() == 2);
+
+    assert(s->input(WM_KEY_, 0x1bu, 0) == 1);
+    assert(s->page() == 1);
+    assert(s->input(WM_KEY_, 0x28u, 0) == 1); /* bring About into view */
+    tap(s, 64, 488);
+    assert(s->page() == 9); /* CP400/NTOS About, not PC specifications */
+
+    assert(s->input(WM_KEY_, 0x71u, 0) == 1);
+    for (const char *p = "display"; *p; ++p)
+        assert(s->input(WM_CHAR_, (U32)*p, 0) == 1);
+    tap(s, 88, 143); /* Global search: Display from About page. */
+    assert(s->page() == 2);
     puts("PASS Settings icons dark, slider moves coalesced, button pressed visibly");
     return 0;
 }
