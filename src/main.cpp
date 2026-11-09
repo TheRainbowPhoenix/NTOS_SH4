@@ -877,7 +877,7 @@ static bool read_module_file(const char *path,uint8_t **dst,
     // Compatibility fallback for older calculator installs with flat DLLs.
     // System32 wins; never attempt fallback while another SDK handle is open.
     if(fd<0 && !g_fs.busy()) {
-        char legacy[64]="\\\\fls0\\\\";
+        char legacy[64]="\\fls0\\";
         unsigned k=6;
         const char *last=path;
         for(unsigned i=0;path[i];++i)
