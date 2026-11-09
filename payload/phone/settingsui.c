@@ -36,7 +36,7 @@ static const char *update_names[] = {"Phone update",  "Backup",         "Device 
 static void icon(void *dc, unsigned which, int x, int y, int size)
 {
     const SettingsIcon *i = &settings_icons[which];
-    CALL(svf_SVFDrawTint, (dc, i->data, i->length, x, y, size, size, NAV_INK));
+    CALL(svf_SVFDrawTint, (dc, i->data, i->length, x, y, size, size, RGB_(0, 0, 0)));
 }
 static int matches(const char *s)
 {
