@@ -121,14 +121,14 @@ jobs:
     - name: Cross-build original WinCE ordinal-ABI COREDLL and COMMCTRL compatibility
       run: |
         python3 payload/wince/build_compat.py
-        test -s dist/ce-demo/COREDLL.DLL
-        test -s dist/ce-demo/COMMCTRL.DLL
-        test -s dist/ce-demo/Windows/demo.cpl
+        test -s dist_ce_demo/COREDLL.DLL
+        test -s dist_ce_demo/COMMCTRL.DLL
+        test -s dist_ce_demo/Windows/demo.cpl
         python3 tests/control_ce_import_names.py
         python3 - <<'PY'
         import pefile
         native=pefile.PE('dist/COREDLL.DLL')
-        ce=pefile.PE('dist/ce-demo/COREDLL.DLL')
+        ce=pefile.PE('dist_ce_demo/COREDLL.DLL')
         assert native.FILE_HEADER.Machine==ce.FILE_HEADER.Machine==0x01a8
         assert native.get_memory_mapped_image()!=ce.get_memory_mapped_image(), 'CE and phone are still distinct ABI cores'
         print('CE ordinal-profile compiled; remains separate from unified native COREDLL')
