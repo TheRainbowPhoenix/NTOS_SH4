@@ -336,6 +336,7 @@ static void copy_msg(NT_MSG *out, const NT_MSG *from)
     out->pt.x = from->pt.x;
     out->pt.y = from->pt.y;
 }
+static int is_phone_shell(void);
 static int legacy_nav_input(NT_MSG *);
 static void legacy_nav_paint(void);
 u32 RegisterClassW(const NT_WNDCLASS *wc)
