@@ -85,6 +85,9 @@ CALC_EXE := $(OUTDIR)/CALC.EXE
 CONTROL_OBJ := $(BUILDDIR)/payload/control.o
 CONTROL_ELF := $(BUILDDIR)/payload/control.elf
 CONTROL_EXE := $(OUTDIR)/CONTROL.EXE
+SVF_EDITOR_OBJ := $(BUILDDIR)/payload/svf_editor.o
+SVF_EDITOR_ELF := $(BUILDDIR)/payload/svf_editor.elf
+SVF_EDITOR_EXE := $(OUTDIR)/SVFEDITOR.EXE
 CONTROL_MEM_OBJ := $(BUILDDIR)/payload/control_memory.o
 CPL_OBJ := $(BUILDDIR)/payload/demo_cpl.o
 CPL_ELF := $(BUILDDIR)/payload/demo_cpl.elf
@@ -145,7 +148,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -334,6 +337,18 @@ $(CONTROL_ELF): $(CONTROL_OBJ) $(CONTROL_MEM_OBJ) $(PAYLOAD_DIR)/payload.ld
 $(CONTROL_EXE): $(CONTROL_ELF) $(CPL_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(CONTROL_ELF) -o $@ --import-module COREDLL.DLL --extra-import-prefix CPlApplet:DEMO.CPL
+
+$(SVF_EDITOR_OBJ): $(PAYLOAD_DIR)/svf_editor.c $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(SVF_EDITOR_ELF): $(SVF_EDITOR_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $<
+
+$(SVF_EDITOR_EXE): $(SVF_EDITOR_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL --extra-import-prefix svf_:SVF.DLL
 
 # A third named DLL with its own recursive import: CHAIN.DLL -> COREDLL.
 $(CHAIN_OBJ): $(PAYLOAD_DIR)/chain.c $(PAYLOAD_DIR)/ntimport.h
