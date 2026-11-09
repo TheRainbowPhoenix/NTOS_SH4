@@ -24,8 +24,12 @@ uint32_t DemoCPlApplet(void *owner, uint32_t message, uint32_t index, NEWCPLINFO
         unsigned char *p = (unsigned char *)out;
         for (unsigned i = 0; i < sizeof(*out); ++i)
             p[i] = 0;
-        out->size = sizeof(*out);
-        out->icon = 2; /* synthetic icon accepted by this profile */
+        /* The transcoded SH4-LE host retains packed byte-load sequences.
+         * Numeric NEWCPLINFO fields use its LE wire layout; strings are native. */
+        unsigned char *wire = (unsigned char *)out;
+        wire[0] = (unsigned char)sizeof(*out);
+        wire[1] = (unsigned char)(sizeof(*out) >> 8);
+        wire[16] = 2; /* synthetic icon accepted by this profile */
         wide(out->name, "NTOS Demo", 32);
         wide(out->info, "Sample SH4 big-endian control panel", 64);
         return 0;

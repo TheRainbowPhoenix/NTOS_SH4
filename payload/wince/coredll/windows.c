@@ -152,6 +152,14 @@ int UpdateWindow(void *h)
         u32 old = SetTextColor(dc, 0x00ffffff);
         TextOutW(dc, 5, 5, g_window.title, (int)ce_wlen(g_window.title));
         SetTextColor(dc, old);
+        NT_RECT close_rect = {288, 0, 320, 24};
+        brush = CreateSolidBrush(0x003030a0);
+        FillRect(dc, &close_rect, brush);
+        DeleteObject(brush);
+        static const u16 close_text[] = {'X', 0};
+        old = SetTextColor(dc, 0x00ffffff);
+        TextOutW(dc, 300, 5, close_text, 1);
+        SetTextColor(dc, old);
     }
     coredll_refresh();
     return result;
@@ -172,6 +180,19 @@ int DispatchMessageW(const NT_MSG *msg)
 {
     if (!msg)
         return 0;
+    static int close_pressed;
+    int over_close = msg->pt.x >= 288 && msg->pt.x < 320 && msg->pt.y >= 0 && msg->pt.y < 24;
+    if (msg->message == 0x201)
+        close_pressed = over_close;
+    if (msg->message == 0x202) {
+        int close = close_pressed && over_close;
+        close_pressed = 0;
+        if (close) {
+            DestroyWindow(&g_window);
+            PostQuitMessage(0);
+            return 0;
+        }
+    }
     if (CeControlKind(msg->hwnd)) {
         if (msg->message == 15)
             return UpdateWindow(msg->hwnd);

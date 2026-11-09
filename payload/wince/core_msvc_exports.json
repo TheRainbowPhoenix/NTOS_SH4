@@ -2408,5 +2408,92 @@
     "abi": "fixed-words",
     "callbacks": false,
     "prototype": "upstream payload/coredll_msvc_manifest.json"
+  },
+  {
+    "ordinal": 4095,
+    "name": "coredll_launch",
+    "target": "coredll_launch",
+    "args": [
+      "ptr"
+    ],
+    "ret": "u32",
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "Unified phone scalar PE boundary; private callbacks stay native"
+  },
+  {
+    "ordinal": 4096,
+    "name": "TextOutW",
+    "target": "TextOutW",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "ptr",
+      "u32"
+    ],
+    "ret": "u32",
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "Unified phone scalar PE boundary; private callbacks stay native"
+  },
+  {
+    "ordinal": 4097,
+    "name": "CePhoneRegisterClassW",
+    "target": "ntos_RegisterClassW",
+    "args": [
+      "ptr"
+    ],
+    "ret": "u32",
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "Unified phone scalar PE boundary; private callbacks stay native"
+  },
+  {
+    "ordinal": 4098,
+    "name": "CePhoneUpdateWindow",
+    "target": "ntos_UpdateWindow",
+    "args": [
+      "ptr"
+    ],
+    "ret": "u32",
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "Unified phone scalar PE boundary; private callbacks stay native"
+  },
+  {
+    "ordinal": 4099,
+    "name": "CePhoneDispatchMessageW",
+    "target": "ntos_DispatchMessageW",
+    "args": [
+      "ptr"
+    ],
+    "ret": "u32",
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "Unified phone scalar PE boundary; private callbacks stay native"
+  },
+  {
+    "ordinal": 4100,
+    "name": "CePhoneCreateWindowExW",
+    "target": "ntos_CreateWindowExW",
+    "args": [
+      "u32",
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "ptr",
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "ret": "ptr",
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "Unified phone scalar PE boundary; private callbacks stay native"
   }
 ]

@@ -56,10 +56,11 @@ def export_section(entries,module,rva):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--out',default='dist');ap.add_argument('--obj',default='obj/phone')
+    ap.add_argument('--msvc',action='store_true',help='use separately generated MSVC PE export adapters')
     ap.add_argument('--pack-only',action='store_true',help='pack ELF files previously built by compile.sh')
     args=ap.parse_args();out=ROOT/args.out;obj=ROOT/args.obj
     out.mkdir(parents=True,exist_ok=True);obj.mkdir(parents=True,exist_ok=True)
-    generate_headers()
+    if not args.msvc:generate_headers()
     spec=importlib.util.spec_from_file_location('elf2ntx',ROOT/'tools/elf2ntx.py')
     pack=importlib.util.module_from_spec(spec);spec.loader.exec_module(pack)
     original_import_section=pack.build_import_section
@@ -85,9 +86,9 @@ def main():
             # Strip exactly the SH compiler's one leading underscore.
             defined={s.name[1:] if s.name.startswith('_') else s.name:s.value
                      for s in elf.symbols if s.shndx!=pack.SHN_UNDEF and s.shndx<pack.SHN_LORESERVE}
-            stub=defined['phone_unsupported']-base
+            stub=defined['msvc_unsupported' if args.msvc else 'phone_unsupported']-base
             for e in manifest['exports']:
-                name=e['name'];address=defined.get(name)
+                name=e['name'];address=defined.get(('msvc_export_'+name) if args.msvc and name else name)
                 entries.append((e['ordinal'],name,address-base if address is not None else stub))
                 (implemented if address is not None else stubbed).append(name or '#'+str(e['ordinal']))
             pack.build_export_section=lambda unused,n,r,entries=entries:export_section(entries,n,r)

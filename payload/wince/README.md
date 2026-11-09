@@ -171,3 +171,7 @@ list. The launcher seeds Windows/*.cpl into the isolated CE volume.
 
 This addition was compiled with strict warnings and formatted, without a new
 emulator/test run as requested. Existing verification artifacts predate this CPL.
+
+Control Panel title chrome now includes a touch X button at (288,0)-(320,24).
+Press and release inside it destroys the window and posts WM_QUIT, avoiding the
+physical Clear path. This addition was built and deployed without an emulator run.

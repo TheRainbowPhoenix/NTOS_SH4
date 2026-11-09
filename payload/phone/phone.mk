@@ -7,3 +7,7 @@ phone-check: phone
 phone-preview:
 	$(PYTHON) payload/phone/preview_phone.py
 ntx: phone
+
+.PHONY: phone-msvc
+phone-msvc:
+	$(PYTHON) payload/phone/build_msvc_phone.py
