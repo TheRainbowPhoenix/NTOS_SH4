@@ -856,7 +856,7 @@ static bool safe_dll_name(const char *name) {
 }
 
 static bool dll_path(char *dst,uint32_t capacity,const char *name) {
-    static const char root[]="\\fls0\\";
+    static const char root[]="\\fls0\\Windows\\System32\\";
     if (!safe_dll_name(name)) return false;
     uint32_t pos=0;
     for(unsigned i=0;root[i];++i) {
@@ -874,7 +874,20 @@ static bool read_module_file(const char *path,uint8_t **dst,
                              uint32_t *bytes,const char **error) {
     *dst=nullptr;*bytes=0u;
     int fd=fs_open(path,FILE_OPEN_READ);
-    if(fd<0){ *error="missing dependency DLL on fls0";return false; }
+    // Compatibility fallback for older calculator installs with flat DLLs.
+    // System32 wins; never attempt fallback while another SDK handle is open.
+    if(fd<0 && !g_fs.busy()) {
+        char legacy[64]="\\\\fls0\\\\";
+        unsigned k=6;
+        const char *last=path;
+        for(unsigned i=0;path[i];++i)
+            if(path[i]=='\\\\')last=path+i+1u;
+        for(unsigned i=0;last[i] && k+1<sizeof(legacy);++i)
+            legacy[k++]=last[i];
+        legacy[k]=0;
+        fd=fs_open(legacy,FILE_OPEN_READ);
+    }
+    if(fd<0){ *error="dependency absent from System32 and fls0";return false; }
     struct File_Stat st{};
     if(File_Fstat(fd,&st)<0 || st.fileSize<512u ||
        st.fileSize>NTOS_MAX_FILE_BYTES) {
