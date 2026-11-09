@@ -1,0 +1,44 @@
+name: Experiments · manual only
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostics:
+    name: ABI + pager diagnostics
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.2
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install tools
+        run: apt-get update -qq && apt-get install -y -qq python3 python3-pefile gcc
+      - name: Build optional pager and ABI experiments
+        run: |
+          make pager-experiment pager-verify
+          make ce-abi-probe
+          make msvc-abi-tests msvc-abi-typed msvc-abi-coredll msvc-abi-stress
+          python3 payload/wince/build_compat.py
+      - name: Check experimental outputs
+        run: |
+          test -s dist_pager/NTOS.hh3
+          test -s dist_pager_verify/NTOS.hh3
+          test -s dist_ce_abi/ABITEST.EXE
+          test -s dist_msvc_global/ABIGLOBAL.EXE
+          test -s dist_msvc_thunks/ABITHUNKS.EXE
+          test -s dist_msvc_typed/ABITYPED.EXE
+          test -s dist_msvc_typed/ABISTRESS.EXE
+          test -s dist_msvc_coredll/COREDLLABI.EXE
+          test -s dist_ce_demo/Windows/demo.cpl
+          python3 tests/msvc_abi_bridge_codegen_test.py --pe
+          python3 tests/msvc_typed_generator_test.py --pe
+          python3 tests/sh4le_be_probe_test.py
+          python3 tests/control_ce_import_names.py
+          echo "Diagnostics compiled. NOT physical-CP400 or original-MSVC-ABI certified."
+      # Experiments intentionally produce no deployable artifact.
