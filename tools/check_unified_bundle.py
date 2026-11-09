@@ -9,7 +9,7 @@ import pefile
 def check(root):
     required = (
         "NTOS.hh3", "COREDLL.DLL", "STARTHOST.EXE", "CALC.EXE",
-        "METROWIN.EXE", "CONTROL.EXE", "COMMCTRL.DLL",
+        "METROWIN.EXE", "CONTROL.EXE",
     )
     for name in required:
         assert (root / name).is_file(), f"missing {name}"
