@@ -55,6 +55,16 @@ jobs:
         test -s /tmp/ntos-abi-export.s
         test -s /tmp/ntos-abi-import.s
         echo "PASS Renesas candidate boundary compiled (NOT Microsoft ABI certified)"
+    - name: Cross-compile both measured Microsoft SH4 ABI boundary experiments
+      run: |
+        make msvc-abi-tests
+        test -s dist_msvc_global/ABIGLOBAL.DLL
+        test -s dist_msvc_global/ABIGLOBAL.EXE
+        test -s dist_msvc_thunks/ABITHUNKS.DLL
+        test -s dist_msvc_thunks/ABITHUNKS.EXE
+        sh4a_nofpueb-elf-nm dist_msvc_global/ABIGLOBAL.elf | grep -q _abi_msvc5
+        sh4a_nofpueb-elf-nm dist_msvc_thunks/ABITHUNKS.elf | grep -q _abi_msvc8
+        echo "PASS shared and generated ABI bridges linked (emulator runtime untested)"
     - name: Verify all phone apps, launcher ABI and native Settings/input views
       run: |
         python3 payload/phone/check_phone.py
@@ -126,6 +136,8 @@ jobs:
           dist_pager/**
           dist_pager_verify/**
           dist_ce_abi/**
+          dist_msvc_global/**
+          dist_msvc_thunks/**
           dist_collision/**
 
   build-hh3-v221:
