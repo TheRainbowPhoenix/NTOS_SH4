@@ -174,7 +174,17 @@ static inline int div_(int a, int b)
 {
     unsigned n = a < 0 ? 0u - (unsigned)a : (unsigned)a;
     unsigned d = b < 0 ? 0u - (unsigned)b : (unsigned)b;
-    unsigned q = udiv_(n, d);
+    unsigned q;
+    if (d && (d & (d - 1u)) == 0u) {
+        /* SVF coordinates use 16/32/64-unit viewports extensively.
+         * A shift avoids the 32-round software divider per coordinate. */
+        unsigned shift = 0;
+        while ((1u << shift) != d)
+            ++shift;
+        q = n >> shift;
+    } else {
+        q = udiv_(n, d);
+    }
     return (a < 0) ^ (b < 0) ? -(int)q : (int)q;
 }
 #endif
