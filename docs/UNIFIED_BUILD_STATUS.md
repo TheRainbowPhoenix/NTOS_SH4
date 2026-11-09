@@ -8,26 +8,48 @@ The user has verified `ABITYPED.EXE=0xAB1C0421`,
 These validate the specific generated MSVC SH4 interface fixtures,
 not the ABI of every exported phone, WinCE or app-specific function.
 
-## One deployable *native* phone + WinCE-style bundle
+## One deployable *native* phone + WinCE-style build
 
 ```sh
-make unified
+make -j4
 ```
 
-`dist/` includes the full normal native PE payload set
-(`CALC.EXE`, `METROWIN.EXE` and others), the 24-phone-app tree, a single native `COREDLL.DLL` and `CONTROL.EXE`.
-The standard default loader remains eager-resident; `dist_pager/NTOS.hh3`
-is an opt-in test build while exception delivery is not qualified.
-The old `phone-device/` staging directory is eliminated. `tools/check_unified_bundle.py`\nchecks one flat install root, 24 phone apps, and native Control Panel imports.
+The default build produces one flat `dist/` directory containing the
+pager-enabled `NTOS.hh3`, 24 phone apps, `CALC.EXE`, `CONTROL.EXE`,
+one shared `COREDLL.DLL`, `DEMO.CPL` and `Windows/demo.cpl`.
+The old `phone-device/` staging directory is not produced.
 
-**Use the separately built experimental pager HH3 when testing graphs exceeding 55 UTLB translation slots.** The normal `dist/NTOS.hh3` retains its
-safe eager-page rejection policy. The pager handles translation
-replacement while all module backing stays in RAM; it does not
-implement file-backed page eviction or full gint hardware ownership.
-Unhinted fault delivery has not passed the user's emulator probe and the pager\nis not qualified for physical ClassPad deployment.
+The default HH3 now uses the same opt-in-previously VBR/UTLB miss pager
+flags as `make pager-experiment` to allow PE graphs larger than 55 pages.
+`make pager-verify` remains a separate emulator diagnostic.
+The pager has been observed working in the user's emulator, but remains
+**uncertified on physical ClassPad hardware**. It has no file-backed
+eviction or full gint device ownership. `DEFINES=` builds the older
+conservative eager-only loader if needed.
 
-The original phone and native WinCE-style programs share the same
-native C COREDLL, not a fully Microsoft ABI COREDLL.
+The phone and native WinCE-style programs share one *native GCC ABI*
+COREDLL. That does not yet make all original MSVC/SH4 WinCE binaries
+compatible. A signature-aware conversion is still needed for the
+original Microsoft API/ordinal surface.
+
+## Native Control Panel CPL support
+
+`CONTROL.EXE` now enumerates `\\fls0\\Windows\\*.cpl` using the
+shared COREDLL `FindFirstFileW`, `FindNextFileW`, and `FindClose`.
+A soft-blue progress dialog is painted *before* slow enumeration,
+both on startup and when the Refresh menu is selected.
+
+The installed `DEMO.CPL` exports a genuine `CPlApplet` function and
+provides its `NEWCPLINFOW` title. Control Panel calls it through a real
+PE IAT import. Other discovered CPLs are listed, but launching
+arbitrary third-party CPLs requires native `LoadLibrary` and
+`GetProcAddress` support and compatible calling-convention thunks.
+**Enumerating a CPL is not the same as loading/executing it.**
+
+Phone Start/Settings/soft keyboard/chrome default to a low-glare
+light-blue/slate color palette rather than dark-mode black. Window
+title chrome retains the requested black bar/white caption/flat X,
+contrasting with the light application content.
 
 ## Separate original WinCE ordinal ABI (NOT YET ONE COREDLL)
 
@@ -55,7 +77,11 @@ The normal phone/pager build is not being silently replaced.
 
 ## Calculator and WinCE navigation
 
-The new default `CONTROL.EXE` is a native WinCE-style Control Panel recreation,\nnot the original converted Microsoft PE. Its File/View strip is interactive,\nbut the reference applet and registry semantics are not implemented.\n\nThe pre-existing freestanding `CALC.EXE` now has a classic
+The new default `CONTROL.EXE` is a native WinCE-style Control Panel recreation, 
+not the original converted Microsoft PE. Its File/View strip is interactive, 
+but the reference applet and registry semantics are not implemented. 
+ 
+The pre-existing freestanding `CALC.EXE` now has a classic
 File/Edit/View top menu with working Exit, Clear and view toggle,
 and its operations remain FPU-free. The screenshot and uploaded
 `calc.exe.c` guide the look and intended app interactions; this
@@ -67,7 +93,8 @@ the existing optional bottom Back/Home/Switch navigation. The
 original resource-driven WinCE menu manager, popup commands,
 registry applets and touch flows are **not fully implemented**.
 The menu is a minimal interaction experiment pending emulator visuals.
-Native COREDLL already supports `\\fls0\\nav.dat` toggling its
+Native COREDLL already supports `\\fls0\ 
+av.dat` toggling its
 soft bar and serial handoff to `STARTHOST.EXE`.
 
 ## C/H style, static checks and CI
