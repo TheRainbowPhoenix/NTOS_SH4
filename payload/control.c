@@ -202,8 +202,24 @@ static int window_proc(void *hwnd, DWORD message, DWORD wp, DWORD lp)
 }
 int main(void)
 {
+    WNDCLASSW cls = {0};
+    MSG msg = {0};
+    void *hwnd;
     ui_init();
-    /* The window exists only after ui_run; scan on first user refresh.
-     * Initial paint is responsive even on a slow device. */
-    return ui_run(class_name, window_title, window_proc);
+    cls.wndproc = window_proc;
+    cls.class_name = class_name;
+    if (!NT_CALL(RegisterClassW, (&cls)))
+        return 1;
+    hwnd = NT_CALL(CreateWindowExW, (0, class_name, window_title, 0,
+                                     0, 0, 320, 528, 0, 0, 0, 0));
+    if (!hwnd)
+        return 2;
+    NT_CALL(ShowWindow, (hwnd, 1));
+    refresh_with_popup(hwnd);
+    while (NT_CALL(GetMessageW, (&msg, hwnd, 0, 0)) > 0) {
+        NT_CALL(TranslateMessage, (&msg));
+        NT_CALL(DispatchMessageW, (&msg));
+    }
+    NT_CALL(DestroyWindow, (hwnd));
+    return 0;
 }
