@@ -85,7 +85,7 @@ jobs:
         dll=pefile.PE('dist_msvc_coredll/COREDLL.DLL')
         exe=pefile.PE('dist_msvc_coredll/COREDLLABI.EXE')
         names={x.name.decode('ascii') for x in dll.DIRECTORY_ENTRY_EXPORT.symbols if x.name}
-        expected={'coredll_puts','coredll_getkey','coredll_malloc','coredll_free'}
+        expected={'coredll_puts','coredll_getkey','coredll_malloc','coredll_free','coredll_abi5'}
         assert names==expected,(names,expected)
         assert exe.DIRECTORY_ENTRY_IMPORT[0].dll.upper()==b'COREDLL.DLL'
         PY
