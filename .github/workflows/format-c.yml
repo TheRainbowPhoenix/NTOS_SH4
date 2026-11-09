@@ -13,14 +13,19 @@ jobs:
   format-owned-c:
     if: github.actor != 'github-actions[bot]' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.2
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: true
       - name: Install Clang formatter
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq clang-format
+          apt-get update -qq
+          apt-get install -y -qq clang-format
           clang-format --version
       - name: Apply and validate formatting
         run: |
@@ -28,6 +33,7 @@ jobs:
           python3 tools/format_c_sources.py --check
       - name: Commit and push normalized sources
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -u -- '*.c' '*.h'
