@@ -2,7 +2,7 @@
 import sys,struct,json
 from pathlib import Path
 import pefile,clemu.core as c
-D=Path(__file__).resolve().parents[2]/'dist/ce-demo'
+D=Path(__file__).resolve().parents[2]/'dist_ce_demo'
 E=c.Emulator(c.FunctionTable.empty());display=c.HeadlessDisplayModule().add_to(E);touch=c.TouchModule(0,0,1,1).add_to(E)
 mods={};heap=0x0c100000;output=[];unsupported=[]
 for addr,size in [(0x0c000000,0x400000),(0x08100000,0x4000)]:c.RamDevice(addr,size,'scratch').map_to(E)
