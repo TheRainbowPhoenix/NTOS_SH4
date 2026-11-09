@@ -38,6 +38,20 @@ is manual-only for ABI and pager research. CodeQL remains independent.
 **Caution:** The default loader uses experimental exception-driven UTLB
 paging. It has emulator coverage but is not certified for physical CP400 use.
 
+## Light-theme UI refinements
+
+Start tiles use 24 distinct pastel watercolor colors, with stronger blue
+focus outlines and app-list selection highlights. Settings and System >
+Display use dark SVF icon ink, readable higher-contrast flat buttons and
+a darker pressed state. Touch-dragging the brightness and scale sliders
+skips redundant repaints and updates in 5% steps (at most 21 value
+changes per full sweep). File Explorer uses dark title text, compact
+folder icons, and a visible selected-row highlight.
+
+The host Settings regression under `Tests · no release artifacts` checks
+icon tinting, button press/release colors and slider redraw suppression.
+Runtime responsiveness still needs confirmation in the CP400 emulator.
+
 ## Building your own payloads
 
 The repo builds payloads with the *same GCC toolchain as the launcher* :
