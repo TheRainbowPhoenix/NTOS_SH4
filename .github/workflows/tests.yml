@@ -1,4 +1,5 @@
 name: Tests · no release artifacts
+# Confirm Clang-normalized VEC2 decoder, native editor and Settings UI tests.
 
 on:
   push:
