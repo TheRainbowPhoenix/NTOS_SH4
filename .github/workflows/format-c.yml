@@ -1,5 +1,5 @@
 name: Clang C and H cleanup
-# Format the new CPL enumeration UI and low-glare light-theme source files.
+# Normalize the finished CPL metadata scanner and light theme with clang-format 19.
 
 on:
   push:
