@@ -1,0 +1,28 @@
+[
+  {
+    "name": "coredll_puts",
+    "ret": "void",
+    "args": [
+      "ptr"
+    ]
+  },
+  {
+    "name": "coredll_getkey",
+    "ret": "u32",
+    "args": []
+  },
+  {
+    "name": "coredll_malloc",
+    "ret": "ptr",
+    "args": [
+      "u32"
+    ]
+  },
+  {
+    "name": "coredll_free",
+    "ret": "void",
+    "args": [
+      "ptr"
+    ]
+  }
+]
