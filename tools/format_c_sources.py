@@ -26,7 +26,8 @@ SKIP_EXACT = {
 
 def sources():
     result = subprocess.run(
-        ["git", "ls-files", "-z"], cwd=ROOT, check=True, capture_output=True
+        ["git", "-c", "safe.directory=*", "ls-files", "-z"],
+        cwd=ROOT, check=True, capture_output=True
     )
     paths = sorted(p.decode() for p in result.stdout.split(b"\0") if p)
     return [
