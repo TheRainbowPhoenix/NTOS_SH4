@@ -16,8 +16,8 @@ def main():
  flags+=['-D'+n+'=host_'+n for n in ['CreateFileW','ReadFile','WriteFile','CloseHandle','GetFileSize','SetFilePointer','FindFirstFileW','FindNextFileW','FindClose','DeleteFileW']]
  rename={
  'uixrender':{'SpGetThreadContext':'render_SpGetThreadContext','SpRenderThreadInit':'render_SpRenderThreadInit','SpRenderThreadUninit':'render_SpRenderThreadUninit'},
- 'svf':{'SVFValidate':'svf_SVFValidate','SVFDraw':'svf_SVFDraw'},
- 'catalog':{n:'catalog_'+n for n in ['CatalogGet','CatalogReload','CatalogPin','CatalogDrawIcon']},
+ 'svf':{'SVFValidate':'svf_SVFValidate','SVFDraw':'svf_SVFDraw', 'SVFDrawTint':'svf_SVFDrawTint'},
+ 'catalog':{n:'catalog_'+n for n in ['CatalogGet','CatalogReload','CatalogPin','CatalogDrawIcon','CatalogDrawIconTint']},
  'fingerkb':{'UIXGetSchemaFactory':'kb_UIXGetSchemaFactory','UIXSchemaUnloaded':'kb_UIXSchemaUnloaded'},
  'settingsui':{'SettingsGetView':'settings_SettingsGetView'},
  'shellcontrols':{'UIXGetSchemaFactory':'controls_UIXGetSchemaFactory','UIXSchemaUnloaded':'controls_Unloaded'},
