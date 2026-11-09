@@ -8,10 +8,11 @@ NT_IMPORT(int, svf_SVFDrawTint, (void *, const void *, DWORD, int, int, int, int
 NT_IMPORT(void *, CreateFileW, (const WCHAR16 *, DWORD, DWORD, void *, DWORD, DWORD, void *))
 NT_IMPORT(int, WriteFile, (void *, const void *, DWORD, DWORD *, void *))
 NT_IMPORT(int, CloseHandle, (void *))
-NT_DEFINE(svf_SVFDrawTint)
 NT_DEFINE(CreateFileW)
 NT_DEFINE(WriteFile)
 NT_DEFINE(CloseHandle)
+/* Keep all COREDLL IAT entries contiguous; external SVF follows last. */
+NT_DEFINE(svf_SVFDrawTint)
 
 static const WCHAR16 clsname[] = {'S','V','F','E','D','I','T','O','R',0};
 static const WCHAR16 title[] = {'S','V','F',' ','E','d','i','t','o','r',0};
