@@ -1,4 +1,5 @@
 name: Clang C and H cleanup
+# Trigger an identical Clang-19 cleanup after adding shared Control Panel code.
 
 on:
   push:
