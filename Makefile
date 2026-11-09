@@ -579,6 +579,26 @@ msvc-abi-typed: $(TYPED_DIST)/ABITYPED.DLL $(TYPED_DIST)/ABITYPED.EXE
 
 .PHONY: msvc-abi-typed
 
+# High-volume typed MSVC ABI stress test, independent native C oracle
+# linked into the EXE (the DLL still uses the generated MSVC export thunks).
+$(TYPED_OBJ)/stress.o: payload/abi_typed_stress.c $(TYPED_GEN)/stamp
+	$(CC) -c $< -o $@ -I$(TYPED_GEN) $(PAYLOAD_CFLAGS)
+
+$(TYPED_OBJ)/oracle.o: payload/abi_typed_impl.c $(TYPED_GEN)/stamp
+	$(CC) -DNTOS_MSVC_HOST_TEST=1 -c $< -o $@ -I$(TYPED_GEN) $(PAYLOAD_CFLAGS)
+
+$(TYPED_DIST)/ABISTRESS.elf: $(TYPED_OBJ)/stress.o $(TYPED_OBJ)/oracle.o $(TYPED_OBJ)/import.o $(TYPED_OBJ)/call.o $(TYPED_OBJ)/memcpy.o payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(TYPED_OBJ)/stress.o $(TYPED_OBJ)/oracle.o $(TYPED_OBJ)/import.o $(TYPED_OBJ)/call.o $(TYPED_OBJ)/memcpy.o
+
+$(TYPED_DIST)/ABISTRESS.EXE: $(TYPED_DIST)/ABISTRESS.elf $(TYPED_DIST)/ABITYPED.DLL tools/elf2ntx.py
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module ABITYPED.DLL
+
+msvc-abi-stress: $(TYPED_DIST)/ABISTRESS.EXE
+	@echo "MSVC 2304-call stress: ABISTRESS.EXE expects 0xAB1C0600"
+
+.PHONY: msvc-abi-stress
+
 # Opt-in ABI-wrapped *real* COREDLL subset. This is not a release
 # replacement for the ~1900 exported COREDLL symbols: unclassified
 # signatures must never be passed as if they were scalar ABI functions.
