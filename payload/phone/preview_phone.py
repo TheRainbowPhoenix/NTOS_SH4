@@ -32,16 +32,16 @@ def main():
   subprocess.run([args.cc,*flags,*extra,'-c',str(HERE/(source+'.c')),'-o',str(o)],check=True)
  exe=obj/('phone-preview.exe' if os.name=='nt' else 'phone-preview')
  subprocess.run([args.cc,*flags,str(HERE/'host_preview.c'),*map(str,objects),'-o',str(exe)],check=True)
- fs=obj/'fs';source_apps=ROOT/'dist/phone-device/Apps'
+ fs=obj/'fs';source_apps=ROOT/'dist/Apps'
  for p in source_apps.rglob('*'):
   dest=fs/'Apps'/p.relative_to(source_apps)
   if p.is_dir():dest.mkdir(parents=True,exist_ok=True)
   else:dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,dest)
- shutil.copyfile(ROOT/'dist/phone-device/home.dat',fs/'home.dat')
+ shutil.copyfile(ROOT/'dist/home.dat',fs/'home.dat')
  if (fs/'apps.dat').exists():(fs/'apps.dat').unlink()
  if (fs/'nav.dat').exists():(fs/'nav.dat').unlink()
  extra=fs/'Apps/Extra';extra.mkdir(exist_ok=True)
- shutil.copyfile(ROOT/'dist/phone-device/Apps/camera/camera.exe',extra/'Zeta.exe')
+ shutil.copyfile(ROOT/'dist/Apps/camera/camera.exe',extra/'Zeta.exe')
  shutil.copyfile(ROOT/'dist/STARTHOST.EXE',extra/'Plain.exe')
  from build_phone import add_icon_resource
  dib=struct.pack('<IiiHHIIiiII',40,16,32,1,32,0,1024,0,0,0,0)+bytes([255,255,255,255])*256+bytes(64)
