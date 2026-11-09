@@ -21,7 +21,7 @@ APPS = (
 EXTRA_MODULES = ("DEMO.CPL",)
 SIDE_CARS = ("home.dat", "apps.dat", "nav.dat")
 README = """NTOS for Casio fx-CP400 — copy this folder's CONTENTS to storage.
-Keep the Apps/ and Windows/ directory structure. Install NTOS.hh3 as
+Keep Apps/ and Windows/System32/ directory structure. Install NTOS.hh3 as
 the calculator add-in. COREDLL.DLL is shared by ALL phone and native
 WinCE-style programs; do not replace it with an experimental CE DLL.
 
@@ -46,6 +46,8 @@ def build(source: Path, target: Path) -> None:
         raise FileNotFoundError(loader)
     shutil.copy2(loader, target / loader.name)
 
+    system32 = target / 'Windows' / 'System32'
+    system32.mkdir(parents=True)
     pending = list(APPS) + list(EXTRA_MODULES)
     seen: set[str] = set()
     while pending:
@@ -69,15 +71,16 @@ def build(source: Path, target: Path) -> None:
             if not candidate.exists():
                 raise FileNotFoundError(f"{name} imports missing {dep}")
             pending.append(candidate.name)
-        shutil.copy2(original, target / normalized)
+        destination = system32 if normalized.endswith((".DLL", ".CPL")) else target
+        shutil.copy2(original, destination / normalized)
         seen.add(normalized)
 
     windows = source / "Windows" / "demo.cpl"
     if not windows.is_file():
         raise FileNotFoundError(windows)
-    (target / "Windows").mkdir()
+    (target / "Windows").mkdir(exist_ok=True)
     shutil.copy2(windows, target / "Windows" / "demo.cpl")
-    if (target / "DEMO.CPL").read_bytes() != windows.read_bytes():
+    if (system32 / "DEMO.CPL").read_bytes() != windows.read_bytes():
         raise ValueError("DEMO.CPL and Windows/demo.cpl differ")
 
     apps_dir = source / "Apps"
@@ -97,9 +100,11 @@ def build(source: Path, target: Path) -> None:
     if extras:
         raise AssertionError("Non-installable build files in deployable package")
     assert not (target / "phone-device").exists()
+    assert not list(target.glob("*.DLL")), "DLLs must be shared in Windows/System32"
+    assert not list(target.glob("*.CPL")), "CPLs must be shared in Windows/System32"
     print(f"Ready to copy: {target} ({len(seen)} PE executables/DLLs, "
           "24 phone apps, Windows/demo.cpl, NTOS.hh3)")
-    print("No test EXEs, experimental ABI COREDLLs, ELF files, or object files.")
+    print("One shared Windows/System32 DLL tree; no test EXEs or ELF files.")
 
 
 if __name__ == "__main__":
