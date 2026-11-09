@@ -1,5 +1,5 @@
 name: Clang C and H cleanup
-# Trigger an identical Clang-19 cleanup after adding shared Control Panel code.
+# Format the new CPL enumeration UI and low-glare light-theme source files.
 
 on:
   push:
