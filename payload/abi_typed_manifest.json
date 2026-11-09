@@ -1,0 +1,122 @@
+[
+  {
+    "name": "abi_typed_5",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ]
+  },
+  {
+    "name": "abi_typed_8",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ]
+  },
+  {
+    "name": "abi_typed_s3",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "s3",
+      "u32"
+    ]
+  },
+  {
+    "name": "abi_typed_s3split",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32",
+      "u32",
+      "s3",
+      "u32"
+    ]
+  },
+  {
+    "name": "abi_typed_u64",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u64",
+      "u32"
+    ]
+  },
+  {
+    "name": "abi_typed_u64split",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32",
+      "u32",
+      "u64"
+    ]
+  },
+  {
+    "name": "abi_typed_ret_s3",
+    "ret": "s3",
+    "args": [
+      "u32",
+      "u32"
+    ]
+  },
+  {
+    "name": "abi_typed_ret_u64",
+    "ret": "u64",
+    "args": [
+      "u32"
+    ]
+  },
+  {
+    "name": "abi_typed_ret_bytes3",
+    "ret": "bytes3",
+    "args": [
+      "u32"
+    ]
+  },
+  {
+    "name": "abi_typed_bytes3",
+    "ret": "u32",
+    "args": [
+      "bytes3",
+      "u32"
+    ]
+  },
+  {
+    "name": "abi_typed_ret_s16",
+    "ret": "s16",
+    "args": [
+      "s16"
+    ]
+  },
+  {
+    "name": "abi_typed_ret_u16",
+    "ret": "u16",
+    "args": [
+      "u16"
+    ]
+  },
+  {
+    "name": "abi_typed_ptr",
+    "ret": "ptr",
+    "args": [
+      "ptr"
+    ]
+  },
+  {
+    "name": "abi_typed_zero",
+    "ret": "u32",
+    "args": []
+  }
+]
