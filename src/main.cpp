@@ -895,7 +895,11 @@ static bool read_module_file(const char *path,uint8_t **dst,
         if(count<=0 || static_cast<uint32_t>(count)>wanted) break;
         off+=static_cast<uint32_t>(count);
     }
-    fs_close(fd);
+    if(fs_close(fd)<0) {
+        Mem_Free(buf);
+        *error="SDK dependency file close failed; filesystem locked";
+        return false;
+    }
     if(off!=n) {
         Mem_Free(buf);*error="short read staging dependency";return false;
     }
@@ -1284,6 +1288,13 @@ done:
     }
     LCD_Refresh();
 #endif
+    // Payloads may exit or fail without calling CloseHandle/FindClose.
+    // Do not start a second filesystem operation until the leaked SDK
+    // descriptor has been closed. Never guess an unknown SDK handle.
+    if(!fs_recover()) {
+        *err="filesystem close failed; refusing further file operations";
+        rc=-1;
+    }
     if(api_raw) Mem_Free(api_raw);
     for(unsigned i=0u;i<NTOS_MAX_MODULES;++i) {
         if(nodes[i].mapped.raw) Mem_Free(nodes[i].mapped.raw);
@@ -1355,6 +1366,13 @@ int main(int argc, char **argv, char **envp) {
     (void)envp;
 
     while (true) {
+    // A failed close is an interlock, not a reason to probe more files.
+    if(!fs_recover()) {
+        ntos_puts("FS locked: SDK handle did not close");
+        ntos_puts("Stop NTOS - do not retry files");
+        LCD_Refresh();
+        return -1;
+    }
     banner();
 
     // Scan flash for payload images (*.EXE) and modules (*.DLL). NTOS maps
@@ -1623,6 +1641,11 @@ int main(int argc, char **argv, char **envp) {
     }
 
     Mem_Free(file);
+    if(!fs_recover()) {
+        ntos_puts("FS locked after application; stopping");
+        LCD_Refresh();
+        return -1;
+    }
     // Tear down each image before starting the next: one app resident at a time.
     if(pending_app[0]) {
         for (;;) {
@@ -1635,6 +1658,11 @@ int main(int argc, char **argv, char **envp) {
             if(ok)ok=pe::parse(app_file,app_size,&app_hdr)==0;
             if(ok)ok=run_mapped(app_file,app_size,app_hdr,nullptr,0,nullptr,0,&ret,&launch_error)==0;
             if(app_file)Mem_Free(app_file);
+            if(!fs_recover()) {
+                ntos_puts("SDK close failed; stop launching apps");
+                LCD_Refresh();
+                return -1;
+            }
             if(!ok){ntos_puts(launch_error?launch_error:"Invalid application");Debug_WaitKey();}
             if(!pending_app[0]) {
                 // A stub/Settings/Calculator exit goes straight back to Start.
