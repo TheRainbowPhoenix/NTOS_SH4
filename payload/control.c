@@ -1,52 +1,155 @@
-/* CONTROL.EXE - native WinCE-style Control Panel for the flat NTOS build.
- * This is a C reconstruction of the shell, not the converted Microsoft CE PE.
- * All Win32-style imports resolve through the same native COREDLL.DLL.
+/* Native NTOS Control Panel: enumerate real Windows/*.cpl files.
+ * DEMO.CPL has a linked CPlApplet PE import. Dynamic third-party CPL
+ * loading is deliberately not claimed until LoadLibrary/GetProcAddress exist.
  */
 #include "wince_ui.h"
+
+typedef struct {
+    DWORD attributes;
+    DWORD times[6];
+    DWORD size_hi;
+    DWORD size_lo;
+    DWORD oid;
+    WCHAR16 name[260];
+} NT_FIND_DATA;
+_Static_assert(sizeof(NT_FIND_DATA) == 560, "native FindFirstFileW layout");
+NT_IMPORT(void *, FindFirstFileW, (const WCHAR16 *, NT_FIND_DATA *))
+NT_IMPORT(int, FindNextFileW, (void *, NT_FIND_DATA *))
+NT_IMPORT(int, FindClose, (void *))
+NT_IMPORT(DWORD, CPlApplet, (void *, DWORD, DWORD, void *))
+NT_DEFINE(FindFirstFileW)
+NT_DEFINE(FindNextFileW)
+NT_DEFINE(FindClose)
+NT_DEFINE(CPlApplet)
 
 static const WCHAR16 class_name[] = {'N', 'T', 'C', 'O', 'N', 'T', 'R', 'O', 'L', 0};
 static const WCHAR16 window_title[] = {'C', 'o', 'n', 't', 'r', 'o', 'l',
                                        ' ', 'P', 'a', 'n', 'e', 'l', 0};
-static const char *const items[] = {
-    "Bluetooth", "Certificates", "Date/Time", "Dialing", "Display",  "Input Panel",
-    "Keyboard",  "Mouse",        "Network",   "Owner",   "Password", "PC Connection",
-    "Power",     "Regional",     "Stylus",    "System",  "Volume"};
-static const char *const symbols[] = {"B", "C", "D",  "T", "D", "I", "K",   "M", "N",
-                                      "O", "P", "PC", "P", "R", "S", "SYS", "V"};
-static int selected = -1;
-static int menu_open;
+static const WCHAR16 cpl_pattern[] = {'\\', 'f', 'l', 's', '0', '\\', 'W', 'i', 'n',
+                                     'd', 'o', 'w', 's', '\\', '*', '.', 'c', 'p', 'l', 0};
+#define CPL_MAX 24
+#define CPL_NAME_MAX 40
+static char entries[CPL_MAX][CPL_NAME_MAX];
+static int entry_count, selected = -1, menu_open, loading, scanned, scan_failed;
+static const DWORD theme_bg = RGB(244, 247, 251);
+static const DWORD theme_ink = RGB(31, 43, 62);
+static const DWORD theme_blue = RGB(57, 126, 185);
 
-static void draw(void *dc)
+static void copy_name(char *out, const WCHAR16 *input)
 {
-    const DWORD face = RGB(234, 234, 234);
-    ui_fill(dc, 0, 0, 320, 528, face);
-    /* The shared COREDLL paints the title bar and its close button. */
-    ui_fill(dc, 0, 24, 320, 49, RGB(192, 192, 192));
-    ui_text(dc, 10, 30, "File", RGB(0, 0, 0), 0);
-    ui_text(dc, 66, 30, "View", RGB(0, 0, 0), 0);
-    for (int i = 0; i < 17; ++i) {
-        int col = i % 4;
-        int row = i / 4;
-        int x = col * 80 + 3;
-        int y = 60 + row * 84;
-        ui_fill(dc, x + 21, y, x + 57, y + 34,
-                i == selected ? RGB(110, 155, 224) : RGB(196, 207, 225));
-        ui_text(dc, x + 26, y + 7, symbols[i], RGB(32, 50, 87), 0);
-        ui_text(dc, x + 3, y + 39, items[i], RGB(15, 15, 15), 0);
+    unsigned i = 0;
+    for (; i + 1 < CPL_NAME_MAX && input[i]; ++i) {
+        unsigned ch = input[i];
+        out[i] = ch < 127u ? (char)ch : '?';
     }
-    if (selected >= 0) {
-        ui_fill(dc, 6, 486, 314, 504, RGB(219, 225, 234));
-        ui_text(dc, 12, 488, items[selected], RGB(0, 0, 0), 0);
+    out[i] = 0;
+}
+static int is_demo(const char *name)
+{
+    static const char demo[] = "demo.cpl";
+    unsigned i = 0;
+    for (; demo[i] && name[i]; ++i) {
+        char c = name[i];
+        if (c >= 'A' && c <= 'Z')
+            c += 'a' - 'A';
+        if (c != demo[i])
+            return 0;
     }
-    if (menu_open) {
-        int x = menu_open == 1 ? 5 : 60;
-        ui_fill(dc, x, 49, x + 126, 96, RGB(110, 110, 110));
-        ui_fill(dc, x + 1, 50, x + 125, 95, RGB(247, 247, 247));
-        ui_text(dc, x + 9, 55, menu_open == 1 ? "Close" : "Large Icons", RGB(0, 0, 0), 0);
-        ui_text(dc, x + 9, 77, menu_open == 1 ? "Back to Start" : "Refresh", RGB(0, 0, 0), 0);
+    return demo[i] == 0 && name[i] == 0;
+}
+static void rescan(void)
+{
+    NT_FIND_DATA file = {0};
+    void *handle;
+    entry_count = 0;
+    selected = -1;
+    scan_failed = 0;
+    handle = NT_CALL(FindFirstFileW, (cpl_pattern, &file));
+    if (handle == (void *)-1 || !handle) {
+        scan_failed = 1;
+        scanned = 1;
+        return;
+    }
+    do {
+        if (entry_count == CPL_MAX)
+            break;
+        if (!(file.attributes & 0x10u))
+            copy_name(entries[entry_count++], file.name);
+    } while (NT_CALL(FindNextFileW, (handle, &file)));
+    NT_CALL(FindClose, (handle));
+    scanned = 1;
+}
+static void refresh_with_popup(void *hwnd)
+{
+    loading = 1;
+    menu_open = 0;
+    NT_CALL(InvalidateRect, (hwnd, 0, 1));
+    NT_CALL(UpdateWindow, (hwnd)); /* visible before potentially slow storage calls */
+    rescan();
+    loading = 0;
+    NT_CALL(InvalidateRect, (hwnd, 0, 1));
+    NT_CALL(UpdateWindow, (hwnd));
+}
+static void open_selected(void *hwnd)
+{
+    if (selected < 0 || selected >= entry_count)
+        return;
+    if (is_demo(entries[selected])) {
+        /* The linked PE import is genuinely resolved from DEMO.CPL.
+         * No unsafe on-the-fly DLL loader is required. */
+        NT_CALL(CPlApplet, (hwnd, 1, 0, 0)); /* CPL_INIT */
+        if (NT_CALL(CPlApplet, (hwnd, 2, 0, 0))) /* CPL_GETCOUNT */
+            NT_CALL(CPlApplet, (hwnd, 5, 0, 0)); /* CPL_DBLCLK */
+        NT_CALL(CPlApplet, (hwnd, 7, 0, 0)); /* CPL_EXIT */
+    } else {
+        /* Enumerated but not executable until typed LoadLibrary is implemented. */
+        scan_failed = 2;
     }
 }
-
+static void draw(void *dc)
+{
+    ui_fill(dc, 0, 0, 320, 528, theme_bg);
+    ui_fill(dc, 0, 24, 320, 51, RGB(225, 235, 245));
+    ui_text(dc, 10, 30, "File", theme_ink, 0);
+    ui_text(dc, 66, 30, "View", theme_ink, 0);
+    ui_text(dc, 252, 31, "Refresh", theme_blue, 0);
+    for (int i = 0; i < entry_count; ++i) {
+        int col = i % 3;
+        int row = i / 3;
+        int x = 4 + col * 105;
+        int y = 61 + row * 64;
+        if (y >= 480)
+            break;
+        ui_fill(dc, x + 26, y, x + 73, y + 33,
+                i == selected ? RGB(166, 203, 239) : RGB(210, 226, 241));
+        ui_text(dc, x + 44, y + 8, "C", theme_blue, 0);
+        ui_text(dc, x + 6, y + 36, entries[i], theme_ink, 0);
+    }
+    if (!scanned)
+        ui_text(dc, 16, 120, "Loading Control Panel...", theme_ink, 0);
+    else if (!entry_count)
+        ui_text(dc, 12, 110, "No Windows/*.cpl modules found", theme_ink, 0);
+    if (scan_failed == 2)
+        ui_text(dc, 8, 473, "This CPL needs a dynamic loader", theme_ink, 0);
+    else if (scan_failed == 1)
+        ui_text(dc, 8, 473, "Windows folder unavailable", theme_ink, 0);
+    if (menu_open) {
+        int left = menu_open == 1 ? 4 : 60;
+        ui_fill(dc, left, 51, left + 126, 99, RGB(221, 234, 246));
+        ui_text(dc, left + 8, 59, menu_open == 1 ? "Close" : "Refresh",
+                theme_ink, 0);
+        ui_text(dc, left + 8, 79, menu_open == 1 ? "Return to Start" : "Rescan CPLs",
+                theme_ink, 0);
+    }
+    if (loading) {
+        ui_fill(dc, 29, 189, 291, 279, RGB(185, 199, 214));
+        ui_fill(dc, 31, 191, 289, 277, RGB(248, 251, 254));
+        ui_fill(dc, 31, 191, 289, 215, RGB(205, 227, 243));
+        ui_text(dc, 45, 196, "Control Panel", theme_ink, 0);
+        ui_text(dc, 47, 228, "Scanning Windows/*.cpl", theme_ink, 0);
+        ui_text(dc, 47, 251, "Please wait...", theme_blue, 0);
+    }
+}
 static int window_proc(void *hwnd, DWORD message, DWORD wp, DWORD lp)
 {
     if (message == WM_PAINT) {
@@ -59,37 +162,48 @@ static int window_proc(void *hwnd, DWORD message, DWORD wp, DWORD lp)
         return 0;
     }
     if (message == WM_KEYDOWN) {
-        if (wp == 0x1bu || wp == 0x80u) {
+        if (wp == 0x1bu || wp == 0x80u)
             NT_CALL(PostQuitMessage, (0));
-            return 0;
-        }
+        else if (wp == VK_RETURN)
+            open_selected(hwnd);
+        return 0;
     }
     if (message == WM_LBUTTONDOWN) {
         int x = (short)(lp & 0xffffu);
         int y = (short)(lp >> 16);
         if (menu_open) {
-            int prev = menu_open;
+            int choice = menu_open;
             menu_open = 0;
-            if (prev == 1 && y >= 49 && y < 96) {
-                NT_CALL(PostQuitMessage, (0));
-                return 0;
+            if (y >= 51 && y < 99) {
+                if (choice == 1)
+                    NT_CALL(PostQuitMessage, (0));
+                else
+                    refresh_with_popup(hwnd);
             }
-        } else if (y >= 24 && y < 49) {
-            menu_open = x < 60 ? 1 : x < 120 ? 2 : 0;
-        } else if (y >= 60 && y < 480 && x >= 0 && x < 320) {
-            int col = x / 80;
-            int row = (y - 60) / 84;
-            int idx = row * 4 + col;
-            if (idx >= 0 && idx < 17)
-                selected = idx;
+        } else if (y >= 24 && y < 51) {
+            if (x >= 235)
+                refresh_with_popup(hwnd);
+            else
+                menu_open = x < 60 ? 1 : x < 122 ? 2 : 0;
+        } else if (y >= 61 && y < 465) {
+            int col = x / 105;
+            int row = (y - 61) / 64;
+            int idx = row * 3 + col;
+            if (col < 3 && idx >= 0 && idx < entry_count) {
+                if (selected == idx)
+                    open_selected(hwnd);
+                else
+                    selected = idx;
+            }
         }
         NT_CALL(InvalidateRect, (hwnd, 0, 1));
     }
     return 0;
 }
-
 int main(void)
 {
     ui_init();
+    /* The window exists only after ui_run; scan on first user refresh.
+     * Initial paint is responsive even on a slow device. */
     return ui_run(class_name, window_title, window_proc);
 }
