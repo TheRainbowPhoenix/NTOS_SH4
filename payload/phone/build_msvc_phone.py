@@ -32,7 +32,7 @@ HEADER=r'''#include "ntimport.h"
 '''
 (OBJ/'imports.h').write_text(HEADER)
 units=[(s,HERE/(s+'.c'),None) for s,_,_ in phone.MODULES]+[('core',ROOT/'payload/coredll.c',None),('calc',ROOT/'payload/calc.c',None)]
-units += [('app-'+a['slug'],HERE/'stubapp.c',a['id']) for a in phone.generate_assets(OUT/'phone-device')]
+units += [('app-'+a['slug'],HERE/'stubapp.c',a['id']) for a in phone.generate_assets(OUT)]
 flags='-std=c11 -Os -Wall -Wextra -Werror -Wno-misleading-indentation -Wno-unused-function -ffreestanding -fno-builtin -fno-stack-protector -fno-toplevel-reorder -fno-unwind-tables -fno-asynchronous-unwind-tables -Ipayload/phone -Ipayload -include obj/phone-msvc/imports.h'
 lines=['sh4a_nofpueb-elf-gcc -c payload/phone/tiny_memory.c -o obj/phone-msvc/tiny_memory.o -Os -ffreestanding -fno-builtin']
 for name,source,id_ in units:
