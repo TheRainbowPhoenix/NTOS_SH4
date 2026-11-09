@@ -1374,7 +1374,7 @@ static void legacy_nav_paint(void)
         return;
     /* Keep native apps and StartHost on exactly the same shell chrome:
      * pale background, nearly-black Back/Windows/Search glyphs. */
-    const u32 c = 0x002a221bu;
+    const u32 c = 0x0016100cu; /* RGB(12,16,22): same as phone NAV_INK */
     ntos_fillrect(0, 488, 320, 528, 0x00f4e9dau);
     ntos_line(55, 508, 75, 508, c);
     ntos_line(55, 508, 63, 500, c);
