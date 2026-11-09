@@ -618,8 +618,7 @@ static void draw_icon(void *dc, unsigned index, int x, int y, int size, U32 tint
                             const unsigned char *p = work + 40 + ((h - 1 - py) * w + px) * 4;
                             opaque = alpha ? p[3] >= 128
                                            : !has_mask ||
-                                                 !(work[mask + (h - 1 - py) * stride +
-                                                        (px >> 3)] &
+                                                 !(work[mask + (h - 1 - py) * stride + (px >> 3)] &
                                                    (128u >> (px & 7)));
                             next_color = RGB_(p[2], p[1], p[0]);
                         }

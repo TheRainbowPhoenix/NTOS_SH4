@@ -77,8 +77,8 @@ static U32 ink(unsigned rgb555, U32 tint)
         return tint;
     return color(rgb555);
 }
-static int draw_icon(void *dc, const void *data, unsigned length, int x, int y,
-                     int w, int h, U32 tint)
+static int draw_icon(void *dc, const void *data, unsigned length, int x, int y, int w, int h,
+                     U32 tint)
 {
     const unsigned char *b = data;
     if (!scan(b, length) || w < 1 || h < 1 || w > 320 || h > 528)
@@ -132,7 +132,8 @@ static int draw_icon(void *dc, const void *data, unsigned length, int x, int y,
                 r->polygon(dc, points, n, ink(fill, tint));
             if (stroke != 0xffff)
                 for (unsigned i = 0, j = n - 1; i < n; j = i++)
-                    r->line(dc, points[j].x, points[j].y, points[i].x, points[i].y, ink(stroke, tint));
+                    r->line(dc, points[j].x, points[j].y, points[i].x, points[i].y,
+                            ink(stroke, tint));
             continue;
         }
         int a = signed_word(b + p), c = signed_word(b + p + 2), d = signed_word(b + p + 4), e = 0;
@@ -184,8 +185,7 @@ static int draw_icon(void *dc, const void *data, unsigned length, int x, int y,
 #undef CX
 #undef CY
 }
-int SVFDrawTint(void *dc, const void *data, unsigned length, int x, int y,
-                int w, int h, U32 tint)
+int SVFDrawTint(void *dc, const void *data, unsigned length, int x, int y, int w, int h, U32 tint)
 {
     return draw_icon(dc, data, length, x, y, w, h, tint);
 }

@@ -67,7 +67,8 @@ static void paint(void *dc)
             U32 label_color = toggles & (1u << i) ? WHITE : INK;
             r->fill(dc, x, y, x + 75, y + 59, c);
             const SysIcon *icon = &system_icons[icons[i]];
-            CALL(svf_SVFDrawTint, (dc, icon->data, icon->length, x + 5, y + 4, 18, 18, label_color));
+            CALL(svf_SVFDrawTint,
+                 (dc, icon->data, icon->length, x + 5, y + 4, 18, 18, label_color));
             if (i == 6) {
                 r->text(dc, x + 5, y + 28, "Airplane", label_color, 12);
                 r->text(dc, x + 5, y + 43, "mode", label_color, 12);
