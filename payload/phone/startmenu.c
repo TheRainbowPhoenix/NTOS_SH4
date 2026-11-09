@@ -147,7 +147,7 @@ static int rows(void *dc, int hx, int hy)
         }
         if (dc && y + 44 > 76 && y < limit) {
             if (selected == (int)i)
-                r->fill(dc, 2, y - 1, 313, y + 43, RGB_(35, 35, 35));
+                r->fill(dc, 2, y - 1, 313, y + 43, CARD);
             r->fill(dc, 6, y, 44, y + 40, a->color);
             icon(dc, i, 10, y + 4, 30);
             r->text(dc, 57, y + 8, a->name, INK, 18);
@@ -169,13 +169,13 @@ static void list(void *dc)
     rows(dc, -1, -1);
     r->clip(0, 24, 320, b);
     r->fill(dc, 6, 29, 314, 61, search ? BLUE : GRAY);
-    r->fill(dc, 8, 31, 312, 59, search ? WHITE : 0);
-    r->text(dc, 17, 36, query_len ? query : (search ? "" : "Search"), search ? 0 : GRAY, 14);
+    r->fill(dc, 8, 31, 312, 59, search ? WHITE : CARD);
+    r->text(dc, 17, 36, query_len ? query : (search ? "" : "Search"), search ? INK : MUTED, 14);
     if (search) {
         int caret = 17 + query_len * 7;
         if (caret > 280)
             caret = 280;
-        r->fill(dc, caret, 36, caret + 1, 51, 0);
+        r->fill(dc, caret, 36, caret + 1, 51, INK);
     }
     r->line(dc, 293, 42, 301, 50, search ? 0 : GRAY);
     r->line(dc, 301, 42, 293, 50, search ? 0 : GRAY);
@@ -193,7 +193,7 @@ static void jump_paint(void *dc)
     for (int i = 0; i < 28; ++i) {
         int x = 48 + (i % 4) * 64, y = 54 + div_(i, 4) * 64;
         char s[2] = {i == 0 ? '#' : i == 27 ? '@' : (char)('A' + i - 1), 0};
-        r->text(dc, x, y, s, group_exists(s[0]) ? WHITE : MUTED, 28);
+        r->text(dc, x, y, s, group_exists(s[0]) ? INK : MUTED, 28);
     }
 }
 static void app_paint(void *dc)
@@ -207,9 +207,9 @@ static void app_paint(void *dc)
         r->text(dc, 14, 161, "Welcome to your phone.", GRAY, 14);
     if (!editing)
         return;
-    r->fill(dc, 14, 352, 306, 392, RGB_(42, 42, 42));
+    r->fill(dc, 14, 352, 306, 392, PANEL);
     r->text(dc, 27, 363, pin_size(a->id) ? "Unpin from Start" : "Pin to Start", INK, 14);
-    r->fill(dc, 14, 404, 306, 444, RGB_(42, 42, 42));
+    r->fill(dc, 14, 404, 306, 444, PANEL);
     r->text(dc, 27, 415, pin_size(a->id) == 1 ? "Tile size: small" : "Tile size: medium", INK,
             14);
     if (save_failed)
