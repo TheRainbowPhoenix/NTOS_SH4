@@ -1,6 +1,6 @@
 #include "phone.h"
 IMP(const Render *, render_SpGetThreadContext, (void))
-IMP(int, svf_SVFDraw, (void *, const void *, unsigned, int, int, int, int))
+IMP(int, svf_SVFDrawTint, (void *, const void *, unsigned, int, int, int, int, U32))
 IMP(int, SipShowIM, (U32))
 IMP(int, SipGetInfo, (SipInfo *))
 IMP(void *, CreateFileW, (const W16 *, U32, U32, void *, U32, U32, void *))
@@ -17,15 +17,15 @@ static void navigation_paint(void *dc, const Render *r)
 {
     r->clip(0, 488, 320, 528);
     r->fill(dc, 0, 488, 320, 528, PANEL);
-    r->line(dc, 55, 508, 75, 508, GRAY);
-    r->line(dc, 55, 508, 63, 500, GRAY);
-    r->line(dc, 55, 508, 63, 516, GRAY);
-    r->fill(dc, 151, 499, 159, 507, GRAY);
-    r->fill(dc, 161, 499, 169, 507, GRAY);
-    r->fill(dc, 151, 509, 159, 517, GRAY);
-    r->fill(dc, 161, 509, 169, 517, GRAY);
-    r->ellipse(dc, 258, 504, 7, 7, GRAY, 1);
-    r->line(dc, 253, 510, 246, 518, GRAY);
+    r->line(dc, 55, 508, 75, 508, INK);
+    r->line(dc, 55, 508, 63, 500, INK);
+    r->line(dc, 55, 508, 63, 516, INK);
+    r->fill(dc, 151, 499, 159, 507, INK);
+    r->fill(dc, 161, 499, 169, 507, INK);
+    r->fill(dc, 151, 509, 159, 517, INK);
+    r->fill(dc, 161, 509, 169, 517, INK);
+    r->ellipse(dc, 258, 504, 7, 7, INK, 1);
+    r->line(dc, 253, 510, 246, 518, INK);
     r->clip(0, 0, 320, 528);
 }
 
@@ -67,7 +67,7 @@ static void paint(void *dc)
             U32 label_color = toggles & (1u << i) ? WHITE : INK;
             r->fill(dc, x, y, x + 75, y + 59, c);
             const SysIcon *icon = &system_icons[icons[i]];
-            CALL(svf_SVFDraw, (dc, icon->data, icon->length, x + 5, y + 4, 18, 18));
+            CALL(svf_SVFDrawTint, (dc, icon->data, icon->length, x + 5, y + 4, 18, 18, label_color));
             if (i == 6) {
                 r->text(dc, x + 5, y + 28, "Airplane", label_color, 12);
                 r->text(dc, x + 5, y + 43, "mode", label_color, 12);
