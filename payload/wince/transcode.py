@@ -109,7 +109,7 @@ def convert(source,inventory,entry_adapter=None):
  report={'source':source.name,'source_sha256':hashlib.sha256(raw).hexdigest(),'instructions':len(instructions),'instruction_changes':'16-bit byte order only','data_units':len(changes)-len(instructions),'rewritten_units':changes,'preserved_preferred_base':hex(base),'entry_adapter':bool(entry_adapter),'full_runtime_verified':False}
  return bytes(out),report
 if __name__=='__main__':
- a=argparse.ArgumentParser();a.add_argument('--reference',type=Path,required=True);a.add_argument('--inventory',type=Path,required=True);a.add_argument('--out',type=Path,default=ROOT/'dist/ce-demo');args=a.parse_args();args.out.mkdir(parents=True,exist_ok=True)
+ a=argparse.ArgumentParser();a.add_argument('--reference',type=Path,required=True);a.add_argument('--inventory',type=Path,required=True);a.add_argument('--out',type=Path,default=ROOT/'dist_ce_demo');args=a.parse_args();args.out.mkdir(parents=True,exist_ok=True)
  for name in ['shell.exe','control.exe','toolhelp.dll','commctrl.dll']:
   adapter=ROOT/'obj/wince'/(name+'.entry.bin');b,report=convert(args.reference/name,args.inventory/(name+'.tsv'),adapter.read_bytes() if adapter.exists() else None)
   output=args.out/(name if name!='commctrl.dll' else 'commctrl.full-candidate.dll');output.write_bytes(b)
