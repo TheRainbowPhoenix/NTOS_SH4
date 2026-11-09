@@ -9,10 +9,13 @@ import pefile
 def check(root):
     required = (
         "NTOS.hh3", "COREDLL.DLL", "STARTHOST.EXE", "CALC.EXE",
-        "METROWIN.EXE", "CONTROL.EXE",
+        "METROWIN.EXE", "CONTROL.EXE", "DEMO.CPL",
     )
     for name in required:
         assert (root / name).is_file(), f"missing {name}"
+    assert (root / "Windows/demo.cpl").is_file(), "Windows/demo.cpl not installed"
+    assert (root / "DEMO.CPL").read_bytes() == (root / "Windows/demo.cpl").read_bytes(), (
+        "the installed demo CPL differs from the linked module")
     assert not (root / "phone-device").exists(), "obsolete phone-device tree"
     apps = sorted((root / "Apps").glob("*/*.exe"))
     assert len(apps) == 24, f"expected 24 phone apps; found {len(apps)}"
@@ -27,7 +30,7 @@ def check(root):
             for symbol in dep.imports:
                 if symbol.name:
                     assert symbol.name in names, (name, dll, symbol.name)
-    print("PASS flat distribution: one COREDLL, CONTROL.EXE, 24 phone apps")
+    print("PASS flat distribution: one COREDLL, CONTROL.EXE, DEMO.CPL and 24 phone apps")
     print("Original Microsoft ordinal imports need separate runtime validation")
 
 
