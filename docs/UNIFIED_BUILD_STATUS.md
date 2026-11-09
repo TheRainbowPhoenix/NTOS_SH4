@@ -14,21 +14,17 @@ not the ABI of every exported phone, WinCE or app-specific function.
 make unified
 ```
 
-`dist_unified/` includes the full normal native PE payload set
-(`CALC.EXE`, `METROWIN.EXE` and others), the 24-phone-app tree,
-a single native `COREDLL.DLL`, and the experimentally pager-enabled
-`NTOS.hh3` from `dist_pager/`.
-The two copies of `COREDLL.DLL` (root and `phone-device`) and
-the two copies of the pager HH3 are byte-identical, enforced by
-`tools/check_unified_bundle.py` in CI.
+`dist/` includes the full normal native PE payload set
+(`CALC.EXE`, `METROWIN.EXE` and others), the 24-phone-app tree, a single native `COREDLL.DLL` and `CONTROL.EXE`.
+The standard default loader remains eager-resident; `dist_pager/NTOS.hh3`
+is an opt-in test build while exception delivery is not qualified.
+The old `phone-device/` staging directory is eliminated. `tools/check_unified_bundle.py`\nchecks one flat install root, 24 phone apps, and native Control Panel imports.
 
-**Use the pager-enabled HH3 for dependency graphs exceeding 55 UTLB
-translation slots.** The normal `dist/NTOS.hh3` retains its
+**Use the separately built experimental pager HH3 when testing graphs exceeding 55 UTLB translation slots.** The normal `dist/NTOS.hh3` retains its
 safe eager-page rejection policy. The pager handles translation
 replacement while all module backing stays in RAM; it does not
 implement file-backed page eviction or full gint hardware ownership.
-It has been validated with the user's FAULTTEST in the emulator but
-not qualified for physical ClassPad deployment.
+Unhinted fault delivery has not passed the user's emulator probe and the pager\nis not qualified for physical ClassPad deployment.
 
 The original phone and native WinCE-style programs share the same
 native C COREDLL, not a fully Microsoft ABI COREDLL.
@@ -59,7 +55,7 @@ The normal phone/pager build is not being silently replaced.
 
 ## Calculator and WinCE navigation
 
-The pre-existing freestanding `CALC.EXE` now has a classic
+The new default `CONTROL.EXE` is a native WinCE-style Control Panel recreation,\nnot the original converted Microsoft PE. Its File/View strip is interactive,\nbut the reference applet and registry semantics are not implemented.\n\nThe pre-existing freestanding `CALC.EXE` now has a classic
 File/Edit/View top menu with working Exit, Clear and view toggle,
 and its operations remain FPU-free. The screenshot and uploaded
 `calc.exe.c` guide the look and intended app interactions; this
@@ -92,7 +88,7 @@ compatibility across *all* original CE DLLs.
 
 ## Next integration gate
 
-1. Validate `dist_unified/NTOS.hh3` with `STARTHOST.EXE` and
+1. Validate `dist/NTOS.hh3` with `STARTHOST.EXE` and
    `CALC.EXE` in the emulator, then navigate Home/Back.
 2. Validate the CE Control Panel's new File/View strip and bottom
    navigation separately in the CE profile.
