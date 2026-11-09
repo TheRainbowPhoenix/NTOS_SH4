@@ -27,12 +27,15 @@ jobs:
         submodules: true
     - name: Install python3 (for tools/elf2ntx.py)
       run: apt-get update -qq && apt-get install -y -qq python3 python3-pefile gcc
-    - name: Build standard NTOS and every PE payload
+    - name: Build pager-default NTOS and every PE payload
       run: |
         make -j
         test -s dist/NTOS.hh3
         test -s dist/FAULTTEST.EXE
         test -s dist/FAULTSTRESS.DLL
+        test -s dist/Windows/demo.cpl
+        test -s dist/DEMO.CPL
+        sh4a_nofpueb-elf-nm dist/NTOS.elf | grep -q ntos_vbr_template_start
     - name: Build both opt-in SH7305 paging images for download
       run: |
         make pager-experiment
@@ -41,8 +44,8 @@ jobs:
         test -s dist_pager_verify/NTOS.hh3
         sh4a_nofpueb-elf-nm dist_pager/NTOS.elf | grep -q ntos_vbr_template_start
         sh4a_nofpueb-elf-nm dist_pager_verify/NTOS.elf | grep -q ntos_pager_exception_callback
-        # These must be separately configured HH3 files, not copies of dist/NTOS.hh3.
-        ! cmp -s dist/NTOS.hh3 dist_pager/NTOS.hh3
+        # Default NTOS now uses the exception-driven pager too.
+        sh4a_nofpueb-elf-nm dist/NTOS.elf | grep -q ntos_vbr_template_start
         ! cmp -s dist_pager/NTOS.hh3 dist_pager_verify/NTOS.hh3
     - name: Compile isolated SH Renesas ABI candidate DLL and import test
       run: |
