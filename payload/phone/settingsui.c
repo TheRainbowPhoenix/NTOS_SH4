@@ -1,7 +1,7 @@
 /* Prepared native Settings views; values are local previews, not hardware configuration. */
 #include "phone.h"
 IMP(const Render *, render_SpGetThreadContext, (void))
-IMP(int, svf_SVFDraw, (void *, const void *, unsigned, int, int, int, int))
+IMP(int, svf_SVFDrawTint, (void *, const void *, unsigned, int, int, int, int, U32))
 IMP(int, SipShowIM, (U32))
 #include "settings_icons.h"
 static int content_bottom = 528;
@@ -10,6 +10,7 @@ static void bounds(int b)
     content_bottom = b;
 }
 static int view, category, scroll_y, drag_y, drag_scroll, search, len, tracking, moved;
+static int slider_drag, pressed_button;
 static const char *leaf = "Settings";
 static int developer = 2, encryption;
 static int brightness = 50, automatic = 1, rotation, scale = 100;
@@ -35,7 +36,7 @@ static const char *update_names[] = {"Phone update",  "Backup",         "Device 
 static void icon(void *dc, unsigned which, int x, int y, int size)
 {
     const SettingsIcon *i = &settings_icons[which];
-    CALL(svf_SVFDraw, (dc, i->data, i->length, x, y, size, size));
+    CALL(svf_SVFDrawTint, (dc, i->data, i->length, x, y, size, size, INK));
 }
 static int matches(const char *s)
 {
@@ -65,6 +66,21 @@ static void toggle(void *dc, const Render *r, int y, int on)
     r->fill(dc, 14, y + 2, 54, y + 18, on ? BLUE : CARD);
     r->fill(dc, on ? 40 : 16, y + 4, on ? 52 : 28, y + 16, WHITE);
     r->text(dc, 68, y + 2, on ? "On" : "Off", INK, 14);
+}
+static void flat_button(void *dc, const Render *r, int x, int y, int width, const char *label,
+                        int pressed)
+{
+    U32 fill = pressed ? RGB_(160, 190, 216) : RGB_(195, 215, 232);
+    r->fill(dc, x, y, x + width, y + 32, fill);
+    r->fill(dc, x, y + 31, x + width, y + 32, RGB_(128, 154, 180));
+    r->text(dc, x + 14, y + 9, label, INK, 14);
+}
+static int slider_value(int x)
+{
+    /* 2-percent increments avoid expensive full-frame redraws for every
+     * individual touch pixel while retaining useful display precision. */
+    int value = clampi(div_((x - 12) * 100, 276), 0, 100);
+    return ((value + 1) / 2) * 2;
 }
 static void slider(void *dc, const Render *r, int y, int value)
 {
@@ -129,10 +145,8 @@ static void paint(void *dc)
         toggle(dc, r, 327, rotation);
         r->text(dc, 12, 371, "Size of text, apps, and items on this display", INK, 14);
         slider(dc, r, 413, scale);
-        r->fill(dc, 12, 439, 102, 471, CARD);
-        r->text(dc, 38, 449, "Apply", INK, 14);
-        r->fill(dc, 122, 439, 212, 471, CARD);
-        r->text(dc, 145, 449, "Cancel", INK, 14);
+        flat_button(dc, r, 12, 439, 90, "Apply", pressed_button == 1);
+        flat_button(dc, r, 122, 439, 90, "Cancel", pressed_button == 2);
         r->text(dc, 12, 503, "Show a dot on the connected display when", INK, 14);
     } else if (view == 4) {
         r->text(dc, 12, 143, "Update & security", GRAY, 14);
@@ -167,8 +181,7 @@ static void paint(void *dc)
     } else if (view == 7) {
         r->text(dc, 12, 101, "Update status", INK, 22);
         r->text(dc, 12, 148, "No updates are available.", INK, 14);
-        r->fill(dc, 12, 216, 172, 248, CARD);
-        r->text(dc, 23, 225, "Check for updates", INK, 14);
+        flat_button(dc, r, 12, 216, 160, "Check for updates", pressed_button == 3);
         r->text(dc, 12, 333, "Update settings", INK, 22);
         r->text(dc, 12, 382, "Updates are not installed in this demo.", GRAY, 14);
         r->text(dc, 12, 435, "Change active hours", BLUE, 14);
@@ -227,6 +240,16 @@ static int input(U32 msg, U32 wp, U32 lp)
         return 1;
     }
     if (msg == WM_MOVE_ && tracking) {
+        if (slider_drag) {
+            int next = slider_value(x);
+            int *current = slider_drag == 1 ? &brightness : &scale;
+            if (next == *current)
+                return 0; /* Skip duplicate full-screen repaints. */
+            *current = next;
+            return 1;
+        }
+        if (pressed_button)
+            return 0;
         int delta = y - drag_y;
         if (delta > 8 || delta < -8)
             moved = 1;
@@ -236,6 +259,8 @@ static int input(U32 msg, U32 wp, U32 lp)
     }
     if (msg == WM_DOWN_) {
         if (tracking) {
+            if (slider_drag || pressed_button)
+                return 0;
             int delta = y - drag_y;
             if (delta > 8 || delta < -8) {
                 moved = 1;
@@ -244,6 +269,7 @@ static int input(U32 msg, U32 wp, U32 lp)
             return 1;
         }
         tracking = 1;
+        slider_drag = pressed_button = 0;
         moved = 0;
         drag_y = y;
         drag_scroll = scroll_y;
@@ -263,21 +289,27 @@ static int input(U32 msg, U32 wp, U32 lp)
             return 1;
         }
         if (view == 2) {
-            if (y >= 168 && y <= 198)
-                brightness = clampi(div_((x - 12) * 100, 276), 0, 100);
+            if (y >= 168 && y <= 198) {
+                slider_drag = 1;
+                brightness = slider_value(x);
+            }
             else if (y >= 252 && y <= 282)
                 automatic = !automatic;
             else if (y >= 322 && y <= 352)
                 rotation = !rotation;
-            else if (y >= 397 && y <= 429)
-                scale = clampi(div_((x - 12) * 100, 276), 0, 100);
+            else if (y >= 397 && y <= 429) {
+                slider_drag = 2;
+                scale = slider_value(x);
+            }
             else if (y >= 439 && y <= 471) {
                 if (x >= 12 && x < 102) {
+                    pressed_button = 1;
                     saved_brightness = brightness;
                     saved_automatic = automatic;
                     saved_rotation = rotation;
                     saved_scale = scale;
                 } else if (x >= 122 && x < 212) {
+                    pressed_button = 2;
                     brightness = saved_brightness;
                     automatic = saved_automatic;
                     rotation = saved_rotation;
@@ -285,6 +317,8 @@ static int input(U32 msg, U32 wp, U32 lp)
                 }
             }
         }
+        if (view == 7 && y >= 216 && y < 248 && x >= 12 && x < 172)
+            pressed_button = 3;
         if (view == 5 && y >= 238 && y < 508)
             developer = clampi(div_(y - 238, 90), 0, 2);
         if (view == 6 && y >= 207 && y < 246)
@@ -292,6 +326,11 @@ static int input(U32 msg, U32 wp, U32 lp)
         return 1;
     }
     if (msg == WM_UP_) {
+        if (slider_drag || pressed_button) {
+            int needs_paint = pressed_button != 0;
+            slider_drag = pressed_button = tracking = moved = 0;
+            return needs_paint;
+        }
         int valid = tracking && !moved && y - drag_y <= 8 && drag_y - y <= 8;
         tracking = 0;
         if (!valid)
@@ -324,6 +363,7 @@ static int input(U32 msg, U32 wp, U32 lp)
 static void reset(void)
 {
     view = category = scroll_y = search = len = tracking = moved = 0;
+    slider_drag = pressed_button = 0;
     query[0] = 0;
 }
 static int page(void)
