@@ -80,6 +80,9 @@ METROWIN_EXE := $(OUTDIR)/METROWIN.EXE
 CALC_OBJ := $(BUILDDIR)/payload/calc.o
 CALC_ELF := $(BUILDDIR)/payload/calc.elf
 CALC_EXE := $(OUTDIR)/CALC.EXE
+CONTROL_OBJ := $(BUILDDIR)/payload/control.o
+CONTROL_ELF := $(BUILDDIR)/payload/control.elf
+CONTROL_EXE := $(OUTDIR)/CONTROL.EXE
 CHAIN_OBJ := $(BUILDDIR)/payload/chain.o
 CHAIN_ELF := $(BUILDDIR)/payload/chain.elf
 CHAIN_DLL := $(OUTDIR)/CHAIN.DLL
@@ -125,7 +128,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -281,6 +284,19 @@ $(CALC_ELF): $(CALC_OBJ) $(PAYLOAD_DIR)/payload.ld
 $(CALC_EXE): $(CALC_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(CALC_ELF) -o $@ --import-module COREDLL.DLL
+
+# NTOS-native Control Panel uses the same COREDLL as calculator and phone.
+$(CONTROL_OBJ): $(PAYLOAD_DIR)/control.c $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(CONTROL_ELF): $(CONTROL_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(CONTROL_OBJ)
+
+$(CONTROL_EXE): $(CONTROL_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(CONTROL_ELF) -o $@ --import-module COREDLL.DLL
 
 # A third named DLL with its own recursive import: CHAIN.DLL -> COREDLL.
 $(CHAIN_OBJ): $(PAYLOAD_DIR)/chain.c $(PAYLOAD_DIR)/ntimport.h
@@ -656,21 +672,11 @@ msvc-abi-coredll: $(CE_CORE_DIST)/COREDLL.DLL $(CE_CORE_DIST)/COREDLLABI.EXE
 
 .PHONY: msvc-abi-coredll
 
-# Single experimental deployable image for the native phone and WinCE-style
-# apps that share the production COREDLL. A graph larger than 55 pages must
-# run on the exception-driven pager; do not substitute the standard HH3.
-# All bundled DLLs use the same production native COREDLL image. Full
-# Microsoft ordinal CE interoperability remains a separate ABI migration.
+# The default `make -j4` builds the complete flat native OS tree.
+# `unified` is kept as a backwards-compatible alias, not a second distribution.
 .PHONY: unified
-unified:
-	$(MAKE) pager-experiment
-	$(MAKE) -j4 BUILDDIR=obj_unified OUTDIR=dist_unified DEPDIR=.deps_unified all
-	$(MAKE) -j4 BUILDDIR=obj_unified OUTDIR=dist_unified DEPDIR=.deps_unified phone
-	cp dist_pager/NTOS.hh3 dist_unified/NTOS.hh3
-	cp dist_pager/NTOS.hh3 dist_unified/phone-device/NTOS.hh3
-	$(PYTHON) tools/check_unified_bundle.py dist_unified
-	@echo "Unified native phone/WinCE bundle uses pager NTOS.hh3 and one COREDLL.DLL"
-	@echo "Experimental MSVC ordinal WinCE applications remain ABI-gated"
+unified: all
+	$(PYTHON) tools/check_unified_bundle.py $(OUTDIR)
 
 # Native WinCE-first phone launcher.
 include payload/phone/phone.mk
