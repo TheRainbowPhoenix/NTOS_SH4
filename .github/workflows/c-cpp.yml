@@ -125,6 +125,7 @@ jobs:
           dist/**
           dist_pager/**
           dist_pager_verify/**
+          dist_ce_abi/**
           dist_collision/**
 
   build-hh3-v221:
