@@ -1,29 +1,29 @@
 # Typed Microsoft SH4 ABI thunks — experimental validation path
 
 **Target:** fx-CP400, SH4AL-DSP, big-endian, no FPU.
-**Reference:** user-supplied \`MSVC_SH4_ABI_RULES.md\` (measured Microsoft
-\`shcl 12.00.8281.0 /Qsh4\`) and \`superh-abi-reference-tests.zip\`.
-This implementation is **not** GCC \`__attribute__((renesas))\`.
+**Reference:** user-supplied `MSVC_SH4_ABI_RULES.md` (measured Microsoft
+`shcl 12.00.8281.0 /Qsh4`) and `superh-abi-reference-tests.zip`.
+This implementation is **not** GCC `__attribute__((renesas))`.
 Those vendor ABIs are measurably different.
 
 ## Architecture and why this can scale to future DLLs
 
-\`tools/gen_sh4_msvc_typed.py\` consumes explicit JSON records
-\`{"name":"symbol","ret":"type","args":["type",...]}\`.
+`tools/gen_sh4_msvc_typed.py` consumes explicit JSON records
+`{"name":"symbol","ret":"type","args":["type",...]}`.
 For each DLL it generates:
 
-* \`abi_export.S\`: MSVC SH4 entry symbols, preserve PR/GBR/R8, copy
+* `abi_export.S`: MSVC SH4 entry symbols, preserve PR/GBR/R8, copy
   R4–R7 and incoming overflow words at entry SP+16 into a private
   eight-word buffer, then call the native-GCC C body;
-* \`abi_export_body.c\`: typed native C marshaling and native function
+* `abi_export_body.c`: typed native C marshaling and native function
   call. GCC itself handles its own return ABI (including R2 for
   struct results) rather than unverified inline assembly;
-* \`abi_import.c\`: native-GCC function wrappers and real PE
-  \`__imp_*\` IAT slots; marshal scalar/aggregate arguments into the
+* `abi_import.c`: native-GCC function wrappers and real PE
+  `__imp_*` IAT slots; marshal scalar/aggregate arguments into the
   Microsoft word stream;
-* \`abi_call.S\`: native GCC to MSVC outbound call; reserves 16 writable
+* `abi_call.S`: native GCC to MSVC outbound call; reserves 16 writable
   home bytes and up to four overflow words outside saved PR/GBR;
-* \`abi_typed.h\`: strict types and native declaration prototypes.
+* `abi_typed.h`: strict types and native declaration prototypes.
 
 A manifest is necessary: a PE export name does not reveal the function
 signature or whether a callback uses the same ABI. The generator
@@ -66,30 +66,30 @@ cannot execute original MSVC SH4 FPU instructions regardless of
 calling convention. The translated ABI word stream is not a
 converter for **little-endian** Windows CE instruction/data images.
 
-On real applications, \`void *\` describes pointer transport only;
+On real applications, `void *` describes pointer transport only;
 pointed-to WinCE structures and buffer encoding must be handled
 by their own explicit API contract.
 
 ## Build and emulator tests
 
-\`\`\`sh
+```sh
 make msvc-abi-typed
 make msvc-abi-coredll
-\`\`\`
+```
 
 | Test | Install files together | Expected EXE result |
 | --- | --- | --- |
-| 18-case typed edge suite | \`dist_msvc_typed/ABITYPED.EXE\` + \`ABITYPED.DLL\` | \`0xAB1C0421\` |
-| Real four-export COREDLL subset | \`dist_msvc_coredll/COREDLLABI.EXE\` + \`COREDLL.DLL\` | \`0xAB1C0500\` |
+| 18-case typed edge suite | `dist_msvc_typed/ABITYPED.EXE` + `ABITYPED.DLL` | `0xAB1C0421` |
+| Real four-export COREDLL subset | `dist_msvc_coredll/COREDLLABI.EXE` + `COREDLL.DLL` | `0xAB1C0500` |
 
 **Use separate storage directories or swap one pair at a time.**
 The experimental COREDLL only exports four real services plus a five-argument ABI marker and must
-never replace the normal production \`dist/COREDLL.DLL\` for
+never replace the normal production `dist/COREDLL.DLL` for
 other apps. The COREDLLABI fixture calls actual NTOS console,
 malloc and free services, checks writable allocated memory,
-and does not invoke blocking \`getkey\`. Its coredll_abi5 marker checks the fifth stack argument and distinguishes a correctly wrapped COREDLL from a plain GCC-only DLL.
+and does not invoke blocking `getkey`. Its coredll_abi5 marker checks the fifth stack argument and distinguishes a correctly wrapped COREDLL from a plain GCC-only DLL.
 
-\`ABITYPED.EXE\` returns \`0xAB1E0001\` through \`0xAB1E0012\`
+`ABITYPED.EXE` returns `0xAB1E0001` through `0xAB1E0012`
 to identify the first failing of eighteen signatures, in the
 manifest's declared order. The success code above only applies
 if every check passes.
@@ -103,9 +103,9 @@ confirmed in the emulator yet.
 
 ## Existing verified baseline
 
-The user previously tested \`ABIGLOBAL.EXE\` and
-\`ABITHUNKS.EXE\` successfully, returning \`0xAB1C0001\`
-and \`0xAB1C0002\`. Those five/eight-word results validate the
+The user previously tested `ABIGLOBAL.EXE` and
+`ABITHUNKS.EXE` successfully, returning `0xAB1C0001`
+and `0xAB1C0002`. Those five/eight-word results validate the
 older integer-only bridges, not the new struct/U64 typed adapters.
 
 ## Next steps before making it the default everywhere
@@ -116,7 +116,7 @@ older integer-only bridges, not the new struct/U64 typed adapters.
 3. Add verified typed callback trampolines and explicit varargs
    adapters rather than pretending generic pointer calls suffice.
 4. Add per-DLL manifests for known C exports; reject unclassified
-   symbols at the release gate. Avoid exposing \`coredll_stub\`
+   symbols at the release gate. Avoid exposing `coredll_stub`
    as an arbitrary typed MSVC API.
 5. Develop a portable fixed-ABI interface for structs containing
    pointers/doubles and WinCE structure packing. FPU signatures
