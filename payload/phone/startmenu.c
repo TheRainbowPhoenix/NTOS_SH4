@@ -4,6 +4,7 @@ IMP(const Catalog *, catalog_CatalogGet, (void))
 IMP(int, catalog_CatalogReload, (void))
 IMP(int, catalog_CatalogPin, (unsigned, unsigned))
 IMP(void, catalog_CatalogDrawIcon, (void *, unsigned, int, int, int))
+IMP(void, catalog_CatalogDrawIconTint, (void *, unsigned, int, int, int, U32))
 IMP(const Settings *, settings_SettingsGetView, (void))
 IMP(int, coredll_launch, (const char *))
 IMP(void, PostQuitMessage, (int))
@@ -80,6 +81,10 @@ static void icon(void *dc, unsigned i, int x, int y, int size)
 {
     CALL(catalog_CatalogDrawIcon, (dc, i, x, y, size));
 }
+static void icon_on_light(void *dc, unsigned i, int x, int y, int size)
+{
+    CALL(catalog_CatalogDrawIconTint, (dc, i, x, y, size, INK));
+}
 static void arrow(void *dc, int x, int y, int back)
 {
     int d = back ? -1 : 1;
@@ -149,7 +154,7 @@ static int rows(void *dc, int hx, int hy)
             if (selected == (int)i)
                 r->fill(dc, 2, y - 1, 313, y + 43, CARD);
             r->fill(dc, 6, y, 44, y + 40, a->color);
-            icon(dc, i, 10, y + 4, 30);
+            icon_on_light(dc, i, 10, y + 4, 30);
             r->text(dc, 57, y + 8, a->name, INK, 18);
         }
         if (hx >= 0 && hy >= y && hy < y + 44)
@@ -200,7 +205,7 @@ static void app_paint(void *dc)
 {
     const AppEntry *a = &cat->apps[opened];
     r->fill(dc, 0, 24, 320, 72, PANEL);
-    icon(dc, (unsigned)opened, 14, 36, 26);
+    icon_on_light(dc, (unsigned)opened, 14, 36, 26);
     r->text(dc, 49, 42, a->name, INK, 14);
     r->text(dc, 14, 101, a->name, INK, 24);
     if (a->flags & 1u)
