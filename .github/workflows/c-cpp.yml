@@ -44,6 +44,17 @@ jobs:
         # These must be separately configured HH3 files, not copies of dist/NTOS.hh3.
         ! cmp -s dist/NTOS.hh3 dist_pager/NTOS.hh3
         ! cmp -s dist_pager/NTOS.hh3 dist_pager_verify/NTOS.hh3
+    - name: Compile isolated SH Renesas ABI candidate DLL and import test
+      run: |
+        make ce-abi-probe
+        test -s dist_ce_abi/COREDLL.DLL
+        test -s dist_ce_abi/CHAIN.DLL
+        test -s dist_ce_abi/ABITEST.EXE
+        sh4a_nofpueb-elf-objdump -dr obj_ce_abi/payload/chain.o > /tmp/ntos-abi-export.s
+        sh4a_nofpueb-elf-objdump -dr obj_ce_abi/payload/abi_test.o > /tmp/ntos-abi-import.s
+        test -s /tmp/ntos-abi-export.s
+        test -s /tmp/ntos-abi-import.s
+        echo "PASS Renesas candidate boundary compiled (NOT Microsoft ABI certified)"
     - name: Verify all phone apps, launcher ABI and native Settings/input views
       run: |
         python3 payload/phone/check_phone.py
