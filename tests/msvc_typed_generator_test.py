@@ -14,7 +14,7 @@ mod=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 manifest=json.loads((ROOT/'payload/abi_typed_manifest.json').read_text())
 
-assert len(mod.validate(manifest))>=14
+assert len(mod.validate(manifest))>=18
 for item in manifest:
     n,hidden=mod.classify(item)
     assert 0 <= n <= 8
@@ -54,6 +54,8 @@ assert '((uint64_t)w[' in body # reconstruct high/low pair
 assert 'uint32_t)((' in imp # check high word emitted
 assert 'NtosAbiS3 v=' in body # hidden aggregate result through native GCC
 assert 'NtosAbiBytes3 v=' in body # packed 3-byte scalar return
+assert 'NtosAbiBytes1 v=' in body # packed 1-byte scalar return
+assert 'NtosAbiBytes4 v=' in body # packed 4-byte scalar return
 
 if '--pe' in sys.argv:
     import pefile
@@ -69,4 +71,4 @@ if '--pe' in sys.argv:
     assert 'ABITYPED.DLL' in imports
     imported={s.name.decode('ascii') for s in imports['ABITYPED.DLL'].imports if s.name}
     assert expected <= imported,(expected-imported)
-print('PASS typed MSVC SH4 generator: 14 signatures, strict rejection, PE export/IAT')
+print('PASS typed MSVC SH4 generator: 18 signatures, strict rejection, PE export/IAT')
