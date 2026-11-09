@@ -226,11 +226,15 @@ int FindClose(void *f)
     return _findclose(finds[i].fd) == 0;
 }
 static unsigned fills;
+static uint16_t host_rgb565(U32 c)
+{
+    return (uint16_t)((((c & 255u) >> 3) << 11) |
+                      ((((c >> 8) & 255u) >> 2) << 5) |
+                      (((c >> 16) & 255u) >> 3));
+}
 void *CreateSolidBrush(U32 c)
 {
-    unsigned rgb =
-        ((c & 255u) >> 3) << 11 | (((c >> 8) & 255u) >> 2) << 5 | (((c >> 16) & 255u) >> 3);
-    return (void *)(uintptr_t)(0x1000000u | rgb);
+    return (void *)(uintptr_t)(0x1000000u | host_rgb565(c));
 }
 int DeleteObject(void *b)
 {
@@ -553,7 +557,7 @@ int main(int argc, char **argv)
     m->input(WM_KEY_, 0x27, 0);
     click(m, 10, 90);
     named_snap(m, ch, argv[1], "letters");
-    assert(pixels[100 * 320] == 0);
+    assert(pixels[100 * 320] == host_rgb565(SURFACE));
     click(m, 240, 256);
     ch->input(WM_DOWN_, 0, pos(30, 10));
     ch->input(WM_MOVE_, 0, pos(30, 200));
