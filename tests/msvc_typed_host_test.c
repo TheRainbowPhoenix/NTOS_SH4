@@ -8,6 +8,8 @@ DECL(abi_typed_s3split); DECL(abi_typed_u64); DECL(abi_typed_u64split);
 DECL(abi_typed_ret_s3); DECL(abi_typed_ret_u64);
 DECL(abi_typed_ret_bytes3); DECL(abi_typed_bytes3);
 DECL(abi_typed_ret_s16); DECL(abi_typed_ret_u16); DECL(abi_typed_zero);
+DECL(abi_typed_ret_bytes1); DECL(abi_typed_ret_bytes4);
+DECL(abi_typed_ret_s8); DECL(abi_typed_ret_u8);
 int main(void) {
     uint32_t w[8]={0};
     NtosAbiS3 s={0}; uint64_t u=0;
@@ -42,5 +44,13 @@ int main(void) {
     w[0]=65530;
     CHECK((uint16_t)nt_msvc_body_abi_typed_ret_u16(w,0)==65535,12);
     CHECK(nt_msvc_body_abi_typed_zero(w,0)==0xAB1C0420u,13);
+    w[0]=0xA5u;
+    CHECK(nt_msvc_body_abi_typed_ret_bytes1(w,0)==0xA5u,14);
+    w[0]=0x12345678u;
+    CHECK(nt_msvc_body_abi_typed_ret_bytes4(w,0)==0x12345678u,15);
+    w[0]=(uint32_t)(int32_t)-123;
+    CHECK((int8_t)nt_msvc_body_abi_typed_ret_s8(w,0)==126,16);
+    w[0]=250u;
+    CHECK((uint8_t)nt_msvc_body_abi_typed_ret_u8(w,0)==255u,17);
     return 0;
 }
