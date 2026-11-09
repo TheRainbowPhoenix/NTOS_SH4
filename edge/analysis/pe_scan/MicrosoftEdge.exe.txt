@@ -1,0 +1,256 @@
+=== MicrosoftEdge.exe (5,500,416 bytes) ===
+machine=IMAGE_FILE_MACHINE_I386 subsystem=IMAGE_SUBSYSTEM_WINDOWS_GUI timestamp=1468632748 (2016-07-16T01:32:28+00:00)
+bits=32 entry=0x3b0cb0 base=0x400000
+dllchars=0xd140 NX DYNAMIC_BASE TERMINAL_SERVER_AWARE
+sections: .text .rdata .data .didat .tls .rsrc .reloc
+
+--- IMPORTS ---
+api-ms-win-core-debug-l1-1-1.dll: 2 functions
+    OutputDebugStringW
+    IsDebuggerPresent
+api-ms-win-core-processthreads-l1-1-2.dll: 7 functions
+    GetCurrentThreadId
+    IsProcessorFeaturePresent
+    GetCurrentProcessId
+    OpenThread
+    CreateThread
+    GetCurrentProcess
+    OpenProcessToken
+api-ms-win-core-localization-l1-2-1.dll: 2 functions
+    GetUserDefaultLangID
+    FormatMessageW
+api-ms-win-eventing-provider-l1-1-0.dll: 5 functions
+    EventUnregister
+    EventSetInformation
+    EventRegister
+    EventWriteEx
+    EventWrite
+api-ms-win-core-synch-l1-2-0.dll: 21 functions
+    InitOnceExecuteOnce
+    CreateSemaphoreExW
+    InitializeConditionVariable
+    CreateMutexExW
+    ReleaseSemaphore
+    ReleaseMutex
+    WakeAllConditionVariable
+    InitializeCriticalSectionEx
+    Sleep
+    OpenSemaphoreW
+    WaitForSingleObjectEx
+    ReleaseSRWLockExclusive
+    WaitForSingleObject
+    EnterCriticalSection
+    DeleteCriticalSection
+    LeaveCriticalSection
+    OpenEventW
+    ResetEvent
+    SetEvent
+    SleepConditionVariableCS
+    AcquireSRWLockExclusive
+api-ms-win-core-sysinfo-l1-2-1.dll: 3 functions
+    GetTickCount64
+    GetSystemTimeAsFileTime
+    GetVersionExW
+api-ms-win-core-heap-l1-2-0.dll: 4 functions
+    GetProcessHeap
+    HeapFree
+    HeapSetInformation
+    HeapAlloc
+api-ms-win-core-errorhandling-l1-1-1.dll: 4 functions
+    SetLastError
+    SetErrorMode
+    RaiseException
+    GetLastError
+api-ms-win-core-handle-l1-1-0.dll: 1 functions
+    CloseHandle
+api-ms-win-core-com-l1-1-1.dll: 8 functions
+    CoTaskMemAlloc
+    CoCreateGuid
+    CoGetContextToken
+    CoInitializeEx
+    CoInitializeSecurity
+    CoUninitialize
+    CoTaskMemFree
+    CoCreateFreeThreadedMarshaler
+vccorlib140_app.DLL: 73 functions
+    ??0OutOfMemoryException@Platform@@Q$AAA@XZ
+    ?EventSourceGetTargetArrayEvent@Details@Platform@@YGPAXPAXIPBXPA_J@Z
+    ??0FailureException@Platform@@Q$AAA@XZ
+    ?EventSourceGetTargetArraySize@Details@Platform@@YGIPAX@Z
+    ??0OutOfBoundsException@Platform@@Q$AAA@XZ
+    ?__abi_cast_String_to_Object@__abi_details@@YGP$AAVObject@Platform@@P$AAVString@3@@Z
+    ??BType@Platform@@SA?AVTypeName@Interop@Xaml@UI@Windows@@P$AAV01@@Z
+    ?get@FullName@Type@Platform@@Q$AAAP$AAVString@3@XZ
+    ?__abi_make_type_id@@YGP$AAVType@Platform@@ABU__abi_type_descriptor@@@Z
+    ?EventSourceInitialize@Details@Platform@@YGXPAPAX@Z
+    ?GetWeakReference@Details@Platform@@YGPAU__abi_IUnknown@@Q$ADVObject@2@@Z
+    ?Allocate@Heap@Details@Platform@@SAPAXII@Z
+    ?EventSourceUninitialize@Details@Platform@@YGXPAPAX@Z
+    ?EventSourceRemove@Details@Platform@@YGXPAPAXPAUEventLock@12@VEventRegistrationToken@Foundation@Windows@@@Z
+    ??0NullReferenceException@Platform@@Q$AAA@XZ
+    ... (58 more)
+VCRUNTIME140_APP.dll: 16 functions
+    __std_exception_copy
+    __std_exception_destroy
+    _purecall
+    wcschr
+    wcsrchr
+    strchr
+    memset
+    memmove
+    wcsstr
+    __telemetry_main_return_trigger
+    __telemetry_main_invoke_trigger
+    __std_terminate
+    _CxxThrowException
+    memcpy
+    _except_handler4_common
+    __CxxFrameHandler3
+api-ms-win-crt-runtime-l1-1-0.dll: 20 functions
+    _register_thread_local_exe_atexit_callback
+    _controlfp_s
+    _invalid_parameter_noinfo_noreturn
+    _c_exit
+    _exit
+    _invalid_parameter_noinfo
+    exit
+    _errno
+    _initterm_e
+    _initterm
+    _get_narrow_winmain_command_line
+    _configure_narrow_argv
+    _initialize_narrow_environment
+    _initialize_onexit_table
+    _register_onexit_function
+    _crt_atexit
+    _cexit
+    terminate
+    _seh_filter_exe
+    _set_app_type
+api-ms-win-crt-stdio-l1-1-0.dll: 4 functions
+    _set_fmode
+    __p__commode
+    __stdio_common_vswprintf
+    __stdio_common_vsnprintf_s
+api-ms-win-crt-string-l1-1-0.dll: 6 functions
+    towlower
+    wcstok_s
+    _wcsicmp
+    wcslen
+    wcsncmp
+    _wcsnicmp
+api-ms-win-crt-convert-l1-1-0.dll: 2 functions
+    _wtoi
+    wcstol
+api-ms-win-crt-heap-l1-1-0.dll: 5 functions
+    free
+    _callnewh
+    realloc
+    _set_new_mode
+    malloc
+api-ms-win-crt-math-l1-1-0.dll: 3 functions
+    ceil
+    floor
+    __setusermatherr
+api-ms-win-crt-locale-l1-1-0.dll: 1 functions
+    _configthreadlocale
+MSVCP140_APP.dll: 59 functions
+    ?_Xlength_error@std@@YAXPBD@Z
+    ?_Xout_of_range@std@@YAXPBD@Z
+    ?_Reset@_ContextCallback@details@Concurrency@@AAEXXZ
+    ?_Capture@_ContextCallback@details@Concurrency@@AAEXXZ
+    ?_IsCurrentOriginSTA@_ContextCallback@details@Concurrency@@CA_NXZ
+    ??0task_continuation_context@Concurrency@@AAE@XZ
+    _Cnd_broadcast
+    ?_Throw_C_error@std@@YAXH@Z
+    _Mtx_unlock
+    ?_Xbad_alloc@std@@YAXXZ
+    ?GetCurrentThreadId@platform@details@Concurrency@@YAJXZ
+    _Mtx_destroy_in_situ
+    _Cnd_destroy_in_situ
+    _Mtx_init_in_situ
+    _Cnd_init_in_situ
+    ... (44 more)
+ntdll.dll: 2 functions
+    RtlUnsubscribeWnfNotificationWaitForCompletion
+    RtlSubscribeWnfStateChangeNotification
+DWrite.dll: 1 functions
+    DWriteCreateFactory
+UIAutomationCore.DLL: 1 functions
+    UiaClientsAreListening
+api-ms-win-core-winrt-string-l1-1-0.dll: 9 functions
+    WindowsGetStringLen
+    WindowsCompareStringOrdinal
+    WindowsCreateStringReference
+    WindowsCreateString
+    WindowsConcatString
+    WindowsIsStringEmpty
+    WindowsDuplicateString
+    WindowsGetStringRawBuffer
+    WindowsDeleteString
+api-ms-win-core-winrt-error-l1-1-0.dll: 2 functions
+    SetRestrictedErrorInfo
+    RoFailFastWithErrorContext
+api-ms-win-core-winrt-error-l1-1-1.dll: 1 functions
+    RoReportUnhandledError
+api-ms-win-core-winrt-l1-1-0.dll: 2 functions
+    RoGetActivationFactory
+    RoInitialize
+api-ms-win-core-util-l1-1-0.dll: 1 functions
+    DecodePointer
+api-ms-win-core-profile-l1-1-0.dll: 1 functions
+    QueryPerformanceCounter
+api-ms-win-core-interlocked-l1-2-0.dll: 1 functions
+    InitializeSListHead
+api-ms-win-core-libraryloader-l1-2-0.dll: 5 functions
+    LoadLibraryExW
+    FreeLibrary
+    GetModuleFileNameA
+    GetProcAddress
+    GetModuleHandleExW
+api-ms-win-security-base-l1-2-0.dll: 1 functions
+    MakeAbsoluteSD
+api-ms-win-security-sddl-l1-1-0.dll: 2 functions
+    ConvertStringSecurityDescriptorToSecurityDescriptorW
+    ConvertSidToStringSidW
+api-ms-win-core-libraryloader-l2-1-0.dll: 1 functions
+    LoadPackagedLibrary
+api-ms-win-core-heap-l2-1-0.dll: 1 functions
+    LocalFree
+api-ms-win-core-registry-l1-1-0.dll: 4 functions
+    RegOpenKeyExW
+    RegGetValueW
+    RegQueryValueExW
+    RegCloseKey
+api-ms-win-core-delayload-l1-1-1.dll: 2 functions
+    DelayLoadFailureHook
+    ResolveDelayLoadedAPI
+
+--- DELAY IMPORTS ---
+iertutil.dll (DELAY): 14 functions
+    ord650
+    ord794
+    ord518
+    ord597
+    ord347
+    ord401
+    ord398
+    ord793
+    ord49
+    ord798
+    ord797
+    ord791
+    ord796
+    ord840
+EMODEL.dll (DELAY): 3 functions
+    ord42
+    ord9
+    ord1
+EShims.dll (DELAY): 2 functions
+    IEShims_Initialize
+    IEShims_Uninitialize
+
+--- EXPORTS ---
+2 exported symbols:
+       1 DllCanUnloadNow
+       2 DllGetActivationFactory

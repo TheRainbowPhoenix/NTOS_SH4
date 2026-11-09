@@ -1,0 +1,520 @@
+=== Chakra.dll (5,820,928 bytes) ===
+machine=IMAGE_FILE_MACHINE_I386 subsystem=IMAGE_SUBSYSTEM_WINDOWS_CUI timestamp=3268326383 (2073-07-26T20:26:23+00:00)
+bits=32 entry=0x2842b0 base=0x10000000
+dllchars=0x4140 NX DYNAMIC_BASE
+sections: .text .data .idata .didat .mrdata .rsrc .reloc
+
+--- IMPORTS ---
+msvcrt.dll: 112 functions
+    ??0exception@@QAE@XZ
+    ??0exception@@QAE@ABV0@@Z
+    _vsnprintf_s
+    memmove_s
+    qsort_s
+    _vsnwprintf_s
+    wcscat_s
+    realloc
+    ??1exception@@UAE@XZ
+    wcscpy_s
+    _ultow_s
+    _ltow_s
+    _wcsdup
+    wprintf
+    wcsncpy_s
+    ... (97 more)
+api-ms-win-core-atoms-l1-1-0.dll: 3 functions
+    DeleteAtom
+    AddAtomW
+    FindAtomW
+api-ms-win-core-heap-l1-1-0.dll: 7 functions
+    HeapDestroy
+    HeapFree
+    HeapAlloc
+    HeapUnlock
+    HeapCreate
+    HeapLock
+    GetProcessHeap
+api-ms-win-eventing-provider-l1-1-0.dll: 5 functions
+    EventActivityIdControl
+    EventRegister
+    EventSetInformation
+    EventUnregister
+    EventWriteTransfer
+api-ms-win-core-synch-l1-1-0.dll: 22 functions
+    AcquireSRWLockExclusive
+    CreateMutexExW
+    LeaveCriticalSection
+    InitializeCriticalSectionAndSpinCount
+    InitializeCriticalSectionEx
+    WaitForSingleObject
+    SetEvent
+    CreateSemaphoreExW
+    AcquireSRWLockShared
+    EnterCriticalSection
+    DeleteCriticalSection
+    OpenSemaphoreW
+    WaitForSingleObjectEx
+    InitializeCriticalSection
+    WaitForMultipleObjectsEx
+    CreateEventW
+    TryEnterCriticalSection
+    ResetEvent
+    ReleaseSemaphore
+    ReleaseMutex
+    ReleaseSRWLockExclusive
+    ReleaseSRWLockShared
+api-ms-win-core-libraryloader-l1-1-0.dll: 12 functions
+    SizeofResource
+    GetProcAddress
+    LockResource
+    GetModuleHandleW
+    FreeLibraryAndExitThread
+    LoadResource
+    LoadLibraryExW
+    FindResourceExW
+    GetModuleFileNameA
+    GetModuleHandleExW
+    GetModuleFileNameW
+    FreeLibrary
+api-ms-win-core-processenvironment-l1-1-0.dll: 2 functions
+    GetStdHandle
+    GetEnvironmentVariableW
+api-ms-win-core-processthreads-l1-1-0.dll: 16 functions
+    GetCurrentThreadId
+    GetProcessId
+    SetThreadStackGuarantee
+    TlsFree
+    TlsGetValue
+    SwitchToThread
+    TlsAlloc
+    ResumeThread
+    SuspendThread
+    TlsSetValue
+    GetCurrentProcessId
+    TerminateProcess
+    GetProcessTimes
+    SetThreadPriority
+    GetCurrentThread
+    GetCurrentProcess
+api-ms-win-core-registry-l1-1-0.dll: 7 functions
+    RegCloseKey
+    RegCreateKeyExW
+    RegQueryValueExW
+    RegDeleteKeyExW
+    RegOpenKeyExW
+    RegGetValueW
+    RegSetValueExW
+api-ms-win-core-errorhandling-l1-1-0.dll: 5 functions
+    UnhandledExceptionFilter
+    SetUnhandledExceptionFilter
+    SetLastError
+    RaiseException
+    GetLastError
+api-ms-win-core-debug-l1-1-0.dll: 3 functions
+    DebugBreak
+    IsDebuggerPresent
+    OutputDebugStringW
+api-ms-win-core-sysinfo-l1-1-0.dll: 9 functions
+    GetTickCount
+    GetSystemInfo
+    GetLogicalProcessorInformation
+    GetTickCount64
+    GetSystemTimeAsFileTime
+    GetSystemDirectoryW
+    GetSystemTimeAdjustment
+    GetSystemTime
+    GlobalMemoryStatusEx
+api-ms-win-core-threadpool-l1-2-0.dll: 4 functions
+    CloseThreadpoolTimer
+    CreateThreadpoolTimer
+    SetThreadpoolTimer
+    WaitForThreadpoolTimerCallbacks
+api-ms-win-core-localization-l1-2-0.dll: 4 functions
+    GetUserDefaultLCID
+    GetUserDefaultLocaleName
+    GetLocaleInfoEx
+    FormatMessageW
+api-ms-win-core-handle-l1-1-0.dll: 2 functions
+    CloseHandle
+    DuplicateHandle
+api-ms-win-core-memory-l1-1-0.dll: 8 functions
+    VirtualProtect
+    VirtualFree
+    VirtualAlloc
+    CreateFileMappingW
+    VirtualProtectEx
+    VirtualAllocEx
+    WriteProcessMemory
+    VirtualQuery
+api-ms-win-core-shlwapi-obsolete-l1-1-0.dll: 3 functions
+    StrCmpICW
+    StrCmpLogicalW
+    StrTrimW
+api-ms-win-core-shlwapi-legacy-l1-1-0.dll: 7 functions
+    PathIsUNCW
+    PathFindFileNameW
+    PathRemoveFileSpecW
+    PathGetDriveNumberW
+    PathFileExistsW
+    PathIsLFNFileSpecW
+    PathIsFileSpecW
+api-ms-win-core-profile-l1-1-0.dll: 2 functions
+    QueryPerformanceFrequency
+    QueryPerformanceCounter
+api-ms-win-core-console-l2-1-0.dll: 2 functions
+    SetConsoleTextAttribute
+    GetConsoleScreenBufferInfo
+api-ms-win-core-sysinfo-l1-2-0.dll: 2 functions
+    VerSetConditionMask
+    GetSystemTimePreciseAsFileTime
+api-ms-win-core-kernel32-legacy-l1-1-1.dll: 1 functions
+    VerifyVersionInfoW
+api-ms-win-core-psapi-l1-1-0.dll: 2 functions
+    K32GetModuleInformation
+    K32GetProcessMemoryInfo
+api-ms-win-core-version-l1-1-0.dll: 3 functions
+    VerQueryValueW
+    GetFileVersionInfoSizeExW
+    GetFileVersionInfoExW
+api-ms-win-core-interlocked-l1-1-0.dll: 5 functions
+    InitializeSListHead
+    InterlockedFlushSList
+    QueryDepthSList
+    InterlockedPopEntrySList
+    InterlockedPushEntrySList
+api-ms-win-core-memory-l1-1-1.dll: 2 functions
+    GetWriteWatch
+    ResetWriteWatch
+api-ms-win-core-synch-l1-2-0.dll: 1 functions
+    Sleep
+api-ms-win-core-kernel32-legacy-l1-1-0.dll: 1 functions
+    RaiseFailFastException
+api-ms-win-core-processthreads-l1-1-1.dll: 3 functions
+    FlushInstructionCache
+    GetThreadContext
+    GetProcessMitigationPolicy
+api-ms-win-core-timezone-l1-1-0.dll: 4 functions
+    GetTimeZoneInformationForYear
+    TzSpecificLocalTimeToSystemTime
+    GetTimeZoneInformation
+    SystemTimeToTzSpecificLocalTime
+api-ms-win-core-datetime-l1-1-0.dll: 2 functions
+    GetDateFormatW
+    GetTimeFormatW
+api-ms-win-core-processtopology-obsolete-l1-1-0.dll: 1 functions
+    GetProcessIoCounters
+api-ms-win-core-realtime-l1-1-0.dll: 1 functions
+    QueryThreadCycleTime
+api-ms-win-core-util-l1-1-0.dll: 2 functions
+    DecodePointer
+    EncodePointer
+RPCRT4.dll: 34 functions
+    RpcExceptionFilter
+    CStdStubBuffer_Invoke
+    IUnknown_AddRef_Proxy
+    CStdStubBuffer_AddRef
+    IUnknown_Release_Proxy
+    NdrDllUnregisterProxy
+    CStdStubBuffer_CountRefs
+    CStdStubBuffer_QueryInterface
+    NdrOleAllocate
+    CStdStubBuffer_DebugServerQueryInterface
+    CStdStubBuffer_DebugServerRelease
+    NdrServerCall2
+    I_RpcBindingInqLocalClientPID
+    RpcServerUnregisterIf
+    RpcMgmtStopServerListening
+    RpcServerListen
+    RpcBindingVectorFree
+    RpcEpRegisterW
+    RpcServerInqBindings
+    RpcServerRegisterIf3
+    RpcServerUseProtseqW
+    NdrClientCall2
+    NdrDllRegisterProxy
+    RpcBindingBind
+    RpcBindingCreateW
+    RpcBindingFree
+    NdrCStdStubBuffer_Release
+    CStdStubBuffer_Connect
+    NdrDllCanUnloadNow
+    CStdStubBuffer_IsIIDSupported
+    IUnknown_QueryInterface_Proxy
+    CStdStubBuffer_Disconnect
+    NdrDllGetClassObject
+    NdrOleFree
+api-ms-win-core-memory-l1-1-5.dll: 3 functions
+    MapViewOfFileNuma2
+    VirtualUnlockEx
+    UnmapViewOfFile2
+api-ms-win-core-memory-l1-1-3.dll: 1 functions
+    SetProcessValidCallTargets
+api-ms-win-core-path-l1-1-0.dll: 2 functions
+    PathCchCombine
+    PathCchAppend
+api-ms-win-core-winrt-string-l1-1-0.dll: 3 functions
+    WindowsGetStringRawBuffer
+    WindowsDeleteString
+    WindowsCreateString
+icuuc.dll: 20 functions
+    uloc_getBaseName
+    uloc_getName
+    uloc_toUnicodeLocaleType
+    uenum_next
+    uenum_count
+    uenum_close
+    u_charType
+    uloc_addLikelySubtags
+    u_hasBinaryProperty
+    unorm2_isNormalized
+    u_strlen
+    uloc_countAvailable
+    u_strToUpper
+    unorm2_normalize
+    unorm2_getInstance
+    uenum_unext
+    u_strToLower
+    uloc_forLanguageTag
+    uloc_toLanguageTag
+    uloc_getAvailable
+icuin.dll: 45 functions
+    udatpg_open
+    ucal_getCanonicalTimeZoneID
+    ucal_openTimeZoneIDEnumeration
+    ucol_close
+    udatpg_getBestPatternWithOptions
+    uplrules_openForType
+    uplrules_getKeywords
+    unum_close
+    ucal_setGregorianChange
+    unumsys_close
+    udat_getCalendar
+    ufieldpositer_close
+    udat_formatForFields
+    uplrules_close
+    ufieldpositer_next
+    ... (30 more)
+api-ms-win-core-delayload-l1-1-1.dll: 1 functions
+    ResolveDelayLoadedAPI
+api-ms-win-core-delayload-l1-1-0.dll: 1 functions
+    DelayLoadFailureHook
+api-ms-win-core-string-l1-1-0.dll: 2 functions
+    CompareStringEx
+    MultiByteToWideChar
+api-ms-win-core-string-l2-1-0.dll: 3 functions
+    CharUpperBuffW
+    CharLowerBuffW
+    CharLowerW
+api-ms-win-core-rtlsupport-l1-1-0.dll: 1 functions
+    RtlCaptureStackBackTrace
+api-ms-win-core-localization-l2-1-0.dll: 1 functions
+    GetNumberFormatEx
+bcrypt.dll: 1 functions
+    BCryptGenRandom
+
+--- DELAY IMPORTS ---
+api-ms-win-core-com-l1-1-0.dll (DELAY): 11 functions
+    CoCreateInstance
+    IIDFromString
+    CoTaskMemFree
+    CoTaskMemAlloc
+    CoGetCurrentLogicalThreadId
+    StringFromCLSID
+    CoCreateGuid
+    CoGetApartmentType
+    CoCreateFreeThreadedMarshaler
+    StringFromGUID2
+    StringFromIID
+api-ms-win-core-winrt-l1-1-0.dll (DELAY): 1 functions
+    RoGetActivationFactory
+api-ms-win-ro-typeresolution-l1-1-0.dll (DELAY): 2 functions
+    RoResolveNamespace
+    RoGetMetaDataFile
+OLEAUT32.dll (DELAY): 22 functions
+    VARIANT_UserMarshal
+    CreateTypeLib2
+    SetErrorInfo
+    GetErrorInfo
+    BSTR_UserMarshal
+    BSTR_UserUnmarshal
+    VARIANT_UserSize
+    VARIANT_UserUnmarshal
+    VARIANT_UserFree
+    BSTR_UserFree
+    BSTR_UserSize
+    SafeArrayCreate
+    SafeArrayDestroy
+    VariantCopy
+    SysAllocStringLen
+    SysStringLen
+    VariantCopyInd
+    VariantClear
+    VariantInit
+    SysFreeString
+    LoadRegTypeLib
+    SysAllocString
+iertutil.dll (DELAY): 1 functions
+    ord650
+
+--- EXPORTS ---
+160 exported symbols:
+     402 CreateChakraEngine
+     437 DllCanUnloadNow
+     438 DllGetClassObject
+     439 DllRegisterServer
+     440 DllUnregisterServer
+     403 DumpDiagInfo
+     441 JsAddRef
+     442 JsBoolToBoolean
+     443 JsBooleanToBool
+     444 JsCallFunction
+     445 JsCollectGarbage
+     446 JsConstructObject
+     447 JsConvertValueToBoolean
+     448 JsConvertValueToNumber
+     449 JsConvertValueToObject
+     450 JsConvertValueToString
+     451 JsCreateArray
+     452 JsCreateArrayBuffer
+     453 JsCreateContext
+     454 JsCreateDataView
+     455 JsCreateError
+     456 JsCreateExternalArrayBuffer
+     457 JsCreateExternalObject
+     458 JsCreateFunction
+     459 JsCreateNamedFunction
+     460 JsCreateObject
+     461 JsCreateRangeError
+     462 JsCreateReferenceError
+     463 JsCreateRuntime
+     464 JsCreateSymbol
+     465 JsCreateSyntaxError
+     466 JsCreateThreadService
+     467 JsCreateTypeError
+     468 JsCreateTypedArray
+     469 JsCreateURIError
+     470 JsDefineProperty
+     471 JsDeleteIndexedProperty
+     472 JsDeleteProperty
+     473 JsDisableRuntimeExecution
+     404 JsDiscardBackgroundParse
+     474 JsDisposeRuntime
+     475 JsDoubleToNumber
+     476 JsEnableRuntimeExecution
+     477 JsEnumerateHeap
+     478 JsEquals
+     479 JsGetAndClearException
+     480 JsGetArrayBufferStorage
+     481 JsGetContextData
+     482 JsGetContextOfObject
+     483 JsGetCurrentContext
+     484 JsGetDataViewStorage
+     485 JsGetExtensionAllowed
+     486 JsGetExternalData
+     487 JsGetFalseValue
+     488 JsGetGlobalObject
+     489 JsGetIndexedPropertiesExternalData
+     490 JsGetIndexedProperty
+     491 JsGetNullValue
+     492 JsGetOwnPropertyDescriptor
+     493 JsGetOwnPropertyNames
+     494 JsGetOwnPropertySymbols
+     495 JsGetProperty
+     496 JsGetPropertyIdFromName
+     497 JsGetPropertyIdFromSymbol
+     498 JsGetPropertyIdType
+     499 JsGetPropertyNameFromId
+     500 JsGetPrototype
+     501 JsGetRuntime
+     502 JsGetRuntimeMemoryLimit
+     503 JsGetRuntimeMemoryUsage
+     504 JsGetStringLength
+     505 JsGetSymbolFromPropertyId
+     506 JsGetTrueValue
+     507 JsGetTypedArrayInfo
+     508 JsGetTypedArrayStorage
+     509 JsGetUndefinedValue
+     510 JsGetValueType
+     511 JsHasException
+     512 JsHasExternalData
+     513 JsHasIndexedPropertiesExternalData
+     514 JsHasIndexedProperty
+     515 JsHasProperty
+     516 JsIdle
+     405 JsInitializeJITServer
+     517 JsInspectableToObject
+     518 JsInstanceOf
+     519 JsIntToNumber
+     520 JsIsEnumeratingHeap
+     521 JsIsRuntimeExecutionDisabled
+     522 JsNumberToDouble
+     523 JsNumberToInt
+     524 JsObjectToInspectable
+     525 JsParseScript
+     526 JsParseScriptWithAttributes
+     527 JsParseSerializedScript
+     528 JsParseSerializedScriptWithCallback
+     529 JsPointerToString
+     530 JsPreventExtension
+     400 JsProjectWinRTNamespace
+     406 JsQueueBackgroundParse
+     531 JsRelease
+     532 JsRunScript
+     533 JsRunSerializedScript
+     534 JsRunSerializedScriptWithCallback
+     535 JsSerializeScript
+     536 JsSetContextData
+     537 JsSetCurrentContext
+     538 JsSetException
+     539 JsSetExternalData
+     540 JsSetIndexedPropertiesToExternalData
+     541 JsSetIndexedProperty
+     542 JsSetObjectBeforeCollectCallback
+     401 JsSetProjectionEnqueueCallback
+     543 JsSetPromiseContinuationCallback
+     544 JsSetProperty
+     545 JsSetPrototype
+     546 JsSetRuntimeBeforeCollectCallback
+     547 JsSetRuntimeMemoryAllocationCallback
+     548 JsSetRuntimeMemoryLimit
+     549 JsStartDebugging
+     550 JsStartProfiling
+     551 JsStopProfiling
+     552 JsStrictEquals
+     553 JsStringToPointer
+     554 JsValueToVariant
+     555 JsVarAddRef
+     556 JsVarRelease
+     557 JsVarToExtension
+     558 JsVarToScriptDirect
+     559 JsVariantToValue
+     407 MemProtectHeapAddRootSection
+     408 MemProtectHeapCollect
+     409 MemProtectHeapCreate
+     410 MemProtectHeapDestroy
+     411 MemProtectHeapDisableCollection
+     412 MemProtectHeapIsValidObject
+     413 MemProtectHeapMemSize
+     414 MemProtectHeapNotifyCurrentThreadDetach
+     415 MemProtectHeapProtectCurrentThread
+     416 MemProtectHeapRemoveRootSection
+     417 MemProtectHeapReportHeapSize
+     418 MemProtectHeapRootAlloc
+     419 MemProtectHeapRootAllocLeaf
+     420 MemProtectHeapRootRealloc
+     421 MemProtectHeapRootReallocLeaf
+     422 MemProtectHeapSynchronizeWithCollector
+     423 MemProtectHeapUnprotectCurrentThread
+     424 MemProtectHeapUnrootAndZero
+     425 RecyclerNativeHeapAddExternalMemoryUsage
+     426 RecyclerNativeHeapAllocLeaf
+     427 RecyclerNativeHeapAllocLeafFinalized
+     428 RecyclerNativeHeapAllocTraced
+     429 RecyclerNativeHeapAllocTracedFinalized
+     430 RecyclerNativeHeapCollectGarbageInThread
+     431 RecyclerNativeHeapCreateWeakReference
+     432 RecyclerNativeHeapGetRealAddressFromInterior
+     433 RecyclerNativeHeapGetStrongReference
+     434 RecyclerNativeHeapHasWeakReferenceCleanupOccurred
+     435 RecyclerNativeHeapRootAddRef
+     436 RecyclerNativeHeapRootRelease

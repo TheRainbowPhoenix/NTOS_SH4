@@ -1,0 +1,253 @@
+=== eView.dll (4,990,976 bytes) ===
+machine=IMAGE_FILE_MACHINE_I386 subsystem=IMAGE_SUBSYSTEM_WINDOWS_GUI timestamp=1468633131 (2016-07-16T01:38:51+00:00)
+bits=32 entry=0x314cb0 base=0x10000000
+dllchars=0x5140 NX DYNAMIC_BASE
+sections: .text .rdata .data .didat .tls .rsrc .reloc
+
+--- IMPORTS ---
+api-ms-win-eventing-provider-l1-1-0.dll: 4 functions
+    EventUnregister
+    EventRegister
+    EventWriteEx
+    EventSetInformation
+api-ms-win-core-synch-l1-2-0.dll: 19 functions
+    ReleaseSRWLockExclusive
+    InitializeCriticalSectionEx
+    CreateSemaphoreExW
+    ReleaseSemaphore
+    DeleteCriticalSection
+    LeaveCriticalSection
+    AcquireSRWLockExclusive
+    InitializeConditionVariable
+    WakeAllConditionVariable
+    WaitForSingleObject
+    ReleaseMutex
+    SleepConditionVariableCS
+    WaitForSingleObjectEx
+    OpenSemaphoreW
+    ResetEvent
+    InitOnceExecuteOnce
+    CreateMutexExW
+    SetEvent
+    EnterCriticalSection
+api-ms-win-core-heap-l1-2-0.dll: 3 functions
+    HeapFree
+    GetProcessHeap
+    HeapAlloc
+api-ms-win-core-errorhandling-l1-1-1.dll: 3 functions
+    SetLastError
+    GetLastError
+    RaiseException
+api-ms-win-core-processthreads-l1-1-2.dll: 5 functions
+    IsProcessorFeaturePresent
+    GetCurrentThreadId
+    OpenProcessToken
+    GetCurrentProcess
+    GetCurrentProcessId
+api-ms-win-core-localization-l1-2-1.dll: 3 functions
+    IdnToAscii
+    FormatMessageW
+    GetLocaleInfoEx
+api-ms-win-core-debug-l1-1-1.dll: 1 functions
+    OutputDebugStringW
+api-ms-win-core-handle-l1-1-0.dll: 1 functions
+    CloseHandle
+api-ms-win-core-string-l1-1-0.dll: 1 functions
+    CompareStringEx
+api-ms-win-core-com-l1-1-1.dll: 9 functions
+    CoTaskMemFree
+    CoCreateFreeThreadedMarshaler
+    CoCreateGuid
+    IIDFromString
+    CLSIDFromString
+    StringFromCLSID
+    CreateStreamOnHGlobal
+    CoTaskMemAlloc
+    CoGetContextToken
+api-ms-win-core-sysinfo-l1-2-1.dll: 4 functions
+    GetTickCount64
+    GetSystemTimeAsFileTime
+    GetVersionExW
+    GetLocalTime
+api-ms-win-core-timezone-l1-1-0.dll: 2 functions
+    SystemTimeToFileTime
+    FileTimeToSystemTime
+api-ms-win-core-datetime-l1-1-1.dll: 2 functions
+    GetDateFormatEx
+    GetTimeFormatEx
+OLEAUT32.dll: 3 functions
+    SysAllocStringLen
+    SysFreeString
+    SysAllocString
+api-ms-win-core-file-l1-2-1.dll: 2 functions
+    CreateFile2
+    DeleteFileW
+vccorlib140_app.DLL: 69 functions
+    ?EventSourceGetTargetArrayEvent@Details@Platform@@YGPAXPAXIPBXPA_J@Z
+    ?get@Message@Exception@Platform@@Q$AAAP$AAVString@3@XZ
+    ?CreateException@Exception@Platform@@SAP$AAV12@HP$AAVString@2@@Z
+    ?__abi_ObjectToString@__abi_details@@YGP$AAVString@Platform@@P$AAVObject@3@_N@Z
+    ?ToString@Guid@Platform@@QAAP$AAVString@2@XZ
+    ?__abi_cast_Object_to_String@__abi_details@@YGP$AAVString@Platform@@_NP$AAVObject@3@@Z
+    ?__abi_cast_String_to_Object@__abi_details@@YGP$AAVObject@Platform@@P$AAVString@3@@Z
+    ??0OutOfMemoryException@Platform@@Q$AAA@XZ
+    ??0FailureException@Platform@@Q$AAA@XZ
+    ??0OutOfBoundsException@Platform@@Q$AAA@XZ
+    ??0ChangedStateException@Platform@@Q$AAA@XZ
+    ?GetIidsFn@@YGJHPAKPBU__s_GUID@@PAPAVGuid@Platform@@@Z
+    ??0NullReferenceException@Platform@@Q$AAA@XZ
+    ?GetTypeCode@Type@Platform@@SA?AW4TypeCode@2@P$AAV12@@Z
+    ?__abi_make_type_id@@YGP$AAVType@Platform@@ABU__abi_type_descriptor@@@Z
+    ... (54 more)
+VCRUNTIME140_APP.dll: 15 functions
+    __telemetry_main_invoke_trigger
+    memset
+    _purecall
+    wcschr
+    __std_type_info_destroy_list
+    _CxxThrowException
+    _except_handler4_common
+    __telemetry_main_return_trigger
+    __CxxFrameHandler3
+    memmove
+    wcsstr
+    __std_exception_copy
+    __std_exception_destroy
+    __std_terminate
+    memcpy
+api-ms-win-crt-runtime-l1-1-0.dll: 13 functions
+    _invalid_parameter_noinfo
+    _invalid_parameter_noinfo_noreturn
+    _initterm_e
+    _initterm
+    _cexit
+    _crt_atexit
+    _execute_onexit_table
+    _register_onexit_function
+    _initialize_onexit_table
+    _initialize_narrow_environment
+    _configure_narrow_argv
+    _seh_filter_dll
+    _errno
+api-ms-win-crt-stdio-l1-1-0.dll: 3 functions
+    __stdio_common_vswprintf_s
+    __stdio_common_vsnprintf_s
+    __stdio_common_vswprintf
+api-ms-win-crt-heap-l1-1-0.dll: 3 functions
+    malloc
+    free
+    _callnewh
+api-ms-win-crt-string-l1-1-0.dll: 11 functions
+    iswdigit
+    wcstok_s
+    iswalpha
+    iswalnum
+    iswxdigit
+    wcslen
+    _wcsnicmp
+    _wcsicmp
+    memcpy_s
+    towlower
+    wcsncpy_s
+api-ms-win-crt-convert-l1-1-0.dll: 1 functions
+    wcstol
+MSVCP140_APP.dll: 48 functions
+    ?_Xbad_function_call@std@@YAXXZ
+    ??4?$_Yarn@D@std@@QAEAAV01@PBD@Z
+    ?_Xout_of_range@std@@YAXPBD@Z
+    ?_Xbad_alloc@std@@YAXXZ
+    ?_Xlength_error@std@@YAXPBD@Z
+    ?_Throw_C_error@std@@YAXH@Z
+    ?id@?$codecvt@_WDU_Mbstatet@@@std@@2V0locale@2@A
+    ?__ExceptionPtrCreate@@YAXPAX@Z
+    _Mtx_lock
+    ?__ExceptionPtrCurrentException@@YAXPAX@Z
+    ?_LogWorkItemCompleted@_TaskEventLogger@details@Concurrency@@QAEXXZ
+    _Mtx_unlock
+    _Cnd_wait
+    ?_LogWorkItemStarted@_TaskEventLogger@details@Concurrency@@QAEXXZ
+    ??0task_continuation_context@Concurrency@@AAE@XZ
+    ... (33 more)
+api-ms-win-core-util-l1-1-0.dll: 1 functions
+    DecodePointer
+api-ms-win-core-winrt-string-l1-1-0.dll: 9 functions
+    WindowsCreateString
+    WindowsGetStringRawBuffer
+    WindowsConcatString
+    WindowsDuplicateString
+    WindowsCreateStringReference
+    WindowsDeleteString
+    WindowsCompareStringOrdinal
+    WindowsIsStringEmpty
+    WindowsGetStringLen
+api-ms-win-core-winrt-l1-1-0.dll: 1 functions
+    RoGetActivationFactory
+api-ms-win-core-profile-l1-1-0.dll: 1 functions
+    QueryPerformanceCounter
+api-ms-win-core-interlocked-l1-2-0.dll: 1 functions
+    InitializeSListHead
+iertutil.dll: 14 functions
+    ord49
+    ord518
+    ord597
+    ord347
+    CreateUri
+    ord401
+    ord398
+    ord793
+    ord791
+    ord650
+    ord796
+    ord658
+    ord654
+    ord840
+EMODEL.dll: 9 functions
+    ord29
+    ord28
+    ord1
+    ord9
+    ord13
+    ord5
+    ord8
+    ord2
+    ord6
+api-ms-win-core-misc-l1-1-0.dll: 1 functions
+    LocalFree
+api-ms-win-downlevel-shlwapi-l1-1-0.dll: 2 functions
+    ParseURLW
+    StrStrW
+CoreMessaging.dll: 1 functions
+    CoreUICreate
+api-ms-win-core-registry-l1-1-0.dll: 4 functions
+    RegOpenKeyExW
+    RegQueryValueExW
+    RegGetValueW
+    RegCloseKey
+api-ms-win-security-sddl-l1-1-0.dll: 2 functions
+    ConvertStringSecurityDescriptorToSecurityDescriptorW
+    ConvertSidToStringSidW
+api-ms-win-core-libraryloader-l1-2-0.dll: 4 functions
+    LoadLibraryExW
+    GetModuleHandleExW
+    GetModuleFileNameA
+    GetProcAddress
+api-ms-win-core-delayload-l1-1-1.dll: 2 functions
+    DelayLoadFailureHook
+    ResolveDelayLoadedAPI
+api-ms-win-core-apiquery-l1-1-0.dll: 1 functions
+    ApiSetQueryApiSetPresence
+api-ms-win-crt-math-l1-1-0.dll: 4 functions
+    floor
+    _libm_sse2_pow_precise
+    ceil
+    _except1
+
+--- DELAY IMPORTS ---
+eData.dll (DELAY): 2 functions
+    CreateReadingListManager
+    CreateFavoritesManager
+
+--- EXPORTS ---
+2 exported symbols:
+       1 DllCanUnloadNow
+       2 DllGetActivationFactory

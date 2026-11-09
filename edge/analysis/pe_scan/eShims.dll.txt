@@ -1,0 +1,239 @@
+=== eShims.dll (145,920 bytes) ===
+machine=IMAGE_FILE_MACHINE_AMD64 subsystem=IMAGE_SUBSYSTEM_WINDOWS_GUI timestamp=2710062266 (2055-11-17T11:04:26+00:00)
+bits=64 entry=0x8ed0 base=0x180000000
+dllchars=0x4160 NX DYNAMIC_BASE
+sections: .text .rdata .data .pdata .didat .mrdata .rsrc .reloc
+
+--- IMPORTS ---
+api-ms-win-crt-string-l1-1-0.dll: 2 functions
+    memset
+    strncmp
+api-ms-win-crt-runtime-l1-1-0.dll: 2 functions
+    _initterm_e
+    _initterm
+api-ms-win-crt-private-l1-1-0.dll: 38 functions
+    _o__configure_narrow_argv
+    _o__crt_atexit
+    _o__errno
+    _o__execute_onexit_table
+    _o__initialize_narrow_environment
+    _o__initialize_onexit_table
+    _o__invalid_parameter_noinfo
+    _o__itow_s
+    _o__register_onexit_function
+    _o__seh_filter_dll
+    _o__splitpath_s
+    _o__stricmp
+    _o__strnicmp
+    memmove
+    _o__wcsicmp
+    _o__wcsnicmp
+    _o__wsplitpath_s
+    _o_calloc
+    _o_free
+    _o_isalpha
+    _o_iswascii
+    _o_malloc
+    _o_memcpy_s
+    _o_realloc
+    _o_wcscpy_s
+    _o___stdio_common_vswprintf
+    _o__cexit
+    _o___stdio_common_vsnprintf_s
+    _o___std_type_info_destroy_list
+    _o___std_exception_destroy
+    _o___std_exception_copy
+    wcsstr
+    wcsrchr
+    __C_specific_handler
+    __std_terminate
+    __CxxFrameHandler4
+    _CxxThrowException
+    memcpy
+api-ms-win-downlevel-user32-l1-1-0.dll: 2 functions
+    CharPrevA
+    CharNextA
+api-ms-win-downlevel-shlwapi-l1-1-0.dll: 6 functions
+    StrCmpICW
+    StrCmpNIA
+    StrCmpICA
+    StrDupA
+    PathFindFileNameW
+    StrCmpCW
+api-ms-win-downlevel-ole32-l1-1-0.dll: 4 functions
+    CoTaskMemFree
+    CoTaskMemRealloc
+    CoUninitialize
+    CoInitializeEx
+api-ms-win-downlevel-advapi32-l1-1-0.dll: 14 functions
+    GetAce
+    GetFileSecurityW
+    RegSetValueExW
+    RegCreateKeyExW
+    GetSecurityDescriptorSacl
+    RegCloseKey
+    RegQueryValueExW
+    RegOpenKeyExW
+    IsValidSid
+    GetSidSubAuthorityCount
+    GetSidSubAuthority
+    EventWriteEx
+    EventRegister
+    EventUnregister
+api-ms-win-downlevel-version-l1-1-0.dll: 1 functions
+    VerQueryValueW
+ntdll.dll: 19 functions
+    ZwOpenFile
+    ZwClose
+    RtlCompareUnicodeString
+    RtlFreeHeap
+    RtlInitAnsiString
+    RtlUnicodeStringToAnsiString
+    RtlImageNtHeader
+    RtlFreeUnicodeString
+    NtQueryObject
+    RtlCaptureStackBackTrace
+    RtlCaptureContext
+    RtlLookupFunctionEntry
+    ZwCreateSection
+    RtlDosPathNameToNtPathName_U_WithStatus
+    RtlAllocateHeap
+    ZwUnmapViewOfSection
+    RtlAnsiStringToUnicodeString
+    RtlVirtualUnwind
+    ZwMapViewOfSection
+api-ms-win-core-localization-l1-2-0.dll: 3 functions
+    IsDBCSLeadByte
+    GetCPInfo
+    FormatMessageW
+api-ms-win-core-processthreads-l1-1-0.dll: 6 functions
+    TlsSetValue
+    TlsAlloc
+    TerminateProcess
+    GetCurrentProcessId
+    GetCurrentProcess
+    GetCurrentThreadId
+api-ms-win-core-heap-l1-1-0.dll: 4 functions
+    GetProcessHeap
+    HeapFree
+    HeapAlloc
+    HeapReAlloc
+api-ms-win-core-libraryloader-l1-2-0.dll: 8 functions
+    LoadLibraryExW
+    GetProcAddress
+    GetModuleHandleExW
+    GetModuleHandleA
+    FreeLibrary
+    GetModuleFileNameA
+    GetModuleHandleW
+    GetModuleFileNameW
+api-ms-win-core-debug-l1-1-0.dll: 4 functions
+    DebugBreak
+    IsDebuggerPresent
+    OutputDebugStringA
+    OutputDebugStringW
+api-ms-win-core-errorhandling-l1-1-0.dll: 5 functions
+    GetLastError
+    SetLastError
+    SetUnhandledExceptionFilter
+    UnhandledExceptionFilter
+    RaiseException
+api-ms-win-core-handle-l1-1-0.dll: 1 functions
+    CloseHandle
+api-ms-win-core-synch-l1-1-0.dll: 11 functions
+    InitializeCriticalSectionAndSpinCount
+    EnterCriticalSection
+    DeleteCriticalSection
+    CreateSemaphoreExW
+    CreateMutexExW
+    LeaveCriticalSection
+    OpenSemaphoreW
+    ReleaseSemaphore
+    WaitForSingleObjectEx
+    ReleaseMutex
+    WaitForSingleObject
+api-ms-win-core-string-l1-1-0.dll: 2 functions
+    MultiByteToWideChar
+    WideCharToMultiByte
+api-ms-win-core-heap-l2-1-0.dll: 2 functions
+    LocalAlloc
+    LocalFree
+api-ms-win-core-sysinfo-l1-1-0.dll: 2 functions
+    GetSystemDirectoryA
+    GetSystemTimeAsFileTime
+api-ms-win-core-processenvironment-l1-1-0.dll: 1 functions
+    ExpandEnvironmentStringsA
+OLEAUT32.dll: 2 functions
+    SysAllocString
+    SysFreeString
+api-ms-win-core-processthreads-l1-1-1.dll: 2 functions
+    GetProcessMitigationPolicy
+    IsProcessorFeaturePresent
+api-ms-win-eventing-provider-l1-1-0.dll: 1 functions
+    EventSetInformation
+api-ms-win-core-libraryloader-l1-2-1.dll: 2 functions
+    LoadLibraryA
+    LoadLibraryW
+api-ms-win-core-errorhandling-l1-1-2.dll: 1 functions
+    RaiseFailFastException
+api-ms-win-core-memory-l1-1-0.dll: 2 functions
+    VirtualProtect
+    VirtualQuery
+api-ms-win-core-processthreads-l1-1-2.dll: 1 functions
+    QueryProtectedPolicy
+api-ms-win-core-version-l1-1-1.dll: 1 functions
+    GetFileVersionInfoW
+api-ms-win-core-psapi-l1-1-0.dll: 1 functions
+    K32EnumProcessModules
+USERENV.dll: 1 functions
+    GetAppContainerRegistryLocation
+api-ms-win-core-timezone-l1-1-0.dll: 1 functions
+    FileTimeToSystemTime
+api-ms-win-core-synch-l1-2-0.dll: 1 functions
+    InitOnceExecuteOnce
+api-ms-win-core-profile-l1-1-0.dll: 1 functions
+    QueryPerformanceCounter
+api-ms-win-core-interlocked-l1-1-0.dll: 1 functions
+    InitializeSListHead
+api-ms-win-rtcore-ntuser-window-l1-1-0.dll: 2 functions
+    GetPropW
+    AllowSetForegroundWindow
+iertutil.dll: 8 functions
+    ord791
+    ord398
+    ord597
+    ord594
+    ord793
+    ord58
+    ord854
+    ord855
+api-ms-win-core-delayload-l1-1-1.dll: 1 functions
+    ResolveDelayLoadedAPI
+api-ms-win-core-delayload-l1-1-0.dll: 1 functions
+    DelayLoadFailureHook
+
+--- DELAY IMPORTS ---
+MPR.dll (DELAY): 1 functions
+    WNetGetConnectionW
+api-ms-win-core-windowserrorreporting-l1-1-0.dll (DELAY): 2 functions
+    WerSetFlags
+    WerGetFlags
+faultrep.dll (DELAY): 1 functions
+    ReportFault
+edgeIso.dll (DELAY): 2 functions
+    ord207
+    ord22
+
+--- EXPORTS ---
+11 exported symbols:
+       2 IEShims_CreateFileW
+       3 IEShims_FindClose
+       4 IEShims_FindFirstFileW
+       5 IEShims_GetFileAttributesExW
+       6 IEShims_GetFileAttributesW
+       7 IEShims_GetFullPathNameW
+       8 IEShims_GetLongPathNameW
+       9 IEShims_Initialize
+      10 IEShims_Uninitialize
+      11 IEShims_WNetGetConnectionW
+       1 RegisterFlashShimHandler

@@ -1,0 +1,72 @@
+=== explorer.exe (259,584 bytes) ===
+machine=IMAGE_FILE_MACHINE_SH4 subsystem=IMAGE_SUBSYSTEM_WINDOWS_CE_GUI timestamp=1794013365 (2026-11-07T01:02:45+00:00)
+bits=32 entry=0x33d4 base=0x10000
+dllchars=0x0100 NX
+sections: .text .data .pdata .rsrc .cerom
+
+--- IMPORTS ---
+COREDLL.dll: 293 functions
+    ord1645
+    ord87
+    ord1018
+    ord2696
+    ord1041
+    ord3
+    ord12
+    ord544
+    ord4
+    ord2
+    ord5
+    ord2569
+    ord2570
+    ord277
+    ord2563
+    ... (278 more)
+ole32.dll: 3 functions
+    CoUninitialize
+    CoCreateInstance
+    CoInitializeEx
+OLEAUT32.dll: 4 functions
+    VariantClear
+    SysFreeString
+    SysAllocString
+    SafeArrayCreateVector
+commctrl.dll: 15 functions
+    ord9
+    ord43
+    ord5
+    ord37
+    ord8
+    ord11
+    ord39
+    ord38
+    ord2
+    ord41
+    ord42
+    ord36
+    ord40
+    ord17
+    ord18
+ceshell.dll: 8 functions
+    ord12
+    ord82
+    ord84
+    ord86
+    ord7
+    ord11
+    ord10
+    ord9
+shcore.dll: 6 functions
+    PathIsExtension
+    PathGetArgsW
+    PathRemoveArgsW
+    PathIsURLW
+    PathRemoveExtensionW
+    PathFindFileNameW
+IECEEXT.dll: 3 functions
+    CoGetInterfaceAndReleaseStream
+    IEUsesDCOM
+    CoMarshalInterThreadInterfaceInStream
+
+--- EXPORTS ---
+(none)

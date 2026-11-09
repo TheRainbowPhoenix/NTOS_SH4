@@ -1,0 +1,73 @@
+=== IECEExt.dll (10,752 bytes) ===
+machine=IMAGE_FILE_MACHINE_SH4 subsystem=IMAGE_SUBSYSTEM_WINDOWS_CE_GUI timestamp=1794013350 (2026-11-07T01:02:30+00:00)
+bits=32 entry=0x2214 base=0x40220000
+dllchars=0x0100 NX
+sections: .text .data .pdata .rsrc .cerom
+
+--- IMPORTS ---
+ole32.dll: 2 functions
+    CoUninitialize
+    CoInitializeEx
+COREDLL.dll: 55 functions
+    ord972
+    ord528
+    ord529
+    ord196
+    ord197
+    ord33
+    ord36
+    ord541
+    ord224
+    ord683
+    ord259
+    ord258
+    ord874
+    ord517
+    ord717
+    ... (40 more)
+
+--- EXPORTS ---
+43 exported symbols:
+       1 CharUpperA
+       2 CoGetInterfaceAndReleaseStream
+       3 CoGetMarshalSizeMax
+       4 CoInitialize
+       5 CoMarshalInterThreadInterfaceInStream
+       6 CoMarshalInterface
+       7 CoRegisterClassObject
+       8 CoRevokeClassObject
+       9 CoUnmarshalInterface
+      10 CompareStringA
+      11 CreateEventA
+      12 CreateFileA
+      13 CreateMutexA
+      14 DeleteFileA
+      15 EnumChildWindows
+      16 ExtSelectClipRgn
+      17 FindResourceA
+      18 FormatMessageA
+      19 GetDIBits
+      20 GetFileAttributesA
+      21 GetLastActivePopup
+      22 GetModuleHandleA
+      23 GetTempFileNameA
+      24 GetTempPathA
+      25 GetVersionExA
+      26 GetWindowLongA
+      27 GetWindowsDirectoryA
+      28 IEUsesDCOM
+      29 LoadCursorA
+      30 LoadLibraryA
+      31 LoadStringA
+      32 MkParseDisplayName
+      33 OleFlushClipboard
+      34 OleGetClipboard
+      35 OleIsCurrentClipboard
+      36 OleSetClipboard
+      37 OleUninitialize
+      38 OutputDebugStringA
+      39 SetErrorMode
+      40 SetWindowLongA
+      41 bsearch
+      42 lstrlenA
+      43 time

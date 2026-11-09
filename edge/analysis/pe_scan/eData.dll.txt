@@ -1,0 +1,263 @@
+=== eData.dll (552,960 bytes) ===
+machine=IMAGE_FILE_MACHINE_I386 subsystem=IMAGE_SUBSYSTEM_WINDOWS_CUI timestamp=1468632617 (2016-07-16T01:30:17+00:00)
+bits=32 entry=0x33bf0 base=0x10000000
+dllchars=0x4140 NX DYNAMIC_BASE
+sections: .text .data .idata .tls .rsrc .reloc
+
+--- IMPORTS ---
+msvcrt.dll: 37 functions
+    calloc
+    _resetstkoflw
+    memset
+    swscanf_s
+    memmove
+    _errno
+    __CxxFrameHandler3
+    _HUGE
+    _vsnwprintf
+    wcschr
+    realloc
+    wcstol
+    _wcstoi64
+    _wcsicmp
+    wcstoul
+    _wcslwr_s
+    _wcstoui64
+    memmove_s
+    wcsncmp
+    iswspace
+    qsort
+    _except_handler4_common
+    _onexit
+    __dllonexit
+    _unlock
+    _lock
+    _initterm
+    _amsg_exit
+    _XcptFilter
+    _callnewh
+    malloc
+    free
+    _purecall
+    memcpy_s
+    bsearch
+    memcmp
+    memcpy
+api-ms-win-core-libraryloader-l1-2-0.dll: 5 functions
+    DisableThreadLibraryCalls
+    GetModuleFileNameA
+    GetProcAddress
+    GetModuleHandleExW
+    LoadLibraryExW
+api-ms-win-core-synch-l1-2-0.dll: 23 functions
+    Sleep
+    OpenSemaphoreW
+    WaitForSingleObjectEx
+    ReleaseMutex
+    CreateMutexExW
+    DeleteCriticalSection
+    WaitForSingleObject
+    InitializeCriticalSection
+    InitializeCriticalSectionEx
+    LeaveCriticalSection
+    InitializeSRWLock
+    ReleaseSRWLockExclusive
+    AcquireSRWLockExclusive
+    ReleaseSRWLockShared
+    AcquireSRWLockShared
+    ReleaseSemaphore
+    EnterCriticalSection
+    CreateSemaphoreExW
+    CreateEventExW
+    WaitForMultipleObjectsEx
+    ResetEvent
+    CreateEventW
+    SetEvent
+api-ms-win-core-heap-l1-2-0.dll: 4 functions
+    HeapReAlloc
+    GetProcessHeap
+    HeapFree
+    HeapAlloc
+api-ms-win-core-errorhandling-l1-1-1.dll: 5 functions
+    RaiseException
+    GetLastError
+    SetLastError
+    UnhandledExceptionFilter
+    SetUnhandledExceptionFilter
+api-ms-win-core-com-l1-1-1.dll: 8 functions
+    CoCreateFreeThreadedMarshaler
+    CoTaskMemRealloc
+    CoTaskMemAlloc
+    CoWaitForMultipleHandles
+    CoCreateGuid
+    CoTaskMemFree
+    CoCreateInstance
+    CoDisconnectObject
+api-ms-win-eventing-provider-l1-1-0.dll: 4 functions
+    EventUnregister
+    EventSetInformation
+    EventWriteEx
+    EventRegister
+api-ms-win-core-processthreads-l1-1-2.dll: 6 functions
+    CreateThread
+    GetCurrentThread
+    GetCurrentProcess
+    GetCurrentThreadId
+    TerminateProcess
+    GetCurrentProcessId
+api-ms-win-core-localization-l1-2-1.dll: 2 functions
+    FormatMessageW
+    GetUserDefaultLocaleName
+api-ms-win-core-debug-l1-1-1.dll: 2 functions
+    OutputDebugStringA
+    OutputDebugStringW
+api-ms-win-core-handle-l1-1-0.dll: 1 functions
+    CloseHandle
+OLEAUT32.dll: 23 functions
+    SysFreeString
+    SafeArrayCopy
+    SafeArrayGetLBound
+    SafeArrayGetUBound
+    SafeArrayGetVartype
+    VarBstrCmp
+    SysStringLen
+    SafeArrayLock
+    VariantInit
+    SysStringByteLen
+    SysAllocStringByteLen
+    VarCmp
+    SafeArrayCreate
+    SafeArrayDestroyDescriptor
+    SafeArrayAllocDescriptorEx
+    VarBstrCat
+    VariantClear
+    VariantCopy
+    SafeArrayUnlock
+    SafeArrayDestroy
+    SysAllocStringLen
+    VariantChangeType
+    SysAllocString
+api-ms-win-core-timezone-l1-1-0.dll: 2 functions
+    FileTimeToSystemTime
+    SystemTimeToFileTime
+api-ms-win-core-sysinfo-l1-2-1.dll: 3 functions
+    GetSystemTimeAsFileTime
+    GetSystemTime
+    GetTickCount
+api-ms-win-core-profile-l1-1-0.dll: 1 functions
+    QueryPerformanceCounter
+api-ms-win-core-string-l1-1-0.dll: 1 functions
+    CompareStringEx
+api-ms-win-core-processenvironment-l1-2-0.dll: 2 functions
+    ExpandEnvironmentStringsW
+    SetEnvironmentVariableW
+iertutil.dll: 16 functions
+    ord597
+    ord791
+    ord347
+    ord795
+    ord796
+    ord518
+    ord401
+    ord85
+    ord793
+    ord398
+    ord91
+    ord78
+    ord74
+    ord840
+    ord37
+    CreateUri
+api-ms-win-core-winrt-error-l1-1-1.dll: 1 functions
+    RoOriginateError
+api-ms-win-core-file-l1-2-1.dll: 10 functions
+    ReadFile
+    FindFirstFileExW
+    SetFileAttributesW
+    CreateFile2
+    FindNextFileW
+    SetFilePointerEx
+    FindClose
+    CreateDirectoryW
+    WriteFile
+    DeleteFileW
+api-ms-win-core-synch-l1-2-1.dll: 1 functions
+    WaitForMultipleObjects
+api-ms-win-core-shlwapi-legacy-l1-1-0.dll: 3 functions
+    PathIsFileSpecW
+    PathFindFileNameW
+    PathFileExistsW
+api-ms-win-shell-shellfolders-l1-1-0.dll: 2 functions
+    SHCreateDirectoryExW
+    SHGetKnownFolderPath
+api-ms-win-core-file-l2-1-1.dll: 2 functions
+    MoveFileExW
+    GetFileInformationByHandleEx
+api-ms-win-core-winrt-string-l1-1-0.dll: 4 functions
+    WindowsGetStringRawBuffer
+    WindowsCreateStringReference
+    WindowsCreateString
+    WindowsDeleteString
+api-ms-win-core-winrt-l1-1-0.dll: 1 functions
+    RoGetActivationFactory
+api-ms-win-core-heap-l2-1-0.dll: 1 functions
+    LocalFree
+api-ms-win-core-path-l1-1-0.dll: 3 functions
+    PathCchRemoveFileSpec
+    PathAllocCanonicalize
+    PathCchAppend
+api-ms-win-shcore-obsolete-l1-1-0.dll: 1 functions
+    SHStrDupW
+ESENT.dll: 40 functions
+    JetRollback
+    JetTerm2
+    JetBeginSessionW
+    JetCommitTransaction2
+    JetCreateIndex4W
+    JetInit3W
+    JetSetCurrentIndex4W
+    JetAttachDatabase2W
+    JetOpenDatabaseW
+    JetCloseDatabase
+    JetRetrieveColumns
+    JetDeleteTableW
+    JetDeleteColumn2W
+    JetAddColumnW
+    JetDeleteIndexW
+    JetSetSystemParameterW
+    JetGetErrorInfoW
+    JetCreateInstance2W
+    JetCreateDatabase2W
+    JetEndSession
+    JetPrepareUpdate
+    JetMove
+    JetRenameColumnW
+    JetSetColumns
+    JetCreateTableColumnIndex4W
+    JetOpenTableW
+    JetEnumerateColumns
+    JetBeginTransaction3
+    JetDelete
+    JetUpdate2
+    JetCloseTable
+    JetStopServiceInstance2
+    JetSetIndexRange
+    JetRetrieveColumn
+    JetDetachDatabase2W
+    JetSeek
+    JetGetSystemParameterW
+    JetMakeKey
+    JetGetRecordPosition
+    JetGetTableColumnInfoW
+
+--- EXPORTS ---
+9 exported symbols:
+       1 CleanUpDataStoreAsync
+       2 CreateBhxExtensionsListManager
+       3 CreateCARulesManager
+       4 CreateFavoritesManager
+       5 CreateReadingListManager
+       6 CreateTopSitesManager
+       7 CreateUriToAppIdMappingManager
+       8 LoadDataStore
+       9 ReleaseDataStore

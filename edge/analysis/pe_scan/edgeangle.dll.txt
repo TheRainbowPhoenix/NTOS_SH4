@@ -1,0 +1,322 @@
+=== edgeangle.dll (2,084,352 bytes) ===
+machine=IMAGE_FILE_MACHINE_AMD64 subsystem=IMAGE_SUBSYSTEM_WINDOWS_GUI timestamp=864357257 (1997-05-23T03:14:17+00:00)
+bits=64 entry=0x9ec90 base=0x180000000
+dllchars=0x4160 NX DYNAMIC_BASE
+sections: .text .rdata .data .pdata .didat .rsrc .reloc
+
+--- IMPORTS ---
+api-ms-win-crt-runtime-l1-1-0.dll: 2 functions
+    _initterm_e
+    _initterm
+api-ms-win-crt-private-l1-1-0.dll: 47 functions
+    _o__errno
+    _o__execute_onexit_table
+    _o__fdsign
+    _o__initialize_narrow_environment
+    _o__initialize_onexit_table
+    _o__invalid_parameter_noinfo_noreturn
+    _o__purecall
+    _o__register_onexit_function
+    _o__seh_filter_dll
+    _o__cexit
+    memmove
+    _o__wcsicmp
+    _o_acoshf
+    _o_asinhf
+    _o_atanhf
+    ... (32 more)
+api-ms-win-crt-string-l1-1-0.dll: 3 functions
+    strncmp
+    strcmp
+    memset
+api-ms-win-core-libraryloader-l1-2-0.dll: 4 functions
+    GetModuleHandleW
+    FreeLibrary
+    GetProcAddress
+    GetModuleFileNameW
+api-ms-win-core-shlwapi-legacy-l1-1-0.dll: 1 functions
+    PathFindFileNameW
+api-ms-win-eventing-provider-l1-1-0.dll: 1 functions
+    EventWriteEx
+api-ms-win-core-string-obsolete-l1-1-0.dll: 1 functions
+    lstrcmpiW
+api-ms-win-core-errorhandling-l1-1-0.dll: 4 functions
+    SetUnhandledExceptionFilter
+    RaiseException
+    GetLastError
+    UnhandledExceptionFilter
+api-ms-win-core-errorhandling-l1-1-2.dll: 1 functions
+    RaiseFailFastException
+api-ms-win-core-shlwapi-obsolete-l1-1-0.dll: 2 functions
+    StrCmpICW
+    StrStrIW
+api-ms-win-core-processthreads-l1-1-0.dll: 8 functions
+    TlsFree
+    GetCurrentThreadId
+    TlsGetValue
+    TlsAlloc
+    TlsSetValue
+    GetCurrentProcess
+    TerminateProcess
+    GetCurrentProcessId
+ntdll.dll: 1 functions
+    RtlGetSuiteMask
+api-ms-win-core-synch-l1-2-0.dll: 2 functions
+    Sleep
+    InitOnceExecuteOnce
+api-ms-win-core-profile-l1-1-0.dll: 2 functions
+    QueryPerformanceFrequency
+    QueryPerformanceCounter
+api-ms-win-core-sysinfo-l1-1-0.dll: 1 functions
+    GetSystemTimeAsFileTime
+api-ms-win-core-interlocked-l1-1-0.dll: 1 functions
+    InitializeSListHead
+api-ms-win-core-rtlsupport-l1-1-0.dll: 3 functions
+    RtlCaptureContext
+    RtlVirtualUnwind
+    RtlLookupFunctionEntry
+api-ms-win-core-debug-l1-1-0.dll: 1 functions
+    IsDebuggerPresent
+api-ms-win-core-processthreads-l1-1-1.dll: 1 functions
+    IsProcessorFeaturePresent
+iertutil.dll: 6 functions
+    ord870
+    ord793
+    ord594
+    ord398
+    ord597
+    ord791
+msvcp_win.dll: 65 functions
+    ??1?$basic_iostream@DU?$char_traits@D@std@@@std@@UEAA@XZ
+    ?put@?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV12@D@Z
+    ?widen@?$basic_ios@DU?$char_traits@D@std@@@std@@QEBADD@Z
+    ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV01@P6AAEAV01@AEAV01@@Z@Z
+    ?write@?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV12@PEBD_J@Z
+    ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV01@_K@Z
+    ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV01@J@Z
+    ??1?$basic_ostream@DU?$char_traits@D@std@@@std@@UEAA@XZ
+    ?imbue@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAAXAEBVlocale@2@@Z
+    ?sync@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAAHXZ
+    ?setbuf@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAAPEAV12@PEAD_J@Z
+    ?xsputn@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAA_JPEBD_J@Z
+    ?xsgetn@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAA_JPEAD_J@Z
+    ?uflow@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAAHXZ
+    ?showmanyc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAA_JXZ
+    ... (50 more)
+chakra.dll: 3 functions
+    MemProtectHeapUnrootAndZero
+    MemProtectHeapCreate
+    MemProtectHeapDestroy
+api-ms-win-core-heap-l1-1-0.dll: 3 functions
+    HeapFree
+    HeapAlloc
+    GetProcessHeap
+api-ms-win-core-delayload-l1-1-1.dll: 1 functions
+    ResolveDelayLoadedAPI
+api-ms-win-core-delayload-l1-1-0.dll: 1 functions
+    DelayLoadFailureHook
+api-ms-win-core-sysinfo-l1-2-0.dll: 1 functions
+    VerSetConditionMask
+api-ms-win-core-kernel32-legacy-l1-1-1.dll: 1 functions
+    VerifyVersionInfoW
+api-ms-win-core-libraryloader-l1-2-1.dll: 1 functions
+    LoadLibraryW
+api-ms-win-core-synch-l1-1-0.dll: 9 functions
+    WaitForSingleObjectEx
+    SetEvent
+    InitializeCriticalSectionAndSpinCount
+    EnterCriticalSection
+    LeaveCriticalSection
+    WaitForSingleObject
+    CreateEventW
+    ResetEvent
+    DeleteCriticalSection
+api-ms-win-core-handle-l1-1-0.dll: 1 functions
+    CloseHandle
+api-ms-win-crt-math-l1-1-0.dll: 18 functions
+    modff
+    expf
+    logf
+    asinf
+    tanf
+    sinhf
+    floorf
+    sqrtf
+    truncf
+    ceilf
+    tanhf
+    cosf
+    acosf
+    coshf
+    atanf
+    sinf
+    atan2f
+    _fdtest
+
+--- DELAY IMPORTS ---
+edgeIso.dll (DELAY): 1 functions
+    ord22
+
+--- EXPORTS ---
+161 exported symbols:
+     100 ord100
+     101 ord101
+     102 ord102
+     103 ord103
+     104 ord104
+     105 ord105
+     106 ord106
+     107 ord107
+     108 ord108
+     109 ord109
+     110 ord110
+     111 ord111
+     112 ord112
+     113 ord113
+     114 ord114
+     115 ord115
+     116 ord116
+     117 ord117
+     118 ord118
+     119 ord119
+     120 ord120
+     121 ord121
+     122 ord122
+     123 ord123
+     124 ord124
+     125 ord125
+     126 ord126
+     127 ord127
+     128 ord128
+     129 ord129
+     130 ord130
+     131 ord131
+     132 ord132
+     133 ord133
+     134 ord134
+     135 ord135
+     136 ord136
+     137 ord137
+     138 ord138
+     139 ord139
+     140 ord140
+     141 ord141
+     142 ord142
+     143 ord143
+     144 ord144
+     145 ord145
+     146 ord146
+     147 ord147
+     148 ord148
+     149 ord149
+     150 ord150
+     151 ord151
+     152 ord152
+     153 ord153
+     154 ord154
+     155 ord155
+     156 ord156
+     157 ord157
+     158 ord158
+     159 ord159
+     160 ord160
+     161 ord161
+     162 ord162
+     163 ord163
+     164 ord164
+     165 ord165
+     166 ord166
+     167 ord167
+     168 ord168
+     169 ord169
+     170 ord170
+     171 ord171
+     172 ord172
+     173 ord173
+     174 ord174
+     175 ord175
+     176 ord176
+     177 ord177
+     178 ord178
+     179 ord179
+     180 ord180
+     181 ord181
+     182 ord182
+     183 ord183
+     184 ord184
+     185 ord185
+     186 ord186
+     187 ord187
+     188 ord188
+     189 ord189
+     190 ord190
+     191 ord191
+     192 ord192
+     193 ord193
+     194 ord194
+     195 ord195
+     196 ord196
+     197 ord197
+     198 ord198
+     199 ord199
+     200 ord200
+     201 ord201
+     202 ord202
+     203 ord203
+     204 ord204
+     205 ord205
+     206 ord206
+     207 ord207
+     208 ord208
+     209 ord209
+     210 ord210
+     211 ord211
+     212 ord212
+     213 ord213
+     214 ord214
+     215 ord215
+     216 ord216
+     217 ord217
+     218 ord218
+     219 ord219
+     220 ord220
+     221 ord221
+     222 ord222
+     223 ord223
+     224 ord224
+     225 ord225
+     226 ord226
+     227 ord227
+     228 ord228
+     229 ord229
+     230 ord230
+     231 ord231
+     232 ord232
+     233 ord233
+     234 ord234
+     235 ord235
+     236 ord236
+     237 ord237
+     238 ord238
+     239 ord239
+     240 ord240
+     241 ord241
+     242 ord242
+     243 ord243
+     244 ord244
+     245 ord245
+     246 ord246
+     247 ord247
+     248 ord248
+     249 ord249
+     250 ord250
+     251 ord251
+     252 ord252
+     253 ord253
+     254 ord254
+     255 ord255
+     256 ord256
+     257 ord257
+     258 ord258
+     259 ord259
+     260 ord260

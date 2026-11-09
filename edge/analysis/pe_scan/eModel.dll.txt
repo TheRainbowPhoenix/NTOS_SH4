@@ -1,0 +1,966 @@
+=== eModel.dll (3,621,888 bytes) ===
+machine=IMAGE_FILE_MACHINE_I386 subsystem=IMAGE_SUBSYSTEM_WINDOWS_GUI timestamp=1468632986 (2016-07-16T01:36:26+00:00)
+bits=32 entry=0x109cf0 base=0x10000000
+dllchars=0x4140 NX DYNAMIC_BASE
+sections: .text .data .idata .didat .tls .ssm_url .rsrc .reloc
+
+--- IMPORTS ---
+msvcrt.dll: 97 functions
+    _wcslwr_s
+    iswdigit
+    calloc
+    strstr
+    wcsrchr
+    _wtof
+    bsearch
+    bsearch_s
+    wcstod
+    wcscspn
+    strnlen
+    rand_s
+    mbstowcs
+    strrchr
+    _wcslwr
+    ... (82 more)
+iertutil.dll: 225 functions
+    ord654
+    ord609
+    ord608
+    ord223
+    ord224
+    ord368
+    ord326
+    ord790
+    ord560
+    ord558
+    ord585
+    ord515
+    ord656
+    ord440
+    ord596
+    ... (210 more)
+api-ms-win-core-winrt-error-l1-1-1.dll: 6 functions
+    RoOriginateErrorW
+    RoGetMatchingRestrictedErrorInfo
+    SetRestrictedErrorInfo
+    GetRestrictedErrorInfo
+    IsErrorPropagationEnabled
+    RoReportFailedDelegate
+RPCRT4.dll: 32 functions
+    IUnknown_AddRef_Proxy
+    CStdStubBuffer_Invoke
+    CStdStubBuffer_DebugServerQueryInterface
+    NdrCStdStubBuffer2_Release
+    NdrOleFree
+    CStdStubBuffer_AddRef
+    NdrCStdStubBuffer_Release
+    NdrDllGetClassObject
+    CStdStubBuffer_CountRefs
+    CStdStubBuffer_QueryInterface
+    NdrOleAllocate
+    NdrStubCall2
+    CStdStubBuffer_DebugServerRelease
+    CStdStubBuffer_Disconnect
+    UuidToStringW
+    RpcStringFreeW
+    UuidCreate
+    IUnknown_QueryInterface_Proxy
+    CStdStubBuffer_IsIIDSupported
+    CStdStubBuffer_Connect
+    NdrStubForwardingFunction
+    NdrGetUserMarshalInfo
+    UuidCreateSequential
+    RpcRaiseException
+    UuidFromStringW
+    RpcServerInqCallAttributesW
+    NdrClientCall4
+    RpcRevertToSelf
+    RpcImpersonateClient
+    I_RpcBindingInqLocalClientPID
+    RpcServerInqBindingHandle
+    IUnknown_Release_Proxy
+api-ms-win-core-winrt-l1-1-0.dll: 2 functions
+    RoGetActivationFactory
+    RoActivateInstance
+api-ms-win-shlwapi-ie-l1-1-0.dll: 13 functions
+    PathFileExistsAndAttributesW
+    IUnknown_QueryService
+    SHStrDupW
+    IUnknown_Exec
+    SHRegGetValueFromHKCUHKLM
+    AssocGetPerceivedType
+    SHUnicodeToAnsiCP
+    PathIsDirectoryW
+    PathUndecorateW
+    AssocIsDangerous
+    ord165
+    SHRegGetValueW
+    GUIDFromStringW
+api-ms-win-shlwapi-winrt-storage-l1-1-1.dll: 5 functions
+    ord295
+    ord471
+    StrRetToBufW
+    ord331
+    StrFromTimeIntervalW
+api-ms-win-shlwapi-winrt-storage-l1-1-0.dll: 5 functions
+    AssocQueryStringW
+    IUnknown_GetWindow
+    AssocCreate
+    PathMakeSystemFolderW
+    StrFormatByteSizeW
+api-ms-win-core-memory-l1-1-2.dll: 8 functions
+    OpenFileMappingW
+    CreateFileMappingW
+    VirtualProtect
+    FlushViewOfFile
+    UnmapViewOfFile
+    MapViewOfFile
+    VirtualQuery
+    VirtualAlloc
+Windows.Storage.dll: 28 functions
+    ILGetSize
+    ILFree
+    ord846
+    SHCreateItemFromParsingName
+    SHGetKnownFolderPath
+    ord74
+    PathCleanupSpec
+    SHGetInstanceExplorer
+    ord4
+    SHGetFolderPathW
+    ord2
+    ShellExecuteExW
+    SHChangeNotify
+    SHGetIDListFromObject
+    SHBindToObject
+    SHBindToParent
+    SHGetPathFromIDListW
+    ILClone
+    SHParseDisplayName
+    SHBindToFolderIDListParent
+    ILCloneFirst
+    SHGetSpecialFolderLocation
+    ILCombine
+    ord27
+    PathIsExe
+    ILFindLastID
+    SHCreateDirectoryExW
+    SHGetSpecialFolderPathW
+api-ms-win-core-com-midlproxystub-l1-1-0.dll: 51 functions
+    ObjectStublessClient11
+    ObjectStublessClient7
+    ObjectStublessClient13
+    ObjectStublessClient5
+    ObjectStublessClient6
+    ObjectStublessClient8
+    ObjectStublessClient9
+    ObjectStublessClient10
+    ObjectStublessClient16
+    ObjectStublessClient18
+    ObjectStublessClient20
+    ObjectStublessClient19
+    ObjectStublessClient17
+    NdrProxyForwardingFunction14
+    NdrProxyForwardingFunction8
+    ... (36 more)
+api-ms-win-core-url-l1-1-0.dll: 13 functions
+    UrlUnescapeW
+    PathCreateFromUrlW
+    UrlCombineW
+    PathIsURLW
+    UrlIsW
+    UrlCreateFromPathW
+    UrlGetPartW
+    UrlEscapeW
+    ParseURLW
+    UrlIsNoHistoryW
+    UrlApplySchemeW
+    UrlCanonicalizeW
+    GetAcceptLanguagesW
+api-ms-win-core-delayload-l1-1-1.dll: 2 functions
+    ResolveDelayLoadedAPI
+    DelayLoadFailureHook
+api-ms-win-core-normalization-l1-1-0.dll: 1 functions
+    GetStringScripts
+profapi.dll: 1 functions
+    ord111
+api-ms-win-downlevel-advapi32-l1-1-0.dll: 46 functions
+    RegCopyTreeW
+    CreateProcessAsUserW
+    OpenProcessToken
+    RegLoadAppKeyW
+    RegEnumValueW
+    RegQueryInfoKeyW
+    EventWrite
+    RegDeleteTreeW
+    EqualSid
+    GetTokenInformation
+    GetSecurityDescriptorSacl
+    CopySid
+    SetSecurityDescriptorSacl
+    AddMandatoryAce
+    RegDeleteValueW
+    ... (31 more)
+api-ms-win-downlevel-shlwapi-l2-1-0.dll: 19 functions
+    SHCreateStreamOnFileW
+    IStream_ReadStr
+    SHDeleteKeyW
+    SHCreateStreamOnFileEx
+    IStream_Copy
+    IStream_Write
+    IStream_WriteStr
+    IStream_Reset
+    IStream_Read
+    IStream_Size
+    SHCreateMemStream
+    SHUnicodeToAnsi
+    SHAnsiToUnicode
+    IUnknown_Set
+    IUnknown_SetSite
+    SHOpenRegStream2W
+    SHGetValueW
+    SHQueryValueExW
+    SHEnumKeyExW
+api-ms-win-downlevel-shlwapi-l1-1-0.dll: 45 functions
+    PathIsRootW
+    PathUnquoteSpacesW
+    StrPBrkW
+    StrCmpNW
+    StrToIntExW
+    StrCmpNICW
+    StrTrimW
+    StrCmpNIW
+    StrCmpICA
+    PathRemoveFileSpecW
+    StrToIntA
+    PathRemoveExtensionW
+    PathParseIconLocationW
+    StrCmpIW
+    StrSpnW
+    ... (30 more)
+api-ms-win-downlevel-normaliz-l1-1-0.dll: 1 functions
+    IdnToAscii
+api-ms-win-downlevel-user32-l1-1-0.dll: 6 functions
+    CharNextW
+    CharNextA
+    CharPrevW
+    CharPrevA
+    CharLowerW
+    CharLowerBuffW
+api-ms-win-downlevel-version-l1-1-0.dll: 3 functions
+    VerQueryValueW
+    GetFileVersionInfoExW
+    GetFileVersionInfoSizeExW
+api-ms-win-core-threadpool-legacy-l1-1-0.dll: 1 functions
+    QueueUserWorkItem
+api-ms-win-core-kernel32-legacy-l1-1-1.dll: 6 functions
+    WaitForMultipleObjects
+    RaiseFailFastException
+    GetSystemPowerStatus
+    MulDiv
+    GetStringTypeExA
+    CreateSemaphoreW
+api-ms-win-core-shlwapi-legacy-l1-1-0.dll: 1 functions
+    SHExpandEnvironmentStringsW
+api-ms-win-base-util-l1-1-0.dll: 1 functions
+    IsTextUnicode
+api-ms-win-security-provider-l1-1-0.dll: 4 functions
+    SetSecurityInfo
+    GetNamedSecurityInfoW
+    SetNamedSecurityInfoW
+    GetSecurityInfo
+api-ms-win-core-registry-l2-2-0.dll: 3 functions
+    RegOpenKeyW
+    RegEnumKeyW
+    RegDeleteKeyW
+api-ms-win-core-heap-obsolete-l1-1-0.dll: 8 functions
+    GlobalLock
+    LocalAlloc
+    LocalFree
+    GlobalUnlock
+    GlobalFree
+    GlobalAlloc
+    GlobalSize
+    LocalReAlloc
+api-ms-win-core-localization-obsolete-l1-3-0.dll: 2 functions
+    GetUserDefaultUILanguage
+    EnumUILanguagesW
+api-ms-win-core-string-obsolete-l1-1-0.dll: 5 functions
+    lstrlenW
+    lstrlenA
+    lstrcmpW
+    lstrcmpiW
+    lstrcmpiA
+api-ms-win-core-privateprofile-l1-1-1.dll: 2 functions
+    WritePrivateProfileStringW
+    WritePrivateProfileSectionW
+api-ms-win-core-toolhelp-l1-1-0.dll: 3 functions
+    CreateToolhelp32Snapshot
+    Process32NextW
+    Process32FirstW
+ntdll.dll: 9 functions
+    NtQueryInformationToken
+    NtQuerySystemInformation
+    RtlSubscribeWnfStateChangeNotification
+    RtlUnsubscribeWnfNotificationWaitForCompletion
+    RtlFreeAnsiString
+    RtlUnicodeStringToAnsiString
+    NtCompareTokens
+    RtlIpv6AddressToStringExW
+    RtlIpv4AddressToStringExW
+api-ms-win-core-file-l1-2-1.dll: 27 functions
+    SetFileTime
+    CreateDirectoryW
+    FindFirstFileW
+    FindClose
+    FindFirstFileExW
+    SetFileAttributesW
+    RemoveDirectoryW
+    ReadFile
+    GetFileSizeEx
+    LocalFileTimeToFileTime
+    GetTempPathW
+    DeleteFileW
+    GetFullPathNameW
+    CompareFileTime
+    CreateFile2
+    GetFileTime
+    LockFileEx
+    SetFileInformationByHandle
+    FileTimeToLocalFileTime
+    CreateFileW
+    UnlockFileEx
+    FindNextFileW
+    GetFileAttributesExW
+    GetFileAttributesW
+    SetFilePointerEx
+    WriteFile
+    GetTempFileNameW
+api-ms-win-core-libraryloader-l1-2-0.dll: 11 functions
+    GetModuleHandleW
+    FreeLibraryAndExitThread
+    LoadStringW
+    GetModuleFileNameW
+    FreeLibrary
+    GetModuleHandleExA
+    LoadLibraryExW
+    GetProcAddress
+    DisableThreadLibraryCalls
+    GetModuleHandleExW
+    GetModuleFileNameA
+api-ms-win-ole32-ie-l1-1-0.dll: 2 functions
+    CreateBindCtx
+    ReleaseStgMedium
+api-ms-win-core-synch-l1-2-0.dll: 34 functions
+    ReleaseSRWLockExclusive
+    InitializeCriticalSectionEx
+    WaitForSingleObject
+    OpenEventW
+    ReleaseMutex
+    InitializeSRWLock
+    InitOnceBeginInitialize
+    ReleaseSRWLockShared
+    CreateSemaphoreExW
+    CreateMutexExW
+    Sleep
+    DeleteCriticalSection
+    CreateMutexW
+    ReleaseSemaphore
+    WaitForMultipleObjectsEx
+    OpenSemaphoreW
+    CreateEventExW
+    InitOnceExecuteOnce
+    SetWaitableTimer
+    InitOnceComplete
+    InitializeCriticalSectionAndSpinCount
+    TryEnterCriticalSection
+    CancelWaitableTimer
+    ResetEvent
+    SetEvent
+    CreateEventW
+    CreateWaitableTimerExW
+    InitializeCriticalSection
+    SetWaitableTimerEx
+    AcquireSRWLockShared
+    WaitForSingleObjectEx
+    AcquireSRWLockExclusive
+    EnterCriticalSection
+    LeaveCriticalSection
+api-ms-win-core-heap-l1-2-0.dll: 5 functions
+    HeapAlloc
+    GetProcessHeap
+    HeapSize
+    HeapFree
+    HeapReAlloc
+api-ms-win-core-errorhandling-l1-1-1.dll: 5 functions
+    GetLastError
+    UnhandledExceptionFilter
+    SetUnhandledExceptionFilter
+    SetLastError
+    RaiseException
+api-ms-win-core-processthreads-l1-1-2.dll: 20 functions
+    GetThreadPriority
+    GetCurrentThread
+    TlsGetValue
+    SetThreadPriority
+    GetCurrentProcess
+    CreateProcessW
+    SuspendThread
+    OpenThread
+    TlsAlloc
+    CreateThread
+    TlsFree
+    GetExitCodeThread
+    GetCurrentProcessId
+    TlsSetValue
+    GetExitCodeProcess
+    GetCurrentThreadId
+    UpdateProcThreadAttribute
+    InitializeProcThreadAttributeList
+    OpenProcess
+    TerminateProcess
+api-ms-win-eventing-provider-l1-1-0.dll: 2 functions
+    EventWriteEx
+    EventSetInformation
+api-ms-win-core-localization-l1-2-1.dll: 13 functions
+    FormatMessageW
+    IsDBCSLeadByte
+    GetUserDefaultLCID
+    IsDBCSLeadByteEx
+    GetSystemDefaultLCID
+    GetLocaleInfoEx
+    GetLocaleInfoW
+    LocaleNameToLCID
+    GetUserDefaultLocaleName
+    ResolveLocaleName
+    GetUserGeoID
+    GetSystemDefaultLangID
+    GetUserDefaultLangID
+api-ms-win-core-debug-l1-1-1.dll: 2 functions
+    OutputDebugStringW
+    CheckRemoteDebuggerPresent
+api-ms-win-core-handle-l1-1-0.dll: 2 functions
+    CloseHandle
+    DuplicateHandle
+api-ms-win-core-util-l1-1-0.dll: 2 functions
+    EncodePointer
+    DecodePointer
+api-ms-win-core-sysinfo-l1-2-1.dll: 10 functions
+    GetSystemDirectoryW
+    GetTickCount
+    GetTickCount64
+    GetLocalTime
+    GetVersionExW
+    GetSystemTime
+    GetSystemTimeAsFileTime
+    GetSystemInfo
+    GetWindowsDirectoryW
+    GetComputerNameExW
+OLEAUT32.dll: 37 functions
+    LoadRegTypeLib
+    SafeArrayPutElement
+    VarBstrCmp
+    BSTR_UserSize
+    BSTR_UserFree
+    SafeArrayGetElement
+    BSTR_UserUnmarshal
+    BSTR_UserMarshal
+    VARIANT_UserFree
+    VARIANT_UserUnmarshal
+    SysFreeString
+    VariantClear
+    SysAllocString
+    SysAllocStringLen
+    VariantChangeType
+    VARIANT_UserSize
+    VARIANT_UserMarshal
+    LPSAFEARRAY_UserSize
+    SysReAllocString
+    SafeArrayGetDim
+    LPSAFEARRAY_UserFree
+    SysStringByteLen
+    LPSAFEARRAY_UserUnmarshal
+    LPSAFEARRAY_UserMarshal
+    SafeArrayCopy
+    SafeArrayDestroy
+    LoadTypeLib
+    SafeArrayGetLBound
+    VariantInit
+    SafeArrayUnaccessData
+    SafeArrayCreateVector
+    SetErrorInfo
+    SafeArrayGetUBound
+    SafeArrayAccessData
+    SysStringLen
+    SafeArrayCreate
+    VariantCopy
+api-ms-win-core-string-l1-1-0.dll: 6 functions
+    CompareStringEx
+    WideCharToMultiByte
+    CompareStringW
+    CompareStringOrdinal
+    MultiByteToWideChar
+    GetStringTypeW
+api-ms-win-core-timezone-l1-1-0.dll: 4 functions
+    GetTimeZoneInformation
+    FileTimeToSystemTime
+    SystemTimeToFileTime
+    SystemTimeToTzSpecificLocalTime
+api-ms-win-core-path-l1-1-0.dll: 13 functions
+    PathCchRenameExtension
+    PathCchCombine
+    PathCchFindExtension
+    PathCchRemoveBackslash
+    PathCchRemoveFileSpec
+    PathAllocCombine
+    PathCchAddExtension
+    PathCchRemoveExtension
+    PathCchCanonicalize
+    PathCchCombineEx
+    PathCchAddBackslash
+    PathCchAppend
+    PathAllocCanonicalize
+api-ms-win-core-file-l2-1-1.dll: 3 functions
+    CopyFile2
+    GetFileInformationByHandleEx
+    MoveFileExW
+api-ms-win-core-namespace-l1-1-0.dll: 4 functions
+    DeleteBoundaryDescriptor
+    OpenPrivateNamespaceW
+    CreateBoundaryDescriptorW
+    ClosePrivateNamespace
+api-ms-win-core-threadpool-l1-2-0.dll: 15 functions
+    WaitForThreadpoolTimerCallbacks
+    CallbackMayRunLong
+    FreeLibraryWhenCallbackReturns
+    TrySubmitThreadpoolCallback
+    CloseThreadpoolTimer
+    SetThreadpoolTimer
+    CreateThreadpoolTimer
+    CloseThreadpoolWork
+    CreateThreadpoolWait
+    CloseThreadpoolWait
+    SetThreadpoolWait
+    SubmitThreadpoolWork
+    WaitForThreadpoolWorkCallbacks
+    CreateThreadpoolWork
+    WaitForThreadpoolWaitCallbacks
+api-ms-win-core-profile-l1-1-0.dll: 2 functions
+    QueryPerformanceCounter
+    QueryPerformanceFrequency
+api-ms-win-core-datetime-l1-1-1.dll: 2 functions
+    GetDateFormatEx
+    GetTimeFormatEx
+api-ms-win-core-processenvironment-l1-2-0.dll: 4 functions
+    ExpandEnvironmentStringsW
+    GetCurrentDirectoryW
+    SetEnvironmentVariableW
+    SearchPathW
+api-ms-win-core-interlocked-l1-2-0.dll: 4 functions
+    QueryDepthSList
+    InterlockedFlushSList
+    InterlockedPushEntrySList
+    InitializeSListHead
+api-ms-win-core-synch-l1-2-1.dll: 1 functions
+    CreateWaitableTimerW
+api-ms-win-core-com-l1-1-1.dll: 1 functions
+    CoRegisterPSClsid
+api-ms-win-core-apiquery-l1-1-0.dll: 1 functions
+    ApiSetQueryApiSetPresence
+api-ms-win-security-lsapolicy-l1-1-0.dll: 4 functions
+    LsaQueryInformationPolicy
+    LsaOpenPolicy
+    LsaClose
+    LsaFreeMemory
+api-ms-win-devices-query-l1-1-1.dll: 2 functions
+    DevGetObjectProperties
+    DevFreeObjectProperties
+
+--- DELAY IMPORTS ---
+ext-ms-win-security-efswrt-l1-1-1.dll (DELAY): 1 functions
+    ProtectFileToEnterpriseIdentity
+CRYPT32.dll (DELAY): 27 functions
+    CertGetIntendedKeyUsage
+    CertDeleteCertificateFromStore
+    CryptProtectData
+    CryptUnprotectData
+    CertFreeCertificateChain
+    CertGetNameStringW
+    CertFindExtension
+    CryptDecodeObjectEx
+    CertGetCertificateContextProperty
+    CryptDecodeObject
+    CryptFindOIDInfo
+    CertFreeCertificateContext
+    CryptMsgGetParam
+    CryptProtectMemory
+    CryptUnprotectMemory
+    CertCreateCertificateContext
+    CryptBinaryToStringW
+    CryptHashCertificate2
+    CertCloseStore
+    CertGetEnhancedKeyUsage
+    CertOpenStore
+    CertGetCertificateChain
+    CertEnumCertificatesInStore
+    CertAddCertificateContextToStore
+    CryptImportPublicKeyInfo
+    CertVerifyCertificateChainPolicy
+    CryptStringToBinaryA
+d2d1.dll (DELAY): 1 functions
+    ord1
+WINTRUST.dll (DELAY): 3 functions
+    WTHelperGetProvSignerFromChain
+    WTGetSignatureInfo
+    WTHelperProvDataFromStateData
+XmlLite.dll (DELAY): 1 functions
+    CreateXmlReader
+WindowsCodecs.dll (DELAY): 1 functions
+    WICConvertBitmapSource
+urlmon.dll (DELAY): 47 functions
+    CreateURLMonikerEx
+    CoInternetParseUrl
+    CreateIUriBuilder
+    CoInternetCombineIUri
+    URLDownloadToFileW
+    QueryAssociations
+    ord450
+    ord105
+    URLOpenBlockingStreamW
+    FindMimeFromData
+    ReleaseBindInfo
+    ord445
+    ord444
+    UrlMkGetSessionOption
+    UrlmonCleanupCurrentThread
+    ... (32 more)
+PROPSYS.dll (DELAY): 17 functions
+    PropVariantToBoolean
+    PropVariantToStringAlloc
+    InitVariantFromBuffer
+    ord435
+    PSCreateMemoryPropertyStore
+    PropVariantToBSTR
+    PSCreateAdapterFromPropertyStore
+    PSCreatePropertyStoreFromObject
+    InitPropVariantFromCLSID
+    PropVariantChangeType
+    InitPropVariantFromFileTime
+    PropVariantToGUID
+    ord436
+    PropVariantToVariant
+    VariantToPropVariant
+    PropVariantToStringWithDefault
+    VariantToGUID
+policymanager.dll (DELAY): 6 functions
+    PolicyManager_IsPolicySetByMobileDeviceManager
+    PolicyManager_GetPolicyBinary
+    PolicyManager_FreeBinaryValue
+    PolicyManager_GetPolicyString
+    PolicyManager_FreeStringValue
+    PolicyManager_GetPolicyInt
+api-ms-win-core-winrt-string-l1-1-0.dll (DELAY): 9 functions
+    WindowsStringHasEmbeddedNull
+    WindowsIsStringEmpty
+    WindowsGetStringRawBuffer
+    WindowsCreateStringReference
+    WindowsDuplicateString
+    WindowsDeleteString
+    WindowsGetStringLen
+    WindowsCompareStringOrdinal
+    WindowsCreateString
+eData.dll (DELAY): 6 functions
+    CleanUpDataStoreAsync
+    ReleaseDataStore
+    CreateReadingListManager
+    CreateUriToAppIdMappingManager
+    CreateFavoritesManager
+    CreateTopSitesManager
+api-ms-win-shcore-stream-winrt-l1-1-0.dll (DELAY): 1 functions
+    CreateRandomAccessStreamOverStream
+api-ms-win-shcore-thread-l1-1-0.dll (DELAY): 4 functions
+    SHCreateThreadRef
+    SHCreateThread
+    SHGetThreadRef
+    SHSetThreadRef
+ieapfltr.dll (DELAY): 3 functions
+    CreateUrlBlockBroker
+    DestroyUrlBlockBroker
+    GetUrlBlockBroker
+cryptngc.dll (DELAY): 3 functions
+    FidoSignWithCredential
+    FidoCreateCredential
+    FidoGetCredential
+MDMRegistration.DLL (DELAY): 1 functions
+    IsDeviceRegisteredWithManagement
+api-ms-win-net-isolation-l1-1-1.dll (DELAY): 2 functions
+    NetworkIsolationSetAppContainerConfig
+    NetworkIsolationGetAppContainerConfig
+SspiCli.dll (DELAY): 1 functions
+    GetUserNameExW
+CRYPTSP.dll (DELAY): 13 functions
+    CryptEncrypt
+    CryptReleaseContext
+    CryptGetHashParam
+    CryptSetKeyParam
+    CryptDestroyHash
+    CryptSetHashParam
+    CryptHashData
+    CryptDeriveKey
+    CryptCreateHash
+    CryptGenRandom
+    CryptGetKeyParam
+    CryptAcquireContextW
+    CryptDestroyKey
+api-ms-win-core-marshal-l1-1-0.dll (DELAY): 20 functions
+    HGLOBAL_UserMarshal
+    HGLOBAL_UserFree
+    HGLOBAL_UserSize
+    HMENU_UserUnmarshal
+    HBITMAP_UserSize
+    HBITMAP_UserMarshal
+    HBITMAP_UserUnmarshal
+    HMENU_UserFree
+    HGLOBAL_UserUnmarshal
+    HMENU_UserSize
+    HBITMAP_UserFree
+    HWND_UserSize
+    HICON_UserMarshal
+    HWND_UserFree
+    HWND_UserUnmarshal
+    HICON_UserUnmarshal
+    HICON_UserFree
+    HMENU_UserMarshal
+    HICON_UserSize
+    HWND_UserMarshal
+api-ms-win-shell-shellcom-l1-1-0.dll (DELAY): 1 functions
+    SHCoCreateInstance
+api-ms-win-downlevel-ole32-l1-1-0.dll (DELAY): 32 functions
+    CoReleaseMarshalData
+    CoMarshalInterface
+    CoMarshalInterThreadInterfaceInStream
+    CoTaskMemRealloc
+    CoUnmarshalInterface
+    StringFromCLSID
+    CoRevokeClassObject
+    CoGetStdMarshalEx
+    CoGetMarshalSizeMax
+    CoWaitForMultipleHandles
+    StringFromIID
+    CoGetApartmentType
+    CoFreeUnusedLibraries
+    CoUninitialize
+    CreateStreamOnHGlobal
+    CoGetMalloc
+    IIDFromString
+    CoGetInterfaceAndReleaseStream
+    GetHGlobalFromStream
+    PropVariantCopy
+    CoRegisterClassObject
+    CoCreateGuid
+    PropVariantClear
+    CoRevertToSelf
+    CoImpersonateClient
+    CLSIDFromString
+    StringFromGUID2
+    CoTaskMemFree
+    CoCreateFreeThreadedMarshaler
+    CoCreateInstance
+    CoTaskMemAlloc
+    CoInitializeEx
+api-ms-win-downlevel-advapi32-l2-1-0.dll (DELAY): 3 functions
+    ConvertSidToStringSidW
+    ConvertStringSidToSidW
+    ConvertStringSecurityDescriptorToSecurityDescriptorW
+api-ms-win-core-winrt-robuffer-l1-1-0.dll (DELAY): 1 functions
+    RoGetBufferMarshaler
+api-ms-win-dwmapi-l1-1-0.dll (DELAY): 1 functions
+    DwmFlush
+api-ms-win-core-com-l2-1-1.dll (DELAY): 2 functions
+    StgCreateDocfileOnILockBytes
+    StgOpenStorageOnILockBytes
+api-ms-win-rtcore-ntuser-clipboard-l1-1-0.dll (DELAY): 1 functions
+    RegisterClipboardFormatW
+api-ms-win-rtcore-ntuser-synch-l1-1-0.dll (DELAY): 2 functions
+    MsgWaitForMultipleObjects
+    MsgWaitForMultipleObjectsEx
+api-ms-win-rtcore-ntuser-window-l1-1-0.dll (DELAY): 46 functions
+    EnableWindow
+    GetWindowLongW
+    GetParent
+    PostThreadMessageW
+    SetPropW
+    RemovePropW
+    KillTimer
+    SetTimer
+    EnumWindows
+    TranslateMessage
+    PostQuitMessage
+    GetFocus
+    IsWindowEnabled
+    SetFocus
+    GetPropW
+    ... (31 more)
+api-ms-win-appmodel-runtime-l1-1-1.dll (DELAY): 2 functions
+    PackageFamilyNameFromId
+    PackageFamilyNameFromFullName
+srpapi.dll (DELAY): 1 functions
+    SrpGetEnterpriseIds
+WININET.dll (DELAY): 46 functions
+    InternetQueryOptionW
+    UrlCacheGetEntryInfo
+    HttpSendRequestW
+    HttpAddRequestHeadersW
+    HttpOpenRequestW
+    InternetConnectW
+    InternetOpenW
+    GetUrlCacheEntryBinaryBlob
+    UrlCacheFreeEntryInfo
+    GetUrlCacheEntryInfoExW
+    UrlCacheFindFirstEntry
+    UrlCacheFindNextEntry
+    AppCacheFreeSpace
+    GetUrlCacheConfigInfoW
+    DeleteUrlCacheEntryW
+    ... (31 more)
+dcomp.dll (DELAY): 1 functions
+    DCompositionCreateDevice2
+bcrypt.dll (DELAY): 8 functions
+    BCryptDestroyHash
+    BCryptGenRandom
+    BCryptCloseAlgorithmProvider
+    BCryptGetProperty
+    BCryptCreateHash
+    BCryptHashData
+    BCryptFinishHash
+    BCryptOpenAlgorithmProvider
+WS2_32.dll (DELAY): 9 functions
+    connect
+    socket
+    closesocket
+    htons
+    WSAStartup
+    WSAGetLastError
+    WSACleanup
+    GetAddrInfoW
+    FreeAddrInfoW
+wkscli.dll (DELAY): 1 functions
+    NetGetJoinInformation
+netutils.dll (DELAY): 1 functions
+    NetApiBufferFree
+ext-ms-win-com-ole32-l1-1-1.dll (DELAY): 3 functions
+    CoAllowSetForegroundWindow
+    OleUninitialize
+    OleInitialize
+ext-ms-win-els-elscore-l1-1-0.dll (DELAY): 3 functions
+    MappingGetServices
+    MappingFreePropertyBag
+    MappingRecognizeText
+ext-ms-win-feclient-encryptedfile-l1-1-0.dll (DELAY): 1 functions
+    EfsClientDecryptFile
+ext-ms-win-gdi-dc-create-l1-1-1.dll (DELAY): 2 functions
+    DeleteDC
+    CreateCompatibleDC
+ext-ms-win-gdi-dc-l1-2-0.dll (DELAY): 2 functions
+    GetObjectW
+    SelectObject
+ext-ms-win-gdi-draw-l1-1-1.dll (DELAY): 2 functions
+    GetDIBits
+    CreateDIBSection
+ext-ms-win-ntuser-dialogbox-l1-1-2.dll (DELAY): 1 functions
+    IsDialogMessageW
+ext-ms-win-ntuser-keyboard-l1-3-0.dll (DELAY): 3 functions
+    GetLastInputInfo
+    GetKeyboardLayout
+    GetKeyState
+ext-ms-win-ntuser-rectangle-ext-l1-1-0.dll (DELAY): 2 functions
+    SetRectEmpty
+    OffsetRect
+ext-ms-win-ntuser-window-l1-1-4.dll (DELAY): 3 functions
+    GetLastActivePopup
+    IsHungAppWindow
+    ShowOwnedPopups
+ext-ms-win-ntuser-window-l1-1-1.dll (DELAY): 1 functions
+    IsIconic
+ext-ms-win-rtcore-gdi-devcaps-l1-1-0.dll (DELAY): 1 functions
+    GetDeviceCaps
+ext-ms-win-rtcore-gdi-object-l1-1-0.dll (DELAY): 1 functions
+    DeleteObject
+ext-ms-win-rtcore-ntuser-dc-access-l1-1-0.dll (DELAY): 2 functions
+    ReleaseDC
+    GetDC
+ext-ms-win-rtcore-ntuser-sysparams-l1-1-0.dll (DELAY): 1 functions
+    GetSystemMetrics
+ext-ms-win-rtcore-ntuser-cursor-l1-1-0.dll (DELAY): 2 functions
+    SetCursor
+    LoadCursorW
+ext-ms-win-shell-shell32-l1-2-2.dll (DELAY): 5 functions
+    SHOpenWithDialog
+    Win32DeleteFile
+    SHFileOperationW
+    SHSetInstanceExplorer
+    SHSimpleIDListFromPath
+ext-ms-win-shell-shlwapi-l1-1-0.dll (DELAY): 1 functions
+    PathIsNetworkPathW
+ext-ms-win-uxtheme-themes-l1-1-0.dll (DELAY): 2 functions
+    GetColorFromPreference
+    GetUserColorPreference
+ext-ms-win-oleacc-l1-1-1.dll (DELAY): 1 functions
+    LresultFromObject
+MFPlat.DLL (DELAY): 2 functions
+    MFShutdown
+    MFStartup
+MLANG.dll (DELAY): 1 functions
+    ord112
+
+--- EXPORTS ---
+49 exported symbols:
+      47 DllCanUnloadNow
+      48 DllGetActivationFactory
+      49 DllGetClassObject
+       1 ord1
+       2 ord2
+       3 ord3
+       4 ord4
+       5 ord5
+       6 ord6
+       7 ord7
+       8 ord8
+       9 ord9
+      10 ord10
+      11 ord11
+      12 ord12
+      13 ord13
+      14 ord14
+      15 ord15
+      16 ord16
+      17 ord17
+      18 ord18
+      19 ord19
+      20 ord20
+      21 ord21
+      22 ord22
+      23 ord23
+      24 ord24
+      25 ord25
+      26 ord26
+      27 ord27
+      28 ord28
+      29 ord29
+      30 ord30
+      31 ord31
+      32 ord32
+      33 ord33
+      34 ord34
+      35 ord35
+      36 ord36
+      37 ord37
+      38 ord38
+      39 ord39
+      40 ord40
+      41 ord41
+      42 ord42
+      43 ord43
+      44 ord44
+      45 ord45
+      46 ord46

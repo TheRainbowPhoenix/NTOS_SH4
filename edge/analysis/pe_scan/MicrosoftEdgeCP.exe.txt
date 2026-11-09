@@ -1,0 +1,125 @@
+=== MicrosoftEdgeCP.exe (61,440 bytes) ===
+machine=IMAGE_FILE_MACHINE_I386 subsystem=IMAGE_SUBSYSTEM_WINDOWS_GUI timestamp=1468633174 (2016-07-16T01:39:34+00:00)
+bits=32 entry=0x5b00 base=0x400000
+dllchars=0xc140 NX DYNAMIC_BASE TERMINAL_SERVER_AWARE
+sections: .text .data .idata .didat .rsrc .reloc
+
+--- IMPORTS ---
+msvcrt.dll: 27 functions
+    _amsg_exit
+    __p__commode
+    _XcptFilter
+    wcsncmp
+    _wcsicmp
+    memcpy_s
+    _vsnwprintf
+    wcschr
+    __getmainargs
+    __set_app_type
+    _exit
+    _cexit
+    __p__fmode
+    _ismbblead
+    __setusermatherr
+    _initterm
+    _acmdln
+    ?terminate@@YAXXZ
+    _controlfp
+    _except_handler4_common
+    _lock
+    _unlock
+    __dllonexit
+    _onexit
+    iswspace
+    exit
+    memset
+api-ms-win-downlevel-advapi32-l1-1-0.dll: 3 functions
+    EventWrite
+    EventRegister
+    EventUnregister
+api-ms-win-downlevel-shell32-l1-1-0.dll: 1 functions
+    SetCurrentProcessExplicitAppUserModelID
+iertutil.dll: 4 functions
+    ord797
+    ord650
+    ord791
+    ord870
+api-ms-win-core-memory-l1-1-3.dll: 1 functions
+    SetProcessValidCallTargets
+ntdll.dll: 1 functions
+    NtQuerySystemInformation
+WINTRUST.dll: 1 functions
+    WTGetSignatureInfo
+api-ms-win-core-heap-l1-2-0.dll: 4 functions
+    HeapSetInformation
+    GetProcessHeap
+    HeapFree
+    HeapAlloc
+api-ms-win-core-processenvironment-l1-2-0.dll: 1 functions
+    GetCommandLineW
+api-ms-win-core-errorhandling-l1-1-1.dll: 5 functions
+    SetErrorMode
+    SetLastError
+    UnhandledExceptionFilter
+    SetUnhandledExceptionFilter
+    GetLastError
+api-ms-win-eventing-provider-l1-1-0.dll: 1 functions
+    EventSetInformation
+api-ms-win-core-processthreads-l1-1-2.dll: 6 functions
+    GetProcessMitigationPolicy
+    TerminateProcess
+    GetCurrentProcessId
+    SetProcessMitigationPolicy
+    GetCurrentThreadId
+    GetCurrentProcess
+api-ms-win-core-synch-l1-2-0.dll: 9 functions
+    ReleaseMutex
+    InitOnceExecuteOnce
+    WaitForSingleObjectEx
+    CreateSemaphoreExW
+    OpenSemaphoreW
+    Sleep
+    WaitForSingleObject
+    ReleaseSemaphore
+    CreateMutexExW
+api-ms-win-core-libraryloader-l1-2-0.dll: 6 functions
+    LoadLibraryExW
+    GetModuleHandleW
+    GetModuleFileNameA
+    GetModuleHandleA
+    GetProcAddress
+    GetModuleHandleExW
+api-ms-win-core-profile-l1-1-0.dll: 1 functions
+    QueryPerformanceCounter
+api-ms-win-core-sysinfo-l1-2-1.dll: 3 functions
+    GetTickCount
+    GetSystemTimeAsFileTime
+    GetSystemDirectoryW
+api-ms-win-core-errorhandling-l1-1-3.dll: 1 functions
+    RaiseFailFastException
+api-ms-win-core-localization-l1-2-1.dll: 1 functions
+    FormatMessageW
+api-ms-win-core-debug-l1-1-1.dll: 1 functions
+    OutputDebugStringW
+api-ms-win-core-handle-l1-1-0.dll: 1 functions
+    CloseHandle
+api-ms-win-core-registry-l1-1-0.dll: 5 functions
+    RegGetValueW
+    RegOpenKeyExW
+    RegEnumKeyExW
+    RegQueryValueExW
+    RegCloseKey
+api-ms-win-core-shlwapi-obsolete-l1-2-0.dll: 1 functions
+    StrStrIW
+api-ms-win-core-kernel32-legacy-l1-1-1.dll: 1 functions
+    GetStartupInfoA
+api-ms-win-core-delayload-l1-1-1.dll: 2 functions
+    ResolveDelayLoadedAPI
+    DelayLoadFailureHook
+
+--- DELAY IMPORTS ---
+EdgeContent.dll (DELAY): 1 functions
+    ord1
+
+--- EXPORTS ---
+(none)
