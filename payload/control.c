@@ -86,8 +86,7 @@ static void rescan(void)
             if (is_demo(entries[index])) {
                 CPL_INFO info = {0};
                 /* Query the installed DLL's real applet metadata over PE IAT. */
-                if (NT_CALL(CPlApplet, (0, 1, 0, 0)) &&
-                    NT_CALL(CPlApplet, (0, 2, 0, 0))) {
+                if (NT_CALL(CPlApplet, (0, 1, 0, 0)) && NT_CALL(CPlApplet, (0, 2, 0, 0))) {
                     NT_CALL(CPlApplet, (0, 8, 0, &info)); /* CPL_NEWINQUIRE */
                     if (info.name[0])
                         copy_name(captions[index], info.name);
@@ -117,10 +116,10 @@ static void open_selected(void *hwnd)
     if (is_demo(entries[selected])) {
         /* The linked PE import is genuinely resolved from DEMO.CPL.
          * No unsafe on-the-fly DLL loader is required. */
-        NT_CALL(CPlApplet, (hwnd, 1, 0, 0)); /* CPL_INIT */
+        NT_CALL(CPlApplet, (hwnd, 1, 0, 0));     /* CPL_INIT */
         if (NT_CALL(CPlApplet, (hwnd, 2, 0, 0))) /* CPL_GETCOUNT */
             NT_CALL(CPlApplet, (hwnd, 5, 0, 0)); /* CPL_DBLCLK */
-        NT_CALL(CPlApplet, (hwnd, 7, 0, 0)); /* CPL_EXIT */
+        NT_CALL(CPlApplet, (hwnd, 7, 0, 0));     /* CPL_EXIT */
     } else {
         /* Enumerated but not executable until typed LoadLibrary is implemented. */
         scan_failed = 2;
@@ -156,10 +155,8 @@ static void draw(void *dc)
     if (menu_open) {
         int left = menu_open == 1 ? 4 : 60;
         ui_fill(dc, left, 51, left + 126, 99, RGB(221, 234, 246));
-        ui_text(dc, left + 8, 59, menu_open == 1 ? "Close" : "Refresh",
-                theme_ink, 0);
-        ui_text(dc, left + 8, 79, menu_open == 1 ? "Return to Start" : "Rescan CPLs",
-                theme_ink, 0);
+        ui_text(dc, left + 8, 59, menu_open == 1 ? "Close" : "Refresh", theme_ink, 0);
+        ui_text(dc, left + 8, 79, menu_open == 1 ? "Return to Start" : "Rescan CPLs", theme_ink, 0);
     }
     if (loading) {
         ui_fill(dc, 29, 189, 291, 279, RGB(185, 199, 214));
@@ -230,8 +227,7 @@ int main(void)
     cls.class_name = class_name;
     if (!NT_CALL(RegisterClassW, (&cls)))
         return 1;
-    hwnd = NT_CALL(CreateWindowExW, (0, class_name, window_title, 0,
-                                     0, 0, 320, 528, 0, 0, 0, 0));
+    hwnd = NT_CALL(CreateWindowExW, (0, class_name, window_title, 0, 0, 0, 320, 528, 0, 0, 0, 0));
     if (!hwnd)
         return 2;
     NT_CALL(ShowWindow, (hwnd, 1));
