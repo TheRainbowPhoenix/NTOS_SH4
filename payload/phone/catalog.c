@@ -603,19 +603,36 @@ static void draw_icon(void *dc, unsigned index, int x, int y, int size, U32 tint
                     }
                 unsigned mask = 40 + w * h * 4, stride = ((w + 31u) >> 5) * 4;
                 int has_mask = mask + stride * h <= a->pe_icon_size;
-                for (int yy = 0; yy < size; ++yy)
-                    for (int xx = 0; xx < size; ++xx) {
-                        unsigned px = udiv_((unsigned)xx * w, (unsigned)size),
-                                 py = udiv_((unsigned)yy * h, (unsigned)size);
-                        const unsigned char *p = work + 40 + ((h - 1 - py) * w + px) * 4;
-                        int opaque =
-                            alpha ? p[3] >= 128
-                                  : !has_mask || !(work[mask + (h - 1 - py) * stride + (px >> 3)] &
+                /* Group consecutive opaque pixels of equal color into
+                 * one GDI rectangle. The old inner loop issued up to
+                 * size*size FillRect imports per icon per repaint. */
+                for (int yy = 0; yy < size; ++yy) {
+                    int run_start = -1;
+                    U32 run_color = 0;
+                    unsigned py = udiv_((unsigned)yy * h, (unsigned)size);
+                    for (int xx = 0; xx <= size; ++xx) {
+                        U32 next_color = 0;
+                        int opaque = 0;
+                        if (xx < size) {
+                            unsigned px = udiv_((unsigned)xx * w, (unsigned)size);
+                            const unsigned char *p = work + 40 + ((h - 1 - py) * w + px) * 4;
+                            opaque = alpha ? p[3] >= 128
+                                           : !has_mask ||
+                                                 !(work[mask + (h - 1 - py) * stride +
+                                                        (px >> 3)] &
                                                    (128u >> (px & 7)));
-                        if (opaque)
-                            r->fill(dc, x + xx, y + yy, x + xx + 1, y + yy + 1,
-                                    RGB_(p[2], p[1], p[0]));
+                            next_color = RGB_(p[2], p[1], p[0]);
+                        }
+                        if (run_start >= 0 && (!opaque || next_color != run_color)) {
+                            r->fill(dc, x + run_start, y + yy, x + xx, y + yy + 1, run_color);
+                            run_start = -1;
+                        }
+                        if (opaque && run_start < 0) {
+                            run_start = xx;
+                            run_color = next_color;
+                        }
                     }
+                }
                 return;
             }
         }
