@@ -17,8 +17,8 @@ static void clip_mock(int a, int b, int c, int d)
 static void fill_mock(void *dc, int x0, int y0, int x1, int y1, U32 color)
 {
     (void)dc;
-    if (x0 >= 12 && x0 <= 13 && y0 >= 439 && y0 <= 440 &&
-        x1 >= 101 && x1 <= 102 && y1 >= 470 && y1 <= 471)
+    if (x0 >= 12 && x0 <= 13 && y0 >= 439 && y0 <= 440 && x1 >= 101 && x1 <= 102 && y1 >= 470 &&
+        y1 <= 471)
         button_color = (int)color;
 }
 static void text_mock(void *dc, int x, int y, const char *str, U32 color, int size)
