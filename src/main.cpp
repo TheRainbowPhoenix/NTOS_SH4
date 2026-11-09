@@ -31,6 +31,7 @@
 #include "host_world.hpp"
 #include "irq_handoff.hpp"
 #include "mmu.hpp"
+#include "fs_guard.hpp"
 
 APP_NAME("NTOS")
 APP_DESCRIPTION("Big-endian SH4 COFF EXE loader")
@@ -173,13 +174,54 @@ static bool kernel_path(char *out, const char *in) {
     out[i]=0;
     return true;
 }
+// All SDK descriptors belong to one serialized NTOS gate. Do not confuse
+// a WinCE synthetic COREDLL HANDLE with an SDK descriptor.
+static ntos_fs::Gate g_fs;
+static int sdk_close_file(int h) { return File_Close(h); }
+static int sdk_close_find(int h) { return File_FindClose(h); }
+static bool fs_recover() { return g_fs.cleanup(sdk_close_file,sdk_close_find); }
+static int fs_open(const char *path,int flags) {
+    if(g_fs.busy())return -16;  // busy: never issue a second SDK open
+    int fd=File_Open(path,flags);
+    if(fd>=0 && !g_fs.acquire_file(fd)) {
+        (void)File_Close(fd);
+        return -16;
+    }
+    return fd;
+}
+static int fs_close(int fd) {
+    if(!g_fs.file_is(fd))return -2;
+    return g_fs.close(sdk_close_file,sdk_close_find) ? 0 : -1;
+}
+static int fs_find_first(const char_const16_t *pattern,int *handle,
+                         char_const16_t *name,File_FindInfo *info) {
+    if(g_fs.busy())return -16;
+    int found=-1;
+    int rc=File_FindFirst(pattern,&found,name,info);
+    if(rc==0) {
+        if(!g_fs.acquire_finder(found)) {
+            (void)File_FindClose(found);
+            return -16;
+        }
+        *handle=found;
+    }
+    return rc;
+}
+static int fs_find_next(int handle,char_const16_t *name,File_FindInfo *info) {
+    if(!g_fs.finder_is(handle))return -2;
+    return File_FindNext(handle,name,info);
+}
+static int fs_find_close(int handle) {
+    if(!g_fs.finder_is(handle))return -2;
+    return g_fs.close(sdk_close_file,sdk_close_find) ? 0 : -1;
+}
 static int32_t ntos_file_open(const char *name, uint32_t flags) {
     char path[96];
     if (!kernel_path(path,name)) return -2;
-    return File_Open(path,static_cast<int>(flags));
+    return fs_open(path,static_cast<int>(flags));
 }
 static int32_t ntos_file_read(int32_t fd, void *data, uint32_t count) {
-    if (!data || count>4096u) return -2;
+    if (!data || count>4096u || !g_fs.file_is(fd)) return -2;
     auto *dst=static_cast<uint8_t *>(data);
     uint8_t bounce[256];
     uint32_t total=0;
@@ -195,7 +237,7 @@ static int32_t ntos_file_read(int32_t fd, void *data, uint32_t count) {
     return static_cast<int32_t>(total);
 }
 static int32_t ntos_file_write(int32_t fd,const void *data,uint32_t count) {
-    if (!data || count>4096u) return -2;
+    if (!data || count>4096u || !g_fs.file_is(fd)) return -2;
     const auto *src=static_cast<const uint8_t *>(data);
     uint8_t bounce[256];
     uint32_t total=0;
@@ -210,7 +252,7 @@ static int32_t ntos_file_write(int32_t fd,const void *data,uint32_t count) {
     }
     return static_cast<int32_t>(total);
 }
-static int32_t ntos_file_close(int32_t fd) { return File_Close(fd); }
+static int32_t ntos_file_close(int32_t fd) { return fs_close(fd); }
 
 // Structured input: kind 1=touch down/drag, 2=CLEAR, 3=key press.
 // On key press x contains the Hollyhock KEYCODE_* value.
@@ -255,33 +297,38 @@ static void ntos_draw_text(uint32_t x, uint32_t y, const char *text) {
 }
 static int32_t ntos_file_size(int32_t fd) {
     struct File_Stat st{};
-    if (File_Fstat(fd, &st) < 0) return -1;
+    if (!g_fs.file_is(fd) || File_Fstat(fd, &st) < 0) return -1;
     return static_cast<int32_t>(st.fileSize);
 }
 
 static int32_t ntos_file_seek(int32_t fd,int32_t offset,uint32_t whence) {
     if (whence>2) return -2;
+    if (!g_fs.file_is(fd)) return -2;
     return File_Lseek(fd,offset,static_cast<File_Whence>(whence));
 }
 static int32_t ntos_file_remove(const char *name) {
     char path[96];
     if (!kernel_path(path,name)) return -2;
+    if(g_fs.busy())return -16;
     return File_Remove(path);
 }
 static int32_t ntos_file_rename(const char *from,const char *to) {
     char source[96],dest[96];
     if (!kernel_path(source,from) || !kernel_path(dest,to)) return -2;
+    if(g_fs.busy())return -16;
     return File_Rename(source,dest);
 }
 static int32_t ntos_file_mkdir(const char *name) {
     char path[96];
     if (!kernel_path(path,name)) return -2;
+    if(g_fs.busy())return -16;
     return File_Mkdir(path);
 }
 static int32_t ntos_file_stat(const char *name) {
     char path[96];
     if (!kernel_path(path,name)) return -2;
     struct File_Stat st{};
+    if(g_fs.busy())return -16;
     return File_Stat(path,&st);
 }
 
@@ -306,22 +353,23 @@ static int32_t ntos_find_first(const char *name,int32_t *handle,NtosFind *out) {
     char_const16_t pattern[96]{},found[260]{};
     for(unsigned i=0;path[i];++i)pattern[i]=static_cast<unsigned char>(path[i]);
     File_FindInfo info{};int search=0;
-    int result=File_FindFirst(pattern,&search,found,&info);
+    int result=fs_find_first(pattern,&search,found,&info);
     if(result==0){*handle=search;copy_find(out,found,info);}return result;
 }
 static int32_t ntos_find_next(int32_t handle,NtosFind *out) {
     if(!out)return -2;
     char_const16_t found[260]{};File_FindInfo info{};
-    int result=File_FindNext(handle,found,&info);
+    int result=fs_find_next(handle,found,&info);
     if(result==0)copy_find(out,found,info);
     return result;
 }
-static int32_t ntos_find_close(int32_t handle) {return File_FindClose(handle);}
+static int32_t ntos_find_close(int32_t handle) {return fs_find_close(handle);}
 
 static char pending_app[96];
 static int32_t ntos_launch(const char *name) {
     char path[96];if(!kernel_path(path,name))return 0;
-    int fd=File_Open(path,FILE_OPEN_READ);if(fd<0)return 0;File_Close(fd);
+    int fd=fs_open(path,FILE_OPEN_READ);if(fd<0)return 0;
+    if(fs_close(fd)<0)return 0;
     unsigned i=0;for(;i+1<sizeof(pending_app)&&path[i];++i)pending_app[i]=path[i];
     pending_app[i]=0;return 1;
 }
@@ -825,19 +873,19 @@ static bool dll_path(char *dst,uint32_t capacity,const char *name) {
 static bool read_module_file(const char *path,uint8_t **dst,
                              uint32_t *bytes,const char **error) {
     *dst=nullptr;*bytes=0u;
-    int fd=File_Open(path,FILE_OPEN_READ);
+    int fd=fs_open(path,FILE_OPEN_READ);
     if(fd<0){ *error="missing dependency DLL on fls0";return false; }
     struct File_Stat st{};
     if(File_Fstat(fd,&st)<0 || st.fileSize<512u ||
        st.fileSize>NTOS_MAX_FILE_BYTES) {
         *error="invalid DLL length or exceeds staging file limit";
-        File_Close(fd);return false;
+        fs_close(fd);return false;
     }
     const uint32_t n=static_cast<uint32_t>(st.fileSize);
     uint8_t *buf=static_cast<uint8_t *>(Mem_Malloc(n));
     if(!buf) {
         *error="out of memory staging DLL";
-        File_Close(fd);return false;
+        fs_close(fd);return false;
     }
     uint32_t off=0u;
     while(off<n) {
@@ -847,7 +895,7 @@ static bool read_module_file(const char *path,uint8_t **dst,
         if(count<=0 || static_cast<uint32_t>(count)>wanted) break;
         off+=static_cast<uint32_t>(count);
     }
-    File_Close(fd);
+    fs_close(fd);
     if(off!=n) {
         Mem_Free(buf);*error="short read staging dependency";return false;
     }
@@ -1322,7 +1370,7 @@ int main(int argc, char **argv, char **envp) {
         int find = 0;
         char_const16_t name[32] = {};
         File_FindInfo info{};
-        if (File_FindFirst(pattern, &find, name, &info) == 0) {
+        if (fs_find_first(pattern, &find, name, &info) == 0) {
             do {
                 if (info.type == File_FindInfo::EntryTypeFile &&
                     count < kMaxFiles) {
@@ -1333,10 +1381,10 @@ int main(int argc, char **argv, char **envp) {
                     sizes[count] = info.size;
                     count++;
                 }
-                if (File_FindNext(find, name, &info) != 0)
+                if (fs_find_next(find, name, &info) != 0)
                     break;
             } while (true);
-            File_FindClose(find);
+            fs_find_close(find);
         }
     }
 
@@ -1460,7 +1508,7 @@ int main(int argc, char **argv, char **envp) {
     auto *file = static_cast<uint8_t *>(Mem_Malloc(fsize != 0 ? fsize : 1));
     if (file == nullptr) {
         ntos_puts("OOM reading file");
-        File_Close(fd);
+        fs_close(fd);
         Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
                      "Any key: return to EXE list");
         LCD_Refresh();
@@ -1471,14 +1519,14 @@ int main(int argc, char **argv, char **envp) {
         static_cast<int>(fsize)) {
         ntos_puts("File_Read failed");
         Mem_Free(file);
-        File_Close(fd);
+        fs_close(fd);
         Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
                      "Any key: return to EXE list");
         LCD_Refresh();
         wait_error_key_release();
         continue;
     }
-    File_Close(fd);
+    fs_close(fd);
 
     // Parse the header once to pick the load path.
     pe::Image hdr{};
