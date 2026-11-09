@@ -14,19 +14,18 @@
 #define NTOS_PAYLOAD_NTABI_H
 
 #if defined(NTOS_SH_RENESAS_ABI_PROBE) && NTOS_SH_RENESAS_ABI_PROBE
-# if !defined(__GNUC__) || !defined(__sh__)
-#  error "The Renesas ABI probe requires GCC targeting SuperH"
-# endif
-# define NT_ABI_CE_CANDIDATE __attribute__((renesas))
+#if !defined(__GNUC__) || !defined(__sh__)
+#error "The Renesas ABI probe requires GCC targeting SuperH"
+#endif
+#define NT_ABI_CE_CANDIDATE __attribute__((renesas))
 #else
-# define NT_ABI_CE_CANDIDATE
+#define NT_ABI_CE_CANDIDATE
 #endif
 
 /* A declaration using this macro must precede its definition. Keeping
  * the declaration separate makes the exported symbol accessible to
  * ordinary C code while the compiler picks the annotated call ABI.
  */
-#define NT_CE_CANDIDATE_EXPORT(ret, name, params) \
-    ret name params NT_ABI_CE_CANDIDATE
+#define NT_CE_CANDIDATE_EXPORT(ret, name, params) ret name params NT_ABI_CE_CANDIDATE
 
 #endif

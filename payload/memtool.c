@@ -24,12 +24,12 @@ NT_DEFINE(LocalFree)
 static void out_w(const char *narrow)
 {
     WCHAR16 w[64];
-    unsigned n=0;
+    unsigned n = 0;
     while (n < 63 && narrow[n]) {
         w[n] = (unsigned char)narrow[n];
         ++n;
     }
-    w[n]=0;
+    w[n] = 0;
     NT_CALL(OutputDebugStringW, (w));
 }
 
@@ -37,14 +37,16 @@ static void hex_w(const char *label, u32 value)
 {
     char buf[40];
     static const char hexdigits[] = "0123456789ABCDEF";
-    unsigned n=0;
-    while (label[n] && n < sizeof(buf)-11) {
-        buf[n]=label[n]; ++n;
+    unsigned n = 0;
+    while (label[n] && n < sizeof(buf) - 11) {
+        buf[n] = label[n];
+        ++n;
     }
-    buf[n++]='0'; buf[n++]='x';
-    for (int shift=28; shift>=0; shift-=4)
-        buf[n++]=hexdigits[(value >> shift) & 15u];
-    buf[n]=0;
+    buf[n++] = '0';
+    buf[n++] = 'x';
+    for (int shift = 28; shift >= 0; shift -= 4)
+        buf[n++] = hexdigits[(value >> shift) & 15u];
+    buf[n] = 0;
     out_w(buf);
 }
 
@@ -53,8 +55,10 @@ static void hex_w(const char *label, u32 value)
 int main(const NTOS_API *api, char **argv, char **envp)
 {
     void *p;
-    (void)argv; (void)envp;
-    if (api && api->puts) api->puts("MEMTOOL: entry reached");
+    (void)argv;
+    (void)envp;
+    if (api && api->puts)
+        api->puts("MEMTOOL: entry reached");
     out_w("MEMTOOL: COREDLL debug");
     hex_w("KModePrev=", NT_CALL(SetKMode, (1)));
     hex_w("ProcPermsPrev=", NT_CALL(SetProcPermissions, (0xFFFFFFFFu)));
@@ -66,6 +70,7 @@ int main(const NTOS_API *api, char **argv, char **envp)
     } else {
         out_w("LocalAlloc failed");
     }
-    if (api && api->puts) api->puts("MEMTOOL: returning zero");
+    if (api && api->puts)
+        api->puts("MEMTOOL: returning zero");
     return 0;
 }

@@ -26,19 +26,18 @@
 #include "ntabi.h"
 
 /* Declare an imported function: typedef + call helper. */
-#define NT_IMPORT(ret, name, params)                                          \
-    typedef ret (*__ntx_fn_t_##name) params;                                   \
-    extern const void *volatile __imp_##name;                                  \
-    static __inline __ntx_fn_t_##name __ntx_ref_##name(void)                   \
-    {                                                                          \
-        return (__ntx_fn_t_##name)(uintptr_t)__imp_##name;                     \
+#define NT_IMPORT(ret, name, params)                                                               \
+    typedef ret(*__ntx_fn_t_##name) params;                                                        \
+    extern const void *volatile __imp_##name;                                                      \
+    static __inline __ntx_fn_t_##name __ntx_ref_##name(void)                                       \
+    {                                                                                              \
+        return (__ntx_fn_t_##name)(uintptr_t)__imp_##name;                                         \
     }
 
 /* Define the IAT slot for an imported function (in .idata, patched by the
  * NTOS loader). */
-#define NT_DEFINE(name)                                                        \
-    const void *volatile __imp_##name                                          \
-        __attribute__((section(".idata"))) = (const void *)0;
+#define NT_DEFINE(name)                                                                            \
+    const void *volatile __imp_##name __attribute__((section(".idata"))) = (const void *)0;
 
 /* Call an imported function: NT_CALL(coredll_puts, ("hi")); */
 #define NT_CALL(name, args) __ntx_ref_##name() args
@@ -47,10 +46,10 @@
  * FUNCTION POINTER TYPE and the exported function must agree. Plain
  * NT_IMPORT is intentionally unchanged so native NTOS calls stay stable.
  * This is an SH Renesas ABI candidate, not an asserted MSVC SH4 ABI. */
-#define NT_IMPORT_CE_CANDIDATE(ret, name, params)                               \
-    typedef ret (*__ntx_fn_t_##name) params NT_ABI_CE_CANDIDATE;               \
-    extern const void *volatile __imp_##name;                                  \
-    static __inline __ntx_fn_t_##name __ntx_ref_##name(void)                   \
-    {                                                                          \
-        return (__ntx_fn_t_##name)(uintptr_t)__imp_##name;                     \
+#define NT_IMPORT_CE_CANDIDATE(ret, name, params)                                                  \
+    typedef ret(*__ntx_fn_t_##name) params NT_ABI_CE_CANDIDATE;                                    \
+    extern const void *volatile __imp_##name;                                                      \
+    static __inline __ntx_fn_t_##name __ntx_ref_##name(void)                                       \
+    {                                                                                              \
+        return (__ntx_fn_t_##name)(uintptr_t)__imp_##name;                                         \
     }

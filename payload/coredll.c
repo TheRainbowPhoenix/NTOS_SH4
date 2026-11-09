@@ -29,7 +29,10 @@ typedef unsigned int u32;
  */
 #ifdef NTOS_CORE_HOST_TEST
 extern const void *ntos_host_table[28];
-static const void **ntapi(void){return ntos_host_table;}
+static const void **ntapi(void)
+{
+    return ntos_host_table;
+}
 #else
 static const void **ntapi(void)
 {
@@ -99,7 +102,8 @@ void NKDbgPrintfW(const unsigned short *wide)
 {
     char out[80];
     unsigned i = 0;
-    if (wide == 0) return;
+    if (wide == 0)
+        return;
     while (i + 1 < sizeof(out) && wide[i] != 0) {
         unsigned short ch = wide[i];
         out[i++] = (ch >= 32 && ch < 127) ? (char)ch : '?';
@@ -186,7 +190,9 @@ void GlobalMemoryStatus(MEMSTATUS *ms)
  * handles are synthetic, colors are Win32 COLORREF (0x00BBGGRR), and
  * the NTOS gates accept 16-bit RGB565. This is not a full window manager. */
 typedef unsigned short u16;
-typedef struct { int left, top, right, bottom; } NT_RECT;
+typedef struct {
+    int left, top, right, bottom;
+} NT_RECT;
 typedef struct {
     void *hdc;
     int erase;
@@ -194,7 +200,9 @@ typedef struct {
     int restore, incUpdate;
     unsigned char reserved[32];
 } NT_PAINT;
-typedef struct { int x, y; } NT_POINT;
+typedef struct {
+    int x, y;
+} NT_POINT;
 
 static u32 rgb565(u32 colorref)
 {
@@ -207,34 +215,37 @@ static u32 rgb565(u32 colorref)
 static void ntos_clear(u32 colorref)
 {
     const void **a = ntapi();
-    if (a && a[6]) ((void (*)(u32))a[6])(rgb565(colorref));
+    if (a && a[6])
+        ((void (*)(u32))a[6])(rgb565(colorref));
 }
 
 static void ntos_pixel(u32 x, u32 y, u32 colorref)
 {
     const void **a = ntapi();
-    if (a && a[7]) ((void (*)(u32,u32,u32))a[7])(x,y,rgb565(colorref));
+    if (a && a[7])
+        ((void (*)(u32, u32, u32))a[7])(x, y, rgb565(colorref));
 }
 
 static void ntos_line(u32 x1, u32 y1, u32 x2, u32 y2, u32 colorref)
 {
     const void **a = ntapi();
-    if (a && a[8]) ((void (*)(u32,u32,u32,u32,u32))a[8])
-        (x1,y1,x2,y2,rgb565(colorref));
+    if (a && a[8])
+        ((void (*)(u32, u32, u32, u32, u32))a[8])(x1, y1, x2, y2, rgb565(colorref));
 }
 
 static void ntos_fillrect(u32 l, u32 t, u32 r, u32 b, u32 colorref)
 {
     const void **a = ntapi();
-    if (a && a[9]) ((void (*)(u32,u32,u32,u32,u32))a[9])
-        (l,t,r,b,rgb565(colorref));
+    if (a && a[9])
+        ((void (*)(u32, u32, u32, u32, u32))a[9])(l, t, r, b, rgb565(colorref));
 }
 
 /* Blocking. Returns 1 on touch and 2 on CLEAR, with touch coordinates. */
 static u32 ntos_touch(u32 *x, u32 *y)
 {
     const void **a = ntapi();
-    if (a && a[10]) return ((u32 (*)(u32 *,u32 *))a[10])(x,y);
+    if (a && a[10])
+        return ((u32 (*)(u32 *, u32 *))a[10])(x, y);
     return 2;
 }
 
@@ -277,187 +288,234 @@ static u32 g_qhead, g_qtail;
 
 static int same_wstr(const u16 *a, const u16 *b)
 {
-    u32 i=0;
-    if (!a || !b) return 0;
-    while (i < 47u && a[i] && b[i] && a[i] == b[i]) ++i;
+    u32 i = 0;
+    if (!a || !b)
+        return 0;
+    while (i < 47u && a[i] && b[i] && a[i] == b[i])
+        ++i;
     return a[i] == 0 && b[i] == 0;
 }
 static void copy_wstr(u16 *dest, const u16 *src, u32 cap)
 {
-    u32 i=0;
-    if (src) while (i+1 < cap && src[i]) {
-        dest[i]=src[i]; ++i;
-    }
-    dest[i]=0;
+    u32 i = 0;
+    if (src)
+        while (i + 1 < cap && src[i]) {
+            dest[i] = src[i];
+            ++i;
+        }
+    dest[i] = 0;
 }
 static int is_hwnd(void *hwnd)
 {
     return hwnd == (void *)&g_window && g_window.magic == 0x4E57494Eu;
 }
-static int enqueue(void *hwnd,u32 type,u32 wp,u32 lp)
+static int enqueue(void *hwnd, u32 type, u32 wp, u32 lp)
 {
-    u32 next=(g_qtail+1u)%16u;
+    u32 next = (g_qtail + 1u) % 16u;
     NT_MSG *msg;
-    if (next==g_qhead) return 0;
-    msg=&g_messages[g_qtail];
-    msg->hwnd=hwnd; msg->message=type; msg->wParam=wp;
-    msg->lParam=lp; msg->time=0;
-    msg->pt.x=(short)(lp & 0xFFFFu);
-    msg->pt.y=(short)((lp >> 16) & 0xFFFFu);
-    g_qtail=next;
+    if (next == g_qhead)
+        return 0;
+    msg = &g_messages[g_qtail];
+    msg->hwnd = hwnd;
+    msg->message = type;
+    msg->wParam = wp;
+    msg->lParam = lp;
+    msg->time = 0;
+    msg->pt.x = (short)(lp & 0xFFFFu);
+    msg->pt.y = (short)((lp >> 16) & 0xFFFFu);
+    g_qtail = next;
     return 1;
 }
-static void copy_msg(NT_MSG *out,const NT_MSG *from)
+static void copy_msg(NT_MSG *out, const NT_MSG *from)
 {
-    out->hwnd=from->hwnd;
-    out->message=from->message;
-    out->wParam=from->wParam;
-    out->lParam=from->lParam;
-    out->time=from->time;
-    out->pt.x=from->pt.x;
-    out->pt.y=from->pt.y;
+    out->hwnd = from->hwnd;
+    out->message = from->message;
+    out->wParam = from->wParam;
+    out->lParam = from->lParam;
+    out->time = from->time;
+    out->pt.x = from->pt.x;
+    out->pt.y = from->pt.y;
 }
 static int legacy_nav_input(NT_MSG *);
 static void legacy_nav_paint(void);
 u32 RegisterClassW(const NT_WNDCLASS *wc)
 {
-    if (!wc || !wc->wndproc || !wc->class_name) return 0;
-    g_class_proc=wc->wndproc;
-    copy_wstr(g_class_name,wc->class_name,48);
+    if (!wc || !wc->wndproc || !wc->class_name)
+        return 0;
+    g_class_proc = wc->wndproc;
+    copy_wstr(g_class_name, wc->class_name, 48);
     return 1; /* atom representing the one registered class */
 }
-void *CreateWindowExW(u32 exstyle, const u16 *class_name,
-                      const u16 *title, u32 style, int x, int y,
-                      int w, int h, void *parent, void *menu,
-                      void *instance, void *param)
+void *CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 style, int x, int y,
+                      int w, int h, void *parent, void *menu, void *instance, void *param)
 {
     void *hwnd;
-    (void)exstyle; (void)style; (void)parent;
-    (void)menu; (void)instance;
-    if (!g_class_proc || !same_wstr(class_name,g_class_name) ||
-        g_window.magic) return 0;
+    (void)exstyle;
+    (void)style;
+    (void)parent;
+    (void)menu;
+    (void)instance;
+    if (!g_class_proc || !same_wstr(class_name, g_class_name) || g_window.magic)
+        return 0;
     /* This environment has one pen-oriented LCD window. WinCE
      * CW_USEDEFAULT and unspecified dimensions mean a full-screen window;
      * explicit smaller dimensions are preserved in GetClientRect. */
-    if (w<=0) w=320;
-    if (h<=0) h=528;
-    if (x<0) x=0;
-    if (y<0) y=0;
-    if (x>=320 || y>=528) return 0;
-    if (w>320-x) w=320-x;
-    if (h>528-y) h=528-y;
-    g_window.magic=0x4E57494Eu;
-    g_window.proc=g_class_proc;
-    g_window.visible=0;
-    g_window.invalidated=1;
-    g_window.bounds.left=x;
-    g_window.bounds.top=y;
-    g_window.bounds.right=x+w;
-    g_window.bounds.bottom=y+h;
-    copy_wstr(g_window.title,title,48);
-    hwnd=(void *)&g_window;
-    g_window.proc(hwnd,0x0001u,0,(u32)param); /* WM_CREATE */
+    if (w <= 0)
+        w = 320;
+    if (h <= 0)
+        h = 528;
+    if (x < 0)
+        x = 0;
+    if (y < 0)
+        y = 0;
+    if (x >= 320 || y >= 528)
+        return 0;
+    if (w > 320 - x)
+        w = 320 - x;
+    if (h > 528 - y)
+        h = 528 - y;
+    g_window.magic = 0x4E57494Eu;
+    g_window.proc = g_class_proc;
+    g_window.visible = 0;
+    g_window.invalidated = 1;
+    g_window.bounds.left = x;
+    g_window.bounds.top = y;
+    g_window.bounds.right = x + w;
+    g_window.bounds.bottom = y + h;
+    copy_wstr(g_window.title, title, 48);
+    hwnd = (void *)&g_window;
+    g_window.proc(hwnd, 0x0001u, 0, (u32)param); /* WM_CREATE */
     return hwnd;
 }
-int ShowWindow(void *hwnd,int cmd)
+int ShowWindow(void *hwnd, int cmd)
 {
     int was;
-    if (!is_hwnd(hwnd)) return 0;
-    was=g_window.visible;
-    g_window.visible=(cmd!=0);
+    if (!is_hwnd(hwnd))
+        return 0;
+    was = g_window.visible;
+    g_window.visible = (cmd != 0);
     return was;
 }
-int PostMessageW(void *hwnd,u32 msg,u32 wp,u32 lp)
+int PostMessageW(void *hwnd, u32 msg, u32 wp, u32 lp)
 {
-    if (hwnd && !is_hwnd(hwnd)) return 0;
-    return enqueue(hwnd,msg,wp,lp);
+    if (hwnd && !is_hwnd(hwnd))
+        return 0;
+    return enqueue(hwnd, msg, wp, lp);
 }
 void PostQuitMessage(int exitcode)
 {
-    enqueue(0,0x0012u,(u32)exitcode,0);
+    enqueue(0, 0x0012u, (u32)exitcode, 0);
 }
-int DefWindowProcW(void *hwnd,u32 msg,u32 wp,u32 lp)
+int DefWindowProcW(void *hwnd, u32 msg, u32 wp, u32 lp)
 {
-    (void)hwnd; (void)wp; (void)lp;
-    if (msg==0x000Fu) coredll_refresh(); /* WM_PAINT */
+    (void)hwnd;
+    (void)wp;
+    (void)lp;
+    if (msg == 0x000Fu)
+        coredll_refresh(); /* WM_PAINT */
     return 0;
 }
 int DispatchMessageW(const NT_MSG *msg)
 {
-    if (!msg) return 0;
+    if (!msg)
+        return 0;
     if (is_hwnd(msg->hwnd) && g_window.proc)
-        return g_window.proc(msg->hwnd,msg->message,msg->wParam,msg->lParam);
-    return DefWindowProcW(msg->hwnd,msg->message,msg->wParam,msg->lParam);
+        return g_window.proc(msg->hwnd, msg->message, msg->wParam, msg->lParam);
+    return DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
 }
 int TranslateMessage(const NT_MSG *msg)
 {
     /* No Unicode keyboard map yet; retain WM_KEYDOWN for the caller. */
-    return msg != 0 && msg->message==0x0100u;
+    return msg != 0 && msg->message == 0x0100u;
 }
 int DestroyWindow(void *hwnd)
 {
-    if (!is_hwnd(hwnd)) return 0;
-    if (g_window.proc) g_window.proc(hwnd,0x0002u,0,0); /* WM_DESTROY */
-    g_window.magic=0; g_window.proc=0;
+    if (!is_hwnd(hwnd))
+        return 0;
+    if (g_window.proc)
+        g_window.proc(hwnd, 0x0002u, 0, 0); /* WM_DESTROY */
+    g_window.magic = 0;
+    g_window.proc = 0;
     return 1;
 }
-int SetWindowTextW(void *hwnd,const u16 *text)
+int SetWindowTextW(void *hwnd, const u16 *text)
 {
-    if (!is_hwnd(hwnd)) return 0;
-    copy_wstr(g_window.title,text,48);
+    if (!is_hwnd(hwnd))
+        return 0;
+    copy_wstr(g_window.title, text, 48);
     return 1;
 }
-int GetWindowTextW(void *hwnd,u16 *buffer,int capacity)
+int GetWindowTextW(void *hwnd, u16 *buffer, int capacity)
 {
-    int n=0;
-    if (!is_hwnd(hwnd) || !buffer || capacity<=0) return 0;
-    while (n+1<capacity && g_window.title[n]) {
-        buffer[n]=g_window.title[n]; ++n;
+    int n = 0;
+    if (!is_hwnd(hwnd) || !buffer || capacity <= 0)
+        return 0;
+    while (n + 1 < capacity && g_window.title[n]) {
+        buffer[n] = g_window.title[n];
+        ++n;
     }
-    buffer[n]=0;
+    buffer[n] = 0;
     return n;
 }
 int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
 {
-    u32 x=0, y=0, direction=0, ev;
-    const void **a=ntapi();
-    (void)min_filter; (void)max_filter; /* filters not implemented */
-    if (!msg || !a || !a[15]) return -1;
+    u32 x = 0, y = 0, direction = 0, ev;
+    const void **a = ntapi();
+    (void)min_filter;
+    (void)max_filter; /* filters not implemented */
+    if (!msg || !a || !a[15])
+        return -1;
     if (g_qhead != g_qtail) {
-        copy_msg(msg,&g_messages[g_qhead]);
-        g_qhead=(g_qhead+1u)%16u;
+        copy_msg(msg, &g_messages[g_qhead]);
+        g_qhead = (g_qhead + 1u) % 16u;
         return msg->message == 0x0012u ? 0 : 1;
     }
     do {
-        ev=((u32 (*)(u32 *,u32 *,u32 *))a[15])(&x,&y,&direction);
-    } while (ev==0);
-    msg->hwnd=is_hwnd(hwnd) ? hwnd :
-              (g_window.magic ? (void *)&g_window : 0);
-    msg->wParam=0; msg->time=0;
-    msg->pt.x=0; msg->pt.y=0; msg->lParam=0;
-    if (ev==2) {
-        msg->message=0x0100u; /* Physical Clear is Back, not WM_QUIT. */
-        msg->wParam=0x1Bu;
-        static const u16 shell_class[]={'S','t','a','r','t','H','o','s','t',0};
-        if(!same_wstr(g_class_name,shell_class)){msg->message=0x12u;return 0;}
+        ev = ((u32 (*)(u32 *, u32 *, u32 *))a[15])(&x, &y, &direction);
+    } while (ev == 0);
+    msg->hwnd = is_hwnd(hwnd) ? hwnd : (g_window.magic ? (void *)&g_window : 0);
+    msg->wParam = 0;
+    msg->time = 0;
+    msg->pt.x = 0;
+    msg->pt.y = 0;
+    msg->lParam = 0;
+    if (ev == 2) {
+        msg->message = 0x0100u; /* Physical Clear is Back, not WM_QUIT. */
+        msg->wParam = 0x1Bu;
+        static const u16 shell_class[] = {'S', 't', 'a', 'r', 't', 'H', 'o', 's', 't', 0};
+        if (!same_wstr(g_class_name, shell_class)) {
+            msg->message = 0x12u;
+            return 0;
+        }
         return 1;
     }
-    if (ev==3) {
-        msg->message=0x0100u; /* WM_KEYDOWN */
-        if (x==0x0090u) x=0x26u;       /* VK_UP */
-        else if (x==0x0091u) x=0x28u; /* VK_DOWN */
-        else if (x==0x0092u) x=0x25u; /* VK_LEFT */
-        else if (x==0x0093u) x=0x27u; /* VK_RIGHT */
-        else if (x==0x0094u) x=0x0Du; /* VK_RETURN */
-        if (x==0x00B3u) x=0x71u; /* Physical Keyboard -> VK_F2 (SIP toggle). */
-        else if (x==0x0080u) x=0x1Bu; /* Raw Clear -> VK_ESCAPE/Back. */
-        msg->wParam=x;
+    if (ev == 3) {
+        msg->message = 0x0100u; /* WM_KEYDOWN */
+        if (x == 0x0090u)
+            x = 0x26u; /* VK_UP */
+        else if (x == 0x0091u)
+            x = 0x28u; /* VK_DOWN */
+        else if (x == 0x0092u)
+            x = 0x25u; /* VK_LEFT */
+        else if (x == 0x0093u)
+            x = 0x27u; /* VK_RIGHT */
+        else if (x == 0x0094u)
+            x = 0x0Du; /* VK_RETURN */
+        if (x == 0x00B3u)
+            x = 0x71u; /* Physical Keyboard -> VK_F2 (SIP toggle). */
+        else if (x == 0x0080u)
+            x = 0x1Bu; /* Raw Clear -> VK_ESCAPE/Back. */
+        msg->wParam = x;
         return 1;
     }
-    msg->message=direction==0x40u ? 0x0202u : direction==2u ? 0x0200u : 0x0201u; /* UP/MOVE/DOWN */
-    msg->pt.x=(int)x; msg->pt.y=(int)y;
-    msg->lParam=((y & 0xFFFFu)<<16) | (x & 0xFFFFu);
-    legacy_nav_input(msg);return 1;
+    msg->message = direction == 0x40u ? 0x0202u
+                   : direction == 2u  ? 0x0200u
+                                      : 0x0201u; /* UP/MOVE/DOWN */
+    msg->pt.x = (int)x;
+    msg->pt.y = (int)y;
+    msg->lParam = ((y & 0xFFFFu) << 16) | (x & 0xFFFFu);
+    legacy_nav_input(msg);
+    return 1;
 }
 
 void *GetDC(void *hwnd)
@@ -469,7 +527,8 @@ void *GetDC(void *hwnd)
 int ReleaseDC(void *hwnd, void *hdc)
 {
     (void)hwnd;
-    if (hdc) coredll_refresh();
+    if (hdc)
+        coredll_refresh();
     return hdc ? 1 : 0;
 }
 
@@ -488,8 +547,10 @@ void *BeginPaint(void *hwnd, NT_PAINT *paint)
 int EndPaint(void *hwnd, const NT_PAINT *paint)
 {
     (void)paint;
-    if (is_hwnd(hwnd)) g_window.invalidated=0;
-    legacy_nav_paint();coredll_refresh();
+    if (is_hwnd(hwnd))
+        g_window.invalidated = 0;
+    legacy_nav_paint();
+    coredll_refresh();
     return 1;
 }
 
@@ -513,14 +574,14 @@ int DeleteObject(void *object)
 
 int FillRect(void *hdc, const NT_RECT *rect, void *brush)
 {
-    if (!hdc || !rect || !brush) return 0;
+    if (!hdc || !rect || !brush)
+        return 0;
     u32 c = (u32)brush & 0xFFFFu;
     const void **a = ntapi();
-    if (a && a[9] && rect->left >= 0 && rect->top >= 0 &&
-        rect->right > rect->left && rect->bottom > rect->top) {
-        ((void (*)(u32,u32,u32,u32,u32))a[9])
-            ((u32)rect->left, (u32)rect->top,
-             (u32)rect->right, (u32)rect->bottom, c);
+    if (a && a[9] && rect->left >= 0 && rect->top >= 0 && rect->right > rect->left &&
+        rect->bottom > rect->top) {
+        ((void (*)(u32, u32, u32, u32, u32))a[9])((u32)rect->left, (u32)rect->top, (u32)rect->right,
+                                                  (u32)rect->bottom, c);
         return 1;
     }
     return 0;
@@ -529,28 +590,36 @@ int FillRect(void *hdc, const NT_RECT *rect, void *brush)
 static int pen_x, pen_y;
 int MoveToEx(void *hdc, int x, int y, NT_POINT *previous)
 {
-    if (!hdc) return 0;
-    if (previous) { previous->x = pen_x; previous->y = pen_y; }
-    pen_x = x; pen_y = y;
+    if (!hdc)
+        return 0;
+    if (previous) {
+        previous->x = pen_x;
+        previous->y = pen_y;
+    }
+    pen_x = x;
+    pen_y = y;
     return 1;
 }
 
 int LineTo(void *hdc, int x, int y)
 {
-    if (!hdc) return 0;
+    if (!hdc)
+        return 0;
     if (pen_x >= 0 && pen_y >= 0 && x >= 0 && y >= 0)
         ntos_line((u32)pen_x, (u32)pen_y, (u32)x, (u32)y, 0x00FFFFFFu);
-    pen_x = x; pen_y = y;
+    pen_x = x;
+    pen_y = y;
     return 1;
 }
 
 int Rectangle(void *hdc, int l, int t, int r, int b)
 {
-    if (!hdc || l < 0 || t < 0 || r <= l || b <= t) return 0;
-    ntos_line((u32)l,(u32)t,(u32)(r-1),(u32)t,0xFFFFFFu);
-    ntos_line((u32)(r-1),(u32)t,(u32)(r-1),(u32)(b-1),0xFFFFFFu);
-    ntos_line((u32)(r-1),(u32)(b-1),(u32)l,(u32)(b-1),0xFFFFFFu);
-    ntos_line((u32)l,(u32)(b-1),(u32)l,(u32)t,0xFFFFFFu);
+    if (!hdc || l < 0 || t < 0 || r <= l || b <= t)
+        return 0;
+    ntos_line((u32)l, (u32)t, (u32)(r - 1), (u32)t, 0xFFFFFFu);
+    ntos_line((u32)(r - 1), (u32)t, (u32)(r - 1), (u32)(b - 1), 0xFFFFFFu);
+    ntos_line((u32)(r - 1), (u32)(b - 1), (u32)l, (u32)(b - 1), 0xFFFFFFu);
+    ntos_line((u32)l, (u32)(b - 1), (u32)l, (u32)t, 0xFFFFFFu);
     return 1;
 }
 
@@ -558,7 +627,8 @@ void OutputDebugStringW(const u16 *wide)
 {
     char buf[64];
     unsigned i = 0;
-    if (!wide) return;
+    if (!wide)
+        return;
     while (i < sizeof(buf) - 1 && wide[i]) {
         buf[i] = (wide[i] < 128) ? (char)wide[i] : '?';
         ++i;
@@ -570,74 +640,88 @@ void OutputDebugStringW(const u16 *wide)
 /* Working WinCE-compatible display helpers (single full-screen DC). */
 int GetClientRect(void *hwnd, NT_RECT *rect)
 {
-    if (!rect) return 0;
-    rect->left=0; rect->top=0;
+    if (!rect)
+        return 0;
+    rect->left = 0;
+    rect->top = 0;
     if (is_hwnd(hwnd)) {
-        rect->right=g_window.bounds.right-g_window.bounds.left;
-        rect->bottom=g_window.bounds.bottom-g_window.bounds.top;
+        rect->right = g_window.bounds.right - g_window.bounds.left;
+        rect->bottom = g_window.bounds.bottom - g_window.bounds.top;
     } else {
-        rect->right=320; rect->bottom=528;
+        rect->right = 320;
+        rect->bottom = 528;
     }
     return 1;
 }
 
 int GetSystemMetrics(int index)
 {
-    if (index==0) return 320; /* SM_CXSCREEN */
-    if (index==1) return 528; /* SM_CYSCREEN */
+    if (index == 0)
+        return 320; /* SM_CXSCREEN */
+    if (index == 1)
+        return 528; /* SM_CYSCREEN */
     return 0;
 }
 /* Fixed-size public-domain bitmap font. No debug console or FPU. WinCE
  * GDI names and COLORREF contracts; one synthetic framebuffer HDC only. */
-static u32 g_text_color=0x00000000u;
-static u32 g_bk_color=0x00FFFFFFu;
-static int g_bk_mode=1; /* TRANSPARENT */
-static int g_font_height=14;
+static u32 g_text_color = 0x00000000u;
+static u32 g_bk_color = 0x00FFFFFFu;
+static int g_bk_mode = 1; /* TRANSPARENT */
+static int g_font_height = 14;
 /* 8x14 UGUI bitmap point size expressed in whole output pixels.
  * Font handles retain requested heights, not an arbitrary 1x/2x flag. */
 #define NTOS_FONT_HANDLE 0x02000000u
 typedef struct {
-    int lfHeight,lfWidth,lfEscapement,lfOrientation,lfWeight;
-    unsigned char lfItalic,lfUnderline,lfStrikeOut,lfCharSet;
-    unsigned char lfOutPrecision,lfClipPrecision,lfQuality,lfPitchAndFamily;
+    int lfHeight, lfWidth, lfEscapement, lfOrientation, lfWeight;
+    unsigned char lfItalic, lfUnderline, lfStrikeOut, lfCharSet;
+    unsigned char lfOutPrecision, lfClipPrecision, lfQuality, lfPitchAndFamily;
     u16 lfFaceName[32];
 } NT_LOGFONTW;
 void *CreateFontIndirectW(const NT_LOGFONTW *font)
 {
     int h;
-    if (!font) return 0;
-    h=font->lfHeight;
-    if (h<0) h=-h;
-    if (h<9) h=9;
-    if (h>32) h=32;
+    if (!font)
+        return 0;
+    h = font->lfHeight;
+    if (h < 0)
+        h = -h;
+    if (h < 9)
+        h = 9;
+    if (h > 32)
+        h = 32;
     return (void *)(NTOS_FONT_HANDLE | (u32)h);
 }
-void *SelectObject(void *hdc,void *object)
+void *SelectObject(void *hdc, void *object)
 {
-    u32 v=(u32)object;
-    if (!hdc || (v & 0xFF000000u)!=NTOS_FONT_HANDLE) return 0;
-    int h=(int)(v&0xffu);
-    if (h<9 || h>32) return 0;
-    void *old=(void *)(NTOS_FONT_HANDLE | (u32)g_font_height);
-    g_font_height=h;
+    u32 v = (u32)object;
+    if (!hdc || (v & 0xFF000000u) != NTOS_FONT_HANDLE)
+        return 0;
+    int h = (int)(v & 0xffu);
+    if (h < 9 || h > 32)
+        return 0;
+    void *old = (void *)(NTOS_FONT_HANDLE | (u32)g_font_height);
+    g_font_height = h;
     return old;
 }
-u32 SetTextColor(void *hdc,u32 color)
+u32 SetTextColor(void *hdc, u32 color)
 {
-    u32 old=g_text_color;
-    if (hdc) g_text_color=color;
+    u32 old = g_text_color;
+    if (hdc)
+        g_text_color = color;
     return old;
 }
-u32 SetBkColor(void *hdc,u32 color)
+u32 SetBkColor(void *hdc, u32 color)
 {
-    u32 old=g_bk_color;
-    if (hdc) g_bk_color=color;
+    u32 old = g_bk_color;
+    if (hdc)
+        g_bk_color = color;
     return old;
 }
-int SetBkMode(void *hdc,int mode)
+int SetBkMode(void *hdc, int mode)
 {
-    int old=g_bk_mode;
-    if (hdc && (mode==1 || mode==2)) g_bk_mode=mode;
+    int old = g_bk_mode;
+    if (hdc && (mode == 1 || mode == 2))
+        g_bk_mode = mode;
     return old;
 }
 /* Proven 8x14 monochrome UGUI atlas. A glyph owns exactly 14
@@ -650,88 +734,108 @@ int SetBkMode(void *hdc,int mode)
  * All interpolation is nearest-neighbour, without antialiasing or FPU. */
 /* Local unsigned shift/subtract divider: SH4 freestanding builds cannot
  * rely on __sdivsi3_i4i emitted by variable or signed divisions. */
-static unsigned nt_glyph_div(unsigned numerator,unsigned denominator)
+static unsigned nt_glyph_div(unsigned numerator, unsigned denominator)
 {
-    unsigned q=0,r=0;
-    if(!denominator)return 0;
-    for(int i=31;i>=0;--i) {
-        unsigned top=r>>31;
-        r=(r<<1)|((numerator>>(unsigned)i)&1u);
-        if(top || r>=denominator) {
-            r-=denominator;
-            q|=1u<<(unsigned)i;
+    unsigned q = 0, r = 0;
+    if (!denominator)
+        return 0;
+    for (int i = 31; i >= 0; --i) {
+        unsigned top = r >> 31;
+        r = (r << 1) | ((numerator >> (unsigned)i) & 1u);
+        if (top || r >= denominator) {
+            r -= denominator;
+            q |= 1u << (unsigned)i;
         }
     }
     return q;
 }
 static int nt_fontwidth(u16 ch)
 {
-    int raw=(ch>=32 && ch<127) ? nt_font_advance[ch-32] : 8;
-    return (int)nt_glyph_div((unsigned)(raw*g_font_height+7),14u);
+    int raw = (ch >= 32 && ch < 127) ? nt_font_advance[ch - 32] : 8;
+    return (int)nt_glyph_div((unsigned)(raw * g_font_height + 7), 14u);
 }
-static int nt_glyph(void *hdc,int x,int y,u16 ch)
+static int nt_glyph(void *hdc, int x, int y, u16 ch)
 {
-    const void **api=ntapi();
-    u32 fg=rgb565(g_text_color),bg=rgb565(g_bk_color);
-    int h=g_font_height;
-    int w=(int)nt_glyph_div((unsigned)(8*h+7),14u);
-    if(!hdc || !api || !api[7]) return 0;
-    if(ch<32 || ch>=127)ch='?';
-    int sr=0,ry=0;
-    for(int yy=0;yy<h;++yy) {
-        unsigned bits=nt_font_rows[ch-32][sr];
-        int sc=0,rx=0;
-        for(int xx=0;xx<w;++xx) {
-            int src=sc>7?7:sc;
-            int active=(bits>>src)&1; /* LSB at the LEFT */
-            if(active || g_bk_mode!=1) {
-                int px=x+xx,py=y+yy;
-                if(px>=0 && px<320 && py>=0 && py<528)
-                    ((void (*)(u32,u32,u32))api[7])
-                        ((u32)px,(u32)py,active?fg:bg);
+    const void **api = ntapi();
+    u32 fg = rgb565(g_text_color), bg = rgb565(g_bk_color);
+    int h = g_font_height;
+    int w = (int)nt_glyph_div((unsigned)(8 * h + 7), 14u);
+    if (!hdc || !api || !api[7])
+        return 0;
+    if (ch < 32 || ch >= 127)
+        ch = '?';
+    int sr = 0, ry = 0;
+    for (int yy = 0; yy < h; ++yy) {
+        unsigned bits = nt_font_rows[ch - 32][sr];
+        int sc = 0, rx = 0;
+        for (int xx = 0; xx < w; ++xx) {
+            int src = sc > 7 ? 7 : sc;
+            int active = (bits >> src) & 1; /* LSB at the LEFT */
+            if (active || g_bk_mode != 1) {
+                int px = x + xx, py = y + yy;
+                if (px >= 0 && px < 320 && py >= 0 && py < 528)
+                    ((void (*)(u32, u32, u32))api[7])((u32)px, (u32)py, active ? fg : bg);
             }
-            rx+=14;
-            while(rx>=h) {rx-=h;++sc;}
+            rx += 14;
+            while (rx >= h) {
+                rx -= h;
+                ++sc;
+            }
         }
-        ry+=14;
-        while(ry>=h) {ry-=h;++sr;}
-        if(sr>13)sr=13;
+        ry += 14;
+        while (ry >= h) {
+            ry -= h;
+            ++sr;
+        }
+        if (sr > 13)
+            sr = 13;
     }
     return 1;
 }
-int TextOutW(void *hdc,int x,int y,const u16 *text,int n)
+int TextOutW(void *hdc, int x, int y, const u16 *text, int n)
 {
-    if(!hdc || !text || n<0)return 0;
-    for(int i=0;i<n && text[i] && x<320;++i) {
-        nt_glyph(hdc,x,y,text[i]);
-        x+=nt_fontwidth(text[i]);
+    if (!hdc || !text || n < 0)
+        return 0;
+    for (int i = 0; i < n && text[i] && x < 320; ++i) {
+        nt_glyph(hdc, x, y, text[i]);
+        x += nt_fontwidth(text[i]);
     }
     return 1;
 }
-int DrawTextW(void *hdc,const u16 *text,int count,NT_RECT *rect,u32 flags)
+int DrawTextW(void *hdc, const u16 *text, int count, NT_RECT *rect, u32 flags)
 {
-    int n=0,w=0,x,y,h=g_font_height;
-    if(!hdc || !text || !rect)return 0;
-    while((count<0 || n<count) && n<255 && text[n]) {
-        w+=nt_fontwidth(text[n]);++n;
+    int n = 0, w = 0, x, y, h = g_font_height;
+    if (!hdc || !text || !rect)
+        return 0;
+    while ((count < 0 || n < count) && n < 255 && text[n]) {
+        w += nt_fontwidth(text[n]);
+        ++n;
     }
-    x=rect->left;
-    if(flags&1u)x+=(rect->right-rect->left-w)/2;
-    if(flags&2u)x+=rect->right-rect->left-w;
-    y=rect->top;
-    if(flags&4u)y+=(rect->bottom-rect->top-h)/2;
-    if(!(flags&0x400u))TextOutW(hdc,x,y,text,n);
-    else {rect->right=rect->left+w;rect->bottom=rect->top+h;}
+    x = rect->left;
+    if (flags & 1u)
+        x += (rect->right - rect->left - w) / 2;
+    if (flags & 2u)
+        x += rect->right - rect->left - w;
+    y = rect->top;
+    if (flags & 4u)
+        y += (rect->bottom - rect->top - h) / 2;
+    if (!(flags & 0x400u))
+        TextOutW(hdc, x, y, text, n);
+    else {
+        rect->right = rect->left + w;
+        rect->bottom = rect->top + h;
+    }
     return h;
 }
 
 int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
 {
-    (void)rect; (void)erase;
+    (void)rect;
+    (void)erase;
     if (is_hwnd(hwnd)) {
         if (!g_window.invalidated) {
-            g_window.invalidated=1;
-            return enqueue(hwnd,0x000Fu,0,0); /* WM_PAINT */
+            g_window.invalidated = 1;
+            return enqueue(hwnd, 0x000Fu, 0, 0); /* WM_PAINT */
         }
         return 1;
     }
@@ -740,9 +844,9 @@ int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
 int UpdateWindow(void *hwnd)
 {
     if (is_hwnd(hwnd) && g_window.invalidated) {
-        g_window.invalidated=0;
+        g_window.invalidated = 0;
         if (g_window.proc)
-            g_window.proc(hwnd,0x000Fu,0,0);
+            g_window.proc(hwnd, 0x000Fu, 0, 0);
     }
     coredll_refresh();
     return 1;
@@ -754,8 +858,10 @@ int UpdateWindow(void *hwnd)
 #define NT_INVALID_FILE ((void *)-1)
 #define NT_HANDLE_TAG 0x00010000u
 /* SDK/Fugue descriptors include the mount index in their upper 16 bits. */
-static struct {int used,fd;} nt_files[32];
-#define NT_GENERIC_READ  0x80000000u
+static struct {
+    int used, fd;
+} nt_files[32];
+#define NT_GENERIC_READ 0x80000000u
 #define NT_GENERIC_WRITE 0x40000000u
 #define NT_CREATE_ALWAYS 2u
 #define NT_OPEN_EXISTING 3u
@@ -766,218 +872,267 @@ static struct {int used,fd;} nt_files[32];
 
 static int narrow_path(const u16 *src, char *dest, u32 capacity)
 {
-    u32 i=0, j=0;
-    if (!src || capacity < 12u) return 0;
+    u32 i = 0, j = 0;
+    if (!src || capacity < 12u)
+        return 0;
     /* Fugue needs one leading slash; two give an empty volume name.
      * Accept either input spelling and normalize to one. */
-    while (src[i] == '\\' && i < 2u) ++i;
-    if (i == 0 || !((src[i]=='f'||src[i]=='F') &&
-                    (src[i+1]=='l'||src[i+1]=='L') &&
-                    (src[i+2]=='s'||src[i+2]=='S') &&
-                    src[i+3]=='0' && src[i+4]=='\\'))
+    while (src[i] == '\\' && i < 2u)
+        ++i;
+    if (i == 0 ||
+        !((src[i] == 'f' || src[i] == 'F') && (src[i + 1] == 'l' || src[i + 1] == 'L') &&
+          (src[i + 2] == 's' || src[i + 2] == 'S') && src[i + 3] == '0' && src[i + 4] == '\\'))
         return 0;
-    dest[j++]='\\';
-    while (src[i] && j+1 < capacity) {
-        if (src[i] > 127u) return 0;
-        dest[j++]=(char)src[i++];
+    dest[j++] = '\\';
+    while (src[i] && j + 1 < capacity) {
+        if (src[i] > 127u)
+            return 0;
+        dest[j++] = (char)src[i++];
     }
-    if (src[i] != 0) return 0;
-    dest[j]=0;
+    if (src[i] != 0)
+        return 0;
+    dest[j] = 0;
     return 1;
 }
 
 static int handle_fd(void *handle)
 {
-    u32 value=(u32)handle;
-    if(value<=NT_HANDLE_TAG||value>NT_HANDLE_TAG+32u)return -1;
-    unsigned slot=value-NT_HANDLE_TAG-1u;
-    return nt_files[slot].used?nt_files[slot].fd:-1;
+    u32 value = (u32)handle;
+    if (value <= NT_HANDLE_TAG || value > NT_HANDLE_TAG + 32u)
+        return -1;
+    unsigned slot = value - NT_HANDLE_TAG - 1u;
+    return nt_files[slot].used ? nt_files[slot].fd : -1;
 }
 
 static u32 g_last_error;
-u32 GetLastError(void) { return g_last_error; }
-void SetLastError(u32 err) { g_last_error=err; }
+u32 GetLastError(void)
+{
+    return g_last_error;
+}
+void SetLastError(u32 err)
+{
+    g_last_error = err;
+}
 static u32 nt_file_error(int err)
 {
-    if (err == -14) return 2;  /* FILE_ENOENT -> ERROR_FILE_NOT_FOUND */
-    if (err == -5) return 5;   /* FILE_EACCES -> ERROR_ACCESS_DENIED */
-    if (err == -16) return 32; /* FILE_ESHARE -> ERROR_SHARING_VIOLATION */
-    if (err == -2) return 87;  /* FILE_EINVAL -> ERROR_INVALID_PARAMETER */
-    return 1;                 /* ERROR_INVALID_FUNCTION / generic failure */
+    if (err == -14)
+        return 2; /* FILE_ENOENT -> ERROR_FILE_NOT_FOUND */
+    if (err == -5)
+        return 5; /* FILE_EACCES -> ERROR_ACCESS_DENIED */
+    if (err == -16)
+        return 32; /* FILE_ESHARE -> ERROR_SHARING_VIOLATION */
+    if (err == -2)
+        return 87; /* FILE_EINVAL -> ERROR_INVALID_PARAMETER */
+    return 1;      /* ERROR_INVALID_FUNCTION / generic failure */
 }
 
-void *CreateFileW(const u16 *path, u32 access, u32 share,
-                  void *security, u32 creation, u32 attributes,
-                  void *template_file)
+void *CreateFileW(const u16 *path, u32 access, u32 share, void *security, u32 creation,
+                  u32 attributes, void *template_file)
 {
-    const void **a=ntapi();
+    const void **a = ntapi();
     char narrow[96];
-    u32 flags=0;
+    u32 flags = 0;
     int fd;
-    (void)share; (void)security; (void)attributes; (void)template_file;
-    if (!a || !a[11] || !narrow_path(path,narrow,sizeof(narrow))) {
-        g_last_error=123;
+    (void)share;
+    (void)security;
+    (void)attributes;
+    (void)template_file;
+    if (!a || !a[11] || !narrow_path(path, narrow, sizeof(narrow))) {
+        g_last_error = 123;
         return NT_INVALID_FILE;
     }
-    if (access & NT_GENERIC_READ) flags |= NT_FILE_READ;
-    if (access & NT_GENERIC_WRITE) flags |= NT_FILE_WRITE;
+    if (access & NT_GENERIC_READ)
+        flags |= NT_FILE_READ;
+    if (access & NT_GENERIC_WRITE)
+        flags |= NT_FILE_WRITE;
     if (creation == NT_CREATE_ALWAYS || creation == NT_OPEN_ALWAYS)
         flags |= NT_FILE_CREATE;
     else if (creation != NT_OPEN_EXISTING) {
-        g_last_error=87; return NT_INVALID_FILE;
+        g_last_error = 87;
+        return NT_INVALID_FILE;
     }
-    if (!(flags & (NT_FILE_READ|NT_FILE_WRITE))) {
-        g_last_error=87; return NT_INVALID_FILE;
+    if (!(flags & (NT_FILE_READ | NT_FILE_WRITE))) {
+        g_last_error = 87;
+        return NT_INVALID_FILE;
     }
     /* CREATE_ALWAYS must replace a shorter preferences file, not leave
      * stale trailing bytes. The SDK CREATE flag alone does not truncate. */
-    if(creation==NT_CREATE_ALWAYS && a[19]) {
-        int removed=((int (*)(const char *))a[19])(narrow);
-        if(removed<0 && removed!=-14 && removed!=-8) {
-            g_last_error=nt_file_error(removed);return NT_INVALID_FILE;
+    if (creation == NT_CREATE_ALWAYS && a[19]) {
+        int removed = ((int (*)(const char *))a[19])(narrow);
+        if (removed < 0 && removed != -14 && removed != -8) {
+            g_last_error = nt_file_error(removed);
+            return NT_INVALID_FILE;
         }
     }
-    fd=((int (*)(const char *,u32))a[11])(narrow,flags);
+    fd = ((int (*)(const char *, u32))a[11])(narrow, flags);
     if (fd < 0) {
-        g_last_error=nt_file_error(fd); return NT_INVALID_FILE;
+        g_last_error = nt_file_error(fd);
+        return NT_INVALID_FILE;
     }
-    g_last_error=0;
-    unsigned slot=0;while(slot<32u&&nt_files[slot].used)++slot;
-    if(slot==32u){if(a[14])((int (*)(int))a[14])(fd);g_last_error=4;return NT_INVALID_FILE;}
-    nt_files[slot].used=1;nt_files[slot].fd=fd;
-    return (void *)(NT_HANDLE_TAG+slot+1u);
+    g_last_error = 0;
+    unsigned slot = 0;
+    while (slot < 32u && nt_files[slot].used)
+        ++slot;
+    if (slot == 32u) {
+        if (a[14])
+            ((int (*)(int))a[14])(fd);
+        g_last_error = 4;
+        return NT_INVALID_FILE;
+    }
+    nt_files[slot].used = 1;
+    nt_files[slot].fd = fd;
+    return (void *)(NT_HANDLE_TAG + slot + 1u);
 }
 
 u32 GetFileSize(void *handle, u32 *high)
 {
-    const void **a=ntapi();
-    int fd=handle_fd(handle);
+    const void **a = ntapi();
+    int fd = handle_fd(handle);
     int size;
-    if (high) *high=0;
-    if (fd<0 || !a || !a[17]) { g_last_error=87; return 0xFFFFFFFFu; }
-    size=((int (*)(int))a[17])(fd);
-    g_last_error=size<0 ? nt_file_error(size) : 0;
-    return size<0 ? 0xFFFFFFFFu : (u32)size;
+    if (high)
+        *high = 0;
+    if (fd < 0 || !a || !a[17]) {
+        g_last_error = 87;
+        return 0xFFFFFFFFu;
+    }
+    size = ((int (*)(int))a[17])(fd);
+    g_last_error = size < 0 ? nt_file_error(size) : 0;
+    return size < 0 ? 0xFFFFFFFFu : (u32)size;
 }
 
 int ReadFile(void *handle, void *buffer, u32 count, u32 *done, void *overlapped)
 {
-    const void **a=ntapi();
-    int fd=handle_fd(handle), n;
-    if (done) *done=0;
-    if (fd < 0 || !buffer || !a || !a[12] || overlapped || count > 4096u)
-    { g_last_error=87; return 0; }
-    n=((int (*)(int,void *,u32))a[12])(fd,buffer,count);
-    if (n < 0) { g_last_error=nt_file_error(n); return 0; }
-    if (done) *done=(u32)n;
-    g_last_error=0;
+    const void **a = ntapi();
+    int fd = handle_fd(handle), n;
+    if (done)
+        *done = 0;
+    if (fd < 0 || !buffer || !a || !a[12] || overlapped || count > 4096u) {
+        g_last_error = 87;
+        return 0;
+    }
+    n = ((int (*)(int, void *, u32))a[12])(fd, buffer, count);
+    if (n < 0) {
+        g_last_error = nt_file_error(n);
+        return 0;
+    }
+    if (done)
+        *done = (u32)n;
+    g_last_error = 0;
     return 1;
 }
 
-int WriteFile(void *handle, const void *buffer, u32 count, u32 *done,
-              void *overlapped)
+int WriteFile(void *handle, const void *buffer, u32 count, u32 *done, void *overlapped)
 {
-    const void **a=ntapi();
-    int fd=handle_fd(handle), n;
-    if (done) *done=0;
-    if (fd < 0 || !buffer || !a || !a[13] || overlapped || count > 4096u)
-    { g_last_error=87; return 0; }
-    n=((int (*)(int,const void *,u32))a[13])(fd,buffer,count);
-    if (n < 0) { g_last_error=nt_file_error(n); return 0; }
-    if (done) *done=(u32)n;
-    g_last_error=0;
+    const void **a = ntapi();
+    int fd = handle_fd(handle), n;
+    if (done)
+        *done = 0;
+    if (fd < 0 || !buffer || !a || !a[13] || overlapped || count > 4096u) {
+        g_last_error = 87;
+        return 0;
+    }
+    n = ((int (*)(int, const void *, u32))a[13])(fd, buffer, count);
+    if (n < 0) {
+        g_last_error = nt_file_error(n);
+        return 0;
+    }
+    if (done)
+        *done = (u32)n;
+    g_last_error = 0;
     return 1;
 }
 
 int CloseHandle(void *handle)
 {
-    const void **a=ntapi();
-    int fd=handle_fd(handle);
-    if (fd < 0 || !a || !a[14]) { g_last_error=87; return 0; }
-    int result=((int (*)(int))a[14])(fd);
-    nt_files[(u32)handle-NT_HANDLE_TAG-1u].used=0;
-    g_last_error=result<0 ? nt_file_error(result) : 0;
-    return result==0;
+    const void **a = ntapi();
+    int fd = handle_fd(handle);
+    if (fd < 0 || !a || !a[14]) {
+        g_last_error = 87;
+        return 0;
+    }
+    int result = ((int (*)(int))a[14])(fd);
+    nt_files[(u32)handle - NT_HANDLE_TAG - 1u].used = 0;
+    g_last_error = result < 0 ? nt_file_error(result) : 0;
+    return result == 0;
 }
 
 /* Additional WinCE filesystem calls. NTOS only exposes the FLS0 volume;
  * these don't emulate WinCE sharing, ACLs or asynchronous I/O. */
-u32 SetFilePointer(void *handle,int offset,int *high,u32 move_method)
+u32 SetFilePointer(void *handle, int offset, int *high, u32 move_method)
 {
-    const void **a=ntapi();
-    int fd=handle_fd(handle),result;
-    if (fd<0 || !a || !a[18] || move_method>2 ||
-        (high && *high != 0)) {
-        g_last_error=87;
+    const void **a = ntapi();
+    int fd = handle_fd(handle), result;
+    if (fd < 0 || !a || !a[18] || move_method > 2 || (high && *high != 0)) {
+        g_last_error = 87;
         return 0xFFFFFFFFu;
     }
-    result=((int (*)(int,int,u32))a[18])(fd,offset,move_method);
-    if (result<0) {
-        g_last_error=nt_file_error(result);
+    result = ((int (*)(int, int, u32))a[18])(fd, offset, move_method);
+    if (result < 0) {
+        g_last_error = nt_file_error(result);
         return 0xFFFFFFFFu;
     }
-    if (high) *high=0;
-    g_last_error=0;
+    if (high)
+        *high = 0;
+    g_last_error = 0;
     return (u32)result;
 }
 
 int DeleteFileW(const u16 *path)
 {
-    const void **a=ntapi();
+    const void **a = ntapi();
     char name[96];
     int result;
-    if (!a || !a[19] || !narrow_path(path,name,sizeof(name))) {
-        g_last_error=123;
+    if (!a || !a[19] || !narrow_path(path, name, sizeof(name))) {
+        g_last_error = 123;
         return 0;
     }
-    result=((int (*)(const char *))a[19])(name);
-    g_last_error=result<0 ? nt_file_error(result) : 0;
-    return result==0;
+    result = ((int (*)(const char *))a[19])(name);
+    g_last_error = result < 0 ? nt_file_error(result) : 0;
+    return result == 0;
 }
 
-int MoveFileW(const u16 *oldpath,const u16 *newpath)
+int MoveFileW(const u16 *oldpath, const u16 *newpath)
 {
-    const void **a=ntapi();
-    char from[96],to[96];
+    const void **a = ntapi();
+    char from[96], to[96];
     int result;
-    if (!a || !a[20] ||
-        !narrow_path(oldpath,from,sizeof(from)) ||
-        !narrow_path(newpath,to,sizeof(to))) {
-        g_last_error=123;
+    if (!a || !a[20] || !narrow_path(oldpath, from, sizeof(from)) ||
+        !narrow_path(newpath, to, sizeof(to))) {
+        g_last_error = 123;
         return 0;
     }
-    result=((int (*)(const char *,const char *))a[20])(from,to);
-    g_last_error=result<0 ? nt_file_error(result) : 0;
-    return result==0;
+    result = ((int (*)(const char *, const char *))a[20])(from, to);
+    g_last_error = result < 0 ? nt_file_error(result) : 0;
+    return result == 0;
 }
 
-int CreateDirectoryW(const u16 *name,void *security)
+int CreateDirectoryW(const u16 *name, void *security)
 {
-    const void **a=ntapi();
+    const void **a = ntapi();
     char path[96];
     int result;
     (void)security;
-    if (!a || !a[21] || !narrow_path(name,path,sizeof(path))) {
-        g_last_error=123;
+    if (!a || !a[21] || !narrow_path(name, path, sizeof(path))) {
+        g_last_error = 123;
         return 0;
     }
-    result=((int (*)(const char *))a[21])(path);
-    g_last_error=result<0 ? nt_file_error(result) : 0;
-    return result==0;
+    result = ((int (*)(const char *))a[21])(path);
+    g_last_error = result < 0 ? nt_file_error(result) : 0;
+    return result == 0;
 }
 
 u32 GetFileAttributesW(const u16 *name)
 {
-    const void **a=ntapi();
+    const void **a = ntapi();
     char path[96];
     int result;
-    if (!a || !a[22] || !narrow_path(name,path,sizeof(path))) {
-        g_last_error=123;
+    if (!a || !a[22] || !narrow_path(name, path, sizeof(path))) {
+        g_last_error = 123;
         return 0xFFFFFFFFu;
     }
-    result=((int (*)(const char *))a[22])(path);
-    g_last_error=result<0 ? nt_file_error(result) : 0;
-    return result==0 ? 0x80u : 0xFFFFFFFFu; /* FILE_ATTRIBUTE_NORMAL */
+    result = ((int (*)(const char *))a[22])(path);
+    g_last_error = result < 0 ? nt_file_error(result) : 0;
+    return result == 0 ? 0x80u : 0xFFFFFFFFu; /* FILE_ATTRIBUTE_NORMAL */
 }
 
 /* ---------------------------------------------------------------------------
@@ -996,95 +1151,254 @@ int main(void)
 }
 
 /* NTOS_PHONE_SIP_FINDER: WinCE public APIs over bounded native services. */
-typedef struct {u32 attr,size;u16 name[128];} NT_FIND_NATIVE;
-typedef struct {u32 attrs,times[6],size_hi,size_lo,oid;u16 name[260];} NT_FIND_DATA;
-static struct {int used,fd;} nt_finds[8];
-static void nt_copy_find(NT_FIND_DATA *out,const NT_FIND_NATIVE *in) {
-    out->attrs=in->attr;for(unsigned i=0;i<6;++i)out->times[i]=0;
-    out->size_hi=0;out->size_lo=in->size;out->oid=0;
-    unsigned i=0;for(;i<127 && in->name[i];++i)out->name[i]=in->name[i];out->name[i]=0;
+typedef struct {
+    u32 attr, size;
+    u16 name[128];
+} NT_FIND_NATIVE;
+typedef struct {
+    u32 attrs, times[6], size_hi, size_lo, oid;
+    u16 name[260];
+} NT_FIND_DATA;
+static struct {
+    int used, fd;
+} nt_finds[8];
+static void nt_copy_find(NT_FIND_DATA *out, const NT_FIND_NATIVE *in)
+{
+    out->attrs = in->attr;
+    for (unsigned i = 0; i < 6; ++i)
+        out->times[i] = 0;
+    out->size_hi = 0;
+    out->size_lo = in->size;
+    out->oid = 0;
+    unsigned i = 0;
+    for (; i < 127 && in->name[i]; ++i)
+        out->name[i] = in->name[i];
+    out->name[i] = 0;
 }
-void *FindFirstFileW(const u16 *pattern,NT_FIND_DATA *out) {
-    const void **a=ntapi();char path[96];NT_FIND_NATIVE found;int fd=-1;
-    if(!ntos_api_has_slot((const volatile uint32_t *)0x08100000u,24u)) {
-        g_last_error=50;return NT_INVALID_FILE;
+void *FindFirstFileW(const u16 *pattern, NT_FIND_DATA *out)
+{
+    const void **a = ntapi();
+    char path[96];
+    NT_FIND_NATIVE found;
+    int fd = -1;
+    if (!ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 24u)) {
+        g_last_error = 50;
+        return NT_INVALID_FILE;
     }
-    if(!out||!a||!a[24]||!narrow_path(pattern,path,sizeof(path)))return NT_INVALID_FILE;
-    unsigned i=0;while(i<8 && nt_finds[i].used)++i;
-    if(i==8){g_last_error=4;return NT_INVALID_FILE;}
-    if(((int (*)(const char *,int *,NT_FIND_NATIVE *))a[24])(path,&fd,&found)<0){g_last_error=2;return NT_INVALID_FILE;}
-    nt_finds[i].used=1;nt_finds[i].fd=fd;nt_copy_find(out,&found);g_last_error=0;
-    return (void *)(0x30000u+i+1u);
-}
-int FindNextFileW(void *search,NT_FIND_DATA *out) {
-    u32 v=(u32)search;const void **a=ntapi();NT_FIND_NATIVE found;
-    if(!ntos_api_has_slot((const volatile uint32_t *)0x08100000u,25u)) {
-        g_last_error=50;return 0;
+    if (!out || !a || !a[24] || !narrow_path(pattern, path, sizeof(path)))
+        return NT_INVALID_FILE;
+    unsigned i = 0;
+    while (i < 8 && nt_finds[i].used)
+        ++i;
+    if (i == 8) {
+        g_last_error = 4;
+        return NT_INVALID_FILE;
     }
-    if(v<=0x30000u||v>0x30008u||!out||!a||!a[25]){g_last_error=6;return 0;}
-    unsigned i=v-0x30001u;if(!nt_finds[i].used){g_last_error=6;return 0;}
-    if(((int (*)(int,NT_FIND_NATIVE *))a[25])(nt_finds[i].fd,&found)<0){g_last_error=18;return 0;}
-    nt_copy_find(out,&found);g_last_error=0;return 1;
-}
-int FindClose(void *search) {
-    u32 v=(u32)search;const void **a=ntapi();
-    if(!ntos_api_has_slot((const volatile uint32_t *)0x08100000u,26u)) {
-        g_last_error=50;return 0;
+    if (((int (*)(const char *, int *, NT_FIND_NATIVE *))a[24])(path, &fd, &found) < 0) {
+        g_last_error = 2;
+        return NT_INVALID_FILE;
     }
-    if(v<=0x30000u||v>0x30008u||!a||!a[26])return 0;
-    unsigned i=v-0x30001u;if(!nt_finds[i].used)return 0;
-    int result=((int (*)(int))a[26])(nt_finds[i].fd);nt_finds[i].used=0;return result==0;
+    nt_finds[i].used = 1;
+    nt_finds[i].fd = fd;
+    nt_copy_find(out, &found);
+    g_last_error = 0;
+    return (void *)(0x30000u + i + 1u);
 }
-typedef struct {u32 size,flags;NT_RECT desktop,sip;u32 data_size;void *data;} NT_SIP_INFO;
-static u32 nt_sip_flags=2u; /* SIPF_DOCKED; SIPF_ON is bit zero. */
-int SipShowIM(u32 flags) {
-    if(flags>1u){g_last_error=87;return 0;}
-    nt_sip_flags=2u|flags;
-    if(g_window.magic)enqueue((void *)&g_window,0x001Au,0,0); /* WM_SETTINGCHANGE */
+int FindNextFileW(void *search, NT_FIND_DATA *out)
+{
+    u32 v = (u32)search;
+    const void **a = ntapi();
+    NT_FIND_NATIVE found;
+    if (!ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 25u)) {
+        g_last_error = 50;
+        return 0;
+    }
+    if (v <= 0x30000u || v > 0x30008u || !out || !a || !a[25]) {
+        g_last_error = 6;
+        return 0;
+    }
+    unsigned i = v - 0x30001u;
+    if (!nt_finds[i].used) {
+        g_last_error = 6;
+        return 0;
+    }
+    if (((int (*)(int, NT_FIND_NATIVE *))a[25])(nt_finds[i].fd, &found) < 0) {
+        g_last_error = 18;
+        return 0;
+    }
+    nt_copy_find(out, &found);
+    g_last_error = 0;
     return 1;
 }
-int SipGetInfo(NT_SIP_INFO *info) {
-    if(!info||info->size!=sizeof(*info)){g_last_error=87;return 0;}
-    info->flags=nt_sip_flags;
-    info->desktop.left=info->desktop.top=0;info->desktop.right=320;
-    info->desktop.bottom=(nt_sip_flags&1u)?271:528;
-    info->sip.left=0;info->sip.top=271;info->sip.right=320;info->sip.bottom=528;
-    info->data_size=0;info->data=0;return 1;
+int FindClose(void *search)
+{
+    u32 v = (u32)search;
+    const void **a = ntapi();
+    if (!ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 26u)) {
+        g_last_error = 50;
+        return 0;
+    }
+    if (v <= 0x30000u || v > 0x30008u || !a || !a[26])
+        return 0;
+    unsigned i = v - 0x30001u;
+    if (!nt_finds[i].used)
+        return 0;
+    int result = ((int (*)(int))a[26])(nt_finds[i].fd);
+    nt_finds[i].used = 0;
+    return result == 0;
 }
-int SipSetInfo(const NT_SIP_INFO *info) {
-    if(!info||info->size!=sizeof(*info)){g_last_error=87;return 0;}
-    return SipShowIM(info->flags&1u);
+typedef struct {
+    u32 size, flags;
+    NT_RECT desktop, sip;
+    u32 data_size;
+    void *data;
+} NT_SIP_INFO;
+static u32 nt_sip_flags = 2u; /* SIPF_DOCKED; SIPF_ON is bit zero. */
+int SipShowIM(u32 flags)
+{
+    if (flags > 1u) {
+        g_last_error = 87;
+        return 0;
+    }
+    nt_sip_flags = 2u | flags;
+    if (g_window.magic)
+        enqueue((void *)&g_window, 0x001Au, 0, 0); /* WM_SETTINGCHANGE */
+    return 1;
+}
+int SipGetInfo(NT_SIP_INFO *info)
+{
+    if (!info || info->size != sizeof(*info)) {
+        g_last_error = 87;
+        return 0;
+    }
+    info->flags = nt_sip_flags;
+    info->desktop.left = info->desktop.top = 0;
+    info->desktop.right = 320;
+    info->desktop.bottom = (nt_sip_flags & 1u) ? 271 : 528;
+    info->sip.left = 0;
+    info->sip.top = 271;
+    info->sip.right = 320;
+    info->sip.bottom = 528;
+    info->data_size = 0;
+    info->data = 0;
+    return 1;
+}
+int SipSetInfo(const NT_SIP_INFO *info)
+{
+    if (!info || info->size != sizeof(*info)) {
+        g_last_error = 87;
+        return 0;
+    }
+    return SipShowIM(info->flags & 1u);
 }
 
 /* Private serial launcher; unavailable on old firmware, never calls beyond its table. */
-int coredll_launch(const char *path) {
- const void **a=ntapi();
- if(!path||!ntos_api_has_slot((const volatile uint32_t *)0x08100000u,27u)||!a||!a[27])return 0;
- return ((int (*)(const char *))a[27])(path);
+int coredll_launch(const char *path)
+{
+    const void **a = ntapi();
+    if (!path || !ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 27u) || !a || !a[27])
+        return 0;
+    return ((int (*)(const char *))a[27])(path);
 }
 
 /* Legacy WinCE EXEs share the same optional soft keys as UIX apps. */
-static int legacy_nav=1,legacy_nav_loaded,legacy_touch,legacy_key,legacy_x,legacy_y;
-static int is_phone_shell(void){static const u16 name[]={'S','t','a','r','t','H','o','s','t',0};return same_wstr(g_class_name,name);}
-static const u16 legacy_pref[]={'\\','f','l','s','0','\\','n','a','v','.','d','a','t',0};
-static int legacy_enabled(void){if(is_phone_shell())return 0;if(!legacy_nav_loaded){legacy_nav_loaded=1;
- void *f=CreateFileW(legacy_pref,NT_GENERIC_READ,1,0,3,0,0);if(f!=NT_INVALID_FILE){unsigned char value=1;u32 got=0;
- if(ReadFile(f,&value,1,&got,0)&&got==1&&value<=1)legacy_nav=value;
- CloseHandle(f);}}return legacy_nav;}
-static void legacy_nav_paint(void){if(!legacy_enabled())return;u32 c=0xaaaaaau;
- ntos_fillrect(0,488,320,528,0);ntos_line(55,508,75,508,c);ntos_line(55,508,63,500,c);ntos_line(55,508,63,516,c);
- ntos_fillrect(151,499,159,507,c);ntos_fillrect(161,499,169,507,c);ntos_fillrect(151,509,159,517,c);ntos_fillrect(161,509,169,517,c);
- ntos_line(253,499,263,499,c);ntos_line(263,499,266,504,c);ntos_line(266,504,263,510,c);ntos_line(263,510,253,510,c);ntos_line(253,510,250,504,c);ntos_line(250,504,253,499,c);ntos_line(253,510,246,518,c);}
-static int legacy_nav_input(NT_MSG *msg){if(!legacy_enabled())return 0;int x=msg->pt.x,y=msg->pt.y;
- if(legacy_touch&&msg->message==0x201u){if(x-legacy_x>10||legacy_x-x>10||y-legacy_y>10||legacy_y-y>10)legacy_key=-1;msg->message=0;return 1;}
- if(msg->message==0x201u&&y>=488){legacy_touch=1;legacy_x=x;legacy_y=y;legacy_key=x<106?0:x<213?1:2;msg->message=0;return 1;}
- if(!legacy_touch)return 0;
- if(msg->message==0x200u){if(x-legacy_x>10||legacy_x-x>10||y-legacy_y>10||legacy_y-y>10)legacy_key=-1;msg->message=0;return 1;}
- if(msg->message!=0x202u)return 0;
- legacy_touch=0;msg->message=0;
- if(x-legacy_x>10||legacy_x-x>10||y-legacy_y>10||legacy_y-y>10)legacy_key=-1;
- if(legacy_key==0){msg->message=0x100u;msg->wParam=0x1bu;return 1;}
- if(legacy_key>0&&coredll_launch("\\fls0\\STARTHOST.EXE")){
-  if(legacy_key==2){static const u16 intent[]={'\\','f','l','s','0','\\','n','e','x','t','.','d','a','t',0};
-   void *f=CreateFileW(intent,NT_GENERIC_WRITE,1,0,2,0,0);if(f!=NT_INVALID_FILE){unsigned char value=1;u32 done=0;WriteFile(f,&value,1,&done,0);CloseHandle(f);}}
-  PostQuitMessage(0);}return 1;}
+static int legacy_nav = 1, legacy_nav_loaded, legacy_touch, legacy_key, legacy_x, legacy_y;
+static int is_phone_shell(void)
+{
+    static const u16 name[] = {'S', 't', 'a', 'r', 't', 'H', 'o', 's', 't', 0};
+    return same_wstr(g_class_name, name);
+}
+static const u16 legacy_pref[] = {'\\', 'f', 'l', 's', '0', '\\', 'n',
+                                  'a',  'v', '.', 'd', 'a', 't',  0};
+static int legacy_enabled(void)
+{
+    if (is_phone_shell())
+        return 0;
+    if (!legacy_nav_loaded) {
+        legacy_nav_loaded = 1;
+        void *f = CreateFileW(legacy_pref, NT_GENERIC_READ, 1, 0, 3, 0, 0);
+        if (f != NT_INVALID_FILE) {
+            unsigned char value = 1;
+            u32 got = 0;
+            if (ReadFile(f, &value, 1, &got, 0) && got == 1 && value <= 1)
+                legacy_nav = value;
+            CloseHandle(f);
+        }
+    }
+    return legacy_nav;
+}
+static void legacy_nav_paint(void)
+{
+    if (!legacy_enabled())
+        return;
+    u32 c = 0xaaaaaau;
+    ntos_fillrect(0, 488, 320, 528, 0);
+    ntos_line(55, 508, 75, 508, c);
+    ntos_line(55, 508, 63, 500, c);
+    ntos_line(55, 508, 63, 516, c);
+    ntos_fillrect(151, 499, 159, 507, c);
+    ntos_fillrect(161, 499, 169, 507, c);
+    ntos_fillrect(151, 509, 159, 517, c);
+    ntos_fillrect(161, 509, 169, 517, c);
+    ntos_line(253, 499, 263, 499, c);
+    ntos_line(263, 499, 266, 504, c);
+    ntos_line(266, 504, 263, 510, c);
+    ntos_line(263, 510, 253, 510, c);
+    ntos_line(253, 510, 250, 504, c);
+    ntos_line(250, 504, 253, 499, c);
+    ntos_line(253, 510, 246, 518, c);
+}
+static int legacy_nav_input(NT_MSG *msg)
+{
+    if (!legacy_enabled())
+        return 0;
+    int x = msg->pt.x, y = msg->pt.y;
+    if (legacy_touch && msg->message == 0x201u) {
+        if (x - legacy_x > 10 || legacy_x - x > 10 || y - legacy_y > 10 || legacy_y - y > 10)
+            legacy_key = -1;
+        msg->message = 0;
+        return 1;
+    }
+    if (msg->message == 0x201u && y >= 488) {
+        legacy_touch = 1;
+        legacy_x = x;
+        legacy_y = y;
+        legacy_key = x < 106 ? 0 : x < 213 ? 1 : 2;
+        msg->message = 0;
+        return 1;
+    }
+    if (!legacy_touch)
+        return 0;
+    if (msg->message == 0x200u) {
+        if (x - legacy_x > 10 || legacy_x - x > 10 || y - legacy_y > 10 || legacy_y - y > 10)
+            legacy_key = -1;
+        msg->message = 0;
+        return 1;
+    }
+    if (msg->message != 0x202u)
+        return 0;
+    legacy_touch = 0;
+    msg->message = 0;
+    if (x - legacy_x > 10 || legacy_x - x > 10 || y - legacy_y > 10 || legacy_y - y > 10)
+        legacy_key = -1;
+    if (legacy_key == 0) {
+        msg->message = 0x100u;
+        msg->wParam = 0x1bu;
+        return 1;
+    }
+    if (legacy_key > 0 && coredll_launch("\\fls0\\STARTHOST.EXE")) {
+        if (legacy_key == 2) {
+            static const u16 intent[] = {'\\', 'f', 'l', 's', '0', '\\', 'n', 'e',
+                                         'x',  't', '.', 'd', 'a', 't',  0};
+            void *f = CreateFileW(intent, NT_GENERIC_WRITE, 1, 0, 2, 0, 0);
+            if (f != NT_INVALID_FILE) {
+                unsigned char value = 1;
+                u32 done = 0;
+                WriteFile(f, &value, 1, &done, 0);
+                CloseHandle(f);
+            }
+        }
+        PostQuitMessage(0);
+    }
+    return 1;
+}

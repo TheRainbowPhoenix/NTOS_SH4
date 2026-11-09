@@ -143,13 +143,11 @@ static void ce_draw_menu(void *dc)
     TextOutW(dc, 8, 27, file_label, 4);
     TextOutW(dc, 63, 27, view_label, 4);
     if (ce_menu_open) {
-        NT_RECT drop = {ce_menu_open == 1 ? 4 : 59, 45,
-                        ce_menu_open == 1 ? 110 : 175, 75};
+        NT_RECT drop = {ce_menu_open == 1 ? 4 : 59, 45, ce_menu_open == 1 ? 110 : 175, 75};
         brush = CreateSolidBrush(0x00e0e0e0);
         FillRect(dc, &drop, brush);
         DeleteObject(brush);
-        TextOutW(dc, drop.left + 7, 51,
-                 ce_menu_open == 1 ? exit_label : refresh_label,
+        TextOutW(dc, drop.left + 7, 51, ce_menu_open == 1 ? exit_label : refresh_label,
                  ce_menu_open == 1 ? 4 : 7);
     }
     SetTextColor(dc, old);
