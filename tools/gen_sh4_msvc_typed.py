@@ -10,11 +10,11 @@ import json
 import re
 from pathlib import Path
 
-ARGS = {'u32','ptr','u8','s8','u16','s16','u64','s3','bytes3'}
+ARGS = {'u32','ptr','u8','s8','u16','s16','u64','s3','bytes1','bytes3','bytes4'}
 RETS = ARGS | {'void'}
 T = {'u32':'uint32_t','ptr':'void *','u8':'uint8_t','s8':'int8_t',
      'u16':'uint16_t','s16':'int16_t','u64':'uint64_t',
-     's3':'NtosAbiS3','bytes3':'NtosAbiBytes3','void':'void'}
+     's3':'NtosAbiS3','bytes1':'NtosAbiBytes1','bytes3':'NtosAbiBytes3','bytes4':'NtosAbiBytes4','void':'void'}
 
 
 def classify(s):
@@ -48,9 +48,13 @@ def header(m):
     out=['/* Generated: explicit MSVC SH4 C boundary types. */','#pragma once',
          '#include <stdint.h>',
          'typedef struct { uint32_t a,b,c; } NtosAbiS3;',
+         'typedef struct { uint8_t a; } NtosAbiBytes1;',
          'typedef struct { uint8_t a,b,c; } NtosAbiBytes3;',
+         'typedef struct { uint8_t a,b,c,d; } NtosAbiBytes4;',
          '_Static_assert(sizeof(NtosAbiS3)==12,"S3");',
-         '_Static_assert(sizeof(NtosAbiBytes3)==3,"bytes3");']
+         '_Static_assert(sizeof(NtosAbiBytes1)==1,"bytes1");',
+         '_Static_assert(sizeof(NtosAbiBytes3)==3,"bytes3");',
+         '_Static_assert(sizeof(NtosAbiBytes4)==4,"bytes4");']
     for s in m:
         args=', '.join(T[a] for a in s['args']) or 'void'
         out+=['extern %s nt_native_%s(%s);'%(T[s['ret']],s['name'],args),
@@ -62,8 +66,11 @@ def unpack(a,i):
     w='w[%d]'%i
     if a=='u64':return '(((uint64_t)w[%d]<<32)|w[%d])'%(i+1,i),i+2
     if a=='s3':return '(NtosAbiS3){w[%d],w[%d],w[%d]}'%(i,i+1,i+2),i+3
+    if a=='bytes1':return '(NtosAbiBytes1){(uint8_t)%s}'%w,i+1
     if a=='bytes3':
         return '(NtosAbiBytes3){(uint8_t)%s,(uint8_t)(%s>>8),(uint8_t)(%s>>16)}'%(w,w,w),i+1
+    if a=='bytes4':
+        return '(NtosAbiBytes4){(uint8_t)%s,(uint8_t)(%s>>8),(uint8_t)(%s>>16),(uint8_t)(%s>>24)}'%(w,w,w,w),i+1
     if a=='ptr':return '(void *)(uintptr_t)%s'%w,i+1
     return '(%s)%s'%(T[a],w),i+1
 
@@ -71,8 +78,11 @@ def unpack(a,i):
 def pack(a,v):
     if a=='u64':return ['(uint32_t)(%s)'%v,'(uint32_t)((%s)>>32)'%v]
     if a=='s3':return [v+'.a',v+'.b',v+'.c']
+    if a=='bytes1':return ['(uint32_t)%s.a'%v]
     if a=='bytes3':
         return ['((uint32_t)%s.a|((uint32_t)%s.b<<8)|((uint32_t)%s.c<<16))'%(v,v,v)]
+    if a=='bytes4':
+        return ['((uint32_t)%s.a|((uint32_t)%s.b<<8)|((uint32_t)%s.c<<16)|((uint32_t)%s.d<<24))'%(v,v,v,v)]
     if a=='ptr':return ['(uint32_t)(uintptr_t)%s'%v]
     return ['(uint32_t)%s'%v]
 
@@ -96,9 +106,12 @@ def export_c(m):
                   '    if (!result) return 0;',
                   '    *(%s *)result=v;'%T[ret],
                   '    return (uint32_t)(uintptr_t)result;']
-        elif ret=='bytes3':
-            out+=['    (void)result;', '    NtosAbiBytes3 v=%s;'%call,
-                  '    return (uint32_t)v.a|((uint32_t)v.b<<8)|((uint32_t)v.c<<16);']
+        elif ret in ('bytes1','bytes3','bytes4'):
+            out+=['    (void)result;', '    %s v=%s;'%(T[ret],call)]
+            parts=['(uint32_t)v.a']
+            if ret!='bytes1':parts+=['((uint32_t)v.b<<8)','((uint32_t)v.c<<16)']
+            if ret=='bytes4':parts+=['((uint32_t)v.d<<24)']
+            out+=['    return '+'|'.join(parts)+';']
         elif ret=='ptr':
             out+=['    (void)result;', '    return (uint32_t)(uintptr_t)%s;'%call]
         else:
@@ -130,8 +143,11 @@ def import_c(m):
         out+=['    uint32_t r=nt_msvc_call_typed((const void *)__imp_%s,w,%du);'%(name,words)]
         if ret=='void':out+=['    (void)r;']
         elif hidden:out+=['    (void)r; return result;']
-        elif ret=='bytes3':
-            out+=['    return (NtosAbiBytes3){(uint8_t)r,(uint8_t)(r>>8),(uint8_t)(r>>16)};']
+        elif ret in ('bytes1','bytes3','bytes4'):
+            parts=['(uint8_t)r']
+            if ret!='bytes1':parts+=['(uint8_t)(r>>8)','(uint8_t)(r>>16)']
+            if ret=='bytes4':parts+=['(uint8_t)(r>>24)']
+            out+=['    return (%s){%s};'%(T[ret],','.join(parts))]
         elif ret=='ptr':out+=['    return (void *)(uintptr_t)r;']
         else:out+=['    return (%s)r;'%T[ret]]
         out+=['}']
