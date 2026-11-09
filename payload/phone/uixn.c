@@ -19,6 +19,7 @@ IMP(int,DispatchMessageW,(const Msg *))
 IMP(int,DestroyWindow,(void *))
 IMP(void *,BeginPaint,(void *,Paint *))
 IMP(int,EndPaint,(void *,const Paint *))
+IMP(int,coredll_launch,(const char *))
 IMP(void,PostQuitMessage,(int))
 IMP(int,SipShowIM,(U32))
 IMP(int,SipGetInfo,(SipInfo *))
@@ -27,17 +28,23 @@ static App app;static void *window;static void (*error_handler)(int);
 static const Keyboard *keyboard;
 static int visible(void){SipInfo s;s.size=sizeof(s);return CALL(SipGetInfo,(&s))&&(s.flags&1u);}
 static int proc(void *hwnd,U32 msg,U32 wp,U32 lp){
+ int height=app.chrome->navheight();app.menu->bounds(528-height);keyboard->dock(height);
+ if(msg==WM_KEY_&&wp==0x73){app.chrome->navigation(!height);CALL(InvalidateRect,(hwnd,0,0));CALL(UpdateWindow,(hwnd));return 0;}
  if(msg==WM_PAINT_){Paint p;void *dc=CALL(BeginPaint,(hwnd,&p));
-  if(dc){app.menu->paint(dc);app.chrome->paint(dc);if(visible()&&!app.chrome->expanded())keyboard->paint(dc);}
+  if(dc){const Render *r=CALL(render_SpGetThreadContext,());r->surface(528-height);app.menu->paint(dc);
+   if(visible()&&!app.chrome->expanded())keyboard->paint(dc);r->surface(528);app.chrome->paint(dc);}
   CALL(EndPaint,(hwnd,&p));return 0;}
  if(msg==WM_KEY_&&wp==0x71){int was_visible=visible();
   if(app.chrome->expanded())app.chrome->input(WM_KEY_,0x1b,0);
   if(!was_visible)app.menu->input(msg,wp,lp);CALL(SipShowIM,(was_visible?0u:1u));
   CALL(InvalidateRect,(hwnd,0,0));CALL(UpdateWindow,(hwnd));return 0;}
  int changed=app.chrome->input(msg,wp,lp);
+ if(changed==4){if(visible())CALL(SipShowIM,(0));else app.menu->input(WM_KEY_,0x1b,0);changed=1;}
+ else if(changed==5){if(CALL(coredll_launch,("\\fls0\\STARTHOST.EXE")))CALL(PostQuitMessage,(0));return 0;}
+ else if(changed==6){app.menu->open(0x10000u);changed=1;}
  if(changed==3){CALL(PostQuitMessage,(0));return 0;}
  if(changed==2){app.menu->open(APP_SETTINGS_ID);changed=1;}
- if(!changed&&visible()&&msg==WM_DOWN_&&(int)(short)(lp>>16)>=271){int key=keyboard->input(msg,wp,lp);
+ if(!changed&&visible()&&msg==WM_DOWN_&&(int)(short)(lp>>16)>=271-height){int key=keyboard->input(msg,wp,lp);
   if(key)app.menu->input(key==8||key==13?WM_KEY_:WM_CHAR_,(U32)key,0);changed=1;}
  if(!changed&&app.menu)changed=app.menu->input(msg,wp,lp);
  if(changed){CALL(InvalidateRect,(hwnd,0,0));CALL(UpdateWindow,(hwnd));}

@@ -4,6 +4,8 @@ IMP(const Render *,render_SpGetThreadContext,(void))
 IMP(int,svf_SVFDraw,(void *,const void *,unsigned,int,int,int,int))
 IMP(int,SipShowIM,(U32))
 #include "settings_icons.h"
+static int content_bottom=528;
+static void bounds(int b){content_bottom=b;}
 static int view,category,scroll_y,drag_y,drag_scroll,search,len,tracking,moved;
 static const char *leaf="Settings";static int developer=2,encryption;
 static int brightness=50,automatic=1,rotation,scale=100;
@@ -61,7 +63,7 @@ static void paint(void *dc){const Render *r=CALL(render_SpGetThreadContext,());r
 
  r->clip(0,0,320,528);
 }
-static int limit(void){return view==0?180:0;}
+static int limit(void){int height=view==0?708:view==1?522:0;return height>content_bottom?height-content_bottom:0;}
 static int input(U32 msg,U32 wp,U32 lp){int x=(int)(short)(lp&65535u),y=(int)(short)(lp>>16);
  if(msg==WM_KEY_){tracking=0;if(wp==0x1b||wp==0x25){if(view==0)return -1;
   view=view==2||(view==8&&category==0)?1:view>=5?4:0;scroll_y=0;return 1;}
@@ -93,7 +95,7 @@ static int input(U32 msg,U32 wp,U32 lp){int x=(int)(short)(lp&65535u),y=(int)(sh
 }
 static void reset(void){view=category=scroll_y=search=len=tracking=moved=0;query[0]=0;}
 static int page(void){return view;}
-static const Settings settings={PROFILE,paint,input,reset,page};
+static const Settings settings={PROFILE,paint,input,reset,page,bounds};
 const Settings *SettingsGetView(void){return &settings;}
 int phone_unsupported(void){return NOTIMPL;}
 #ifndef PHONE_HOST

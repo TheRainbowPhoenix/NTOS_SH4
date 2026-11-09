@@ -39,6 +39,7 @@ def main():
   else:dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,dest)
  shutil.copyfile(ROOT/'dist/phone-device/home.dat',fs/'home.dat')
  if (fs/'apps.dat').exists():(fs/'apps.dat').unlink()
+ if (fs/'nav.dat').exists():(fs/'nav.dat').unlink()
  extra=fs/'Apps/Extra';extra.mkdir(exist_ok=True)
  shutil.copyfile(ROOT/'dist/phone-device/Apps/camera/camera.exe',extra/'Zeta.exe')
  shutil.copyfile(ROOT/'dist/STARTHOST.EXE',extra/'Plain.exe')

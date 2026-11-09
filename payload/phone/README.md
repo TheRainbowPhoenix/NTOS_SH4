@@ -250,3 +250,27 @@ Clear goes back in the phone UI and exits at app/Start root. Other WinCE apps
 receive WM_QUIT for physical Clear. Notifications dismiss on a short upward
 swipe, Collapse, or the bottom handle; the Exit quick tile quits the current
 EXE. From Start it returns to NTOS; Clear or Left then exits NTOS.hh3.
+
+## Optional phone navigation and Excel demo
+
+Back, Windows/Home and Search occupy y=488..527 by default. Back is an app
+navigation signal: hide FingerKB first, then go up a Files/Settings level or
+leave the app. Home queues a fresh STARTHOST.EXE through the serial loader.
+Search opens the app list/search, including from Excel and legacy Calculator.
+The bar also overlays windowed WinCE apps through COREDLL after EndPaint.
+
+Toggle the Soft keys quick-settings tile, or F4 in a phone UI, to show/hide
+the bar. The preference is one byte (0 or 1) in nav.dat; absence means enabled.
+FingerKB moves up by the reserved height, and the list/file/settings viewports
+scroll above the bar. Legacy app Search uses a one-shot next.dat intent that
+Start consumes and deletes. All DLLs in this build must be deployed together
+because the private UI table extensions include viewport/docking callbacks.
+
+Excel is a UI demonstration, not a workbook parser or calculation engine.
+Tap the green Office/Excel preload screen or press EXE to open sample data.
+The top-left menu switches Employee/Project samples; rows scroll and cells
+can be selected. Back/Home/Search remain available on the splash and sheet.
+
+Notification handle gestures accept TOUCH_ACT_BAR starts and also evaluate
+upward movement on release when intermediate moves are absent. Closing the
+shade returns a repaint signal and consumes the remaining gesture.

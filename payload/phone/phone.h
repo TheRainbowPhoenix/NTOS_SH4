@@ -28,6 +28,7 @@ typedef struct Render {
  void (*line)(void *,int,int,int,int,U32);
  void (*ellipse)(void *,int,int,int,int,U32,int);
  void (*polygon)(void *,const Pt *,unsigned,U32);
+ void (*surface)(int);
 } Render;
 typedef struct Controls {
  U32 profile;
@@ -38,6 +39,8 @@ typedef struct Chrome {
  void (*paint)(void *);
  int (*input)(U32,U32,U32);
  int (*expanded)(void);
+ int (*navheight)(void);
+ int (*navigation)(int);
 } Chrome;
 typedef struct Menu {
  U32 profile;
@@ -46,9 +49,10 @@ typedef struct Menu {
  int (*page)(void);
  int (*scroll)(void);
  void (*open)(unsigned);
+ void (*bounds)(int);
 } Menu;
-typedef struct Keyboard {U32 profile;void (*paint)(void *);int (*input)(U32,U32,U32);int (*page)(void);} Keyboard;
-typedef struct Settings {U32 profile;void (*paint)(void *);int (*input)(U32,U32,U32);void (*reset)(void);int (*page)(void);} Settings;
+typedef struct Keyboard {U32 profile;void (*paint)(void *);int (*input)(U32,U32,U32);int (*page)(void);void (*dock)(int);} Keyboard;
+typedef struct Settings {U32 profile;void (*paint)(void *);int (*input)(U32,U32,U32);void (*reset)(void);int (*page)(void);void (*bounds)(int);} Settings;
 typedef struct {U32 size,flags;Rect desktop,sip;U32 data_size;void *data;} SipInfo;
 #define MAX_APPS 40
 #define ICON_BYTES 512

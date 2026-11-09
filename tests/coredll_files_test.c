@@ -35,5 +35,11 @@ int main(void){
  g_class_name[0]=0;assert(GetMessageW(&msg,0,0,0)==0&&msg.message==0x12u);
  const u16 shell[]={'S','t','a','r','t','H','o','s','t',0};copy_wstr(g_class_name,shell,48);
  assert(GetMessageW(&msg,0,0,0)==1&&msg.message==0x100u&&msg.wParam==0x1bu);
+ g_class_name[0]=0;legacy_nav_loaded=legacy_nav=1;
+ msg.message=0x201u;msg.pt.x=60;msg.pt.y=508;assert(legacy_nav_input(&msg)&&msg.message==0);
+ msg.message=0x202u;assert(legacy_nav_input(&msg)&&msg.message==0x100u&&msg.wParam==0x1bu);
+ msg.message=0x201u;msg.pt.x=160;msg.pt.y=508;legacy_nav_input(&msg);msg.message=0x202u;msg.pt.y=450;
+ assert(legacy_nav_input(&msg)&&msg.message==0);legacy_nav=0;msg.message=0x201u;msg.pt.y=508;
+ assert(!legacy_nav_input(&msg)&&msg.message==0x201u);
  puts("PASS actual COREDLL: full 32-bit SDK descriptors, simultaneous file handles, read/size/close, exhaustion");return 0;
 }

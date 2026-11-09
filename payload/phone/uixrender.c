@@ -4,10 +4,12 @@
 IMP(void *,CreateSolidBrush,(U32))
 IMP(int,FillRect,(void *,const Rect *,void *))
 IMP(int,DeleteObject,(void *))
+static int surface_bottom=528;
+static void surface(int b){surface_bottom=clampi(b,0,528);}
 static Rect clipping={0,0,320,528};
 static void clip(int l,int t,int r,int b){clipping.left=clampi(l,0,320);
- clipping.top=clampi(t,0,528);clipping.right=clampi(r,l,320);
- clipping.bottom=clampi(b,t,528);}
+ clipping.top=clampi(t,0,surface_bottom);clipping.right=clampi(r,l,320);
+ clipping.bottom=clampi(b,clipping.top,surface_bottom);}
 static void fill(void *dc,int l,int t,int r,int b,U32 c){
  Rect v={l>clipping.left?l:clipping.left,t>clipping.top?t:clipping.top,
  r<clipping.right?r:clipping.right,b<clipping.bottom?b:clipping.bottom};
@@ -68,7 +70,7 @@ static void polygon(void *dc,const Pt *p,unsigned n,U32 c){
   for(unsigned i=0;i+1<used;i+=2)fill(dc,xs[i],y,xs[i+1]+1,y+1,c);
  }
 }
-static const Render renderer={PROFILE,clip,fill,text,line,ellipse,polygon};
+static const Render renderer={PROFILE,clip,fill,text,line,ellipse,polygon,surface};
 int SpRenderThreadInit(void){return 0;}
 void SpRenderThreadUninit(void){clip(0,0,320,528);}
 const Render *SpGetThreadContext(void){return &renderer;}

@@ -195,10 +195,11 @@ static uint32_t ntos_read_event(uint32_t *x, uint32_t *y,
     if (event.type == EVENT_TOUCH) {
         if (event.data.touch_single.direction != TOUCH_DOWN &&
             event.data.touch_single.direction != TOUCH_HOLD_DRAG &&
-            event.data.touch_single.direction != TOUCH_UP) return 0;
+            event.data.touch_single.direction != TOUCH_UP &&
+            event.data.touch_single.direction != TOUCH_ACT_BAR) return 0;
         if (x) *x = static_cast<uint32_t>(event.data.touch_single.p1_x);
         if (y) *y = static_cast<uint32_t>(event.data.touch_single.p1_y);
-        if (direction) *direction = static_cast<uint32_t>(event.data.touch_single.direction);
+        if (direction) *direction = event.data.touch_single.direction==TOUCH_ACT_BAR?1u:static_cast<uint32_t>(event.data.touch_single.direction);
         return 1;
     }
     if(event.type==EVENT_ACTBAR_ESC)return 2;

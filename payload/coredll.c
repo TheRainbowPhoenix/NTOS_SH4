@@ -317,6 +317,8 @@ static void copy_msg(NT_MSG *out,const NT_MSG *from)
     out->pt.x=from->pt.x;
     out->pt.y=from->pt.y;
 }
+static int legacy_nav_input(NT_MSG *);
+static void legacy_nav_paint(void);
 u32 RegisterClassW(const NT_WNDCLASS *wc)
 {
     if (!wc || !wc->wndproc || !wc->class_name) return 0;
@@ -455,7 +457,7 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
     msg->message=direction==0x40u ? 0x0202u : direction==2u ? 0x0200u : 0x0201u; /* UP/MOVE/DOWN */
     msg->pt.x=(int)x; msg->pt.y=(int)y;
     msg->lParam=((y & 0xFFFFu)<<16) | (x & 0xFFFFu);
-    return 1;
+    legacy_nav_input(msg);return 1;
 }
 
 void *GetDC(void *hwnd)
@@ -487,7 +489,7 @@ int EndPaint(void *hwnd, const NT_PAINT *paint)
 {
     (void)paint;
     if (is_hwnd(hwnd)) g_window.invalidated=0;
-    coredll_refresh();
+    legacy_nav_paint();coredll_refresh();
     return 1;
 }
 
@@ -1060,3 +1062,29 @@ int coredll_launch(const char *path) {
  if(!path||!ntos_api_has_slot((const volatile uint32_t *)0x08100000u,27u)||!a||!a[27])return 0;
  return ((int (*)(const char *))a[27])(path);
 }
+
+/* Legacy WinCE EXEs share the same optional soft keys as UIX apps. */
+static int legacy_nav=1,legacy_nav_loaded,legacy_touch,legacy_key,legacy_x,legacy_y;
+static int is_phone_shell(void){static const u16 name[]={'S','t','a','r','t','H','o','s','t',0};return same_wstr(g_class_name,name);}
+static const u16 legacy_pref[]={'\\','f','l','s','0','\\','n','a','v','.','d','a','t',0};
+static int legacy_enabled(void){if(is_phone_shell())return 0;if(!legacy_nav_loaded){legacy_nav_loaded=1;
+ void *f=CreateFileW(legacy_pref,NT_GENERIC_READ,1,0,3,0,0);if(f!=NT_INVALID_FILE){unsigned char value=1;u32 got=0;
+ if(ReadFile(f,&value,1,&got,0)&&got==1&&value<=1)legacy_nav=value;
+ CloseHandle(f);}}return legacy_nav;}
+static void legacy_nav_paint(void){if(!legacy_enabled())return;u32 c=0xaaaaaau;
+ ntos_fillrect(0,488,320,528,0);ntos_line(55,508,75,508,c);ntos_line(55,508,63,500,c);ntos_line(55,508,63,516,c);
+ ntos_fillrect(151,499,159,507,c);ntos_fillrect(161,499,169,507,c);ntos_fillrect(151,509,159,517,c);ntos_fillrect(161,509,169,517,c);
+ ntos_line(253,499,263,499,c);ntos_line(263,499,266,504,c);ntos_line(266,504,263,510,c);ntos_line(263,510,253,510,c);ntos_line(253,510,250,504,c);ntos_line(250,504,253,499,c);ntos_line(253,510,246,518,c);}
+static int legacy_nav_input(NT_MSG *msg){if(!legacy_enabled())return 0;int x=msg->pt.x,y=msg->pt.y;
+ if(legacy_touch&&msg->message==0x201u){if(x-legacy_x>10||legacy_x-x>10||y-legacy_y>10||legacy_y-y>10)legacy_key=-1;msg->message=0;return 1;}
+ if(msg->message==0x201u&&y>=488){legacy_touch=1;legacy_x=x;legacy_y=y;legacy_key=x<106?0:x<213?1:2;msg->message=0;return 1;}
+ if(!legacy_touch)return 0;
+ if(msg->message==0x200u){if(x-legacy_x>10||legacy_x-x>10||y-legacy_y>10||legacy_y-y>10)legacy_key=-1;msg->message=0;return 1;}
+ if(msg->message!=0x202u)return 0;
+ legacy_touch=0;msg->message=0;
+ if(x-legacy_x>10||legacy_x-x>10||y-legacy_y>10||legacy_y-y>10)legacy_key=-1;
+ if(legacy_key==0){msg->message=0x100u;msg->wParam=0x1bu;return 1;}
+ if(legacy_key>0&&coredll_launch("\\fls0\\STARTHOST.EXE")){
+  if(legacy_key==2){static const u16 intent[]={'\\','f','l','s','0','\\','n','e','x','t','.','d','a','t',0};
+   void *f=CreateFileW(intent,NT_GENERIC_WRITE,1,0,2,0,0);if(f!=NT_INVALID_FILE){unsigned char value=1;u32 done=0;WriteFile(f,&value,1,&done,0);CloseHandle(f);}}
+  PostQuitMessage(0);}return 1;}

@@ -75,6 +75,10 @@ int FillRect(void *dc,const Rect *rect,void *b){assert(dc&&b);
 typedef int (*Proc)(void *,U32,U32,U32);
 typedef struct {U32 style;Proc proc;int a,b;void *i,*icon,*cursor,*brush;const W16 *menu,*name;} HostClass;
 static Proc wndproc;static int alive;
+static struct {U32 msg,wp,lp;} events[20];static unsigned event_count,event_index;static int script_mode;
+static void event(U32 msg,U32 wp,U32 lp){assert(event_count<20);events[event_count].msg=msg;events[event_count].wp=wp;events[event_count++].lp=lp;}
+static void script(void){script_mode=1;event_count=event_index=0;}
+
 U32 RegisterClassW(const HostClass *wc){assert(wc&&wc->proc);wndproc=wc->proc;return 1;}
 void *CreateWindowExW(U32 a,const W16 *b,const W16 *c,U32 d,int x,int y,int w,int h,void *e,void *f,void *g,void *i){
  (void)a;(void)b;(void)c;(void)d;(void)e;(void)f;(void)g;(void)i;
@@ -85,6 +89,7 @@ int InvalidateRect(void *w,const Rect *a,int b){(void)a;(void)b;return w!=0;}
 int GetMessageW(void *m,void *w,U32 a,U32 b){(void)a;(void)b;static unsigned step;
  typedef struct {void *hwnd;U32 message,wp,lp,time;Pt pt;} HostMsg;
  HostMsg *out=m;memset(out,0,sizeof(*out));out->hwnd=w;
+ if(script_mode){if(event_index==event_count)return 0;out->message=events[event_index].msg;out->wp=events[event_index].wp;out->lp=events[event_index++].lp;return 1;}
  if(step==1)assert(sip_flags&1u);if(step==3)assert(!(sip_flags&1u));
  if(step==4){assert(menu_UIXGetSchemaFactory()->page()==0);return 0;}
  out->message=WM_KEY_;out->wp=step==0||step==2?0x71:step==1?'C':0x1b;++step;return 1;}
@@ -100,12 +105,14 @@ void PostQuitMessage(int code){(void)code;++quits;}
 int mobile_RunApplication(const AppConfig *);
 int phone_main(void);
 static void snap(const Menu *m,const Chrome *ch,const char *path){
- m->paint((void *)1);ch->paint((void *)1);if((sip_flags&1u)&&!ch->expanded())kb_UIXGetSchemaFactory()->paint((void *)1);FILE *f=fopen(path,"wb");assert(f);
+ int height=ch->navheight();m->bounds(528-height);const Render *render=render_SpGetThreadContext();render->surface(528-height);
+ m->paint((void *)1);kb_UIXGetSchemaFactory()->dock(height);if((sip_flags&1u)&&!ch->expanded())kb_UIXGetSchemaFactory()->paint((void *)1);render->surface(528);ch->paint((void *)1);FILE *f=fopen(path,"wb");assert(f);
  fprintf(f,"P6\n320 528\n255\n");
  for(int i=0;i<320*528;++i){unsigned p=pixels[i];unsigned char rgb[3]={
   (unsigned char)((p>>11)*255/31),(unsigned char)(((p>>5)&63)*255/63),
   (unsigned char)((p&31)*255/31)};fwrite(rgb,1,3,f);}fclose(f);
 }
+static U32 kbpos(int x,int y){return (U32)x|((U32)(y-chrome_UIXGetSchemaFactory()->navheight())<<16);}
 static U32 pos(int x,int y){return (U32)x|((U32)y<<16);}
 static void click(const Menu *m,int x,int y){m->input(WM_DOWN_,0,pos(x,y));m->input(WM_UP_,0,pos(x,y));}
 static void named_snap(const Menu *m,const Chrome *c,const char *folder,const char *name){char path[1200];snprintf(path,sizeof(path),"%s/%s.ppm",folder,name);snap(m,c,path);}
@@ -143,11 +150,11 @@ int main(int argc,char **argv){assert(argc==3);strncpy(fsroot,argv[2],sizeof(fsr
  m->input(WM_DOWN_,0,pos(80,350));m->input(WM_MOVE_,0,pos(80,160));assert(m->scroll()>0);
  for(unsigned i=0;i<4;++i)m->input(WM_KEY_,0x26,0);
  click(m,20,44);assert(sip_flags&1u);named_snap(m,ch,argv[1],"keyboard-lower");
- assert(kb->input(WM_DOWN_,0,pos(15,340))=='q');kb->input(WM_DOWN_,0,pos(20,445));assert(kb->page()==3);
- named_snap(m,ch,argv[1],"keyboard-caps");assert(kb->input(WM_DOWN_,0,pos(15,340))=='Q');
- kb->input(WM_DOWN_,0,pos(20,500));assert(kb->page()==1);named_snap(m,ch,argv[1],"keyboard-numbers");
- assert(kb->input(WM_DOWN_,0,pos(15,340))=='1');kb->input(WM_DOWN_,0,pos(20,445));assert(kb->page()==2);
- named_snap(m,ch,argv[1],"keyboard-symbols");assert(kb->input(WM_DOWN_,0,pos(15,392))=='^');assert(kb->input(WM_DOWN_,0,pos(294,445))==8);
+ assert(kb->input(WM_DOWN_,0,kbpos(15,340))=='q');kb->input(WM_DOWN_,0,kbpos(20,445));assert(kb->page()==3);
+ named_snap(m,ch,argv[1],"keyboard-caps");assert(kb->input(WM_DOWN_,0,kbpos(15,340))=='Q');
+ kb->input(WM_DOWN_,0,kbpos(20,500));assert(kb->page()==1);named_snap(m,ch,argv[1],"keyboard-numbers");
+ assert(kb->input(WM_DOWN_,0,kbpos(15,340))=='1');kb->input(WM_DOWN_,0,kbpos(20,445));assert(kb->page()==2);
+ named_snap(m,ch,argv[1],"keyboard-symbols");assert(kb->input(WM_DOWN_,0,kbpos(15,392))=='^');assert(kb->input(WM_DOWN_,0,kbpos(294,445))==8);
  const char *q="Camera";for(;*q;++q)m->input(WM_CHAR_,(unsigned char)*q,0);named_snap(m,ch,argv[1],"search");
  m->input(WM_KEY_,0x25,0);assert(!(sip_flags&1));m->input(WM_KEY_,0x25,0);m->input(WM_KEY_,0x27,0);
  click(m,10,90);named_snap(m,ch,argv[1],"letters");assert(pixels[100*320]==0);
@@ -157,10 +164,17 @@ int main(int argc,char **argv){assert(argc==3);strncpy(fsroot,argv[2],sizeof(fsr
  ch->input(WM_DOWN_,0,pos(30,10));ch->input(WM_MOVE_,0,pos(30,200));ch->input(WM_UP_,0,pos(30,200));
  ch->input(WM_DOWN_,0,pos(150,480));ch->input(WM_MOVE_,0,pos(150,430));assert(!ch->expanded());ch->input(WM_UP_,0,pos(150,430));
  ch->input(WM_DOWN_,0,pos(30,10));ch->input(WM_MOVE_,0,pos(30,200));ch->input(WM_UP_,0,pos(30,200));
+ ch->input(WM_DOWN_,0,pos(160,520));assert(ch->input(WM_UP_,0,pos(160,450))==1&&!ch->expanded());
+ ch->input(WM_DOWN_,0,pos(30,10));ch->input(WM_MOVE_,0,pos(30,200));ch->input(WM_UP_,0,pos(30,200));
  ch->input(WM_DOWN_,0,pos(200,220));assert(ch->input(WM_UP_,0,pos(200,220))==3&&!ch->expanded());
  unsigned id=cat->apps[plain].id;assert(catalog_CatalogPin(id,1));assert(catalog_CatalogReload()==27);assert(cat->pin_count==default_pins+1);
  assert(catalog_CatalogPin(id,2));assert(catalog_CatalogReload()==27);assert(cat->pin_count==default_pins+1);
  assert(catalog_CatalogPin(id,0));assert(catalog_CatalogReload()==27&&cat->pin_count==default_pins);
+ assert(ch->navheight()==40);ch->input(WM_DOWN_,0,pos(60,508));assert(ch->input(WM_UP_,0,pos(60,508))==4);
+ ch->input(WM_DOWN_,0,pos(160,508));assert(ch->input(WM_UP_,0,pos(160,508))==5);
+ ch->input(WM_DOWN_,0,pos(260,508));assert(ch->input(WM_UP_,0,pos(260,508))==6);
+ ch->navigation(0);assert(ch->navheight()==0);named_snap(m,ch,argv[1],"home-no-softkeys");ch->navigation(1);
+ m->bounds(488);m->open(6);named_snap(m,ch,argv[1],"excel-splash");m->input(WM_KEY_,13,0);named_snap(m,ch,argv[1],"excel-employee");click(m,25,60);named_snap(m,ch,argv[1],"excel-project");
  m->open(14);named_snap(m,ch,argv[1],"news-app");m->open(11);named_snap(m,ch,argv[1],"edge-app");
  m->open(APP_SETTINGS_ID);const Settings *settings=settings_SettingsGetView();assert(settings->page()==0);
  named_snap(m,ch,argv[1],"settings-main");click(m,100,148);assert(settings->page()==1);
@@ -183,6 +197,20 @@ int main(int argc,char **argv){assert(argc==3);strncpy(fsroot,argv[2],sizeof(fsr
  for(unsigned id=1;id<=24;++id){if(id==2)continue;menu_StartMenuInitialize();AppConfig config={0};config.reserved[0]=id;
   assert(mobile_RunApplication(&config)==0);unsigned exits=quits;m->input(WM_KEY_,0x1b,0);assert(quits==exits+1);
   menu_StartMenuUninitialize();}
+ script();menu_StartMenuInitialize();AppConfig cfg={0};cfg.reserved[0]=7;unsigned exits=quits;
+ event(WM_DOWN_,0,pos(100,140));event(WM_UP_,0,pos(100,140));
+ event(WM_DOWN_,0,pos(60,508));event(WM_UP_,0,pos(60,508));
+ event(WM_DOWN_,0,pos(160,508));event(WM_UP_,0,pos(160,508));
+ assert(mobile_RunApplication(&cfg)==0);assert(quits==exits+1&&!strcmp(launched_path,"\\fls0\\STARTHOST.EXE"));menu_StartMenuUninitialize();
+ script();menu_StartMenuInitialize();cfg.reserved[0]=6;exits=quits;
+ event(WM_DOWN_,0,pos(260,508));event(WM_UP_,0,pos(260,508));
+ event(WM_DOWN_,0,pos(60,508));event(WM_UP_,0,pos(60,508));
+ assert(mobile_RunApplication(&cfg)==0);assert(!(sip_flags&1u)&&m->page()==1&&quits==exits);menu_StartMenuUninitialize();
+ script();menu_StartMenuInitialize();cfg.reserved[0]=0;
+ event(WM_DOWN_,0,pos(30,10));event(WM_MOVE_,0,pos(30,200));event(WM_UP_,0,pos(30,200));
+ event(WM_DOWN_,0,pos(160,520));event(WM_UP_,0,pos(160,450));
+ assert(mobile_RunApplication(&cfg)==0);assert(!ch->expanded()&&pixels[400*320+20]!=0);menu_StartMenuUninitialize();script_mode=0;
+ printf("PASS engine: Back navigates Files, Home queues StartHost, Search opens apps, Back hides SIP, notification handle release repaints\n");
  printf("PASS cached startup uses exactly two file opens and zero scans; truncated cache rebuilds; all 23 app configurations open and close\n");
  for(unsigned i=0;i<8;++i)assert(!finds[i].used);
  printf("PASS 24 discovered apps + 3 fallback fixtures, embedded SVF/DIB/letter fallbacks, pin persistence, keyboard pages, SIP, gestures, notifications, native lifecycle (%u fills)\n",fills);return 0;
