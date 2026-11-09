@@ -176,8 +176,8 @@ def generate_settings_icons():
    v.poly(14,1,18,1,20,5,24,7,28,6,31,10,28,14,29,18,
           31,22,28,26,24,25,20,28,18,31,14,31,12,27,8,25,
           4,26,1,22,4,18,3,14,1,10,4,8,7,4,6,1,10,4,14,3,18,1)
-   v.color(0x4210,0xffff).circle(16,16,8)
-   v.color(0xffff,primary).circle(16,16,4)
+   v.color(0xffff,secondary).arc(16,16,9,0,32,2)
+   v.color(0xffff,primary).arc(16,16,5,0,32,2)
   elif name=='notifications':
    v.arc(16,13,9,16,16,2).stroke(7,13,7,23,2)
    v.stroke(7,23,25,23,2).stroke(25,23,25,13,2)
