@@ -62,6 +62,7 @@ jobs:
         test -s dist_msvc_global/ABIGLOBAL.EXE
         test -s dist_msvc_thunks/ABITHUNKS.DLL
         test -s dist_msvc_thunks/ABITHUNKS.EXE
+        python3 tests/msvc_abi_bridge_codegen_test.py --pe
         sh4a_nofpueb-elf-nm dist_msvc_global/ABIGLOBAL.elf | grep -q _abi_msvc5
         sh4a_nofpueb-elf-nm dist_msvc_thunks/ABITHUNKS.elf | grep -q _abi_msvc8
         echo "PASS shared and generated ABI bridges linked (emulator runtime untested)"
