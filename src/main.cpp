@@ -177,6 +177,11 @@ static bool kernel_path(char *out, const char *in) {
 // All SDK descriptors belong to one serialized NTOS gate. Do not confuse
 // a WinCE synthetic COREDLL HANDLE with an SDK descriptor.
 static ntos_fs::Gate g_fs;
+struct FatalSnapshot {
+    uint32_t tea=0,expevt=0,spc=0,ssr=0,mmucr=0,reason=0;
+};
+static FatalSnapshot g_fatal;
+
 static int sdk_close_file(int h) { return File_Close(h); }
 static int sdk_close_find(int h) { return File_FindClose(h); }
 static bool fs_recover() { return g_fs.cleanup(sdk_close_file,sdk_close_find); }
@@ -1308,8 +1313,21 @@ done:
     // descriptor has been closed. Never guess an unknown SDK handle.
     if(!fs_recover()) {
         *err="filesystem close failed; refusing further file operations";
-        rc=-1;
+        g_fatal.reason=2;
+        rc=-2;
     }
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    if(ntos_hw::g_context.fault_error) {
+        g_fatal.tea=ntos_hw::g_context.last_tea;
+        g_fatal.expevt=ntos_hw::g_context.last_expevt;
+        g_fatal.spc=ntos_hw::g_context.last_spc;
+        g_fatal.ssr=ntos_hw::g_context.last_ssr;
+        g_fatal.mmucr=ntos_hw::g_context.last_mmucr;
+        g_fatal.reason=1;
+        *err="unhandled NTOS MMU fault";
+        rc=-2;  // only report after MMU/VBR ownership is restored
+    }
+#endif
     if(api_raw) Mem_Free(api_raw);
     for(unsigned i=0u;i<NTOS_MAX_MODULES;++i) {
         if(nodes[i].mapped.raw) Mem_Free(nodes[i].mapped.raw);
@@ -1360,6 +1378,31 @@ static void tiny_utoa(uint32_t v, char *buf) {
 // the picker is redrawn, or the next scan immediately relaunches that EXE.
 // Nonfatal PE/ABI/import errors are application failures, not kernel BSODs.
 // All mapped pages have already been torn down by run_mapped's done path.
+// A *returned* fatal kernel fault is distinct from a bad PE dependency.
+// If the VBR handler cannot return, this screen cannot be reached; no
+// attempt is made to recover a broken interrupt/stack context in place.
+static void kernel_fault_screen(void) {
+    (void)fs_recover();  // best effort; no new filesystem operations
+    fillScreen(color(2, 6, 16));
+    Debug_Printf(0, 0, true, 0, "%s", "NTOS KERNEL FAULT - SAFE EXIT");
+    Debug_Printf(0, 2, false, 0, "TEA=%08lX EV=%03lX",
+                 static_cast<unsigned long>(g_fatal.tea),
+                 static_cast<unsigned long>(g_fatal.expevt));
+    Debug_Printf(0, 3, false, 0, "SPC=%08lX SSR=%08lX",
+                 static_cast<unsigned long>(g_fatal.spc),
+                 static_cast<unsigned long>(g_fatal.ssr));
+    Debug_Printf(0, 4, false, 0, "MMUCR=%08lX",static_cast<unsigned long>(g_fatal.mmucr));
+    Debug_Printf(0, 6, false, 0, "%s", "No further disk access. Quit NTOS.");
+    Debug_Printf(0, 8, false, 0, "%s", "EXE / CLEAR: exit to launcher");
+    LCD_Refresh();
+    uint32_t k1=0u,k2=0u;
+    do {getKey(&k1,&k2);} while((k1|k2)!=0u);
+    do {
+        getKey(&k1,&k2);
+    } while(!testKey(k1,k2,KEY_EXE) &&
+            !testKey(k1,k2,KEY_CLEAR) &&
+            !testKey(k1,k2,KEY_LEFT));
+}
 static void app_load_error(const char *reason) {
     fillScreen(color(29, 30, 31));
     Debug_Printf(0, 1, true, 0, "%s", "NTOS - app could not start");
@@ -1391,6 +1434,7 @@ int main(int argc, char **argv, char **envp) {
     (void)envp;
 
     while (true) {
+    g_fatal=FatalSnapshot{};
     // A failed close is an interlock, not a reason to probe more files.
     if(!fs_recover()) {
         ntos_puts("FS locked: SDK handle did not close");
@@ -1605,8 +1649,14 @@ int main(int argc, char **argv, char **envp) {
         }
         ntos_puts("Mode: UTLB-mapped (preferred base)");
         const char *err = nullptr;
-        if (run_mapped(file,fsize,hdr,core_path,core_size,
-                       extra_path,extra_size,&ret,&err) != 0) {
+        const int mapped_rc=run_mapped(file,fsize,hdr,core_path,core_size,
+                       extra_path,extra_size,&ret,&err);
+        if(mapped_rc != 0) {
+            if(mapped_rc==-2) {
+                Mem_Free(file);
+                kernel_fault_screen();
+                return -1;
+            }
             app_load_error(err);
             LCD_Refresh();
             Mem_Free(file);
@@ -1666,6 +1716,10 @@ int main(int argc, char **argv, char **envp) {
             if(!fs_recover()) {
                 ntos_puts("SDK close failed; stop launching apps");
                 LCD_Refresh();
+                return -1;
+            }
+            if(g_fatal.reason) {
+                kernel_fault_screen();
                 return -1;
             }
             if(!ok){
