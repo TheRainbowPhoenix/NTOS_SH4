@@ -174,14 +174,14 @@ int UpdateWindow(void *h)
     // Minimal WinCE title chrome, using the actual resource-derived window title.
     if (g_window.title[0]) {
         NT_RECT title = {0, 0, 320, 24};
-        void *brush = CreateSolidBrush(0x00800000);
+        void *brush = CreateSolidBrush(0x00101010);
         FillRect(dc, &title, brush);
         DeleteObject(brush);
         u32 old = SetTextColor(dc, 0x00ffffff);
         TextOutW(dc, 5, 5, g_window.title, (int)ce_wlen(g_window.title));
         SetTextColor(dc, old);
         NT_RECT close_rect = {288, 0, 320, 24};
-        brush = CreateSolidBrush(0x003030a0);
+        brush = CreateSolidBrush(0x00282828);
         FillRect(dc, &close_rect, brush);
         DeleteObject(brush);
         static const u16 close_text[] = {'X', 0};
