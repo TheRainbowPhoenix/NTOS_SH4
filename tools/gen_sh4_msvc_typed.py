@@ -163,6 +163,11 @@ def export_asm(m):
               '    mov.l r8,@-r15','    stc.l gbr,@-r15','    sts.l pr,@-r15',
               '    mov r4,r8' if hidden else '    mov #0,r8',
               '    add #-32,r15',
+              # An MSVC /Od callee can spill R4-R7 into caller home space.
+              # Entry S = current SP+44; verify 16 writable bytes exist.
+              '    mov r15,r1','    add #44,r1',
+              '    mov.l r4,@r1','    mov.l r5,@(4,r1)',
+              '    mov.l r6,@(8,r1)','    mov.l r7,@(12,r1)',
               '    mov.l r4,@r15','    mov.l r5,@(4,r15)',
               '    mov.l r6,@(8,r15)','    mov.l r7,@(12,r15)']
         if words>4:
