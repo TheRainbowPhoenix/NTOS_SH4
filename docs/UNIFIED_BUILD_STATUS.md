@@ -33,7 +33,7 @@ native C COREDLL, not a fully Microsoft ABI COREDLL.
 
 `python3 payload/wince/build_compat.py` now also builds directly
 inside the SH4 CI container; it emits the **different**
-`dist/ce-demo/COREDLL.DLL`, `COMMCTRL.DLL`, and
+`dist_ce_demo/COREDLL.DLL`, `COMMCTRL.DLL`, and
 `Windows/demo.cpl`. This profile contains the partially implemented
 original CE ordinal services and MSVC-facing adapters. CI deliberately
 asserts that its COREDLL image differs from the native phone COREDLL:
