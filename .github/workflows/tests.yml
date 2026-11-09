@@ -36,6 +36,8 @@ jobs:
         run: |
           python3 tools/format_c_sources.py --check
           clang-tidy -quiet -checks='-*,clang-analyzer-*' payload/calc.c payload/phone/starthost.c -- -std=c11 -Ipayload -Ipayload/phone
+          python3 -m py_compile tools/svf_icon_preflight.py payload/phone/generate_apps.py
+          python3 -c 'import xml.etree.ElementTree as E; from pathlib import Path; [E.parse(p) for p in Path("payload/phone/svg_reference").glob("*.svg")]'
           python3 tools/check_unified_bundle.py dist
           python3 tools/check_ntapi_table.py dist/NTOS.elf
           python3 tools/elf2ntx.py --selftest
