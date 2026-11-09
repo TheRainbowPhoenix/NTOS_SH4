@@ -66,6 +66,15 @@ jobs:
         sh4a_nofpueb-elf-nm dist_msvc_global/ABIGLOBAL.elf | grep -q _abi_msvc5
         sh4a_nofpueb-elf-nm dist_msvc_thunks/ABITHUNKS.elf | grep -q _abi_msvc8
         echo "PASS shared and generated ABI bridges linked (emulator runtime untested)"
+    - name: Build and test typed MSVC SH4 ABI thunk edge-case suite
+      run: |
+        make msvc-abi-typed
+        test -s dist_msvc_typed/ABITYPED.DLL
+        test -s dist_msvc_typed/ABITYPED.EXE
+        python3 tests/msvc_typed_generator_test.py --pe
+        gcc -std=c11 -DNTOS_MSVC_HOST_TEST=1 -O2 -Wall -Wextra -Werror             -Iobj_msvc_typed/generated payload/abi_typed_impl.c             obj_msvc_typed/generated/abi_export_body.c             tests/msvc_typed_host_test.c -o /tmp/msvc-typed-host
+        /tmp/msvc-typed-host
+        echo "PASS typed MSVC SH4 codegen and host oracle; emulator runtime still required"
     - name: Verify all phone apps, launcher ABI and native Settings/input views
       run: |
         python3 payload/phone/check_phone.py
@@ -139,6 +148,7 @@ jobs:
           dist_ce_abi/**
           dist_msvc_global/**
           dist_msvc_thunks/**
+          dist_msvc_typed/**
           dist_collision/**
 
   build-hh3-v221:
