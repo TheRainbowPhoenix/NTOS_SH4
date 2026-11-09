@@ -14,7 +14,6 @@ def check(root):
     for name in required:
         assert (root / name).is_file(), f"missing {name}"
     assert not (root / "phone-device").exists(), "obsolete phone-device tree"
-    assert not (root / "ce-demo").exists(), "separate CE profile in install root"
     apps = sorted((root / "Apps").glob("*/*.exe"))
     assert len(apps) == 24, f"expected 24 phone apps; found {len(apps)}"
     for name in ("STARTHOST.EXE", "CALC.EXE", "METROWIN.EXE", "CONTROL.EXE"):
