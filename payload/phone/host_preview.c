@@ -410,11 +410,13 @@ static void snap(const Menu *m, const Chrome *ch, const char *path)
     unsigned before_fills = fills;
     unsigned long long before_pixels = fill_pixels;
     clock_t begin = clock();
-    render->surface(528 - height);
-    m->paint((void *)1);
     kb_UIXGetSchemaFactory()->dock(height);
-    if ((sip_flags & 1u) && !ch->expanded())
-        kb_UIXGetSchemaFactory()->paint((void *)1);
+    if (!ch->expanded()) {
+        render->surface(528 - height);
+        m->paint((void *)1);
+        if (sip_flags & 1u)
+            kb_UIXGetSchemaFactory()->paint((void *)1);
+    }
     render->surface(528);
     ch->paint((void *)1);
     clock_t end = clock();
