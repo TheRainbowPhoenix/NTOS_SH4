@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Compile and exercise the real C sources on a host, save exact RGB565 PNGs."""
-import argparse,binascii,os,struct,subprocess,zlib,shutil
+import argparse,binascii,csv,os,struct,subprocess,zlib,shutil
 from pathlib import Path
 HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1]
 def png(ppm):
@@ -52,5 +52,13 @@ def main():
  (extra/'Raster.exe').write_bytes(pe)
  subprocess.run([str(exe),str(out),str(fs)],check=True)
  for p in out.glob('*.ppm'):png(p)
+ with (out/'draw-profile.csv').open(newline='') as handle:
+  records=list(csv.DictReader(handle))
+ assert len(records)>=15, 'expected multiple real phone UI paint scenes'
+ ordered=sorted(records,key=lambda row:int(row['fill_calls']),reverse=True)
+ print('Highest GDI rectangle counts (host preview, not device timings):')
+ for row in ordered[:8]:
+  print('  {:<25} fills={:>7} overdraw_pixels={:>9} host_cpu_ms={}'.format(
+   row['scene'],row['fill_calls'],row['painted_pixels'],row['host_cpu_ms']))
  print('Native C previews:',out)
 if __name__=='__main__':main()
