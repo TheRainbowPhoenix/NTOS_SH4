@@ -118,8 +118,7 @@ int main(void)
     static const u16 no_title[] = {0};
     copy_wstr(g_class_name, test_class, 48);
     g_class_proc = test_window_proc;
-    void *hwnd = CreateWindowExW(0, test_class, no_title, 0, 0, 0, 320, 528,
-                                 0, 0, 0, 0);
+    void *hwnd = CreateWindowExW(0, test_class, no_title, 0, 0, 0, 320, 528, 0, 0, 0, 0);
     assert(hwnd);
     ShowWindow(hwnd, 1);
     assert(UpdateWindow(hwnd) && paint_calls == 1 && lcd_refresh_calls == 1);
