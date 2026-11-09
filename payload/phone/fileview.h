@@ -112,10 +112,10 @@ static void files_open(void)
 }
 static void files_paint(void *dc)
 {
-    r->fill(dc, 0, 24, 320, 72, RGB_(30, 30, 30));
-    r->text(dc, 14, 40, "<", WHITE, 18);
-    r->text(dc, 49, 42, len_(file_path) <= 5 ? "This Device" : file_path + 6, WHITE, 14);
-    r->text(dc, 292, 40, "^", WHITE, 18);
+    r->fill(dc, 0, 24, 320, 72, PANEL);
+    r->text(dc, 14, 40, "<", INK, 18);
+    r->text(dc, 49, 42, len_(file_path) <= 5 ? "This Device" : file_path + 6, INK, 14);
+    r->text(dc, 292, 40, "^", INK, 18);
     r->text(dc, 12, 88, "Sort by: Name", GRAY, 14);
     r->clip(0, 116, 320, view_bottom - 30);
     for (unsigned i = 0; i < file_count; ++i) {
@@ -123,21 +123,25 @@ static void files_paint(void *dc)
         if (y + 56 < 116 || y >= view_bottom - 30)
             continue;
         const FileItem *a = &file_items[i];
-        if ((int)i == file_selected)
-            r->fill(dc, 0, y, 320, y + 56, RGB_(35, 35, 35));
+        if ((int)i == file_selected) {
+            r->fill(dc, 0, y, 320, y + 56, RGB_(164, 200, 230));
+            r->fill(dc, 0, y, 4, y + 56, BLUE);
+        }
         if (a->folder) {
-            r->fill(dc, 20, y + 7, 48, y + 43, RGB_(255, 221, 95));
-            r->fill(dc, 20, y + 2, 37, y + 10, RGB_(255, 235, 146));
+            /* 28x27 folder with a short tab instead of a stretched 36px icon. */
+            r->fill(dc, 20, y + 15, 48, y + 42, RGB_(232, 185, 64));
+            r->fill(dc, 20, y + 10, 36, y + 18, RGB_(246, 209, 110));
+            r->fill(dc, 22, y + 19, 46, y + 39, RGB_(250, 217, 139));
         } else {
             r->fill(dc, 22, y + 6, 46, y + 42, GRAY);
-            r->fill(dc, 24, y + 8, 44, y + 40, RGB_(42, 42, 42));
+            r->fill(dc, 24, y + 8, 44, y + 40, SURFACE);
         }
-        r->text(dc, 65, y + 9, a->name, WHITE, 16);
+        r->text(dc, 65, y + 9, a->name, INK, 16);
         r->text(dc, 65, y + 32, a->folder ? "Folder" : "File", GRAY, 12);
     }
     r->clip(0, 24, 320, 528);
-    r->fill(dc, 0, view_bottom - 28, 320, view_bottom, RGB_(24, 24, 24));
-    r->text(dc, 12, view_bottom - 21, "Clear: back     EXE: open", GRAY, 12);
+    r->fill(dc, 0, view_bottom - 28, 320, view_bottom, PANEL);
+    r->text(dc, 12, view_bottom - 21, "Clear: back     EXE: open", INK, 12);
 }
 static int files_input(U32 msg, U32 wp, int x, int y)
 {
