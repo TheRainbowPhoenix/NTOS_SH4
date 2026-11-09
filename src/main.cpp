@@ -881,7 +881,7 @@ static bool read_module_file(const char *path,uint8_t **dst,
         unsigned k=6;
         const char *last=path;
         for(unsigned i=0;path[i];++i)
-            if(path[i]=='\\\\')last=path+i+1u;
+            if(path[i]=='\\')last=path+i+1u;
         for(unsigned i=0;last[i] && k+1<sizeof(legacy);++i)
             legacy[k++]=last[i];
         legacy[k]=0;
