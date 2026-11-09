@@ -110,14 +110,14 @@ jobs:
         assert expected <= imports,expected-imports
         PY
         echo "PASS stress EXE + conservative PE conversion tests (SH4 emulator still required)"
-    - name: Assemble and verify a single pager-enabled phone and WinCE-native bundle
+    - name: Validate flat default phone/WinCE-native build
       run: |
         make unified
-        test -s dist_unified/NTOS.hh3
-        test -s dist_unified/COREDLL.DLL
-        cmp dist_pager/NTOS.hh3 dist_unified/NTOS.hh3
-        cmp dist_unified/COREDLL.DLL dist_unified/phone-device/COREDLL.DLL
-        python3 tools/check_unified_bundle.py dist_unified
+        test -s dist/NTOS.hh3
+        test -s dist/CONTROL.EXE
+        test -s dist/COREDLL.DLL
+        test ! -e dist/phone-device
+        python3 tools/check_unified_bundle.py dist
     - name: Cross-build original WinCE ordinal-ABI COREDLL and COMMCTRL compatibility
       run: |
         python3 payload/wince/build_compat.py
@@ -126,7 +126,7 @@ jobs:
         test -s dist/ce-demo/Windows/demo.cpl
         python3 - <<'PY'
         import pefile
-        native=pefile.PE('dist_unified/COREDLL.DLL')
+        native=pefile.PE('dist/COREDLL.DLL')
         ce=pefile.PE('dist/ce-demo/COREDLL.DLL')
         assert native.FILE_HEADER.Machine==ce.FILE_HEADER.Machine==0x01a8
         assert native.get_memory_mapped_image()!=ce.get_memory_mapped_image(), 'CE and phone are still distinct ABI cores'
@@ -146,9 +146,9 @@ jobs:
         gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/coredll-files-test
         /tmp/coredll-files-test
         python3 payload/phone/preview_phone.py
-        test -s dist/phone-device/Apps/settings/settings.exe
-        test -s dist/phone-device/SETTINGSUI.DLL
-        test "$(find dist/phone-device/Apps -name '*.exe' | wc -l)" -eq 24
+        test -s dist/Apps/settings/settings.exe
+        test -s dist/SETTINGSUI.DLL
+        test "$(find dist/Apps -name '*.exe' | wc -l)" -eq 24
     - name: Validate PE import tables
       run: python3 tools/elf2ntx.py --selftest && python3 tools/test_multimodule.py && python3 tools/preview_native_gdi.py
     - name: Test recursive PE dependency closure
@@ -212,7 +212,7 @@ jobs:
           dist_msvc_thunks/**
           dist_msvc_typed/**
           dist_msvc_coredll/**
-          dist_unified/**
+          
           dist_collision/**
 
   build-hh3-v221:
