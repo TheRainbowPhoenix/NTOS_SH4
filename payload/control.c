@@ -5,19 +5,14 @@
 #include "wince_ui.h"
 
 static const WCHAR16 class_name[] = {'N', 'T', 'C', 'O', 'N', 'T', 'R', 'O', 'L', 0};
-static const WCHAR16 window_title[] = {'C', 'o', 'n', 't', 'r', 'o', 'l', ' ', 'P', 'a',
-                                       'n', 'e', 'l', 0};
+static const WCHAR16 window_title[] = {'C', 'o', 'n', 't', 'r', 'o', 'l',
+                                       ' ', 'P', 'a', 'n', 'e', 'l', 0};
 static const char *const items[] = {
-    "Bluetooth", "Certificates", "Date/Time", "Dialing",
-    "Display", "Input Panel", "Keyboard", "Mouse",
-    "Network", "Owner", "Password", "PC Connection",
-    "Power", "Regional", "Stylus", "System",
-    "Volume"
-};
-static const char *const symbols[] = {
-    "B", "C", "D", "T", "D", "I", "K", "M", "N",
-    "O", "P", "PC", "P", "R", "S", "SYS", "V"
-};
+    "Bluetooth", "Certificates", "Date/Time", "Dialing", "Display",  "Input Panel",
+    "Keyboard",  "Mouse",        "Network",   "Owner",   "Password", "PC Connection",
+    "Power",     "Regional",     "Stylus",    "System",  "Volume"};
+static const char *const symbols[] = {"B", "C", "D",  "T", "D", "I", "K",   "M", "N",
+                                      "O", "P", "PC", "P", "R", "S", "SYS", "V"};
 static int selected = -1;
 static int menu_open;
 
@@ -47,10 +42,8 @@ static void draw(void *dc)
         int x = menu_open == 1 ? 5 : 60;
         ui_fill(dc, x, 49, x + 126, 96, RGB(110, 110, 110));
         ui_fill(dc, x + 1, 50, x + 125, 95, RGB(247, 247, 247));
-        ui_text(dc, x + 9, 55, menu_open == 1 ? "Close" : "Large Icons",
-                RGB(0, 0, 0), 0);
-        ui_text(dc, x + 9, 77, menu_open == 1 ? "Back to Start" : "Refresh",
-                RGB(0, 0, 0), 0);
+        ui_text(dc, x + 9, 55, menu_open == 1 ? "Close" : "Large Icons", RGB(0, 0, 0), 0);
+        ui_text(dc, x + 9, 77, menu_open == 1 ? "Back to Start" : "Refresh", RGB(0, 0, 0), 0);
     }
 }
 

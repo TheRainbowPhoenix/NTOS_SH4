@@ -421,9 +421,8 @@ int DispatchMessageW(const NT_MSG *msg)
     if (!msg)
         return 0;
     /* Close belongs to shared chrome, not to individual app WNDPROCs. */
-    if (is_hwnd(msg->hwnd) && !is_phone_shell() &&
-        msg->message == 0x0202u &&
-        msg->pt.x >= 288 && msg->pt.y < 24 && msg->pt.y >= 0) {
+    if (is_hwnd(msg->hwnd) && !is_phone_shell() && msg->message == 0x0202u && msg->pt.x >= 288 &&
+        msg->pt.y < 24 && msg->pt.y >= 0) {
         PostQuitMessage(0);
         return 0;
     }
