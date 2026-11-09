@@ -16,10 +16,7 @@ static void icon(void *dc, int id, int x, int y, int size, U32 c)
         const Pt p[] = {__VA_ARGS__};                                                              \
         r->polygon(dc, p, sizeof(p) / sizeof(p[0]), c);                                            \
     } while (0)
-#define V(a, b)                                                                                    \
-    {                                                                                              \
-        X(a), Y(b)                                                                                 \
-    }
+#define V(a, b) {X(a), Y(b)}
     switch (id) {
         case ICON_PHONE:
             P(V(6, 2), V(11, 2), V(15, 10), V(10, 14), V(18, 22), V(22, 17), V(30, 22), V(29, 28),

@@ -53,7 +53,7 @@ u32 coredll_getkey(void)
 {
     const void **api = ntapi();
     if (api != 0 && api[5] != 0)
-        return ((u32 (*)(void))api[5])();
+        return ((u32(*)(void))api[5])();
     return 0;
 }
 
@@ -245,7 +245,7 @@ static u32 ntos_touch(u32 *x, u32 *y)
 {
     const void **a = ntapi();
     if (a && a[10])
-        return ((u32 (*)(u32 *, u32 *))a[10])(x, y);
+        return ((u32(*)(u32 *, u32 *))a[10])(x, y);
     return 2;
 }
 
@@ -471,7 +471,7 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
         return msg->message == 0x0012u ? 0 : 1;
     }
     do {
-        ev = ((u32 (*)(u32 *, u32 *, u32 *))a[15])(&x, &y, &direction);
+        ev = ((u32(*)(u32 *, u32 *, u32 *))a[15])(&x, &y, &direction);
     } while (ev == 0);
     msg->hwnd = is_hwnd(hwnd) ? hwnd : (g_window.magic ? (void *)&g_window : 0);
     msg->wParam = 0;
