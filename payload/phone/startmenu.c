@@ -119,7 +119,7 @@ static void home(void *dc)
     r->clip(0, 24, 320, view_bottom);
     int y = home_end() - offset;
     r->text(dc, 8, y - 12, "Refresh", GRAY, 12);
-    r->text(dc, 232, y - 12, "All apps", WHITE, 14);
+    r->text(dc, 232, y - 12, "All apps", INK, 14);
     arrow(dc, 306, y - 4, 0);
     if (!cat->count)
         r->text(dc, 12, 80, "No apps in Apps folder", GRAY, 16);
@@ -150,7 +150,7 @@ static int rows(void *dc, int hx, int hy)
                 r->fill(dc, 2, y - 1, 313, y + 43, RGB_(35, 35, 35));
             r->fill(dc, 6, y, 44, y + 40, a->color);
             icon(dc, i, 10, y + 4, 30);
-            r->text(dc, 57, y + 8, a->name, WHITE, 18);
+            r->text(dc, 57, y + 8, a->name, INK, 18);
         }
         if (hx >= 0 && hy >= y && hy < y + 44)
             hit = (int)i;
@@ -158,7 +158,7 @@ static int rows(void *dc, int hx, int hy)
     }
     if (dc && !found) {
         r->text(dc, 6, 92, "No results", GRAY, 14);
-        r->text(dc, 6, 137, "Search Store", WHITE, 14);
+        r->text(dc, 6, 137, "Search Store", INK, 14);
     }
     return hx < 0 ? y + list_offset : hit;
 }
@@ -189,28 +189,28 @@ static int group_exists(int c)
 }
 static void jump_paint(void *dc)
 {
-    r->fill(dc, 0, 24, 320, 528, 0);
+    r->fill(dc, 0, 24, 320, 528, SURFACE);
     for (int i = 0; i < 28; ++i) {
         int x = 48 + (i % 4) * 64, y = 54 + div_(i, 4) * 64;
         char s[2] = {i == 0 ? '#' : i == 27 ? '@' : (char)('A' + i - 1), 0};
-        r->text(dc, x, y, s, group_exists(s[0]) ? WHITE : RGB_(53, 53, 53), 28);
+        r->text(dc, x, y, s, group_exists(s[0]) ? WHITE : MUTED, 28);
     }
 }
 static void app_paint(void *dc)
 {
     const AppEntry *a = &cat->apps[opened];
-    r->fill(dc, 0, 24, 320, 72, RGB_(23, 23, 23));
+    r->fill(dc, 0, 24, 320, 72, PANEL);
     icon(dc, (unsigned)opened, 14, 36, 26);
-    r->text(dc, 49, 42, a->name, WHITE, 14);
-    r->text(dc, 14, 101, a->name, WHITE, 24);
+    r->text(dc, 49, 42, a->name, INK, 14);
+    r->text(dc, 14, 101, a->name, INK, 24);
     if (a->flags & 1u)
         r->text(dc, 14, 161, "Welcome to your phone.", GRAY, 14);
     if (!editing)
         return;
     r->fill(dc, 14, 352, 306, 392, RGB_(42, 42, 42));
-    r->text(dc, 27, 363, pin_size(a->id) ? "Unpin from Start" : "Pin to Start", WHITE, 14);
+    r->text(dc, 27, 363, pin_size(a->id) ? "Unpin from Start" : "Pin to Start", INK, 14);
     r->fill(dc, 14, 404, 306, 444, RGB_(42, 42, 42));
-    r->text(dc, 27, 415, pin_size(a->id) == 1 ? "Tile size: small" : "Tile size: medium", WHITE,
+    r->text(dc, 27, 415, pin_size(a->id) == 1 ? "Tile size: small" : "Tile size: medium", INK,
             14);
     if (save_failed)
         r->text(dc, 14, 470, "Could not save preferences", GRAY, 14);
@@ -222,7 +222,7 @@ static void paint(void *dc)
     if (!r || !cat)
         return;
     r->clip(0, 0, 320, 528);
-    r->fill(dc, 0, 0, 320, 528, 0);
+    r->fill(dc, 0, 0, 320, 528, SURFACE);
     r->clip(0, 24, 320, 528);
     if (opened >= 0 && cat->apps[opened].id == APP_SETTINGS_ID)
         settings->paint(dc);
@@ -240,7 +240,7 @@ static void paint(void *dc)
         home(dc);
     r->clip(0, 0, 320, 528);
     if (save_failed && opened < 0)
-        r->text(dc, 6, 506, "App missing or NTOS.hh3 needs update", WHITE, 12);
+        r->text(dc, 6, 506, "App missing or NTOS.hh3 needs update", INK, 12);
 }
 static void open_id(unsigned id)
 {
