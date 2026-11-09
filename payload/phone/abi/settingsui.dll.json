@@ -1,0 +1,9 @@
+{
+  "module": "SETTINGSUI.DLL",
+  "exports": [
+    {
+      "ordinal": 1,
+      "name": "SettingsGetView"
+    }
+  ]
+}

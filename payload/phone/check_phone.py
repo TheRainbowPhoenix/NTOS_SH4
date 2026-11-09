@@ -7,7 +7,7 @@ HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
 ap=argparse.ArgumentParser();ap.add_argument('--out',default='dist');args=ap.parse_args()
 out=ROOT/args.out
-modules=['STARTHOST.EXE','STARTMENU.DLL','UIXMOBILE.DLL','UIXN.DLL','UIXRENDER.DLL','SHELLCONTROLS.DLL','SHELLCHROME.DLL','FINGERKB.DLL','SVF.DLL','APPCATALOG.DLL','COREDLL.DLL']
+modules=['STARTHOST.EXE','STARTMENU.DLL','UIXMOBILE.DLL','UIXN.DLL','UIXRENDER.DLL','SHELLCONTROLS.DLL','SHELLCHROME.DLL','FINGERKB.DLL','SVF.DLL','APPCATALOG.DLL','SETTINGSUI.DLL','COREDLL.DLL']
 images={n:pefile.PE(str(out/n)) for n in modules}
 total=0
 for n,pe in images.items():
@@ -57,4 +57,11 @@ for path in stubs:
   assert all(i.name in names for i in dep.imports)
  meta=path.with_name(path.name+'.manifest').read_bytes();assert meta[:4]==b'PAM1'
  assert len(meta)==16+meta[12]+int.from_bytes(meta[14:16],'big')
-print('PASS nine DLL export surfaces, all imports resolved, SH4 BE relocations, 24 embedded-resource apps; mapped images',total,'bytes')
+pending=['STARTHOST.EXE'];active=set();pages=0
+while pending:
+ name=pending.pop()
+ if name in active:continue
+ active.add(name);image=images[name];pages+=(image.OPTIONAL_HEADER.SizeOfImage+4095)//4096
+ pending.extend(d.dll.decode().upper() for d in getattr(image,'DIRECTORY_ENTRY_IMPORT',[]))
+assert len(active)<=16 and pages<=55,('resident loader budget exceeded',len(active),pages)
+print('PASS ten DLL export surfaces, all imports resolved, SH4 BE relocations, 24 embedded-resource apps; active graph',pages,'pages; mapped images',total,'bytes')

@@ -21,10 +21,11 @@ MODULES=[
  ('svf','SVF.DLL',{'render_':'UIXRENDER.DLL'}),
  ('catalog','APPCATALOG.DLL',{'svf_':'SVF.DLL','render_':'UIXRENDER.DLL'}),
  ('fingerkb','FINGERKB.DLL',{'render_':'UIXRENDER.DLL','svf_':'SVF.DLL'}),
+ ('settingsui','SETTINGSUI.DLL',{'render_':'UIXRENDER.DLL','svf_':'SVF.DLL'}),
  ('shellcontrols','SHELLCONTROLS.DLL',{'render_':'UIXRENDER.DLL'}),
  ('shellchrome','SHELLCHROME.DLL',{'render_':'UIXRENDER.DLL','svf_':'SVF.DLL'}),
  ('uixn','UIXN.DLL',{'render_':'UIXRENDER.DLL','kb_':'FINGERKB.DLL'}),
- ('startmenu','STARTMENU.DLL',{'render_':'UIXRENDER.DLL','catalog_':'APPCATALOG.DLL'}),
+ ('startmenu','STARTMENU.DLL',{'render_':'UIXRENDER.DLL','catalog_':'APPCATALOG.DLL','settings_':'SETTINGSUI.DLL'}),
  ('uixmobile','UIXMOBILE.DLL',{'engine_':'UIXN.DLL','menu_':'STARTMENU.DLL','chrome_':'SHELLCHROME.DLL'}),
  ('starthost','STARTHOST.EXE',{'mobile_':'UIXMOBILE.DLL','menu_':'STARTMENU.DLL'}),
 ]
@@ -119,6 +120,7 @@ def main():
             run([ld,'-nostdlib','-Wl,--emit-relocs','-Wl,-e,_main','-T',ROOT/'payload/payload.ld','-o',elf_path,o,obj/'tiny_memory.o'])
         elf=pack.Elf(elf_path.read_bytes());groups={'mobile_':'UIXMOBILE.DLL','menu_':'STARTMENU.DLL'}
         binary,_=pack.emit_ntx(elf,0x400000,import_module='COREDLL.DLL',extra_imports=list(groups.items()))
+        if slug=='calc':binary=(out/'CALC.EXE').read_bytes()
         (device/'Apps'/slug/(slug+'.exe')).write_bytes(add_icon_resource(binary,icon(slug)))
     if (out/'NTOS.hh3').exists():shutil.copyfile(out/'NTOS.hh3',device/'NTOS.hh3')
     shutil.copyfile(HERE/'README.md',device/'README.md')

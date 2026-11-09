@@ -5,14 +5,14 @@ Build: `make phone`. Verify: `make phone-check`. Native visual tests:
 
 Copy **the contents of `dist/phone-device/`, including Apps and home.dat**
 to the calculator fls0 root. Use the included **new NTOS.hh3 and COREDLL**:
-this revision appends directory-enumeration call gates to the NTOS API.
+this revision requires NTOS 0.4, Phone API 1 / 28 gates (finder + app handoff).
 Do not combine the new DLLs with the older launcher.
 
 ## Included
 
 * Separate StartHost, StartMenu, UIXMobile, UIXn, UIXRender, ShellControls,
-  ShellChrome, FingerKB, SVF and AppCatalog modules; COREDLL and NTOS.hh3.
-* 24 real SH4 BE stub EXEs under Apps/<app>/<app>.exe, each with an embedded
+  ShellChrome, FingerKB, SVF, AppCatalog and SettingsUI modules; COREDLL and NTOS.hh3.
+* 24 SH4 BE app EXEs (a working Calculator plus 23 placeholders) under Apps/<app>/<app>.exe, each with an embedded
   SVF resource and a fast binary <app>.exe.manifest. All apps, including
   Microsoft Edge, have icons; only News has a content tile.
 * Folder-driven app list, alphabetical sorting/search, black letter picker,
@@ -39,22 +39,27 @@ Collapse/bottom handle to close. Tap a quick tile to toggle its demo state.
 All settings opens the Settings stub. Tap Clear all to dismiss notifications.
 
 Tap a group letter for the solid-black alphabet picker. In the list or on
-Start, a tap selects; a second tap or Enter activates. This avoids launching
-on pen-down before a drag, since the existing input bridge has no pen-up.
-Use the app page buttons to pin/unpin or switch small/medium tile sizes.
-Up/down scroll, right opens All Apps, left goes back. CLEAR exits.
+Start, releasing a tap launches the actual discovered EXE. Moving more than
+8 pixels cancels activation and scrolls; holding never opens tile editing.
+F3 opens explicit pin/size controls for the selected tile. Up/down select
+and scroll to the selection; EXE launches it. Right opens All Apps; left or
+physical Clear goes back.
+Physical Keyboard toggles FingerKB (mapped to VK_F2); Clear no longer quits
+the app through WM_QUIT. Back returns from an app to Start.
 
-The app pages are intentional stubs sharing the host UI. Opening them in
-Start does not create a new process. Each generated EXE also has its own
-entry and app ID, so running it through the PE loader opens its matching
-stub page. There is no full process manager or real browser here.
+Activation queues the selected EXE path through a capability-checked private
+COREDLL gate, then quits StartHost. NTOS unloads all modules before loading
+the app, keeping only one app resident. Clear exits a standalone app back
+to StartHost. Calculator uses the existing working CALC implementation;
+Settings opens its native Settings/System/Display pages. Other apps remain
+placeholders. This is serial app switching, without a concurrent process manager.
 
 ## Discovery and icon precedence
 
 AppCatalog enumerates `\fls0\Apps` recursively (two subfolder levels,
 128 entries per directory, 40 apps total). It discovers .exe files rather
-than a compiled-in app list. It parses the sidecar first, avoiding PE reads
-on the normal path. Missing/invalid/no-icon sidecars fall back to:
+than a compiled-in app list. It parses the binary sidecar for app metadata and caches a valid adjacent
+<app>.svf in preference to its embedded sidecar icon. Missing icons fall back to:
 
 1. Embedded SVF: PE RT_RCDATA (10), first numeric resource; generated apps
    use ID 1, language 1033.
@@ -66,9 +71,11 @@ Discovery occurs when StartMenu initializes. Restart StartHost to pick up
 new folders or edited sidecars. Files with duplicate app IDs are skipped.
 
 `generate_apps.py` contains the sample catalog/icons; build_phone.py creates
-all EXEs, resources and sidecars in one batch. It preserves an existing
-home.dat instead of resetting user pin edits. The adjacent .svf files are
-editable authoring copies; changing them alone does not update the manifest.
+all EXEs, resources and sidecars in one batch. Each build refreshes the
+shipping home.dat to the mixed 1x1/2x2 layout, saving changed preferences in
+home-backup.dat. On device, missing or legacy uniformly-medium layouts load
+home-default.dat; existing mixed user layouts stay intact. Adjacent .svf
+files are live overrides: edit one and restart StartHost to see the change.
 Use write_manifest.py to install one of your cleaner svf.py icons:
 
 ```
@@ -167,3 +174,25 @@ This was an unchecked launcher/runtime ABI mismatch.
 
 Regression checks: `python tools/check_ntapi_table.py`; compile/run
 `gcc -std=c11 -Ipayload tests/ntapi_caps_test.c -o obj/phone-host/ntapi-caps-test.exe`.
+
+## Settings placeholder and mixed tiles
+
+Settings.exe (app ID 21) now enters SETTINGSUI.DLL: Settings categories,
+System options, then Display. Brightness, automatic brightness, rotation
+lock and display scale have local preview state; Apply saves that state
+and Cancel restores it. No hardware display settings are changed.
+Other categories remain placeholders. Settings search accepts keyboard
+input. Clear backs through Display -> System -> Settings -> Home.
+
+Generated Settings SVFs are in payload/phone/assets/settings; normal app
+SVFs are next to their installed EXEs. The default Start arrangement now
+mixes small and medium tiles throughout, including a pinned Settings tile.
+Existing custom home.dat pin layouts are preserved. home-default.dat is
+always generated as the latest default layout; copy it to home.dat to
+reset a device whose pins you already customized.
+
+GitHub C/C++ CI builds the normal distribution (make -> ntx -> phone),
+checks that all 24 app EXEs and SETTINGSUI.DLL exist, validates the launcher
+API tables and PE dependencies, and runs the actual C Settings/input
+previews on Linux. dist/** includes the whole phone-device tree and Apps.
+These workflow changes take effect after committing/pushing them.

@@ -41,5 +41,5 @@ static const unsigned char si18[]={86,69,67,49,96,0,32,0,32,1,255,255,127,255,64
 #define SYS_LOCK 19
 static const unsigned char si19[]={86,69,67,49,96,0,32,0,32,1,255,255,127,255,16,0,7,0,14,0,25,0,30,32,0,16,0,11,0,7,48,0,16,0,20,0,16,0,25,0};
 #define SYS_SETTINGS 20
-static const unsigned char si20[]={86,69,67,49,96,0,32,0,32,1,255,255,127,255,32,0,16,0,16,0,10,32,0,16,0,16,0,4,48,0,16,0,1,0,16,0,5,48,0,16,0,27,0,16,0,31,48,0,1,0,16,0,5,0,16,48,0,27,0,16,0,31,0,16,0};
+static const unsigned char si20[]={86,69,67,49,96,0,32,0,32,1,255,255,127,255,64,24,0,13,0,1,0,19,0,1,0,20,0,6,0,24,0,8,0,28,0,7,0,31,0,12,0,27,0,16,0,28,0,20,0,31,0,23,0,28,0,28,0,23,0,27,0,19,0,29,0,18,0,32,0,12,0,32,0,11,0,27,0,7,0,25,0,3,0,26,0,0,0,21,0,4,0,17,0,3,0,13,0,0,0,10,0,3,0,5,0,8,0,6,0,12,0,4,32,0,16,0,16,0,6,0};
 static const SysIcon system_icons[]={{si0,sizeof(si0)},{si1,sizeof(si1)},{si2,sizeof(si2)},{si3,sizeof(si3)},{si4,sizeof(si4)},{si5,sizeof(si5)},{si6,sizeof(si6)},{si7,sizeof(si7)},{si8,sizeof(si8)},{si9,sizeof(si9)},{si10,sizeof(si10)},{si11,sizeof(si11)},{si12,sizeof(si12)},{si13,sizeof(si13)},{si14,sizeof(si14)},{si15,sizeof(si15)},{si16,sizeof(si16)},{si17,sizeof(si17)},{si18,sizeof(si18)},{si19,sizeof(si19)},{si20,sizeof(si20)}};

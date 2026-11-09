@@ -29,6 +29,10 @@ static int proc(void *hwnd,U32 msg,U32 wp,U32 lp){
  if(msg==WM_PAINT_){Paint p;void *dc=CALL(BeginPaint,(hwnd,&p));
   if(dc){app.menu->paint(dc);app.chrome->paint(dc);if(visible()&&!app.chrome->expanded())keyboard->paint(dc);}
   CALL(EndPaint,(hwnd,&p));return 0;}
+ if(msg==WM_KEY_&&wp==0x71){int was_visible=visible();
+  if(app.chrome->expanded())app.chrome->input(WM_KEY_,0x1b,0);
+  if(!was_visible)app.menu->input(msg,wp,lp);CALL(SipShowIM,(was_visible?0u:1u));
+  CALL(InvalidateRect,(hwnd,0,0));CALL(UpdateWindow,(hwnd));return 0;}
  int changed=app.chrome->input(msg,wp,lp);
  if(changed==2){app.menu->open(APP_SETTINGS_ID);changed=1;}
  if(!changed&&visible()&&msg==WM_DOWN_&&(int)(short)(lp>>16)>=271){int key=keyboard->input(msg,wp,lp);

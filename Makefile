@@ -179,7 +179,7 @@ $(COREDLL_ELF): $(COREDLL_OBJ) $(PAYLOAD_DIR)/coredll.ld
 
 $(COREDLL_DLL): $(COREDLL_ELF) tools/elf2ntx.py tools/coredll_exports.txt
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x10000000 --dll 		--exports coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free 		--exports-file tools/coredll_exports.txt --stub-symbol coredll_stub 		--dll-name COREDLL.DLL
+	$(PYTHON) tools/elf2ntx.py $(COREDLL_ELF) -o $@ --base 0x10000000 --dll 		--exports coredll_launch,coredll_puts,coredll_getkey,coredll_refresh,coredll_malloc,coredll_free 		--exports-file tools/coredll_exports.txt --stub-symbol coredll_stub 		--dll-name COREDLL.DLL
 
 # XAMLUI is a second PE DLL with the SAME preferred 0x10000000 base.
 $(XAMLUI_OBJ): $(PAYLOAD_DIR)/xamlui.c $(PAYLOAD_DIR)/ntimport.h

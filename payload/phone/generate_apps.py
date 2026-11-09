@@ -21,7 +21,7 @@ def icon(name):
  v=Vec().color()
  if name=='phone':v.color(0x7fff).poly(5,2,11,2,15,10,10,14,18,22,22,17,30,22,28,29,24,30,15,25,6,16,2,8)
  elif name=='message':v.rect(2,4,29,23).line(14,23,14,30).line(14,30,24,23).line(7,12,10,12).line(14,12,17,12).line(21,12,24,12)
- elif name=='edge':v.circle(16,16,13).line(3,15,28,15).line(8,21,24,21)
+ elif name=='edge':v.color(0x7fff,0xffff).poly(30,18,8,18,9,23,13,26,21,27,28,24,25,29,17,31,9,29,3,24,1,17,4,8,10,3,18,1,25,3,30,8,31,14,27,14,25,9,20,7,14,7,10,10,8,14,30,14)
  elif name=='cortana':v.circle(16,16,14).circle(16,16,13)
  elif name in ['camera','photo']:v.rect(2,7,30,28);v.circle(16,17,8) if name=='camera' else v.poly(3,26,12,14,18,21,23,15,29,26)
  elif name=='weather':
@@ -37,7 +37,7 @@ def icon(name):
   for y in [15,21,27]:
    for x in [9,16,23]:v.line(x,y,x+1,y)
  elif name=='store':v.poly(4,9,28,6,28,30,4,27).circle(16,8,6).line(16,14,16,25).line(10,20,23,20)
- elif name=='settings':v.circle(16,16,10).circle(16,16,4).line(16,1,16,5).line(16,27,16,31).line(1,16,5,16).line(27,16,31,16)
+ elif name=='settings':v.poly(13,1,19,1,20,6,24,8,28,7,31,12,27,16,28,20,31,23,28,28,23,27,19,29,18,32,12,32,11,27,7,25,3,26,0,21,4,17,3,13,0,10,3,5,8,6,12,4).circle(16,16,6)
  elif name in ['word','excel','powerpoint','note']:v.poly(2,3,22,1,22,31,2,28).rect(23,6,30,27).text({'word':'W','excel':'X','powerpoint':'P','note':'N'}[name])
  elif name=='maps':v.poly(1,5,11,1,21,6,31,1,31,27,21,31,11,26,1,31).line(11,1,11,26).line(21,6,21,31)
  elif name=='files':v.poly(2,7,12,7,15,11,30,11,30,29,2,29)
@@ -76,6 +76,7 @@ def generate_headers():
  for i,(name,b) in enumerate(items):lines+=['#define SYS_'+name+' '+str(i),'static const unsigned char si'+str(i)+'[]={'+','.join(map(str,b))+'};']
  lines+=['static const SysIcon system_icons[]={'+','.join('{si%d,sizeof(si%d)}'%(i,i) for i in range(len(items)))+'};']
  (HERE/'system_icons.h').write_text('\n'.join(lines)+'\n')
+ generate_settings_icons()
 def generate_assets(out):
  out=Path(out);root=out/'Apps';root.mkdir(parents=True,exist_ok=True);records=[]
  for app_id,(slug,name) in enumerate(APPS,1):
@@ -91,9 +92,43 @@ def generate_assets(out):
  ids=[18,10,11,1,16,17,5,19,22,8,13,23,14,12,2,9,24,20,6,15]
  old=b'PIN1'+struct.pack('>H',len(ids))+b'\0\0'+b''.join(struct.pack('>HBBBBH',i,1 if i in [18,10,11,24,20,6,15] else 2,0,0,0,0) for i in ids)
  positions=[(0,0),(0,1),(1,1),(2,0),(4,0),(0,2),(2,2),(4,2),(0,4),(2,4),(4,4),(0,6),(2,6),(4,6),(0,8),(2,8),(4,8),(5,8),(4,9),(5,9)]
- if not prefs.exists() or prefs.read_bytes()==old:
-  prefs.write_bytes(b'PIN1'+struct.pack('>H',len(ids))+b'\0\0'+b''.join(struct.pack('>HBBBBH',i,1 if i in [18,10,11,24,20,6,15] else 2,x,y,0,0) for i,(x,y) in zip(ids,positions)))
+ previous=b'PIN1'+struct.pack('>H',len(ids))+b'\0\0'+b''.join(struct.pack('>HBBBBH',i,1 if i in [18,10,11,24,20,6,15] else 2,x,y,0,0) for i,(x,y) in zip(ids,positions))
+ layout=[(18,1,0,0),(10,1,0,1),(11,1,1,1),(1,2,2,0),(16,2,4,0),
+  (17,2,0,2),(5,1,2,2),(22,1,3,2),(8,1,2,3),(13,1,3,3),(19,2,4,2),
+  (23,2,0,4),(14,2,2,4),(12,2,4,4),(2,1,0,6),(9,1,1,6),(24,1,0,7),(20,1,1,7),(21,2,2,6),(6,1,4,6),(15,1,5,6)]
+ defaults=b'PIN1'+struct.pack('>H',len(layout))+b'\0\0'+b''.join(struct.pack('>HBBBBH',i,size,x,y,0,0) for i,size,x,y in layout)
+ if prefs.exists() and prefs.read_bytes()!=defaults:(out/'home-backup.dat').write_bytes(prefs.read_bytes())
+ prefs.write_bytes(defaults)
+ (out/'home-default.dat').write_bytes(defaults)
  return records
+def generate_settings_icons():
+ items=[]
+ for name in ['system','devices','network','personal','accounts','time','access','privacy','settings','display','notifications','phone','message','storage','battery','maps']:
+  v=Vec().color(0xffff,0x1d9f if len(items)<9 else 0x7fff)
+  if name in ['system','display']:v.rect(7,1,25,31).line(15,27,17,27)
+  elif name=='devices':
+   v.rect(1,2,27,16).rect(17,13,31,31).circle(24,24,3)
+   for y in [6,10]:
+    for x in [5,10,15,20]:v.line(x,y,x+1,y)
+  elif name=='network':v.circle(16,16,15).poly(16,1,9,6,7,16,9,26,16,31,23,26,25,16,23,6).line(1,12,31,12).line(1,21,31,21)
+  elif name=='personal':v.rect(1,9,27,26).line(11,30,20,30).poly(8,21,11,14,26,0,31,5,16,20,8,21)
+  elif name=='accounts':v.circle(16,9,8).poly(2,31,5,22,11,18,21,18,27,22,30,31)
+  elif name=='time':v.circle(12,12,11).line(12,4,12,12).line(12,12,18,12).text('A')
+  elif name=='access':v.circle(16,4,3).line(2,11,30,11).line(16,8,16,23).line(16,23,7,31).line(16,23,25,31)
+  elif name=='privacy':v.rect(5,12,27,31).circle(16,10,8).line(16,19,16,26)
+  elif name in ['settings','phone','message','maps']:
+   b=icon(name);b=b.replace(b'\x01\xff\xff\x7f\xff',b'\x01\xff\xff\x1d\x9f') if name=='settings' else b
+   items.append((name,b));continue
+  elif name=='notifications':v.poly(1,2,31,2,31,25,18,25,12,31,12,25,1,25)
+  elif name=='storage':v.poly(6,1,27,1,27,31,6,31,6,1,10,6,22,6,22,1).line(10,10,10,17)
+  elif name=='battery':v.rect(1,8,28,25).rect(28,13,31,20)
+  items.append((name,v.end()))
+ lines=['/* Generated settings SVFs: accent categories and white system rows. */','typedef struct {const unsigned char *data;unsigned length;} SettingsIcon;']
+ assets=HERE/'assets/settings';assets.mkdir(parents=True,exist_ok=True)
+ for i,(name,b) in enumerate(items):
+  (assets/(name+'.svf')).write_bytes(b);lines.append('static const unsigned char sc%d[]={%s};'%(i,','.join(map(str,b))))
+ lines.append('static const SettingsIcon settings_icons[]={'+','.join('{sc%d,sizeof(sc%d)}'%(i,i) for i in range(len(items)))+'};')
+ (HERE/'settings_icons.h').write_text('\n'.join(lines)+'\n')
 if __name__=='__main__':
  generate_headers()
  print('Generated system_icons.h')

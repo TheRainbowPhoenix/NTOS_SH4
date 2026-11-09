@@ -33,7 +33,7 @@
 APP_NAME("NTOS")
 APP_DESCRIPTION("Big-endian SH4 COFF EXE loader")
 APP_AUTHOR("recreate project")
-APP_VERSION("0.3")
+APP_VERSION("0.4")
 
 // ---------------------------------------------------------------------------
 // Syscall table handed to payloads (field order == table order)
@@ -75,6 +75,7 @@ struct NtosApi {
     int32_t (*find_first)(const char *,int32_t *,NtosFind *); // [24] directory search
     int32_t (*find_next)(int32_t,NtosFind *);                // [25]
     int32_t (*find_close)(int32_t);                         // [26]
+    int32_t (*launch)(const char *);                       // [27] serial app handoff
 };
 
 static int cur_row = 0;
@@ -193,7 +194,8 @@ static uint32_t ntos_read_event(uint32_t *x, uint32_t *y,
     GetInput(&event, 0xFFFFFFFFu, 0x10);
     if (event.type == EVENT_TOUCH) {
         if (event.data.touch_single.direction != TOUCH_DOWN &&
-            event.data.touch_single.direction != TOUCH_HOLD_DRAG) return 0;
+            event.data.touch_single.direction != TOUCH_HOLD_DRAG &&
+            event.data.touch_single.direction != TOUCH_UP) return 0;
         if (x) *x = static_cast<uint32_t>(event.data.touch_single.p1_x);
         if (y) *y = static_cast<uint32_t>(event.data.touch_single.p1_y);
         if (direction) *direction = static_cast<uint32_t>(event.data.touch_single.direction);
@@ -288,6 +290,13 @@ static int32_t ntos_find_next(int32_t handle,NtosFind *out) {
 }
 static int32_t ntos_find_close(int32_t handle) {return File_FindClose(handle);}
 
+static char pending_app[96];
+static int32_t ntos_launch(const char *name) {
+    char path[96];if(!kernel_path(path,name))return 0;
+    int fd=File_Open(path,FILE_OPEN_READ);if(fd<0)return 0;File_Close(fd);
+    unsigned i=0;for(;i+1<sizeof(pending_app)&&path[i];++i)pending_app[i]=path[i];
+    pending_app[i]=0;return 1;
+}
 static NtosApi g_ntos_api = {
     &ntos_puts,
     Debug_Printf, // SDK declares these as function pointers, not functions
@@ -316,6 +325,7 @@ static NtosApi g_ntos_api = {
     &ntos_find_first,    // [24] bounded WinCE finder bridge
     &ntos_find_next,     // [25]
     &ntos_find_close,    // [26]
+    &ntos_launch,        // [27]
 };
 
 // ---------------------------------------------------------------------------
@@ -1219,7 +1229,7 @@ static char_const16_t g_find_pattern_dll[] = {
 static void banner(void) {
     fillScreen(color(0, 0, 40));
     Debug_Printf(0, 0, true, 0, "%s", "NTOS 0.3 - SH4BE PE loader + UTLB");
-    Debug_Printf(0, 1, false, 0, "%s", "Phone API 1 / 27 gates - select EXE");
+    Debug_Printf(0, 1, false, 0, "%s", "Phone API 1 / 28 gates - select EXE");
     LCD_Refresh();
     cur_row = 3;
 }
@@ -1534,6 +1544,31 @@ int main(int argc, char **argv, char **envp) {
     }
 
     Mem_Free(file);
+    // Tear down each image before starting the next: one app resident at a time.
+    if(pending_app[0]) {
+        for (;;) {
+            char next[96];unsigned i=0;
+            for(;i+1<sizeof(next)&&pending_app[i];++i)next[i]=pending_app[i];
+            next[i]=0;pending_app[0]=0;
+            uint8_t *app_file=nullptr;uint32_t app_size=0;const char *launch_error=nullptr;
+            pe::Image app_hdr{};
+            bool ok=read_module_file(next,&app_file,&app_size,&launch_error);
+            if(ok)ok=pe::parse(app_file,app_size,&app_hdr)==0;
+            if(ok)ok=run_mapped(app_file,app_size,app_hdr,nullptr,0,nullptr,0,&ret,&launch_error)==0;
+            if(app_file)Mem_Free(app_file);
+            if(!ok){ntos_puts(launch_error?launch_error:"Invalid application");Debug_WaitKey();}
+            if(!pending_app[0]) {
+                // A stub/Settings/Calculator exit goes straight back to Start.
+                bool is_home=true;const char *home="\\fls0\\STARTHOST.EXE";
+                for(unsigned j=0;home[j]||next[j];++j){char a=home[j],b=next[j];
+                    if(a>='a'&&a<='z')a-=32;
+                    if(b>='a'&&b<='z')b-=32;
+                    if(a!=b){is_home=false;break;}}
+                if(is_home)break;
+                unsigned j=0;for(;home[j];++j)pending_app[j]=home[j];pending_app[j]=0;
+            }
+        }
+    }
     Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
                   "Payload returned 0x%08lX",
                   static_cast<unsigned long>(static_cast<uint32_t>(ret)));

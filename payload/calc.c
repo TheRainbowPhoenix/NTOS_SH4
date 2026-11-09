@@ -129,6 +129,7 @@ static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp)
         if(wp>=0x30u && wp<=0x39u) key=(char)wp;
         else if(wp==VK_RETURN) key='=';
         else if(wp=='+' || wp=='-' || wp=='*' || wp=='/') key=(char)wp;
+        else if(wp==0x1bu) { NT_CALL(PostQuitMessage,(0)); return 0; }
         else if(wp==0x97u || wp=='C') key='C';
     } else return 0;
     if(key) { press(key); NT_CALL(InvalidateRect,(hwnd,0,1)); }

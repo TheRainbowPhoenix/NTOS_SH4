@@ -66,6 +66,10 @@ static void add(const char *path,const char *file){if(cat.count>=MAX_APPS)return
    a->icon_len=(unsigned short)icon;for(unsigned i=0;i<icon;++i)a->icon[i]=work[16+name+i];
   }
  }
+ char vector_path[96];copy_(vector_path,path,sizeof(vector_path));unsigned vn=len_(vector_path);
+ if(vn>=4){copy_(vector_path+vn-4,".svf",sizeof(vector_path)-vn+4);int bytes=load_(vector_path,work,ICON_BYTES);
+  if(bytes>0&&CALL(svf_SVFValidate,(work,(unsigned)bytes))){a->icon_len=(unsigned short)bytes;
+   for(int j=0;j<bytes;++j)a->icon[j]=work[j];}}
  if(!a->icon_len)pe_icon(a);
  for(unsigned i=0;i<cat.count;++i)if(cat.apps[i].id==a->id)return;
  ++cat.count;
@@ -101,6 +105,11 @@ int CatalogReload(void){cat.count=cat.pin_count=0;scan_dir(root,0);
  for(unsigned i=1;i<cat.count;++i){unsigned j=i;while(j&&compare(cat.apps[j-1].name,cat.apps[j].name)>0){
    AppEntry tmp=cat.apps[j-1];cat.apps[j-1]=cat.apps[j];cat.apps[j]=tmp;--j;}}
  int n=load_("\\fls0\\home.dat",work,1024);
+ int uniform=n>=8&&work[0]=='P'&&work[1]=='I'&&work[2]=='N'&&work[3]=='1'&&be16_(work+4)>=16&&8+be16_(work+4)*8==(unsigned)n;
+ if(uniform)for(unsigned i=0;i<be16_(work+4);++i)if(work[10+i*8]!=2)uniform=0;
+ if(n<8||uniform){if(uniform)save_("\\fls0\\home-backup.dat",work,(unsigned)n);
+  int defaults=load_("\\fls0\\home-default.dat",work,1024);if(defaults>=8)n=defaults;}
+
  if(n>=8&&work[0]=='P'&&work[1]=='I'&&work[2]=='N'&&work[3]=='1'){
   unsigned count=be16_(work+4);if(count<=MAX_APPS&&8+count*8==(unsigned)n)for(unsigned i=0;i<count;++i){
    unsigned id=be16_(work+8+i*8),size=work[10+i*8];int duplicate=0;

@@ -12,7 +12,7 @@ static void bar(void *dc,const Render *r){r->fill(dc,0,0,320,24,0);
  r->line(dc,249,7,266,7,GRAY);r->line(dc,249,16,266,16,GRAY);
  r->line(dc,249,7,249,16,GRAY);r->line(dc,266,7,266,16,GRAY);
  r->fill(dc,251,9,263,15,GRAY);r->fill(dc,267,10,269,14,GRAY);
- r->text(dc,283,4,"8:02",GRAY,12);
+ r->text(dc,283,7,"8:02",GRAY,12);
 }
 static void paint(void *dc){const Render *r=CALL(render_SpGetThreadContext,());r->clip(0,0,320,528);
  if(panel){r->fill(dc,0,0,320,528,0);r->text(dc,10,30,"Demo GSM Network LTE+",GRAY,9);r->text(dc,244,30,"100%   11/9",GRAY,9);

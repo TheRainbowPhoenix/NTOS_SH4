@@ -4,7 +4,7 @@ set -eu
 export PATH=/toolchain/bin:$PATH
 mkdir -p obj/phone
 sh4a_nofpueb-elf-gcc -c payload/phone/tiny_memory.c -o obj/phone/tiny_memory.o -Os -ffreestanding -fno-builtin -fno-tree-loop-distribute-patterns
-for name in uixrender svf catalog fingerkb shellcontrols shellchrome uixn startmenu uixmobile starthost; do
+for name in uixrender svf catalog fingerkb settingsui shellcontrols shellchrome uixn startmenu uixmobile starthost; do
  sh4a_nofpueb-elf-gcc -c payload/phone/$name.c -o obj/phone/$name.o \
   -std=c11 -Os -Wall -Wextra -Werror -Wno-misleading-indentation -ffreestanding -fno-builtin \
   -fno-stack-protector -fno-toplevel-reorder -fno-unwind-tables \

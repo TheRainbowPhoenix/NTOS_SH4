@@ -26,7 +26,7 @@ jobs:
       with:
         submodules: true
     - name: Install python3 (for tools/elf2ntx.py)
-      run: apt-get update -qq && apt-get install -y -qq python3
+      run: apt-get update -qq && apt-get install -y -qq python3 python3-pefile gcc
     - name: Build standard NTOS and every PE payload
       run: |
         make -j
@@ -44,6 +44,16 @@ jobs:
         # These must be separately configured HH3 files, not copies of dist/NTOS.hh3.
         ! cmp -s dist/NTOS.hh3 dist_pager/NTOS.hh3
         ! cmp -s dist_pager/NTOS.hh3 dist_pager_verify/NTOS.hh3
+    - name: Verify all phone apps, launcher ABI and native Settings/input views
+      run: |
+        python3 payload/phone/check_phone.py
+        python3 tools/check_ntapi_table.py
+        gcc -std=c11 -Wall -Wextra -Werror -Ipayload tests/ntapi_caps_test.c -o /tmp/ntapi-caps-test
+        /tmp/ntapi-caps-test
+        python3 payload/phone/preview_phone.py
+        test -s dist/phone-device/Apps/settings/settings.exe
+        test -s dist/phone-device/SETTINGSUI.DLL
+        test "$(find dist/phone-device/Apps -name '*.exe' | wc -l)" -eq 24
     - name: Validate PE import tables
       run: python3 tools/elf2ntx.py --selftest && python3 tools/test_multimodule.py && python3 tools/preview_native_gdi.py
     - name: Test recursive PE dependency closure

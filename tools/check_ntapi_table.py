@@ -15,13 +15,13 @@ for name in paths:
         assert len(found)==1,(path,fragment,len(found))
         return found[0]
     table=symbol('g_ntos_api')
-    assert table.size>=27*4,(path,'old API: missing slots 24..26',table.size)
+    assert table.size>=28*4,(path,'old API: missing slots 24..27',table.size)
     section=elf.sections[table.shndx]
     offset=table.value-section.sh_addr
-    for index,fragment in [(24,'ntos_find_first'),(25,'ntos_find_next'),(26,'ntos_find_close')]:
+    for index,fragment in [(24,'ntos_find_first'),(25,'ntos_find_next'),(26,'ntos_find_close'),(27,'ntos_launch')]:
         target=symbol(fragment)
         actual=struct.unpack_from('>I',section.data,offset+index*4)[0]
         assert actual==target.value,(path,index,hex(actual),hex(target.value))
         assert elf.sections[target.shndx].sh_flags&4,(path,index,'callback is data, not code')
-    assert b'Phone API 1 / 27 gates' in path.read_bytes()
-    print('PASS',path.name,path.parent.name,'27 API gates; directory callbacks point to code')
+    assert b'Phone API 1 / 28 gates' in path.read_bytes()
+    print('PASS',path.name,path.parent.name,'28 API gates; finder and launch callbacks point to code')

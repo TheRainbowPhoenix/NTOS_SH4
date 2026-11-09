@@ -428,8 +428,9 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
     msg->wParam=0; msg->time=0;
     msg->pt.x=0; msg->pt.y=0; msg->lParam=0;
     if (ev==2) {
-        msg->message=0x0012u;
-        return 0;
+        msg->message=0x0100u; /* Physical Clear is Back, not WM_QUIT. */
+        msg->wParam=0x1Bu;
+        return 1;
     }
     if (ev==3) {
         msg->message=0x0100u; /* WM_KEYDOWN */
@@ -438,10 +439,12 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
         else if (x==0x0092u) x=0x25u; /* VK_LEFT */
         else if (x==0x0093u) x=0x27u; /* VK_RIGHT */
         else if (x==0x0094u) x=0x0Du; /* VK_RETURN */
+        if (x==0x00B3u) x=0x71u; /* Physical Keyboard -> VK_F2 (SIP toggle). */
+        else if (x==0x0080u) x=0x1Bu; /* Raw Clear -> VK_ESCAPE/Back. */
         msg->wParam=x;
         return 1;
     }
-    msg->message=direction==2u ? 0x0200u : 0x0201u; /* MOVE/DOWN */
+    msg->message=direction==0x40u ? 0x0202u : direction==2u ? 0x0200u : 0x0201u; /* UP/MOVE/DOWN */
     msg->pt.x=(int)x; msg->pt.y=(int)y;
     msg->lParam=((y & 0xFFFFu)<<16) | (x & 0xFFFFu);
     return 1;
@@ -1037,4 +1040,11 @@ int SipGetInfo(NT_SIP_INFO *info) {
 int SipSetInfo(const NT_SIP_INFO *info) {
     if(!info||info->size!=sizeof(*info)){g_last_error=87;return 0;}
     return SipShowIM(info->flags&1u);
+}
+
+/* Private serial launcher; unavailable on old firmware, never calls beyond its table. */
+int coredll_launch(const char *path) {
+ const void **a=ntapi();
+ if(!path||!ntos_api_has_slot((const volatile uint32_t *)0x08100000u,27u)||!a||!a[27])return 0;
+ return ((int (*)(const char *))a[27])(path);
 }

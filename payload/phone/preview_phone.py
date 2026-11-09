@@ -19,6 +19,7 @@ def main():
  'svf':{'SVFValidate':'svf_SVFValidate','SVFDraw':'svf_SVFDraw'},
  'catalog':{n:'catalog_'+n for n in ['CatalogGet','CatalogReload','CatalogPin','CatalogDrawIcon']},
  'fingerkb':{'UIXGetSchemaFactory':'kb_UIXGetSchemaFactory','UIXSchemaUnloaded':'kb_UIXSchemaUnloaded'},
+ 'settingsui':{'SettingsGetView':'settings_SettingsGetView'},
  'shellcontrols':{'UIXGetSchemaFactory':'controls_UIXGetSchemaFactory','UIXSchemaUnloaded':'controls_Unloaded'},
  'shellchrome':{'UIXGetSchemaFactory':'chrome_UIXGetSchemaFactory','UIXSchemaUnloaded':'chrome_Unloaded'},
  'startmenu':{'UIXGetSchemaFactory':'menu_UIXGetSchemaFactory','UIXSchemaUnloaded':'menu_Unloaded','StartMenuInitialize':'menu_StartMenuInitialize','StartMenuUninitialize':'menu_StartMenuUninitialize'},
@@ -31,7 +32,11 @@ def main():
   subprocess.run([args.cc,*flags,*extra,'-c',str(HERE/(source+'.c')),'-o',str(o)],check=True)
  exe=obj/('phone-preview.exe' if os.name=='nt' else 'phone-preview')
  subprocess.run([args.cc,*flags,str(HERE/'host_preview.c'),*map(str,objects),'-o',str(exe)],check=True)
- fs=obj/'fs';shutil.copytree(ROOT/'dist/phone-device/Apps',fs/'Apps',dirs_exist_ok=True)
+ fs=obj/'fs';source_apps=ROOT/'dist/phone-device/Apps'
+ for p in source_apps.rglob('*'):
+  dest=fs/'Apps'/p.relative_to(source_apps)
+  if p.is_dir():dest.mkdir(parents=True,exist_ok=True)
+  else:dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,dest)
  shutil.copyfile(ROOT/'dist/phone-device/home.dat',fs/'home.dat')
  extra=fs/'Apps/Extra';extra.mkdir(exist_ok=True)
  shutil.copyfile(ROOT/'dist/phone-device/Apps/camera/camera.exe',extra/'Zeta.exe')

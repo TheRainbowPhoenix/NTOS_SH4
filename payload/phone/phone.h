@@ -17,6 +17,7 @@ typedef struct {int x,y;} Pt;
 #define WM_PAINT_ 15u
 #define WM_KEY_ 0x100u
 #define WM_DOWN_ 0x201u
+#define WM_UP_ 0x202u
 #define WM_MOVE_ 0x200u
 #define WM_CHAR_ 0x102u
 typedef struct Render {
@@ -47,6 +48,7 @@ typedef struct Menu {
  void (*open)(unsigned);
 } Menu;
 typedef struct Keyboard {U32 profile;void (*paint)(void *);int (*input)(U32,U32,U32);int (*page)(void);} Keyboard;
+typedef struct Settings {U32 profile;void (*paint)(void *);int (*input)(U32,U32,U32);void (*reset)(void);int (*page)(void);} Settings;
 typedef struct {U32 size,flags;Rect desktop,sip;U32 data_size;void *data;} SipInfo;
 #define MAX_APPS 40
 #define ICON_BYTES 512
