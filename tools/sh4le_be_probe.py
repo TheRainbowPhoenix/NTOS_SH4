@@ -47,6 +47,47 @@ def parse(data):
                 sections=sections,directories=dirs)
 
 
+def rva_offset(p,rva):
+    for s in p['sections']:
+        if s['rva']<=rva<s['rva']+s['raw_size']:
+            return s['offset']+rva-s['rva']
+    return None
+
+
+def read_imports(data,p):
+    dirs={x['index']:x for x in p['directories']}
+    if 1 not in dirs:return []
+    start=rva_offset(p,dirs[1]['rva'])
+    if start is None:return [{'error':'import descriptor outside section'}]
+    out=[]
+    for i in range(min(256,dirs[1]['size']//20)):
+        off=start+i*20
+        if off+20>len(data):break
+        oft,_,_,name,iat=struct.unpack_from('<IIIII',data,off)
+        if not any((oft,name,iat)):break
+        no=rva_offset(p,name)
+        if no is None:out.append({'error':'bad DLL name RVA'});continue
+        dll=data[no:no+256].split(b'\0')[0].decode('ascii','replace')
+        to=rva_offset(p,oft or iat)
+        items=[]
+        if to is not None:
+            for j in range(2048):
+                if to+j*4+4>len(data):break
+                v=struct.unpack_from('<I',data,to+j*4)[0]
+                if not v:break
+                if v&0x80000000:
+                    items.append({'ordinal':v&0xffff})
+                else:
+                    hn=rva_offset(p,v)
+                    if hn is None:items.append({'error':'bad import hint/name RVA'})
+                    else:items.append({'name':data[hn+2:hn+258].split(b'\0')[0].decode('ascii','replace')})
+        out.append({'dll':dll,'total':len(items),
+                    'ordinal_count':sum('ordinal' in x for x in items),
+                    'name_count':sum('name' in x for x in items),
+                    'imports':items})
+    return out
+
+
 def inspect(data,reference=None):
     p=parse(data)
     code=[s for s in p['sections'] if s['flags']&0x20000000]
@@ -69,7 +110,10 @@ def inspect(data,reference=None):
     if 1 in d:risks.append("PE imports/IAT need NTOS-compatible snapping and MSVC ABI adapters")
     if 3 in d:risks.append(".pdata exception/unwind tables require separate validation")
     if 5 not in d:risks.append("no base relocation directory; image might require its preferred base")
-    result=dict(input=p,executable_halfwords_scanned=nwords,
+    imported=read_imports(data,p)
+    if any(x.get('ordinal_count',0) for x in imported):
+        risks.append("ordinal-only DLL imports require PE ordinal resolution and correct export ordinal tables")
+    result=dict(dependencies=imported,input=p,executable_halfwords_scanned=nwords,
                 fpu_family_candidates_count=len(found),
                 fpu_family_candidates_first_32=found[:32],
                 warnings=risks,safe_for_automatic_conversion=False)
