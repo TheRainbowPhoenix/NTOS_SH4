@@ -47,11 +47,9 @@ static int scan(const unsigned char *b, unsigned n)
             return 0;
         if (need > n - p)
             return 0;
-        if ((op == 0x22 || op == 0x31) &&
-            (b[p + 8] == 0 || b[p + 8] > 8))
+        if ((op == 0x22 || op == 0x31) && (b[p + 8] == 0 || b[p + 8] > 8))
             return 0;
-        if (op == 0x22 &&
-            (b[p + 6] >= 32 || b[p + 7] > 32 || signed_word(b + p + 4) < 0))
+        if (op == 0x22 && (b[p + 6] >= 32 || b[p + 7] > 32 || signed_word(b + p + 4) < 0))
             return 0;
         if (op == 0x60 && (word(b + p) == 0 || word(b + p) > 4096 || word(b + p + 2) == 0 ||
                            word(b + p + 2) > 4096))
@@ -87,16 +85,12 @@ static U32 ink(unsigned rgb555, U32 tint)
 }
 /* 32 angular samples, generated once offline (cos/sin * 1024).
  * ARC uses no floating point, transcendental functions or heap memory. */
-static const short arc_x[32] = {
-    1024, 1004, 946, 851, 724, 569, 392, 200, 0, -200, -392, -569,
-    -724, -851, -946, -1004, -1024, -1004, -946, -851, -724, -569,
-    -392, -200, 0, 200, 392, 569, 724, 851, 946, 1004
-};
-static const short arc_y[32] = {
-    0, 200, 392, 569, 724, 851, 946, 1004, 1024, 1004, 946, 851,
-    724, 569, 392, 200, 0, -200, -392, -569, -724, -851,
-    -946, -1004, -1024, -1004, -946, -851, -724, -569, -392, -200
-};
+static const short arc_x[32] = {1024, 1004, 946,  851,  724,   569,   392,   200,  0,    -200, -392,
+                                -569, -724, -851, -946, -1004, -1024, -1004, -946, -851, -724, -569,
+                                -392, -200, 0,    200,  392,   569,   724,   851,  946,  1004};
+static const short arc_y[32] = {0,    200,   392,   569,   724,  851,  946,  1004, 1024, 1004, 946,
+                                851,  724,   569,   392,   200,  0,    -200, -392, -569, -724, -851,
+                                -946, -1004, -1024, -1004, -946, -851, -724, -569, -392, -200};
 static void stroke_segment(const Render *r, void *dc, int x0, int y0, int x1, int y1,
                            unsigned width, U32 ink_color)
 {
@@ -106,8 +100,10 @@ static void stroke_segment(const Render *r, void *dc, int x0, int y0, int x1, in
     for (unsigned i = 0; i < width; ++i) {
         int off = begin + (int)i;
         int dx = x1 - x0, dy = y1 - y0;
-        if (dx < 0) dx = -dx;
-        if (dy < 0) dy = -dy;
+        if (dx < 0)
+            dx = -dx;
+        if (dy < 0)
+            dy = -dy;
         if (dx >= dy)
             r->line(dc, x0, y0 + off, x1, y1 + off, ink_color);
         else

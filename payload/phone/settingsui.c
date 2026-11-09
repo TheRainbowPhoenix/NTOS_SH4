@@ -28,9 +28,10 @@ static const char *details[] = {"Display, notifications, battery",
                                 "Game bar, captures, controllers",
                                 "Location, feedback",
                                 "Backup, Find My Phone"};
-static const char *system_names[] = {
-    "Display",     "Notifications & actions", "Phone", "Messaging", "Storage", "Battery",
-    "Offline maps", "About"};
+static const char *system_names[] = {"Display",      "Notifications & actions",
+                                     "Phone",        "Messaging",
+                                     "Storage",      "Battery",
+                                     "Offline maps", "About"};
 static const char *update_names[] = {"Phone update",  "Backup",         "Device encryption",
                                      "Find My Phone", "For developers", "Windows Insider Program"};
 static void icon(void *dc, unsigned which, int x, int y, int size)
@@ -106,12 +107,10 @@ typedef struct {
     int target;
 } SearchResult;
 static const SearchResult search_items[] = {
-    {"Display", 2}, {"About", 9}, {"System", 1},
-    {"Gaming", 3}, {"Personalization", 3},
-    {"Device encryption", 6}, {"For developers", 5},
-    {"Phone update", 7}, {"Network & wireless", 3},
-    {"Time & language", 3}, {"Privacy", 3}
-};
+    {"Display", 2},         {"About", 9},           {"System", 1},
+    {"Gaming", 3},          {"Personalization", 3}, {"Device encryption", 6},
+    {"For developers", 5},  {"Phone update", 7},    {"Network & wireless", 3},
+    {"Time & language", 3}, {"Privacy", 3}};
 static void search_results(void *dc, const Render *r)
 {
     if (!search || !len)
@@ -161,8 +160,7 @@ static void dropdown(void *dc, const Render *r)
     r->fill(dc, 12, 230, 293, 393, RGB_(133, 145, 157));
     for (int i = 0; i < 4; ++i) {
         int y = 232 + 40 * i;
-        r->fill(dc, 14, y, 291, y + 40,
-                i == selected ? RGB_(181, 190, 201) : RGB_(242, 246, 250));
+        r->fill(dc, 14, y, 291, y + 40, i == selected ? RGB_(181, 190, 201) : RGB_(242, 246, 250));
         r->text(dc, 23, y + 12, options[i], INK, 14);
     }
 }
@@ -316,8 +314,9 @@ static int input(U32 msg, U32 wp, U32 lp)
                 CALL(SipShowIM, (0));
                 return 1;
             }
-            view = view == 2 || view == 9 || (view == 8 && category == 0)
-                       ? 1 : view >= 5 && view <= 7 ? 4 : 0;
+            view = view == 2 || view == 9 || (view == 8 && category == 0) ? 1
+                   : view >= 5 && view <= 7                               ? 4
+                                                                          : 0;
             scroll_y = 0;
             return 1;
         }
