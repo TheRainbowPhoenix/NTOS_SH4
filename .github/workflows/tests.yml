@@ -1,0 +1,66 @@
+name: Tests · no release artifacts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ntos-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validation:
+    name: Validation
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.2
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install test dependencies
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq python3 python3-pefile gcc g++ clang-format clang-tidy
+      - name: Build native test fixtures
+        run: make -j4
+      - name: Static checks and PE import/link validation
+        run: |
+          python3 tools/format_c_sources.py --check
+          clang-tidy -quiet -checks='-*,clang-analyzer-*' payload/calc.c payload/phone/starthost.c -- -std=c11 -Ipayload -Ipayload/phone
+          python3 tools/check_unified_bundle.py dist
+          python3 tools/check_ntapi_table.py
+          python3 tools/elf2ntx.py --selftest
+          python3 tools/test_multimodule.py
+          python3 tools/test_dependency_graph.py
+          python3 tools/audit_wince_pe.py dist/COREDLL.DLL dist/XAMLUI.DLL dist/METROWIN.EXE
+          make check-pe
+      - name: UI and host COREDLL regressions
+        run: |
+          python3 payload/phone/check_phone.py
+          python3 payload/phone/preview_phone.py
+          python3 tools/preview_native_gdi.py
+          gcc -std=c11 -Wall -Wextra -Werror -Ipayload tests/ntapi_caps_test.c -o /tmp/ntos-caps
+          /tmp/ntos-caps
+          gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/ntos-core-files
+          /tmp/ntos-core-files
+      - name: MMU, PE page materializer and relocation regressions
+        run: |
+          set -e
+          for test in fault_pager irq_handoff pe_pager pe_fixup_types; do
+            g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 "tests/${test}_test.cpp" -o "/tmp/${test}"
+            "/tmp/${test}"
+          done
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/pe_page_parity_test.cpp -o /tmp/pe-page-parity
+          /tmp/pe-page-parity dist/COREDLL.DLL dist/XAMLUI.DLL dist/CHAIN.DLL dist/CHAINTEST.EXE dist/METROWIN.EXE
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/pe_rebase_test.cpp -o /tmp/pe-rebase
+          python3 tools/make_collision_dll.py dist/XAMLUI.DLL -o dist_collision/XAMLUI.DLL --base 0x01000000
+          /tmp/pe-rebase dist/COREDLL.DLL dist/XAMLUI.DLL dist/METROWIN.EXE dist_collision/XAMLUI.DLL
+      # Deliberately no artifact upload: diagnostics are not calculator files.
