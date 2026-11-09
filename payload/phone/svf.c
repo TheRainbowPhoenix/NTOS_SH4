@@ -58,7 +58,27 @@ int SVFValidate(const void *data, unsigned length)
 {
     return scan(data, length);
 }
-int SVFDraw(void *dc, const void *data, unsigned length, int x, int y, int w, int h)
+/* Optional monochrome recoloring. Most original VEC assets encode white
+ * fills for dark tiles. Recolor only neutral near-white pigment, retaining
+ * colored illustrations, black outlines and 0xffff transparent sentinels.
+ * 0xffffffff disables recoloring for the existing SVFDraw ABI. */
+static U32 ink(unsigned rgb555, U32 tint)
+{
+    unsigned red = (rgb555 >> 10) & 31u;
+    unsigned green = (rgb555 >> 5) & 31u;
+    unsigned blue = rgb555 & 31u;
+    unsigned min = red < green ? red : green;
+    if (blue < min)
+        min = blue;
+    unsigned max = red > green ? red : green;
+    if (blue > max)
+        max = blue;
+    if (tint != 0xffffffffu && min >= 22u && max - min <= 3u)
+        return tint;
+    return color(rgb555);
+}
+static int draw_icon(void *dc, const void *data, unsigned length, int x, int y,
+                     int w, int h, U32 tint)
 {
     const unsigned char *b = data;
     if (!scan(b, length) || w < 1 || h < 1 || w > 320 || h > 528)
@@ -96,7 +116,7 @@ int SVFDraw(void *dc, const void *data, unsigned length, int x, int y, int w, in
                 s[i] = (char)b[p + 5 + i];
             s[n] = 0;
             if (stroke != 0xffff)
-                r->text(dc, CX(tx), CY(ty), s, color(stroke), 12);
+                r->text(dc, CX(tx), CY(ty), s, ink(stroke, tint), 12);
             p += 5 + n;
             continue;
         }
@@ -109,10 +129,10 @@ int SVFDraw(void *dc, const void *data, unsigned length, int x, int y, int w, in
                 p += 4;
             }
             if (fill != 0xffff)
-                r->polygon(dc, points, n, color(fill));
+                r->polygon(dc, points, n, ink(fill, tint));
             if (stroke != 0xffff)
                 for (unsigned i = 0, j = n - 1; i < n; j = i++)
-                    r->line(dc, points[j].x, points[j].y, points[i].x, points[i].y, color(stroke));
+                    r->line(dc, points[j].x, points[j].y, points[i].x, points[i].y, ink(stroke, tint));
             continue;
         }
         int a = signed_word(b + p), c = signed_word(b + p + 2), d = signed_word(b + p + 4), e = 0;
@@ -123,7 +143,7 @@ int SVFDraw(void *dc, const void *data, unsigned length, int x, int y, int w, in
             return 0;
         if (op == 0x30) {
             if (stroke != 0xffff)
-                r->line(dc, CX(a), CY(c), CX(d), CY(e), color(stroke));
+                r->line(dc, CX(a), CY(c), CX(d), CY(e), ink(stroke, tint));
             p += 8;
             continue;
         }
@@ -143,20 +163,20 @@ int SVFDraw(void *dc, const void *data, unsigned length, int x, int y, int w, in
                 p += 8;
             }
             if (fill != 0xffff)
-                r->ellipse(dc, cx, cy, rx, ry, color(fill), 0);
+                r->ellipse(dc, cx, cy, rx, ry, ink(fill, tint), 0);
             if (stroke != 0xffff)
-                r->ellipse(dc, cx, cy, rx, ry, color(stroke), 1);
+                r->ellipse(dc, cx, cy, rx, ry, ink(stroke, tint), 1);
             continue;
         }
         int l = CX(a), t = CY(c), rr = CX(d), bb = CY(e), bw = op == 0x11 ? b[p + 8] : 1;
         if (fill != 0xffff)
-            r->fill(dc, l, t, rr, bb, color(fill));
+            r->fill(dc, l, t, rr, bb, ink(fill, tint));
         if (stroke != 0xffff) {
             bw = clampi(div_(bw * w, vw), 1, 16);
-            r->fill(dc, l, t, rr, t + bw, color(stroke));
-            r->fill(dc, l, bb - bw, rr, bb, color(stroke));
-            r->fill(dc, l, t, l + bw, bb, color(stroke));
-            r->fill(dc, rr - bw, t, rr, bb, color(stroke));
+            r->fill(dc, l, t, rr, t + bw, ink(stroke, tint));
+            r->fill(dc, l, bb - bw, rr, bb, ink(stroke, tint));
+            r->fill(dc, l, t, l + bw, bb, ink(stroke, tint));
+            r->fill(dc, rr - bw, t, rr, bb, ink(stroke, tint));
         }
         p += op == 0x11 ? 9 : 8;
     }
@@ -164,6 +184,16 @@ int SVFDraw(void *dc, const void *data, unsigned length, int x, int y, int w, in
 #undef CX
 #undef CY
 }
+int SVFDrawTint(void *dc, const void *data, unsigned length, int x, int y,
+                int w, int h, U32 tint)
+{
+    return draw_icon(dc, data, length, x, y, w, h, tint);
+}
+int SVFDraw(void *dc, const void *data, unsigned length, int x, int y, int w, int h)
+{
+    return draw_icon(dc, data, length, x, y, w, h, 0xffffffffu);
+}
+
 int phone_unsupported(void)
 {
     return NOTIMPL;
