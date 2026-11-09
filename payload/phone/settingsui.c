@@ -77,10 +77,19 @@ static void flat_button(void *dc, const Render *r, int x, int y, int width, cons
 }
 static int slider_value(int x)
 {
-    /* 2-percent increments avoid expensive full-frame redraws for every
-     * individual touch pixel while retaining useful display precision. */
+    /* At most 21 full-screen paints across a slider sweep, rather than
+     * a paint for every touch pixel (~276). Display settings are previews. */
     int value = clampi(div_((x - 12) * 100, 276), 0, 100);
-    return ((value + 1) / 2) * 2;
+    return ((value + 2) / 5) * 5;
+}
+static int slider_update(int x)
+{
+    int next = slider_value(x);
+    int *current = slider_drag == 1 ? &brightness : &scale;
+    if (next == *current)
+        return 0; /* The caller skips invalidation for unchanged values. */
+    *current = next;
+    return 1;
 }
 static void slider(void *dc, const Render *r, int y, int value)
 {
@@ -240,14 +249,8 @@ static int input(U32 msg, U32 wp, U32 lp)
         return 1;
     }
     if (msg == WM_MOVE_ && tracking) {
-        if (slider_drag) {
-            int next = slider_value(x);
-            int *current = slider_drag == 1 ? &brightness : &scale;
-            if (next == *current)
-                return 0; /* Skip duplicate full-screen repaints. */
-            *current = next;
-            return 1;
-        }
+        if (slider_drag)
+            return slider_update(x);
         if (pressed_button)
             return 0;
         int delta = y - drag_y;
@@ -259,7 +262,9 @@ static int input(U32 msg, U32 wp, U32 lp)
     }
     if (msg == WM_DOWN_) {
         if (tracking) {
-            if (slider_drag || pressed_button)
+            if (slider_drag)
+                return slider_update(x); /* Some touch drivers repeat WM_DOWN. */
+            if (pressed_button)
                 return 0;
             int delta = y - drag_y;
             if (delta > 8 || delta < -8) {
