@@ -84,3 +84,12 @@ The rendering changes are host-preview and CI tested. Their actual
 perceived performance on the CP400 emulator and physical hardware
 still requires runtime comparison; no numeric on-device speedup
 is claimed.
+
+## Build smoke-test evidence
+
+The CI job builds both regular and Hollyhock v2.2.1 toolchain images,
+checks all phone imports against the PE export tables, runs the native
+phone preview, and executes the actual COREDLL host tests. The latter
+assert that repeated `InvalidateRect` calls cause one `WM_PAINT` and
+one `LCD_Refresh`, with no stale queued paint after `UpdateWindow`.
+These are host-level contracts, not proof of the CP400's LCD timing.
