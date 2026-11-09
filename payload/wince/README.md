@@ -33,7 +33,7 @@ classifies every export and lists the remaining gaps.
 All **73 COREDLL imports of the reference control.exe** now have typed functions.
 LoadCursorW recognizes the system arrow; string resources are read from the actual
 little-endian PE resource tree and emitted as native UTF-16. LocalSize/ReAlloc track
-owned allocation sizes, including CE callers using 0x42 flags. Dynamic loading,
+owned allocation sizes, including CE callers using 0x42 flags. Dependent-library loading,
 registry writes, shell execution, menu UI and image pixel decoding still fail or
 have limited metadata behavior. The registry stub reports missing values rather
 than pretending to return initialized data.
@@ -72,8 +72,7 @@ and their native importers are intentionally a separate profile.
 The upstream five-function COREDLLABI.EXE works with this profile too. Full firmware
 emulation returns 0xAB1C0500, including the fifth stack argument check. Original
 Control Panel now draws its resource-derived title and background: CE LoadStringW
-with a null buffer returns a native UTF-16 resource pointer. No .cpl applets are
-included, so its body is empty. Clear returns from the app.
+with a null buffer returns a native UTF-16 resource pointer. The sample Windows/demo.cpl supplies one NTOS Demo applet. Clear returns from the app.
 
 NTOS console output uses 40 columns and 40 rows, clears complete rows and scrolls
 instead of wrapping over old text. It clears the loader log on first app output.
@@ -155,3 +154,20 @@ $env:PYTHONPATH=''
 
 After rebuilding NTOS, copy dist/NTOS.hh3 into dist/ce-demo/NTOS.hh3 before
 using --wince. The standard ntos_launch.py command still selects the phone bundle.
+
+## Sample applet
+
+`demo/demo_cpl.c` builds `dist/ce-demo/Windows/demo.cpl` (2,560 bytes), a genuine
+import-free SH4-BE PE DLL exporting MSVC-compatible CPlApplet. It reports one
+NTOS Demo applet via CPL_INIT, CPL_GETCOUNT and CPL_NEWINQUIRE (468-byte Unicode
+NEWCPLINFO), with synthetic icon metadata. Its activation callback draws a small
+hello page through NTOS gates; launching ctlpnl.exe remains outside this sample.
+
+The CE core maps \Windows paths to \fls0\Windows, loads/relocates import-free
+sample DLLs in uncached SH4 memory, resolves named exports and frees loaded images.
+DLLs with imports remain unsupported by this small dynamic loader. Control Panel's
+window-extra slot and LVN_GETDISPINFOW text callback are supported for its applet
+list. The launcher seeds Windows/*.cpl into the isolated CE volume.
+
+This addition was compiled with strict warnings and formatted, without a new
+emulator/test run as requested. Existing verification artifacts predate this CPL.

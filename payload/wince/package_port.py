@@ -39,6 +39,7 @@ def main():
                'runtime-results.json','shell-runtime-low.json','control-runtime.json',
                'detach-runtime.json','port-status.json','shell-output.txt']
         for name in names:z.write(OUT/name,name)
+        for f in (OUT/'Windows').glob('*.cpl'):z.write(f,'Windows/'+f.name)
         z.write(HERE/'README.md','README.md')
         for case in ['control-check','abi-final','shell-40']:
             folder=ROOT/('obj/wince/full-smoke-'+case)

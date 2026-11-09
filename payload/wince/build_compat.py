@@ -49,3 +49,18 @@ for name in ['shell.exe','control.exe','toolhelp.dll','commctrl.dll']:
  (O/(name+'.entry.S')).write_text('\n'.join(a)+'\n')
  run(f'sh4a_nofpueb-elf-gcc -c obj/wince/{name}.entry.S -o obj/wince/{name}.entry.o')
  run(f'sh4a_nofpueb-elf-objcopy -O binary -j .text obj/wince/{name}.entry.o obj/wince/{name}.entry.bin')
+
+# Import-free sample CPL, discovered under the Windows directory.
+run('sh4a_nofpueb-elf-gcc -c payload/wince/demo/demo_cpl.c -o obj/wince/demo.o -Os -Wall -Wextra -Werror -ffreestanding -fno-builtin')
+run('sh4a_nofpueb-elf-g++ -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/coredll.ld -o obj/wince/demo.pre.elf obj/wince/demo.o -lgcc')
+signature=[dict(ordinal=1,name='CPlApplet',target='DemoCPlApplet',ret='u32',args=['ptr','u32','u32','ptr'],abi='fixed-words')]
+assembly,_=generate(signature,[dict(ordinal=1,name='CPlApplet')],symbols(O/'demo.pre.elf'),'demo')
+(O/'demo.abi.S').write_text(assembly)
+run('sh4a_nofpueb-elf-gcc -c obj/wince/demo.abi.S -o obj/wince/demo.abi.o')
+run('sh4a_nofpueb-elf-g++ -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/coredll.ld -o obj/wince/demo.elf obj/wince/demo.o obj/wince/demo.abi.o -lgcc')
+elf=p.Elf((O/'demo.elf').read_bytes());defs=symbols(O/'demo.elf')
+entries=[(1,'CPlApplet',defs['_ce_export_1']-0x10000000)]
+p.build_export_section=lambda _,n,r:export_section(entries,n,r)
+binary,_=p.emit_ntx(elf,0x10000000,exports=[('surface',0)],dll_name='demo.cpl',image_is_dll=True)
+(D/'Windows').mkdir(exist_ok=True);(D/'Windows/demo.cpl').write_bytes(binary)
+print('Windows/demo.cpl',len(binary),'bytes')

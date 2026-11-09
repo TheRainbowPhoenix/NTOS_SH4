@@ -15,6 +15,7 @@
 #define PostMessageW ntos_PostMessageW
 #define DispatchMessageW ntos_DispatchMessageW
 #define GetSystemMetrics ntos_GetSystemMetrics
+#define FindFirstFileW ntos_FindFirstFileW
 #define RegisterClassW ntos_RegisterClassW
 #include "../coredll.c"
 #undef LocalAlloc
@@ -28,6 +29,7 @@
 #undef PostMessageW
 #undef DispatchMessageW
 #undef GetSystemMetrics
+#undef FindFirstFileW
 #undef RegisterClassW
 #undef main
 #undef CreateFileW
@@ -525,6 +527,8 @@ void *FindWindowW(const u16 *class_name, const u16 *title)
 /* Called after dependent DLLs detach, matching NTOS' reverse attach order. */
 void CeCoreDetach(void)
 {
+    while (ce_modules)
+        FreeLibrary(ce_modules->image);
     while (ce_resource_strings) {
         CE_RESOURCE_STRING *p = ce_resource_strings;
         ce_resource_strings = p->next;

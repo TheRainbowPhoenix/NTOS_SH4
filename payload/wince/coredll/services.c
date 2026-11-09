@@ -216,7 +216,9 @@ CE_LPARAM GetWindowLongW(void *h, int index)
         return CeControlGetLong(h, index);
     if (!is_hwnd(h))
         return 0;
-    return index == -21 ? ce_main_user : index == -4 ? (CE_LPARAM)ce_app_window_proc : 0;
+    return (index == -21 || index == 0) ? ce_main_user
+           : index == -4                ? (CE_LPARAM)ce_app_window_proc
+                                        : 0;
 }
 CE_LPARAM SetWindowLongW(void *h, int index, CE_LPARAM value)
 {
@@ -225,7 +227,7 @@ CE_LPARAM SetWindowLongW(void *h, int index, CE_LPARAM value)
     CE_LPARAM old = GetWindowLongW(h, index);
     if (!is_hwnd(h))
         return 0;
-    if (index == -21)
+    if (index == -21 || index == 0)
         ce_main_user = value;
     else if (index == -4) {
         ce_app_window_proc = (void *)value;
@@ -235,8 +237,29 @@ CE_LPARAM SetWindowLongW(void *h, int index, CE_LPARAM value)
 }
 CE_RESULT SendMessageW(void *h, u32 msg, u32 wp, u32 lp)
 {
-    if (CeControlKind(h))
+    if (CeControlKind(h)) {
+        /* Resolve callback text through LVN_GETDISPINFOW before storing the row. */
+        CE_LVITEM *item = (CE_LVITEM *)lp;
+        if (msg == 0x104d && item && (intptr_t)item->text == -1 && g_window.proc) {
+            struct {
+                void *from;
+                u32 id, code;
+                CE_LVITEM item;
+            } notification;
+            u16 text[128] = {0};
+            notification.from = h;
+            notification.id = 0;
+            notification.code = (u32)-177;
+            notification.item = *item;
+            notification.item.text = text;
+            notification.item.text_max = 128;
+            g_window.proc(&g_window, 0x4e, 0, (u32)&notification);
+            CE_LVITEM resolved = *item;
+            resolved.text = text;
+            return CeControlMessage(h, msg, wp, (CE_LPARAM)&resolved);
+        }
         return CeControlMessage(h, msg, wp, lp);
+    }
     if (is_hwnd(h) && g_window.proc)
         return g_window.proc(h, msg, wp, lp);
     g_last_error = 1400;
@@ -341,26 +364,7 @@ int lstrcmpiW(const u16 *a, const u16 *b)
 {
     return (int)_wcsicmp(a, b);
 }
-/* Library loading is a loader service, not an arbitrary address cast. */
-void *LoadLibraryW(const u16 *name)
-{
-    (void)name;
-    g_last_error = 126;
-    return 0;
-}
-void *GetProcAddressW(void *module, const u16 *name)
-{
-    (void)module;
-    (void)name;
-    g_last_error = 127;
-    return 0;
-}
-int FreeLibrary(void *module)
-{
-    (void)module;
-    g_last_error = 6;
-    return 0;
-}
+#include "cpl_loader.c"
 int CreateProcessW(const u16 *image, u16 *args, void *sa, void *ta, int inherit, u32 flags,
                    void *env, const u16 *cwd, void *startup, void *info)
 {
