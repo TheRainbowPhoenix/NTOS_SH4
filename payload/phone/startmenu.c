@@ -72,9 +72,13 @@ static int input(U32 msg,U32 wp,U32 lp){int x=(int)(short)(lp&65535u),y=(int)(sh
   if(opened>=0)opened=-1;else if(jump)jump=0;else {mode=search=query_len=0;query[0]=0;}return 1;}
   if(wp==0x27u){mode=1;selected=-1;return 1;}
   if(wp==0x26u||wp==0x28u){scroll_by(wp==0x26u?-52:52);return 1;}
-  if(search&&wp==8){if(query_len)query[--query_len]=0;list_offset=0;return 1;}
+  if(search&&wp==8){if(query_len){--query_len;while(query_len&&((unsigned char)query[query_len]&0xc0)==0x80)--query_len;query[query_len]=0;}list_offset=0;return 1;}
   if(wp==13){if(search){CALL(SipShowIM,(0));search=0;}else if(selected>=0)open_id(cat->apps[selected].id);else mode=!mode;return 1;}}
- if((msg==WM_CHAR_||msg==WM_KEY_)&&search&&wp>=32&&wp<127&&query_len<47){query[query_len++]=(char)wp;query[query_len]=0;list_offset=0;return 1;}
+ if((msg==WM_CHAR_||msg==WM_KEY_)&&search&&wp>=32&&wp<=0xffff&&query_len<44){
+  if(wp<128)query[query_len++]=(char)wp;
+  else if(wp<2048){query[query_len++]=(char)(0xc0|(wp>>6));query[query_len++]=(char)(0x80|(wp&63));}
+  else {query[query_len++]=(char)(0xe0|(wp>>12));query[query_len++]=(char)(0x80|((wp>>6)&63));query[query_len++]=(char)(0x80|(wp&63));}
+  query[query_len]=0;list_offset=0;return 1;}
  if(msg==WM_DOWN_){drag_y=y;drag_scroll=mode?list_offset:offset;drag_mode=mode;drag_valid=1;if(y<24)return 0;
   if(opened>=0){const AppEntry *a=&cat->apps[opened];if(y<80){opened=-1;return 1;}
    if(y>=352&&y<392)save_failed=!CALL(catalog_CatalogPin,(a->id,pin_size(a->id)?0u:2u));

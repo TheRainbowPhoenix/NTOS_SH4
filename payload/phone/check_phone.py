@@ -7,7 +7,7 @@ HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
 ap=argparse.ArgumentParser();ap.add_argument('--out',default='dist');args=ap.parse_args()
 out=ROOT/args.out
-modules=['STARTHOST.EXE','STARTMENU.DLL','UIXMOBILE.DLL','UIXN.DLL','UIXRENDER.DLL','SHELLCONTROLS.DLL','SHELLCHROME.DLL','COREDLL.DLL']
+modules=['STARTHOST.EXE','STARTMENU.DLL','UIXMOBILE.DLL','UIXN.DLL','UIXRENDER.DLL','SHELLCONTROLS.DLL','SHELLCHROME.DLL','FINGERKB.DLL','SVF.DLL','APPCATALOG.DLL','COREDLL.DLL']
 images={n:pefile.PE(str(out/n)) for n in modules}
 total=0
 for n,pe in images.items():
@@ -44,4 +44,17 @@ deps={d.dll.decode().upper():[i.name.decode() for i in d.imports] for d in host.
 assert deps['UIXMOBILE.DLL']==['RunApplication']
 assert deps['STARTMENU.DLL']==['StartMenuInitialize','StartMenuUninitialize']
 assert total<256*1024,('resident module image budget exceeded',total)
-print('PASS exact six DLL export surfaces, all imports resolved, SH4 BE relocations; mapped images',total,'bytes')
+stubs=list((out/'phone-device/Apps').glob('*/*.exe'))
+assert len(stubs)==24
+for path in stubs:
+ app=pefile.PE(str(path));assert app.FILE_HEADER.Machine==0x1a8
+ assert app.FILE_HEADER.NumberOfSections<=8
+ assert app.OPTIONAL_HEADER.DATA_DIRECTORY[2].VirtualAddress
+ data=app.DIRECTORY_ENTRY_RESOURCE.entries[0].directory.entries[0].directory.entries[0].data.struct
+ assert app.get_data(data.OffsetToData,data.Size).startswith(b'VEC1')
+ for dep in app.DIRECTORY_ENTRY_IMPORT:
+  names={e.name for e in images[dep.dll.decode().upper()].DIRECTORY_ENTRY_EXPORT.symbols if e.name}
+  assert all(i.name in names for i in dep.imports)
+ meta=path.with_name(path.name+'.manifest').read_bytes();assert meta[:4]==b'PAM1'
+ assert len(meta)==16+meta[12]+int.from_bytes(meta[14:16],'big')
+print('PASS nine DLL export surfaces, all imports resolved, SH4 BE relocations, 24 embedded-resource apps; mapped images',total,'bytes')

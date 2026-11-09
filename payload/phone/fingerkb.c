@@ -18,7 +18,10 @@ static void paint(void *dc){const Render *r=CALL(render_SpGetThreadContext,());
  for(int row=0;row<2;++row){int count=layout?10:(row?9:10);
   for(int col=0;col<count;++col){char s[2]={layout?(row?num[layout-1][col]:"1234567890"[col]):alpha[row][col],0};
    if(!layout&&(shift||caps))s[0]=(char)(s[0]-32);
-   int x=layout?col*32+2:col*32+(row?18:2);key(dc,r,x,317+row*53,x+28,s,0);}}
+   int x=layout?col*32+2:col*32+(row?18:2);
+   if(layout==2&&row==1&&col>=7){const char *currency=col==7?"\xe2\x82\xac":col==8?"\xc2\xa3":"\xc2\xa5";
+    key(dc,r,x,317+row*53,x+28,"",0);r->text(dc,x+8,384,currency,WHITE,18);}
+   else key(dc,r,x,317+row*53,x+28,s,0);}}
  key(dc,r,2,423,47,layout?(layout==1?">":"<"):"",!layout&&(shift||caps));
  if(!layout)symbol(dc,SYS_SHIFT,18,439,16);else symbol(dc,layout==1?SYS_NEXT:SYS_PREV,17,440,16);
  const char *last=layout?(layout==1?"!;:'\"?/":"-+=_~|\\"):"zxcvbnm";
@@ -46,7 +49,8 @@ static int input(U32 msg,U32 wp,U32 lp){(void)wp;if(msg!=WM_DOWN_)return 0;
  int start=(!layout&&row==1)?18:2;int col=div_(x-start,32),count=(!layout&&row==1)?9:10;
  if(x<start||col<0||col>=count||(x-start)%32>=28)return 0;
  const char *s=layout?(row?(layout==1?"@#$%&*()-\\":"^[]{}<>ELY"):"1234567890"):(row?"asdfghjkl":"qwertyuiop");
- int c=s[col];if(!layout&&(shift||caps))c-=32;if(shift&&!caps)shift=0;return c;
+ int c=s[col];if(layout==2&&row==1&&col>=7)c=col==7?0x20ac:col==8?0xa3:0xa5;
+ if(!layout&&(shift||caps))c-=32;if(shift&&!caps)shift=0;return c;
 }
 static int page(void){return layout?layout:(shift||caps?3:0);}
 static const Keyboard keyboard={PROFILE,paint,input,page};

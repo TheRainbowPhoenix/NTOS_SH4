@@ -18,11 +18,15 @@ static void fill(void *dc,int l,int t,int r,int b,U32 c){
 static void text(void *dc,int x,int y,const char *s,U32 c,int h){
  if(!s||h<6||h>56)return;
  for(unsigned n=0;*s&&n<96;++s,++n){unsigned ch=(unsigned char)*s;
-  if(ch<32||ch>126)ch='?';
+  if(ch>=0xc2&&ch<0xe0&&s[1]&&((unsigned char)s[1]&0xc0)==0x80){ch=((ch&31u)<<6)|((unsigned char)s[1]&63u);++s;}
+  else if(ch>=0xe0&&ch<0xf0&&s[1]&&s[2]&&((unsigned char)s[1]&0xc0)==0x80&&((unsigned char)s[2]&0xc0)==0x80){
+   ch=((ch&15u)<<12)|(((unsigned char)s[1]&63u)<<6)|((unsigned char)s[2]&63u);s+=2;}
+  if(ch<32)ch='?';
   const PhoneFont *font=&phone_fonts[3];int best=999;
   for(unsigned i=0;i<sizeof(phone_fonts)/sizeof(phone_fonts[0]);++i){
    const PhoneFont *f=&phone_fonts[i];int delta=f->height-h;if(delta<0)delta=-delta;
    if((int)ch>=f->first&&(int)ch<f->first+f->count&&delta<best){font=f;best=delta;}}
+  if(best==999){ch='?';font=&phone_fonts[3];}
   const PhoneGlyph *g=&font->glyphs[ch-(unsigned)font->first];
   int w=g->width;unsigned stride=(g->width+7u)>>3;
   for(int yy=0;yy<font->height;++yy){

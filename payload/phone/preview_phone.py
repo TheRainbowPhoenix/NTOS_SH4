@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Compile and exercise the real C sources on a host, save exact RGB565 PNGs."""
-import argparse,binascii,os,struct,subprocess,zlib
+import argparse,binascii,os,struct,subprocess,zlib,shutil
 from pathlib import Path
 HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1]
 def png(ppm):
@@ -12,9 +12,13 @@ def png(ppm):
 def main():
  ap=argparse.ArgumentParser();ap.add_argument('--cc',default=os.environ.get('HOST_CC','gcc'));args=ap.parse_args()
  obj=ROOT/'obj/phone-host';out=ROOT/'dist/phone-preview';obj.mkdir(parents=True,exist_ok=True);out.mkdir(parents=True,exist_ok=True)
- flags=['-std=c11','-O2','-Wall','-Wextra','-Werror','-DPHONE_HOST','-I'+str(HERE),'-I'+str(ROOT/'payload')]
+ flags=['-std=c11','-O2','-Wall','-Wextra','-Werror','-Wno-misleading-indentation','-DPHONE_HOST','-I'+str(HERE),'-I'+str(ROOT/'payload')]
+ flags+=['-D'+n+'=host_'+n for n in ['CreateFileW','ReadFile','WriteFile','CloseHandle','GetFileSize','SetFilePointer','FindFirstFileW','FindNextFileW','FindClose']]
  rename={
  'uixrender':{'SpGetThreadContext':'render_SpGetThreadContext','SpRenderThreadInit':'render_SpRenderThreadInit','SpRenderThreadUninit':'render_SpRenderThreadUninit'},
+ 'svf':{'SVFValidate':'svf_SVFValidate','SVFDraw':'svf_SVFDraw'},
+ 'catalog':{n:'catalog_'+n for n in ['CatalogGet','CatalogReload','CatalogPin','CatalogDrawIcon']},
+ 'fingerkb':{'UIXGetSchemaFactory':'kb_UIXGetSchemaFactory','UIXSchemaUnloaded':'kb_UIXSchemaUnloaded'},
  'shellcontrols':{'UIXGetSchemaFactory':'controls_UIXGetSchemaFactory','UIXSchemaUnloaded':'controls_Unloaded'},
  'shellchrome':{'UIXGetSchemaFactory':'chrome_UIXGetSchemaFactory','UIXSchemaUnloaded':'chrome_Unloaded'},
  'startmenu':{'UIXGetSchemaFactory':'menu_UIXGetSchemaFactory','UIXSchemaUnloaded':'menu_Unloaded','StartMenuInitialize':'menu_StartMenuInitialize','StartMenuUninitialize':'menu_StartMenuUninitialize'},
@@ -27,7 +31,19 @@ def main():
   subprocess.run([args.cc,*flags,*extra,'-c',str(HERE/(source+'.c')),'-o',str(o)],check=True)
  exe=obj/('phone-preview.exe' if os.name=='nt' else 'phone-preview')
  subprocess.run([args.cc,*flags,str(HERE/'host_preview.c'),*map(str,objects),'-o',str(exe)],check=True)
- subprocess.run([str(exe),str(out)],check=True)
+ fs=obj/'fs';shutil.copytree(ROOT/'dist/phone-device/Apps',fs/'Apps',dirs_exist_ok=True)
+ shutil.copyfile(ROOT/'dist/phone-device/home.dat',fs/'home.dat')
+ extra=fs/'Apps/Extra';extra.mkdir(exist_ok=True)
+ shutil.copyfile(ROOT/'dist/phone-device/Apps/camera/camera.exe',extra/'Zeta.exe')
+ shutil.copyfile(ROOT/'dist/STARTHOST.EXE',extra/'Plain.exe')
+ from build_phone import add_icon_resource
+ dib=struct.pack('<IiiHHIIiiII',40,16,32,1,32,0,1024,0,0,0,0)+bytes([255,255,255,255])*256+bytes(64)
+ pe=bytearray(add_icon_resource((ROOT/'dist/STARTHOST.EXE').read_bytes(),dib))
+ import pefile
+ image=pefile.PE(data=pe);resource=image.OPTIONAL_HEADER.DATA_DIRECTORY[2].VirtualAddress
+ raw=image.get_offset_from_rva(resource);struct.pack_into('<I',pe,raw+16,3)
+ (extra/'Raster.exe').write_bytes(pe)
+ subprocess.run([str(exe),str(out),str(fs)],check=True)
  for p in out.glob('*.ppm'):png(p)
  print('Native C previews:',out)
 if __name__=='__main__':main()

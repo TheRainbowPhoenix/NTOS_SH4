@@ -815,6 +815,14 @@ void *CreateFileW(const u16 *path, u32 access, u32 share,
     if (!(flags & (NT_FILE_READ|NT_FILE_WRITE))) {
         g_last_error=87; return NT_INVALID_FILE;
     }
+    /* CREATE_ALWAYS must replace a shorter preferences file, not leave
+     * stale trailing bytes. The SDK CREATE flag alone does not truncate. */
+    if(creation==NT_CREATE_ALWAYS && a[19]) {
+        int removed=((int (*)(const char *))a[19])(narrow);
+        if(removed<0 && removed!=-14 && removed!=-8) {
+            g_last_error=nt_file_error(removed);return NT_INVALID_FILE;
+        }
+    }
     fd=((int (*)(const char *,u32))a[11])(narrow,flags);
     if (fd < 0 || fd >= 0xFFFF) {
         g_last_error=nt_file_error(fd); return NT_INVALID_FILE;

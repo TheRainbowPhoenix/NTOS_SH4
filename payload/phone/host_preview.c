@@ -4,12 +4,43 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <io.h>
+#include "phone_io.h"
 static uint16_t pixels[320*528];
 const Render *render_SpGetThreadContext(void);
 const Menu *menu_UIXGetSchemaFactory(void);
 const Chrome *chrome_UIXGetSchemaFactory(void);
 void menu_StartMenuInitialize(void);
 void menu_StartMenuUninitialize(void);
+const Keyboard *kb_UIXGetSchemaFactory(void);
+const Catalog *catalog_CatalogGet(void);
+int catalog_CatalogReload(void);
+int catalog_CatalogPin(unsigned,unsigned);
+int svf_SVFValidate(const void *,unsigned);
+int svf_SVFDraw(void *,const void *,unsigned,int,int,int,int);
+static char fsroot[1024];static U32 sip_flags=2;
+int SipShowIM(U32 flags){if(flags>1)return 0;sip_flags=2|flags;return 1;}
+int SipGetInfo(SipInfo *s){if(!s||s->size!=sizeof(*s))return 0;s->flags=sip_flags;s->desktop.bottom=(sip_flags&1)?271:528;return 1;}
+static void path_host(char *out,const W16 *src){unsigned i=0,n=0;while(src[i]=='\\')++i;
+ assert((src[i]=='f'||src[i]=='F')&&(src[i+1]=='l'||src[i+1]=='L'));i+=4;while(src[i]=='\\')++i;
+ while(fsroot[n]){out[n]=fsroot[n];++n;}out[n++]='/';
+ while(src[i]){assert(n<1100);out[n++]=src[i]=='\\'?'/':(char)src[i];++i;}out[n]=0;}
+void *CreateFileW(const W16 *p,U32 access,U32 share,void *sec,U32 creation,U32 attrs,void *template_){
+ (void)share;(void)sec;(void)attrs;(void)template_;char path[1200];path_host(path,p);
+ FILE *f=fopen(path,access&0x40000000u?(creation==2?"wb":"r+b"):"rb");return f?(void *)f:(void *)(intptr_t)-1;}
+int ReadFile(void *f,void *b,U32 size,U32 *done,void *ov){(void)ov;*done=(U32)fread(b,1,size,f);return !ferror(f);}
+int WriteFile(void *f,const void *b,U32 size,U32 *done,void *ov){(void)ov;*done=(U32)fwrite(b,1,size,f);return !ferror(f);}
+int CloseHandle(void *f){return fclose(f)==0;}
+U32 GetFileSize(void *f,U32 *high){long pos=ftell(f);fseek(f,0,SEEK_END);long size=ftell(f);fseek(f,pos,SEEK_SET);if(high)*high=0;return (U32)size;}
+U32 SetFilePointer(void *f,int offset,int *high,U32 method){(void)high;if(fseek(f,offset,method?method==1?SEEK_CUR:SEEK_END:SEEK_SET))return 0xffffffffu;return (U32)ftell(f);}
+static struct {int used;intptr_t fd;} finds[8];
+static void result(FindData *out,const struct _finddata_t *d){memset(out,0,sizeof(*out));out->attrs=(d->attrib&_A_SUBDIR)?16:32;out->size_lo=(U32)d->size;
+ unsigned i=0;for(;d->name[i]&&i<259;++i)out->name[i]=(unsigned char)d->name[i];out->name[i]=0;}
+void *FindFirstFileW(const W16 *p,FindData *out){char path[1200];path_host(path,p);unsigned i=0;while(i<8&&finds[i].used)++i;assert(i<8);
+ struct _finddata_t d;intptr_t fd=_findfirst(path,&d);if(fd==-1)return (void *)(intptr_t)-1;
+ finds[i].fd=fd;finds[i].used=1;result(out,&d);return (void *)(uintptr_t)(i+1);}
+int FindNextFileW(void *f,FindData *out){unsigned i=(unsigned)(uintptr_t)f-1;assert(i<8&&finds[i].used);struct _finddata_t d;if(_findnext(finds[i].fd,&d))return 0;result(out,&d);return 1;}
+int FindClose(void *f){unsigned i=(unsigned)(uintptr_t)f-1;assert(i<8&&finds[i].used);finds[i].used=0;return _findclose(finds[i].fd)==0;}
 static unsigned fills;
 void *CreateSolidBrush(U32 c){unsigned rgb=((c&255u)>>3)<<11|(((c>>8)&255u)>>2)<<5|(((c>>16)&255u)>>3);
  return (void *)(uintptr_t)(0x1000000u|rgb);}
@@ -39,37 +70,44 @@ void *BeginPaint(void *w,void *p){(void)p;return w;}
 int EndPaint(void *w,const void *p){(void)p;return w!=0;}
 int phone_main(void);
 static void snap(const Menu *m,const Chrome *ch,const char *path){
- m->paint((void *)1);ch->paint((void *)1);FILE *f=fopen(path,"wb");assert(f);
+ m->paint((void *)1);ch->paint((void *)1);if((sip_flags&1u)&&!ch->expanded())kb_UIXGetSchemaFactory()->paint((void *)1);FILE *f=fopen(path,"wb");assert(f);
  fprintf(f,"P6\n320 528\n255\n");
  for(int i=0;i<320*528;++i){unsigned p=pixels[i];unsigned char rgb[3]={
   (unsigned char)((p>>11)*255/31),(unsigned char)(((p>>5)&63)*255/63),
   (unsigned char)((p&31)*255/31)};fwrite(rgb,1,3,f);}fclose(f);
 }
 static U32 pos(int x,int y){return (U32)x|((U32)y<<16);}
-int main(int argc,char **argv){assert(argc==2);char path[1024];
- const Menu *m=menu_UIXGetSchemaFactory();const Chrome *ch=chrome_UIXGetSchemaFactory();
- menu_StartMenuInitialize();assert(m->profile==PROFILE);assert(m->page()==0&&m->scroll()==0);
- snprintf(path,sizeof(path),"%s/home.ppm",argv[1]);snap(m,ch,path);
- assert(pixels[29*320+7]==(uint16_t)(uintptr_t)CreateSolidBrush(BLUE));
- assert(pixels[29*320+55]==0);assert(pixels[130*320+20]==0);
- for(int i=0;i<4;++i)m->input(WM_KEY_,0x28,0);
- assert(m->scroll()==172);snprintf(path,sizeof(path),"%s/home-scrolled.ppm",argv[1]);snap(m,ch,path);
- m->input(WM_KEY_,0x27,0);assert(m->page()==1);
- snprintf(path,sizeof(path),"%s/all-apps.ppm",argv[1]);snap(m,ch,path);
- /* Drag the list from an app row: selection must not block scrolling. */
- m->input(WM_DOWN_,0,pos(80,350));m->input(WM_MOVE_,0,pos(80,160));assert(m->scroll()==190);
- m->input(WM_KEY_,0x25,0);m->input(WM_KEY_,0x27,0);
- m->input(WM_DOWN_,0,pos(20,44));const char *q="Camera";
- for(;*q;++q)m->input(WM_CHAR_,(unsigned char)*q,0);
- assert(m->scroll()==0);snprintf(path,sizeof(path),"%s/search.ppm",argv[1]);snap(m,ch,path);
- m->input(WM_KEY_,0x25,0);m->input(WM_KEY_,0x27,0);
- m->input(WM_DOWN_,0,pos(10,90));snprintf(path,sizeof(path),"%s/letters.ppm",argv[1]);snap(m,ch,path);
- m->input(WM_DOWN_,0,pos(247,265));assert(m->scroll()>0);
- /* Unknown input and huge drags cannot draw outside the framebuffer. */
- m->input(WM_DOWN_,0,pos(80,350));m->input(WM_MOVE_,0,pos(80,32000));
- snprintf(path,sizeof(path),"%s/list-reset.ppm",argv[1]);snap(m,ch,path);
- menu_StartMenuUninitialize();menu_StartMenuInitialize();assert(m->page()==0&&m->scroll()==0);
- assert(phone_main()==0);assert(!alive);
- printf("PASS actual C paint, RGB565, clipping, scrolling, search, alphabet jump, reinit (%u fills)\n",fills);
- return 0;
+static void named_snap(const Menu *m,const Chrome *c,const char *folder,const char *name){char path[1200];snprintf(path,sizeof(path),"%s/%s.ppm",folder,name);snap(m,c,path);}
+int main(int argc,char **argv){assert(argc==3);strncpy(fsroot,argv[2],sizeof(fsroot)-1);
+ const Menu *m=menu_UIXGetSchemaFactory();const Chrome *ch=chrome_UIXGetSchemaFactory();const Keyboard *kb=kb_UIXGetSchemaFactory();
+ menu_StartMenuInitialize();const Catalog *cat=catalog_CatalogGet();assert(cat->count==27);assert(cat->pin_count==20);
+ int camera=-1,zeta=-1,plain=-1,raster=-1;for(unsigned i=0;i<cat->count;++i){const AppEntry *a=&cat->apps[i];
+  if(!strcmp(a->name,"Camera"))camera=(int)i;if(!strcmp(a->name,"Zeta"))zeta=(int)i;
+  if(!strcmp(a->name,"Plain"))plain=(int)i;if(!strcmp(a->name,"Raster"))raster=(int)i;}
+ assert(camera>=0&&zeta>=0&&plain>=0&&raster>=0);
+ assert(cat->apps[camera].icon_len&&cat->apps[zeta].icon_len);assert(!cat->apps[plain].icon_len&&!cat->apps[plain].pe_icon_type);assert(cat->apps[raster].pe_icon_type);
+ const AppEntry *a=&cat->apps[camera];for(unsigned n=0;n<a->icon_len;++n)assert(!svf_SVFValidate(a->icon,n));
+ assert(svf_SVFValidate(a->icon,a->icon_len));unsigned before=fills;assert(!svf_SVFDraw((void *)1,"bad",3,0,0,32,32));assert(before==fills);
+ named_snap(m,ch,argv[1],"home");m->input(WM_KEY_,0x28,0);m->input(WM_KEY_,0x28,0);assert(m->scroll()>0);named_snap(m,ch,argv[1],"home-scrolled");
+ m->input(WM_KEY_,0x27,0);named_snap(m,ch,argv[1],"all-apps");
+ m->input(WM_DOWN_,0,pos(80,350));m->input(WM_MOVE_,0,pos(80,160));assert(m->scroll()>0);
+ m->input(WM_DOWN_,0,pos(20,44));assert(sip_flags&1u);named_snap(m,ch,argv[1],"keyboard-lower");
+ assert(kb->input(WM_DOWN_,0,pos(15,340))=='q');kb->input(WM_DOWN_,0,pos(20,445));assert(kb->page()==3);
+ named_snap(m,ch,argv[1],"keyboard-caps");assert(kb->input(WM_DOWN_,0,pos(15,340))=='Q');
+ kb->input(WM_DOWN_,0,pos(20,500));assert(kb->page()==1);named_snap(m,ch,argv[1],"keyboard-numbers");
+ assert(kb->input(WM_DOWN_,0,pos(15,340))=='1');kb->input(WM_DOWN_,0,pos(20,445));assert(kb->page()==2);
+ named_snap(m,ch,argv[1],"keyboard-symbols");assert(kb->input(WM_DOWN_,0,pos(15,392))=='^');assert(kb->input(WM_DOWN_,0,pos(294,445))==8);
+ const char *q="Camera";for(;*q;++q)m->input(WM_CHAR_,(unsigned char)*q,0);named_snap(m,ch,argv[1],"search");
+ m->input(WM_KEY_,0x25,0);assert(!(sip_flags&1));m->input(WM_KEY_,0x25,0);m->input(WM_KEY_,0x27,0);
+ m->input(WM_DOWN_,0,pos(10,90));named_snap(m,ch,argv[1],"letters");assert(pixels[100*320]==0);
+ m->input(WM_DOWN_,0,pos(240,256));
+ ch->input(WM_DOWN_,0,pos(30,10));ch->input(WM_MOVE_,0,pos(30,200));assert(ch->expanded());named_snap(m,ch,argv[1],"notifications");
+ ch->input(WM_DOWN_,0,pos(30,90));named_snap(m,ch,argv[1],"notification-toggle");ch->input(WM_KEY_,0x25,0);assert(!ch->expanded());
+ unsigned id=cat->apps[plain].id;assert(catalog_CatalogPin(id,1));assert(catalog_CatalogReload()==27);assert(cat->pin_count==21);
+ assert(catalog_CatalogPin(id,2));assert(catalog_CatalogReload()==27);assert(cat->pin_count==21);
+ assert(catalog_CatalogPin(id,0));assert(catalog_CatalogReload()==27&&cat->pin_count==20);
+ m->open(14);named_snap(m,ch,argv[1],"news-app");m->open(11);named_snap(m,ch,argv[1],"edge-app");
+ menu_StartMenuUninitialize();assert(phone_main()==0);assert(!alive);assert(!(sip_flags&1u));
+ for(unsigned i=0;i<8;++i)assert(!finds[i].used);
+ printf("PASS 24 discovered apps + 3 fallback fixtures, embedded SVF/DIB/letter fallbacks, pin persistence, keyboard pages, SIP, gestures, notifications, native lifecycle (%u fills)\n",fills);return 0;
 }

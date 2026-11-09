@@ -10,7 +10,9 @@ out=['/* Generated 1-bpp UI glyphs. No TTF parser or font file on device. */',
 fonts=[]
 for h,chars in [(9,range(32,127)),(11,range(32,127)),(12,range(32,127)),
                 (14,range(32,127)),(18,range(32,127)),(22,range(65,91)),
-                (28,range(65,91)),(43,range(56,57))]:
+                (28,range(65,91)),(43,range(56,57)),
+                (14,range(0x20ac,0x20ad)),(14,range(0xa3,0xa4)),(14,range(0xa5,0xa6)),
+                (18,range(0x20ac,0x20ad)),(18,range(0xa3,0xa4)),(18,range(0xa5,0xa6))]:
  face='segoeuil.ttf' if h>=22 else 'segoeui.ttf'
  font=ImageFont.truetype('C:/Windows/Fonts/'+face,h)
  data=[];glyphs=[]
@@ -22,9 +24,10 @@ for h,chars in [(9,range(32,127)),(11,range(32,127)),(12,range(32,127)),
   for y in range(h):
    for byte in range(stride):
     data.append(sum((1<<bit) for bit in range(8) if byte*8+bit<width and image.getpixel((byte*8+bit,y))>=112))
- out.append(f'static const PhoneGlyph pg{h}[]={{'+','.join('{%d,%d,%d}'%g for g in glyphs)+'};')
- out.append(f'static const unsigned char pb{h}[]={{'+','.join(str(n) for n in data)+'};')
- fonts.append('{%d,%d,%d,pg%d,pb%d}'%(h,chars.start,len(chars),h,h))
+ tag=str(h)+'_'+str(chars.start)
+ out.append(f'static const PhoneGlyph pg{tag}[]={{'+','.join('{%d,%d,%d}'%g for g in glyphs)+'};')
+ out.append(f'static const unsigned char pb{tag}[]={{'+','.join(str(n) for n in data)+'};')
+ fonts.append('{%d,%d,%d,pg%s,pb%s}'%(h,chars.start,len(chars),tag,tag))
 out.append('static const PhoneFont phone_fonts[]={'+','.join(fonts)+'};')
 dest=Path(__file__).with_name('font_bitmap.h');dest.write_text('\n'.join(out)+'\n')
 print(dest)
