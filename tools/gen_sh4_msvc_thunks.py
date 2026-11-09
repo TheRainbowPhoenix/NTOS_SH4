@@ -34,6 +34,14 @@ def generate(role):
             "_" + name + ":",
             "    sts.l pr,@-r15",  # SP=S-4
             "    add #-16,r15",   # SP=S-20; native overflow is SP+0
+            # MSVC /Od is permitted to overwrite caller's home area.
+            # Test that our imported-call thunks really reserve 16 bytes.
+            "    mov r15,r1",
+            "    add #20,r1",     # MSVC incoming home: entry S+0
+            "    mov.l r4,@r1",
+            "    mov.l r5,@(4,r1)",
+            "    mov.l r6,@(8,r1)",
+            "    mov.l r7,@(12,r1)",
             "    mov r15,r1",
             "    add #36,r1",     # incoming MS fifth: S+16 = current+36
         ])
