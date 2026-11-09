@@ -67,10 +67,15 @@ static int proc(void *hwnd, U32 msg, U32 wp, U32 lp)
         void *dc = CALL(BeginPaint, (hwnd, &p));
         if (dc) {
             const Render *r = CALL(render_SpGetThreadContext, ());
-            r->surface(528 - height);
-            app.menu->paint(dc);
-            if (visible() && !app.chrome->expanded())
-                keyboard->paint(dc);
+            /* The expanded notifications overlay covers the entire display.
+             * Drawing the Start/menu and SIP first wastes thousands of
+             * rectangle calls and multiple screen-sized fills. */
+            if (!app.chrome->expanded()) {
+                r->surface(528 - height);
+                app.menu->paint(dc);
+                if (visible())
+                    keyboard->paint(dc);
+            }
             r->surface(528);
             app.chrome->paint(dc);
         }
