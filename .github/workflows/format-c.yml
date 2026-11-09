@@ -1,5 +1,5 @@
 name: Clang C and H cleanup
-# Normalize the finished CPL metadata scanner and light theme with clang-format 19.
+# Normalize the light-theme native visual test and all final CPL browser changes.
 
 on:
   push:
