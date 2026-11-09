@@ -1,0 +1,1829 @@
+{
+  "module": "UIXRENDER.DLL",
+  "source_machine": "0x14c",
+  "export_base": 100,
+  "exports": [
+    {
+      "ordinal": 117,
+      "name": "SpAddRefExternalObject",
+      "rva": 176016
+    },
+    {
+      "ordinal": 118,
+      "name": "SpAnimationInputConsumerConnect",
+      "rva": 128976
+    },
+    {
+      "ordinal": 119,
+      "name": "SpAnimationInputPublisherConnect",
+      "rva": 129168
+    },
+    {
+      "ordinal": 120,
+      "name": "SpAutomationAsyncCommandCompleted",
+      "rva": 179280
+    },
+    {
+      "ordinal": 121,
+      "name": "SpAutomationConstructNode",
+      "rva": 183504
+    },
+    {
+      "ordinal": 122,
+      "name": "SpAutomationFireEvent",
+      "rva": 179376
+    },
+    {
+      "ordinal": 123,
+      "name": "SpAutomationGetAppFolderPath",
+      "rva": 179424
+    },
+    {
+      "ordinal": 124,
+      "name": "SpAutomationNotifyFailFast",
+      "rva": 179568
+    },
+    {
+      "ordinal": 125,
+      "name": "SpAutomationNotifyShutdown",
+      "rva": 179616
+    },
+    {
+      "ordinal": 126,
+      "name": "SpBitmapDelete",
+      "rva": 188272
+    },
+    {
+      "ordinal": 127,
+      "name": "SpBitmapFormatConvert",
+      "rva": 188352
+    },
+    {
+      "ordinal": 128,
+      "name": "SpBitmapLoadBuffer",
+      "rva": 188080
+    },
+    {
+      "ordinal": 129,
+      "name": "SpBitmapLoadFile",
+      "rva": 187488
+    },
+    {
+      "ordinal": 130,
+      "name": "SpBitmapLoadRaw",
+      "rva": 187680
+    },
+    {
+      "ordinal": 131,
+      "name": "SpBitmapLoadResource",
+      "rva": 187872
+    },
+    {
+      "ordinal": 132,
+      "name": "SpBitmapSaveFile",
+      "rva": 192640
+    },
+    {
+      "ordinal": 133,
+      "name": "SpCallDeferredInvokeProc",
+      "rva": 196800
+    },
+    {
+      "ordinal": 134,
+      "name": "SpContextExit",
+      "rva": 326352
+    },
+    {
+      "ordinal": 135,
+      "name": "SpContextRun",
+      "rva": 325968
+    },
+    {
+      "ordinal": 136,
+      "name": "SpConvertImageToManaged",
+      "rva": 197120
+    },
+    {
+      "ordinal": 137,
+      "name": "SpConvertStringToManaged",
+      "rva": 199168
+    },
+    {
+      "ordinal": 138,
+      "name": "SpCopyString",
+      "rva": 199328
+    },
+    {
+      "ordinal": 139,
+      "name": "SpCoreUIInitialize",
+      "rva": 174816
+    },
+    {
+      "ordinal": 140,
+      "name": "SpCreateDllLoadResult",
+      "rva": 200720
+    },
+    {
+      "ordinal": 141,
+      "name": "SpCreateDllLoadResultFactory",
+      "rva": 200608
+    },
+    {
+      "ordinal": 142,
+      "name": "SpCreateEditableText",
+      "rva": 200992
+    },
+    {
+      "ordinal": 143,
+      "name": "SpCreateGestureRecognizer",
+      "rva": 230512
+    },
+    {
+      "ordinal": 144,
+      "name": "SpCreateNativeBlob",
+      "rva": 232336
+    },
+    {
+      "ordinal": 145,
+      "name": "SpCreateNativeImage",
+      "rva": 197184
+    },
+    {
+      "ordinal": 146,
+      "name": "SpCreateNativeString",
+      "rva": 199200
+    },
+    {
+      "ordinal": 147,
+      "name": "SpCreateNotifyWindow",
+      "rva": 232896
+    },
+    {
+      "ordinal": 148,
+      "name": "SpCreateObject",
+      "rva": 325648
+    },
+    {
+      "ordinal": 149,
+      "name": "SpCreateProxyWrapper",
+      "rva": 233120
+    },
+    {
+      "ordinal": 103,
+      "name": "SpCreateRenderTargetForMonitor",
+      "rva": 174704
+    },
+    {
+      "ordinal": 150,
+      "name": "SpDataBaseObjectGetInternalHandle",
+      "rva": 234080
+    },
+    {
+      "ordinal": 151,
+      "name": "SpDataBaseObjectGetProperty",
+      "rva": 234272
+    },
+    {
+      "ordinal": 152,
+      "name": "SpDataBaseObjectGetTypeHandle",
+      "rva": 233952
+    },
+    {
+      "ordinal": 153,
+      "name": "SpDataBaseObjectSetInternalHandle",
+      "rva": 234016
+    },
+    {
+      "ordinal": 154,
+      "name": "SpDataBaseObjectSetProperty",
+      "rva": 234336
+    },
+    {
+      "ordinal": 155,
+      "name": "SpDataProviderConstructQuery",
+      "rva": 233872
+    },
+    {
+      "ordinal": 156,
+      "name": "SpDataProviderReportDataMapping",
+      "rva": 234784
+    },
+    {
+      "ordinal": 157,
+      "name": "SpDataQueryGetEnabledProperty",
+      "rva": 234400
+    },
+    {
+      "ordinal": 158,
+      "name": "SpDataQueryGetResultProperty",
+      "rva": 234656
+    },
+    {
+      "ordinal": 159,
+      "name": "SpDataQueryGetStatusProperty",
+      "rva": 234528
+    },
+    {
+      "ordinal": 160,
+      "name": "SpDataQueryNotifyInitialized",
+      "rva": 234144
+    },
+    {
+      "ordinal": 161,
+      "name": "SpDataQueryRefresh",
+      "rva": 234208
+    },
+    {
+      "ordinal": 162,
+      "name": "SpDataQuerySetEnabledProperty",
+      "rva": 234464
+    },
+    {
+      "ordinal": 163,
+      "name": "SpDataQuerySetResultProperty",
+      "rva": 234720
+    },
+    {
+      "ordinal": 164,
+      "name": "SpDataQuerySetStatusProperty",
+      "rva": 234592
+    },
+    {
+      "ordinal": 165,
+      "name": "SpDestroyNotifyWindow",
+      "rva": 233024
+    },
+    {
+      "ordinal": 166,
+      "name": "SpDestroyObject",
+      "rva": 325712
+    },
+    {
+      "ordinal": 104,
+      "name": "SpDestroyRenderTargetForMonitor",
+      "rva": 174736
+    },
+    {
+      "ordinal": 167,
+      "name": "SpDisableAutomation",
+      "rva": 179552
+    },
+    {
+      "ordinal": 168,
+      "name": "SpDisableDeferredInvoke",
+      "rva": 196848
+    },
+    {
+      "ordinal": 169,
+      "name": "SpDispatchInstanceMessage",
+      "rva": 325904
+    },
+    {
+      "ordinal": 105,
+      "name": "SpDx11CompileEffect",
+      "rva": 352560
+    },
+    {
+      "ordinal": 106,
+      "name": "SpDx11CreateShaderReflectionState",
+      "rva": 353152
+    },
+    {
+      "ordinal": 107,
+      "name": "SpDx11DeleteShaderReflectionState",
+      "rva": 353296
+    },
+    {
+      "ordinal": 108,
+      "name": "SpDx11LoadTexture",
+      "rva": 356912
+    },
+    {
+      "ordinal": 109,
+      "name": "SpDx11LookupPropertyHandle",
+      "rva": 353344
+    },
+    {
+      "ordinal": 110,
+      "name": "SpDx11ReleaseTexture",
+      "rva": 176080
+    },
+    {
+      "ordinal": 170,
+      "name": "SpEnableWaitHandler",
+      "rva": 117680
+    },
+    {
+      "ordinal": 171,
+      "name": "SpEnsureApplicationThread",
+      "rva": 193504
+    },
+    {
+      "ordinal": 172,
+      "name": "SpFileDownload",
+      "rva": 234848
+    },
+    {
+      "ordinal": 173,
+      "name": "SpFileDownloadClose",
+      "rva": 234928
+    },
+    {
+      "ordinal": 174,
+      "name": "SpFileDownloadGetBuffer",
+      "rva": 234896
+    },
+    {
+      "ordinal": 175,
+      "name": "SpFileDownloadShutdown",
+      "rva": 234960
+    },
+    {
+      "ordinal": 176,
+      "name": "SpFileTimeToSystemTime",
+      "rva": 235024
+    },
+    {
+      "ordinal": 177,
+      "name": "SpFindClass",
+      "rva": 325616
+    },
+    {
+      "ordinal": 178,
+      "name": "SpFindResource",
+      "rva": 236192
+    },
+    {
+      "ordinal": 179,
+      "name": "SpFrameworkUninit",
+      "rva": 237712
+    },
+    {
+      "ordinal": 180,
+      "name": "SpFreeLibrary",
+      "rva": 235216
+    },
+    {
+      "ordinal": 181,
+      "name": "SpFreeTextBitmap",
+      "rva": 188496
+    },
+    {
+      "ordinal": 182,
+      "name": "SpGestureRecognizerAdd",
+      "rva": 230720
+    },
+    {
+      "ordinal": 183,
+      "name": "SpGestureRecognizerCancel",
+      "rva": 231824
+    },
+    {
+      "ordinal": 184,
+      "name": "SpGestureRecognizerGetCraneCarryInfo",
+      "rva": 231728
+    },
+    {
+      "ordinal": 185,
+      "name": "SpGestureRecognizerGetCraneGrabInfo",
+      "rva": 231632
+    },
+    {
+      "ordinal": 186,
+      "name": "SpGestureRecognizerGetDragInfo",
+      "rva": 231344
+    },
+    {
+      "ordinal": 187,
+      "name": "SpGestureRecognizerGetExpected",
+      "rva": 230816
+    },
+    {
+      "ordinal": 188,
+      "name": "SpGestureRecognizerGetFlickInfo",
+      "rva": 231536
+    },
+    {
+      "ordinal": 189,
+      "name": "SpGestureRecognizerGetHoldInfo",
+      "rva": 231216
+    },
+    {
+      "ordinal": 190,
+      "name": "SpGestureRecognizerGetMotionParameterValue",
+      "rva": 232032
+    },
+    {
+      "ordinal": 191,
+      "name": "SpGestureRecognizerGetPinchStretchInfo",
+      "rva": 231440
+    },
+    {
+      "ordinal": 192,
+      "name": "SpGestureRecognizerGetTapInfo",
+      "rva": 231120
+    },
+    {
+      "ordinal": 193,
+      "name": "SpGestureRecognizerQueryPotentials",
+      "rva": 230624
+    },
+    {
+      "ordinal": 194,
+      "name": "SpGestureRecognizerReadConfigValue",
+      "rva": 232080
+    },
+    {
+      "ordinal": 195,
+      "name": "SpGestureRecognizerRefreshConfigValues",
+      "rva": 230576
+    },
+    {
+      "ordinal": 196,
+      "name": "SpGestureRecognizerReset",
+      "rva": 231920
+    },
+    {
+      "ordinal": 197,
+      "name": "SpGestureRecognizerResetConfigValues",
+      "rva": 232240
+    },
+    {
+      "ordinal": 198,
+      "name": "SpGestureRecognizerSetConfigValue",
+      "rva": 232144
+    },
+    {
+      "ordinal": 199,
+      "name": "SpGestureRecognizerSetExpected",
+      "rva": 230912
+    },
+    {
+      "ordinal": 200,
+      "name": "SpGestureRecognizerSetOrientationBias",
+      "rva": 231008
+    },
+    {
+      "ordinal": 201,
+      "name": "SpGestureRecognizerUseResolutionIndependentValues",
+      "rva": 230608
+    },
+    {
+      "ordinal": 202,
+      "name": "SpGetBlobHandle",
+      "rva": 198512
+    },
+    {
+      "ordinal": 203,
+      "name": "SpGetColorFromName",
+      "rva": 237888
+    },
+    {
+      "ordinal": 204,
+      "name": "SpGetCompositorContentPrivacyLevel",
+      "rva": 103792
+    },
+    {
+      "ordinal": 205,
+      "name": "SpGetConstructorParameterTypes",
+      "rva": 234016
+    },
+    {
+      "ordinal": 206,
+      "name": "SpGetConstructorSchema",
+      "rva": 238304
+    },
+    {
+      "ordinal": 207,
+      "name": "SpGetCurrentMessageSession",
+      "rva": 174848
+    },
+    {
+      "ordinal": 208,
+      "name": "SpGetDpi",
+      "rva": 239824
+    },
+    {
+      "ordinal": 209,
+      "name": "SpGetEnumNameValue",
+      "rva": 240096
+    },
+    {
+      "ordinal": 210,
+      "name": "SpGetEnumSchema",
+      "rva": 240640
+    },
+    {
+      "ordinal": 211,
+      "name": "SpGetEventSchema",
+      "rva": 238864
+    },
+    {
+      "ordinal": 212,
+      "name": "SpGetExternalMotionHandlerCallback",
+      "rva": 104416
+    },
+    {
+      "ordinal": 213,
+      "name": "SpGetImageHandle",
+      "rva": 175680
+    },
+    {
+      "ordinal": 214,
+      "name": "SpGetInputHandlerOptions",
+      "rva": 234656
+    },
+    {
+      "ordinal": 215,
+      "name": "SpGetIsRtlLocale",
+      "rva": 239872
+    },
+    {
+      "ordinal": 216,
+      "name": "SpGetLocalTime",
+      "rva": 235040
+    },
+    {
+      "ordinal": 217,
+      "name": "SpGetMethodParameterTypes",
+      "rva": 242624
+    },
+    {
+      "ordinal": 218,
+      "name": "SpGetMethodSchema",
+      "rva": 238736
+    },
+    {
+      "ordinal": 219,
+      "name": "SpGetModuleFileName",
+      "rva": 235088
+    },
+    {
+      "ordinal": 220,
+      "name": "SpGetModuleHandle",
+      "rva": 235072
+    },
+    {
+      "ordinal": 221,
+      "name": "SpGetNativeServicesObject",
+      "rva": 196784
+    },
+    {
+      "ordinal": 222,
+      "name": "SpGetPotentialGestures",
+      "rva": 234720
+    },
+    {
+      "ordinal": 223,
+      "name": "SpGetPropertySchema",
+      "rva": 238608
+    },
+    {
+      "ordinal": 224,
+      "name": "SpGetPropertyValue",
+      "rva": 238992
+    },
+    {
+      "ordinal": 225,
+      "name": "SpGetSize__System__String",
+      "rva": 308928
+    },
+    {
+      "ordinal": 226,
+      "name": "SpGetStateCache",
+      "rva": 175680
+    },
+    {
+      "ordinal": 227,
+      "name": "SpGetStringHandle",
+      "rva": 176256
+    },
+    {
+      "ordinal": 228,
+      "name": "SpGetThreadContext",
+      "rva": 325776
+    },
+    {
+      "ordinal": 229,
+      "name": "SpGetThreadContextOrNull",
+      "rva": 325840
+    },
+    {
+      "ordinal": 230,
+      "name": "SpGetToStringMethodId",
+      "rva": 239440
+    },
+    {
+      "ordinal": 231,
+      "name": "SpGetTypeID",
+      "rva": 176256
+    },
+    {
+      "ordinal": 232,
+      "name": "SpGetTypeMemberCount",
+      "rva": 238112
+    },
+    {
+      "ordinal": 233,
+      "name": "SpGetTypeMemberInfo",
+      "rva": 238240
+    },
+    {
+      "ordinal": 234,
+      "name": "SpGetTypeSchema",
+      "rva": 240464
+    },
+    {
+      "ordinal": 235,
+      "name": "SpHandleCloseRequest",
+      "rva": 196512
+    },
+    {
+      "ordinal": 236,
+      "name": "SpImagingInit",
+      "rva": 236976
+    },
+    {
+      "ordinal": 237,
+      "name": "SpImagingUninit",
+      "rva": 237040
+    },
+    {
+      "ordinal": 111,
+      "name": "SpInCompositorMode",
+      "rva": 103776
+    },
+    {
+      "ordinal": 238,
+      "name": "SpInit",
+      "rva": 325120
+    },
+    {
+      "ordinal": 239,
+      "name": "SpInitializeEventTracing",
+      "rva": 313456
+    },
+    {
+      "ordinal": 240,
+      "name": "SpInitializeTracing",
+      "rva": 243200
+    },
+    {
+      "ordinal": 241,
+      "name": "SpInvoke",
+      "rva": 326160
+    },
+    {
+      "ordinal": 242,
+      "name": "SpInvokeConstructor",
+      "rva": 238432
+    },
+    {
+      "ordinal": 243,
+      "name": "SpInvokeEnumToString",
+      "rva": 240208
+    },
+    {
+      "ordinal": 244,
+      "name": "SpInvokeMethod",
+      "rva": 239280
+    },
+    {
+      "ordinal": 245,
+      "name": "SpLoadFontResource",
+      "rva": 236464
+    },
+    {
+      "ordinal": 246,
+      "name": "SpLoadLibrary",
+      "rva": 235104
+    },
+    {
+      "ordinal": 247,
+      "name": "SpLoadString",
+      "rva": 236336
+    },
+    {
+      "ordinal": 248,
+      "name": "SpLogTrace",
+      "rva": 243968
+    },
+    {
+      "ordinal": 249,
+      "name": "SpMemAlloc",
+      "rva": 244608
+    },
+    {
+      "ordinal": 250,
+      "name": "SpMemFree",
+      "rva": 244672
+    },
+    {
+      "ordinal": 251,
+      "name": "SpMessageGroupSetEnabled",
+      "rva": 175744
+    },
+    {
+      "ordinal": 252,
+      "name": "SpMessageGroupSetPriority",
+      "rva": 175680
+    },
+    {
+      "ordinal": 253,
+      "name": "SpMessageSessionCancelSendInPlace",
+      "rva": 175376
+    },
+    {
+      "ordinal": 254,
+      "name": "SpMessageSessionCloseEndpoint",
+      "rva": 175184
+    },
+    {
+      "ordinal": 255,
+      "name": "SpMessageSessionCreateEndpoint",
+      "rva": 174960
+    },
+    {
+      "ordinal": 256,
+      "name": "SpMessageSessionCreateMessageGroup",
+      "rva": 175024
+    },
+    {
+      "ordinal": 257,
+      "name": "SpMessageSessionCreateMessageTimer",
+      "rva": 175104
+    },
+    {
+      "ordinal": 112,
+      "name": "SpMessageSessionRegisterWait",
+      "rva": 175520
+    },
+    {
+      "ordinal": 258,
+      "name": "SpMessageSessionSend",
+      "rva": 175248
+    },
+    {
+      "ordinal": 259,
+      "name": "SpMessageSessionSendInPlace",
+      "rva": 175312
+    },
+    {
+      "ordinal": 260,
+      "name": "SpMessageSessionSendResource",
+      "rva": 175440
+    },
+    {
+      "ordinal": 113,
+      "name": "SpMessageSessionUnregisterWait",
+      "rva": 175600
+    },
+    {
+      "ordinal": 261,
+      "name": "SpMessageTimerCancel",
+      "rva": 175952
+    },
+    {
+      "ordinal": 262,
+      "name": "SpMessageTimerSetAbsolute",
+      "rva": 175808
+    },
+    {
+      "ordinal": 263,
+      "name": "SpMessageTimerSetRelative",
+      "rva": 175888
+    },
+    {
+      "ordinal": 264,
+      "name": "SpOnCopy",
+      "rva": 242064
+    },
+    {
+      "ordinal": 265,
+      "name": "SpOnCraneCarry",
+      "rva": 241984
+    },
+    {
+      "ordinal": 266,
+      "name": "SpOnCraneGrab",
+      "rva": 241904
+    },
+    {
+      "ordinal": 267,
+      "name": "SpOnEdgeGesture",
+      "rva": 242384
+    },
+    {
+      "ordinal": 268,
+      "name": "SpOnGainDeepKeyFocus",
+      "rva": 241184
+    },
+    {
+      "ordinal": 269,
+      "name": "SpOnGainDirectKeyFocus",
+      "rva": 241120
+    },
+    {
+      "ordinal": 270,
+      "name": "SpOnInputHandlerCanceled",
+      "rva": 234144
+    },
+    {
+      "ordinal": 271,
+      "name": "SpOnKeyCharacter",
+      "rva": 241008
+    },
+    {
+      "ordinal": 272,
+      "name": "SpOnKeyDown",
+      "rva": 240784
+    },
+    {
+      "ordinal": 273,
+      "name": "SpOnKeyUp",
+      "rva": 240896
+    },
+    {
+      "ordinal": 274,
+      "name": "SpOnLoseDeepKeyFocus",
+      "rva": 241248
+    },
+    {
+      "ordinal": 275,
+      "name": "SpOnLoseDirectKeyFocus",
+      "rva": 234208
+    },
+    {
+      "ordinal": 276,
+      "name": "SpOnPaste",
+      "rva": 242128
+    },
+    {
+      "ordinal": 277,
+      "name": "SpOnTouchDrag",
+      "rva": 175440
+    },
+    {
+      "ordinal": 278,
+      "name": "SpOnTouchFlick",
+      "rva": 241744
+    },
+    {
+      "ordinal": 279,
+      "name": "SpOnTouchHold",
+      "rva": 241664
+    },
+    {
+      "ordinal": 280,
+      "name": "SpOnTouchMove",
+      "rva": 241376
+    },
+    {
+      "ordinal": 281,
+      "name": "SpOnTouchPinchStretch",
+      "rva": 241824
+    },
+    {
+      "ordinal": 282,
+      "name": "SpOnTouchSessionBegin",
+      "rva": 241312
+    },
+    {
+      "ordinal": 283,
+      "name": "SpOnTouchSessionEnd",
+      "rva": 241440
+    },
+    {
+      "ordinal": 284,
+      "name": "SpOnTouchShortHold",
+      "rva": 241584
+    },
+    {
+      "ordinal": 285,
+      "name": "SpOnTouchTap",
+      "rva": 241504
+    },
+    {
+      "ordinal": 286,
+      "name": "SpPostEngineMessage",
+      "rva": 325408
+    },
+    {
+      "ordinal": 287,
+      "name": "SpQueryConstructorParameterCount",
+      "rva": 233952
+    },
+    {
+      "ordinal": 288,
+      "name": "SpQueryEnumDefinition",
+      "rva": 239952
+    },
+    {
+      "ordinal": 289,
+      "name": "SpQueryEventDefinition",
+      "rva": 244736
+    },
+    {
+      "ordinal": 290,
+      "name": "SpQueryForMarshalAsInterface",
+      "rva": 176144
+    },
+    {
+      "ordinal": 291,
+      "name": "SpQueryMethodDefinition",
+      "rva": 242448
+    },
+    {
+      "ordinal": 292,
+      "name": "SpQueryPropertyDefinition",
+      "rva": 244816
+    },
+    {
+      "ordinal": 293,
+      "name": "SpQuerySchemaInfo",
+      "rva": 240336
+    },
+    {
+      "ordinal": 294,
+      "name": "SpQueryTypeDefinition",
+      "rva": 237952
+    },
+    {
+      "ordinal": 295,
+      "name": "SpRegNotifyChangeKey",
+      "rva": 245184
+    },
+    {
+      "ordinal": 296,
+      "name": "SpRegRevokeNotifyChangeKey",
+      "rva": 245120
+    },
+    {
+      "ordinal": 297,
+      "name": "SpRegisterEventTracingControlCallback",
+      "rva": 313504
+    },
+    {
+      "ordinal": 298,
+      "name": "SpRegisterNativeServicesCallbacks",
+      "rva": 196576
+    },
+    {
+      "ordinal": 114,
+      "name": "SpRegisterShellVisual",
+      "rva": 174640
+    },
+    {
+      "ordinal": 300,
+      "name": "SpRegisterVirtualTileProvider",
+      "rva": 104144
+    },
+    {
+      "ordinal": 299,
+      "name": "SpRegisterVirtualTileProvider2",
+      "rva": 104224
+    },
+    {
+      "ordinal": 301,
+      "name": "SpRegisterWaitHandler",
+      "rva": 117392
+    },
+    {
+      "ordinal": 302,
+      "name": "SpReleaseExternalObject",
+      "rva": 176080
+    },
+    {
+      "ordinal": 303,
+      "name": "SpReleaseGestureRecognizer",
+      "rva": 176080
+    },
+    {
+      "ordinal": 304,
+      "name": "SpRenderThreadInit",
+      "rva": 237072
+    },
+    {
+      "ordinal": 305,
+      "name": "SpRenderThreadUninit",
+      "rva": 237584
+    },
+    {
+      "ordinal": 306,
+      "name": "SpReportAssertionFailure",
+      "rva": 244592
+    },
+    {
+      "ordinal": 307,
+      "name": "SpResolveScriptProc",
+      "rva": 196976
+    },
+    {
+      "ordinal": 308,
+      "name": "SpRichTextBuildObject",
+      "rva": 245600
+    },
+    {
+      "ordinal": 309,
+      "name": "SpRichTextDestroyGlyphRunInfo",
+      "rva": 245744
+    },
+    {
+      "ordinal": 310,
+      "name": "SpRichTextDestroyObject",
+      "rva": 245680
+    },
+    {
+      "ordinal": 311,
+      "name": "SpRichTextMeasure",
+      "rva": 245840
+    },
+    {
+      "ordinal": 312,
+      "name": "SpRichTextMeasureGlyphs",
+      "rva": 245872
+    },
+    {
+      "ordinal": 313,
+      "name": "SpRichTextRasterize",
+      "rva": 245920
+    },
+    {
+      "ordinal": 314,
+      "name": "SpSendDllSchemaUnloadNotification",
+      "rva": 200640
+    },
+    {
+      "ordinal": 315,
+      "name": "SpSetCompositorMode",
+      "rva": 103648
+    },
+    {
+      "ordinal": 316,
+      "name": "SpSetExternalMotionHandlerCallback",
+      "rva": 104384
+    },
+    {
+      "ordinal": 317,
+      "name": "SpSetFrameworkRunningState",
+      "rva": 247568
+    },
+    {
+      "ordinal": 318,
+      "name": "SpSetPropertyValue",
+      "rva": 239136
+    },
+    {
+      "ordinal": 319,
+      "name": "SpSetSchemaID",
+      "rva": 240272
+    },
+    {
+      "ordinal": 320,
+      "name": "SpSetStateCache",
+      "rva": 176320
+    },
+    {
+      "ordinal": 321,
+      "name": "SpSetWatchDogCallback",
+      "rva": 247536
+    },
+    {
+      "ordinal": 322,
+      "name": "SpSimpleTextMeasureAndRasterize",
+      "rva": 246064
+    },
+    {
+      "ordinal": 323,
+      "name": "SpSystemTimeToFileTime",
+      "rva": 235008
+    },
+    {
+      "ordinal": 324,
+      "name": "SpTraceEvent",
+      "rva": 313552
+    },
+    {
+      "ordinal": 325,
+      "name": "SpUIXListAdd",
+      "rva": 248144
+    },
+    {
+      "ordinal": 326,
+      "name": "SpUIXListClear",
+      "rva": 248208
+    },
+    {
+      "ordinal": 327,
+      "name": "SpUIXListFetchSlowData",
+      "rva": 248848
+    },
+    {
+      "ordinal": 328,
+      "name": "SpUIXListGetCount",
+      "rva": 248720
+    },
+    {
+      "ordinal": 329,
+      "name": "SpUIXListGetIndexForKey",
+      "rva": 249168
+    },
+    {
+      "ordinal": 330,
+      "name": "SpUIXListGetItem",
+      "rva": 248592
+    },
+    {
+      "ordinal": 331,
+      "name": "SpUIXListGetKeyForIndex",
+      "rva": 249104
+    },
+    {
+      "ordinal": 332,
+      "name": "SpUIXListIndexOf",
+      "rva": 248272
+    },
+    {
+      "ordinal": 333,
+      "name": "SpUIXListInsert",
+      "rva": 248336
+    },
+    {
+      "ordinal": 334,
+      "name": "SpUIXListIsItemAvailable",
+      "rva": 248784
+    },
+    {
+      "ordinal": 335,
+      "name": "SpUIXListMove",
+      "rva": 248400
+    },
+    {
+      "ordinal": 336,
+      "name": "SpUIXListNotifyVisibleRangeChanged",
+      "rva": 248976
+    },
+    {
+      "ordinal": 337,
+      "name": "SpUIXListNotifyVisualsCreated",
+      "rva": 175184
+    },
+    {
+      "ordinal": 338,
+      "name": "SpUIXListNotifyVisualsReleased",
+      "rva": 249040
+    },
+    {
+      "ordinal": 339,
+      "name": "SpUIXListRegisterCallbacks",
+      "rva": 248080
+    },
+    {
+      "ordinal": 340,
+      "name": "SpUIXListRemove",
+      "rva": 248464
+    },
+    {
+      "ordinal": 341,
+      "name": "SpUIXListRemoveAt",
+      "rva": 248528
+    },
+    {
+      "ordinal": 342,
+      "name": "SpUIXListSetItem",
+      "rva": 248656
+    },
+    {
+      "ordinal": 343,
+      "name": "SpUIXListUnregisterCallbacks",
+      "rva": 234656
+    },
+    {
+      "ordinal": 344,
+      "name": "SpUIXListWantSlowDataRequests",
+      "rva": 248912
+    },
+    {
+      "ordinal": 345,
+      "name": "SpUninit",
+      "rva": 325312
+    },
+    {
+      "ordinal": 346,
+      "name": "SpUninitializeEventTracing",
+      "rva": 313472
+    },
+    {
+      "ordinal": 347,
+      "name": "SpUninitializeTracing",
+      "rva": 243248
+    },
+    {
+      "ordinal": 348,
+      "name": "SpUnregisterNativeServicesCallbacks",
+      "rva": 196704
+    },
+    {
+      "ordinal": 115,
+      "name": "SpUnregisterShellVisual",
+      "rva": 174672
+    },
+    {
+      "ordinal": 349,
+      "name": "SpUnregisterVirtualTileProvider",
+      "rva": 104304
+    },
+    {
+      "ordinal": 350,
+      "name": "SpUnregisterWaitHandler",
+      "rva": 117584
+    },
+    {
+      "ordinal": 116,
+      "name": "SpUpdateMonitorHandle",
+      "rva": 174768
+    },
+    {
+      "ordinal": 351,
+      "name": "SpUpdateTraceSettings",
+      "rva": 243472
+    },
+    {
+      "ordinal": 353,
+      "name": "SpVideoConnect",
+      "rva": 103808
+    },
+    {
+      "ordinal": 352,
+      "name": "SpVideoConnect2",
+      "rva": 103824
+    },
+    {
+      "ordinal": 354,
+      "name": "SpVideoDisconnect",
+      "rva": 103952
+    },
+    {
+      "ordinal": 355,
+      "name": "SpXmlLiteCreateXmlReader",
+      "rva": 250448
+    },
+    {
+      "ordinal": 356,
+      "name": "SpXmlLiteCreateXmlWriter",
+      "rva": 251744
+    },
+    {
+      "ordinal": 357,
+      "name": "SpXmlLiteDeleteXmlReader",
+      "rva": 251008
+    },
+    {
+      "ordinal": 358,
+      "name": "SpXmlLiteDeleteXmlWriter",
+      "rva": 252208
+    },
+    {
+      "ordinal": 359,
+      "name": "SpXmlLiteGetLocalName",
+      "rva": 251344
+    },
+    {
+      "ordinal": 360,
+      "name": "SpXmlLiteGetPrefix",
+      "rva": 251408
+    },
+    {
+      "ordinal": 361,
+      "name": "SpXmlLiteGetQualifiedName",
+      "rva": 251280
+    },
+    {
+      "ordinal": 362,
+      "name": "SpXmlLiteGetValue",
+      "rva": 251472
+    },
+    {
+      "ordinal": 363,
+      "name": "SpXmlLiteIsEmptyElement",
+      "rva": 251216
+    },
+    {
+      "ordinal": 364,
+      "name": "SpXmlLiteRead",
+      "rva": 251040
+    },
+    {
+      "ordinal": 365,
+      "name": "SpXmlLiteReadAttribute",
+      "rva": 251088
+    },
+    {
+      "ordinal": 366,
+      "name": "SpXmlLiteWriteAttributeString",
+      "rva": 252432
+    },
+    {
+      "ordinal": 367,
+      "name": "SpXmlLiteWriteEndElement",
+      "rva": 252368
+    },
+    {
+      "ordinal": 368,
+      "name": "SpXmlLiteWriteStartElement",
+      "rva": 252288
+    },
+    {
+      "ordinal": 369,
+      "name": "SpXmlLiteWriteString",
+      "rva": 252512
+    },
+    {
+      "ordinal": 100,
+      "name": null,
+      "rva": 242256
+    },
+    {
+      "ordinal": 101,
+      "name": null,
+      "rva": 242192
+    },
+    {
+      "ordinal": 102,
+      "name": null,
+      "rva": 242320
+    }
+  ],
+  "imports": [
+    {
+      "module": "CoreMessaging.dll",
+      "names": [
+        "CoreUICreate",
+        "CoreUICreateClientWindowIDManager",
+        "CoreUICreateAnonymousStream",
+        "MsgStringCreateShared",
+        "CoreUIFailFastOOM"
+      ],
+      "delay": false
+    },
+    {
+      "module": "CoreUIComponents.dll",
+      "names": [
+        "CoreUIClientCreate",
+        "CoreUIFactoryCreate"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-errorhandling-l1-1-1.dll",
+      "names": [
+        "SetLastError",
+        "RaiseException",
+        "UnhandledExceptionFilter",
+        "SetUnhandledExceptionFilter",
+        "GetLastError"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-processthreads-l1-1-2.dll",
+      "names": [
+        "GetCurrentProcessId",
+        "SetThreadPriority",
+        "GetCurrentThread",
+        "TlsGetValue",
+        "ResumeThread",
+        "TlsSetValue",
+        "GetCurrentThreadId",
+        "CreateThread",
+        "TlsFree",
+        "GetCurrentProcess",
+        "TerminateProcess",
+        "TlsAlloc",
+        "IsProcessorFeaturePresent"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-synch-l1-2-0.dll",
+      "names": [
+        "WaitForSingleObject",
+        "ReleaseMutex",
+        "WaitForSingleObjectEx",
+        "DeleteCriticalSection",
+        "OpenEventW",
+        "ReleaseSemaphore",
+        "SetEvent",
+        "CreateEventW",
+        "OpenSemaphoreW",
+        "ResetEvent",
+        "CreateMutexExW",
+        "Sleep",
+        "CreateMutexW",
+        "CreateSemaphoreExW",
+        "InitializeCriticalSection",
+        "LeaveCriticalSection",
+        "EnterCriticalSection",
+        "CreateEventA",
+        "CreateMutexA",
+        "OpenMutexW",
+        "WaitForMultipleObjectsEx",
+        "InitializeCriticalSectionAndSpinCount"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-profile-l1-1-0.dll",
+      "names": [
+        "QueryPerformanceCounter",
+        "QueryPerformanceFrequency"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-registry-l1-1-0.dll",
+      "names": [
+        "RegNotifyChangeKeyValue",
+        "RegQueryValueExA",
+        "RegCloseKey",
+        "RegGetValueW",
+        "RegOpenKeyExA",
+        "RegOpenKeyExW",
+        "RegCreateKeyExW",
+        "RegQueryValueExW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-handle-l1-1-0.dll",
+      "names": [
+        "DuplicateHandle",
+        "CloseHandle"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-heap-l1-2-0.dll",
+      "names": [
+        "HeapFree",
+        "HeapDestroy",
+        "HeapCreate",
+        "GetProcessHeap",
+        "HeapAlloc",
+        "HeapReAlloc"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-string-l1-1-0.dll",
+      "names": [
+        "WideCharToMultiByte"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-memory-l1-1-2.dll",
+      "names": [
+        "MapViewOfFile",
+        "CreateFileMappingW",
+        "OpenFileMappingW",
+        "UnmapViewOfFile"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-sysinfo-l1-2-1.dll",
+      "names": [
+        "GetLocalTime",
+        "GetTickCount",
+        "GlobalMemoryStatusEx",
+        "GetSystemTimeAsFileTime",
+        "GetSystemInfo"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-libraryloader-l1-2-2.dll",
+      "names": [
+        "LoadLibraryW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-libraryloader-l1-2-0.dll",
+      "names": [
+        "EnumResourceNamesExW",
+        "FindResourceExW",
+        "LoadResource",
+        "LockResource",
+        "SizeofResource",
+        "LoadStringW",
+        "LoadLibraryExW",
+        "GetModuleFileNameA",
+        "GetProcAddress",
+        "FreeLibrary",
+        "GetModuleHandleExW",
+        "GetModuleFileNameW",
+        "GetModuleHandleW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "OLEAUT32.dll",
+      "names": [
+        "VariantInit",
+        "SysAllocString",
+        "SafeArrayPutElement",
+        "SysStringLen",
+        "SysFreeString",
+        "SysReAllocString",
+        "SysReAllocStringLen",
+        "SysAllocStringLen",
+        "VariantClear",
+        "SafeArrayCreateVector",
+        "SafeArrayGetUBound",
+        "SafeArrayDestroy",
+        "SafeArrayGetElement",
+        "SafeArrayGetLBound"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-localization-l1-2-1.dll",
+      "names": [
+        "GetLocaleInfoW",
+        "GetThreadUILanguage",
+        "FormatMessageW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-com-l1-1-1.dll",
+      "names": [
+        "StringFromGUID2",
+        "CoTaskMemFree",
+        "CoCreateInstance"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-timezone-l1-1-0.dll",
+      "names": [
+        "FileTimeToSystemTime",
+        "SystemTimeToFileTime"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-file-l1-2-1.dll",
+      "names": [
+        "GetFileSize",
+        "WriteFile",
+        "SetEndOfFile",
+        "CreateFileW",
+        "ReadFile"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-debug-l1-1-1.dll",
+      "names": [
+        "OutputDebugStringW",
+        "DebugBreak"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-processenvironment-l1-2-0.dll",
+      "names": [
+        "GetStdHandle"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-errorhandling-l1-1-3.dll",
+      "names": [
+        "RaiseFailFastException",
+        "TerminateProcessOnMemoryExhaustion"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-localization-l1-2-2.dll",
+      "names": [
+        "LCIDToLocaleName"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-eventing-provider-l1-1-0.dll",
+      "names": [
+        "EventWrite",
+        "EventRegister",
+        "EventUnregister"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-shlwapi-legacy-l1-1-0.dll",
+      "names": [
+        "PathFindFileNameW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-kernel32-legacy-l1-1-1.dll",
+      "names": [
+        "MulDiv"
+      ],
+      "delay": false
+    },
+    {
+      "module": "SecRuntime.dll",
+      "names": [
+        "OpenProcessForQuery"
+      ],
+      "delay": false
+    },
+    {
+      "module": "ntdll.dll",
+      "names": [
+        "NtSetTimerResolution",
+        "AlpcInitializeMessageAttribute",
+        "NtAlpcConnectPort",
+        "RtlInitUnicodeString",
+        "NtAlpcCancelMessage",
+        "NtAlpcAcceptConnectPort",
+        "NtAlpcSendWaitReceivePort",
+        "AlpcGetMessageAttribute",
+        "RtlUnsubscribeWnfStateChangeNotification",
+        "RtlSubscribeWnfStateChangeNotification",
+        "NtClose"
+      ],
+      "delay": false
+    },
+    {
+      "module": "WindowsCodecs.dll",
+      "names": [
+        "WICCreateImagingFactory_Proxy"
+      ],
+      "delay": false
+    },
+    {
+      "module": "TextInputFramework.dll",
+      "names": [
+        "TextInputHostCreate",
+        "TextInputClientCreate"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-delayload-l1-1-1.dll",
+      "names": [
+        "ResolveDelayLoadedAPI",
+        "DelayLoadFailureHook"
+      ],
+      "delay": false
+    },
+    {
+      "module": "msvcrt.dll",
+      "names": [
+        "memcpy_s",
+        "_XcptFilter",
+        "_amsg_exit",
+        "_initterm",
+        "_lock",
+        "_unlock",
+        "__dllonexit",
+        "_onexit",
+        "__CxxFrameHandler3",
+        "??1type_info@@UAE@XZ",
+        "_except_handler4_common",
+        "wcscat_s",
+        "malloc",
+        "_itow_s",
+        "wcschr",
+        "_finite",
+        "_wtoi",
+        "bsearch",
+        "wcstol",
+        "_wcsnicmp",
+        "wcsstr",
+        "wcsncmp",
+        "wcsncpy_s",
+        "_vsnwprintf",
+        "qsort",
+        "free",
+        "_wcsdup",
+        "_wcsicmp",
+        "_purecall",
+        "memmove",
+        "wcscpy_s",
+        "_CIsin",
+        "_CIsqrt",
+        "_CItan",
+        "_CItanh",
+        "_CxxThrowException",
+        "wcstod",
+        "_ftol2",
+        "_ftol2_sse",
+        "ceil",
+        "memset",
+        "floor",
+        "memcmp",
+        "memcpy",
+        "_CIpow",
+        "_CIacos",
+        "_CIatan2",
+        "_CIcos",
+        "_CIexp",
+        "_CIlog"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-security-sddl-l1-1-0.dll",
+      "names": [
+        "ConvertStringSecurityDescriptorToSecurityDescriptorW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-synch-l1-2-1.dll",
+      "names": [
+        "WaitForMultipleObjects"
+      ],
+      "delay": false
+    },
+    {
+      "module": "ext-ms-win-ntuser-rectangle-ext-l1-1-0.dll",
+      "names": [
+        "OffsetRect",
+        "InflateRect",
+        "PtInRect",
+        "UnionRect",
+        "IntersectRect",
+        "EqualRect"
+      ],
+      "delay": true
+    },
+    {
+      "module": "ext-ms-win-rtcore-ntuser-sysparams-l1-1-0.dll",
+      "names": [
+        "GetSystemMetrics",
+        "GetMonitorInfoW",
+        "EnumDisplaySettingsW"
+      ],
+      "delay": true
+    },
+    {
+      "module": "ext-ms-win-rtcore-ntuser-dc-access-l1-1-0.dll",
+      "names": [
+        "GetDC",
+        "ReleaseDC"
+      ],
+      "delay": true
+    },
+    {
+      "module": "ext-ms-win-rtcore-gdi-devcaps-l1-1-0.dll",
+      "names": [
+        "GetDeviceCaps"
+      ],
+      "delay": true
+    },
+    {
+      "module": "UIAutomationCore.DLL",
+      "names": [
+        "UiaClientsAreListening",
+        "UiaHostProviderFromHwnd",
+        "UiaReturnRawElementProvider",
+        "UiaRaiseAsyncContentLoadedEvent",
+        "UiaRaiseAutomationPropertyChangedEvent",
+        "UiaRaiseAutomationEvent",
+        "UiaRaiseStructureChangedEvent"
+      ],
+      "delay": true
+    },
+    {
+      "module": "dwmmobile.dll",
+      "names": [
+        "RegisterToplevelVisual",
+        "UnregisterToplevelVisual",
+        "InitializeBridgedDWM",
+        "CreateRenderTargetForMonitor",
+        "DestroyRenderTargetForMonitor",
+        "UpdateMonitorHandle"
+      ],
+      "delay": true
+    },
+    {
+      "module": "ext-ms-win-mininput-inputhost-l1-1-0.dll",
+      "names": [
+        "CreateTouchInputHost",
+        "CreatePointerInputHost",
+        "CreateInputHost"
+      ],
+      "delay": true
+    }
+  ]
+}

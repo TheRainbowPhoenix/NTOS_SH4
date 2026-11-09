@@ -1,0 +1,555 @@
+{
+  "module": "UIXN.DLL",
+  "source_machine": "0x14c",
+  "export_base": 1,
+  "exports": [
+    {
+      "ordinal": 1,
+      "name": "UIXGetServices",
+      "rva": 20378
+    },
+    {
+      "ordinal": 2,
+      "name": "UIXInitializeApplication",
+      "rva": 19035
+    },
+    {
+      "ordinal": 3,
+      "name": "UIXInitializeForToolOnly",
+      "rva": 20282
+    },
+    {
+      "ordinal": 4,
+      "name": "UIXLoadMarkup",
+      "rva": 20440
+    },
+    {
+      "ordinal": 5,
+      "name": "UIXRunApplication",
+      "rva": 20359
+    },
+    {
+      "ordinal": 6,
+      "name": "UIXSetErrorReportHandler",
+      "rva": 20853
+    },
+    {
+      "ordinal": 7,
+      "name": "UIXShutdownApplication",
+      "rva": 20549
+    },
+    {
+      "ordinal": 8,
+      "name": "UIXSynchronizeView",
+      "rva": 20518
+    },
+    {
+      "ordinal": 9,
+      "name": "UIXWatchDogFailFast",
+      "rva": 24009
+    }
+  ],
+  "imports": [
+    {
+      "module": "msvcrt.dll",
+      "names": [
+        "_amsg_exit",
+        "_XcptFilter",
+        "_onexit",
+        "__dllonexit",
+        "_unlock",
+        "_lock",
+        "_initterm",
+        "wcschr",
+        "wcsncmp",
+        "wcsrchr",
+        "swprintf_s",
+        "_wsplitpath_s",
+        "wcsncpy_s",
+        "memmove",
+        "_vsnprintf",
+        "_vsnprintf_s",
+        "memcpy_s",
+        "malloc",
+        "free",
+        "??0exception@@QAE@XZ",
+        "??0exception@@QAE@ABV0@@Z",
+        "??1exception@@UAE@XZ",
+        "_except_handler4_common",
+        "??1type_info@@UAE@XZ",
+        "_vsnwprintf",
+        "??_V@YAXPAX@Z",
+        "??3@YAXPAX@Z",
+        "memchr",
+        "_copysign",
+        "realloc",
+        "_errno",
+        "wcstod",
+        "wcscpy_s",
+        "_i64tow_s",
+        "_ui64tow_s",
+        "_callnewh",
+        "_CIatan2",
+        "_CIcosh",
+        "_CIfmod",
+        "_CIsinh",
+        "_CItanh",
+        "_CxxThrowException",
+        "__CxxFrameHandler3",
+        "_ftol2",
+        "_libm_sse2_acos_precise",
+        "_libm_sse2_asin_precise",
+        "_libm_sse2_atan_precise",
+        "_libm_sse2_cos_precise",
+        "_libm_sse2_exp_precise",
+        "_libm_sse2_log10_precise",
+        "_libm_sse2_log_precise",
+        "_libm_sse2_pow_precise",
+        "_libm_sse2_sin_precise",
+        "_libm_sse2_sqrt_precise",
+        "_libm_sse2_tan_precise",
+        "ceil",
+        "floor",
+        "memcmp",
+        "memcpy",
+        "memset"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-handle-l1-1-0.dll",
+      "names": [
+        "DuplicateHandle",
+        "CloseHandle"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-file-l1-2-1.dll",
+      "names": [
+        "GetFileAttributesW",
+        "CreateFileW",
+        "ReadFile",
+        "GetFileSize",
+        "FlushFileBuffers",
+        "WriteFile"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-libraryloader-l1-2-0.dll",
+      "names": [
+        "DisableThreadLibraryCalls",
+        "FreeLibrary",
+        "LoadLibraryExW",
+        "GetModuleFileNameA",
+        "GetModuleHandleW",
+        "GetModuleHandleExW",
+        "GetModuleFileNameW",
+        "GetProcAddress"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-debug-l1-1-1.dll",
+      "names": [
+        "OutputDebugStringW",
+        "IsDebuggerPresent",
+        "DebugBreak"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-localization-l1-2-1.dll",
+      "names": [
+        "LCMapStringW",
+        "FormatMessageW",
+        "GetLocaleInfoW",
+        "GetThreadUILanguage"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-registry-l1-1-0.dll",
+      "names": [
+        "RegCloseKey",
+        "RegQueryValueExW",
+        "RegGetValueW",
+        "RegOpenKeyExW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-processthreads-l1-1-2.dll",
+      "names": [
+        "GetCurrentProcessId",
+        "GetCurrentThreadId",
+        "GetCurrentThread",
+        "TlsGetValue",
+        "TlsSetValue",
+        "OpenThread",
+        "SuspendThread",
+        "TlsAlloc",
+        "GetCurrentProcess",
+        "TerminateProcess",
+        "TlsFree",
+        "ResumeThread",
+        "GetThreadContext"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-errorhandling-l1-1-1.dll",
+      "names": [
+        "SetLastError",
+        "SetUnhandledExceptionFilter",
+        "UnhandledExceptionFilter",
+        "GetLastError",
+        "RaiseException"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-synch-l1-2-0.dll",
+      "names": [
+        "InitOnceBeginInitialize",
+        "InitOnceComplete",
+        "CreateSemaphoreExW",
+        "OpenSemaphoreW",
+        "WaitForSingleObject",
+        "CreateMutexExW",
+        "EnterCriticalSection",
+        "InitializeCriticalSection",
+        "WaitForSingleObjectEx",
+        "ReleaseMutex",
+        "ReleaseSemaphore",
+        "LeaveCriticalSection",
+        "DeleteCriticalSection",
+        "Sleep",
+        "CreateEventW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-heap-l1-2-0.dll",
+      "names": [
+        "HeapCreate",
+        "GetProcessHeap",
+        "HeapFree",
+        "HeapAlloc",
+        "HeapDestroy"
+      ],
+      "delay": false
+    },
+    {
+      "module": "OLEAUT32.dll",
+      "names": [
+        "SysAllocString"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-eventing-provider-l1-1-0.dll",
+      "names": [
+        "EventRegister",
+        "EventUnregister",
+        "EventSetInformation",
+        "EventWriteTransfer"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-libraryloader-l1-2-2.dll",
+      "names": [
+        "LoadLibraryW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-io-l1-1-1.dll",
+      "names": [
+        "DeviceIoControl"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-processenvironment-l1-2-0.dll",
+      "names": [
+        "GetEnvironmentVariableW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-profile-l1-1-0.dll",
+      "names": [
+        "QueryPerformanceFrequency",
+        "QueryPerformanceCounter"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-sysinfo-l1-2-1.dll",
+      "names": [
+        "GetSystemTime",
+        "GetSystemInfo",
+        "GetTickCount",
+        "GetSystemTimeAsFileTime"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-rtlsupport-l1-2-0.dll",
+      "names": [
+        "RtlCaptureStackBackTrace"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-string-l1-1-0.dll",
+      "names": [
+        "CompareStringOrdinal",
+        "MultiByteToWideChar",
+        "WideCharToMultiByte",
+        "CompareStringW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-heap-l2-1-0.dll",
+      "names": [
+        "LocalFree"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-timezone-l1-1-0.dll",
+      "names": [
+        "SystemTimeToFileTime"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-localization-obsolete-l1-3-0.dll",
+      "names": [
+        "GetNumberFormatW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "UIXRender.dll",
+      "names": [
+        "SpCoreUIInitialize",
+        "SpTraceEvent",
+        "SpRegisterEventTracingControlCallback",
+        "SpUninitializeEventTracing",
+        "SpInitializeEventTracing",
+        "SpGetNativeServicesObject",
+        "SpSetWatchDogCallback",
+        "SpAutomationConstructNode",
+        "SpCreateEditableText",
+        "SpAutomationNotifyShutdown",
+        "SpAutomationNotifyFailFast",
+        "SpDisableAutomation",
+        "SpAutomationFireEvent",
+        "SpAutomationAsyncCommandCompleted",
+        "SpGestureRecognizerUseResolutionIndependentValues",
+        "SpGestureRecognizerResetConfigValues",
+        "SpGestureRecognizerSetConfigValue",
+        "SpGestureRecognizerReadConfigValue",
+        "SpGestureRecognizerGetMotionParameterValue",
+        "SpGestureRecognizerRefreshConfigValues",
+        "SpGestureRecognizerReset",
+        "SpGestureRecognizerCancel",
+        "SpGestureRecognizerGetCraneCarryInfo",
+        "SpGestureRecognizerGetCraneGrabInfo",
+        "SpGestureRecognizerGetFlickInfo",
+        "SpGestureRecognizerGetPinchStretchInfo",
+        "SpGestureRecognizerGetDragInfo",
+        "SpGestureRecognizerGetHoldInfo",
+        "SpGestureRecognizerGetTapInfo",
+        "SpGestureRecognizerSetOrientationBias",
+        "SpGestureRecognizerSetExpected",
+        "SpGestureRecognizerAdd",
+        "SpGestureRecognizerQueryPotentials",
+        "SpReleaseGestureRecognizer",
+        "SpCreateGestureRecognizer",
+        "SpUIXListUnregisterCallbacks",
+        "SpUIXListRegisterCallbacks",
+        "SpEnsureApplicationThread",
+        "SpCallDeferredInvokeProc",
+        "SpRegisterNativeServicesCallbacks",
+        "SpHandleCloseRequest",
+        "SpDestroyNotifyWindow",
+        "SpCreateNotifyWindow",
+        "SpRegRevokeNotifyChangeKey",
+        "SpRegNotifyChangeKey",
+        "SpRichTextRasterize",
+        "SpRichTextMeasureGlyphs",
+        "SpRichTextMeasure",
+        "SpRichTextDestroyGlyphRunInfo",
+        "SpRichTextDestroyObject",
+        "SpRichTextBuildObject",
+        "SpXmlLiteWriteAttributeString",
+        "SpXmlLiteWriteEndElement",
+        "SpXmlLiteWriteStartElement",
+        "SpXmlLiteDeleteXmlWriter",
+        "SpXmlLiteCreateXmlWriter",
+        "SpXmlLiteGetValue",
+        "SpXmlLiteGetPrefix",
+        "SpXmlLiteGetLocalName",
+        "SpXmlLiteGetQualifiedName",
+        "SpXmlLiteIsEmptyElement",
+        "SpXmlLiteReadAttribute",
+        "SpXmlLiteRead",
+        "SpXmlLiteCreateXmlReader",
+        "SpDataProviderReportDataMapping",
+        "SpDataQuerySetResultProperty",
+        "SpDataQueryGetResultProperty",
+        "SpDataQuerySetStatusProperty",
+        "SpDataQueryGetStatusProperty",
+        "SpDataQuerySetEnabledProperty",
+        "SpDataQueryGetEnabledProperty",
+        "SpDataQueryRefresh",
+        "SpDataQueryNotifyInitialized",
+        "SpDataProviderConstructQuery",
+        "SpDataBaseObjectSetProperty",
+        "SpDataBaseObjectGetProperty",
+        "SpDataBaseObjectGetInternalHandle",
+        "SpDataBaseObjectSetInternalHandle",
+        "SpDataBaseObjectGetTypeHandle",
+        "SpOnEdgeGesture",
+        102,
+        100,
+        101,
+        "SpOnPaste",
+        "SpOnCopy",
+        "SpOnInputHandlerCanceled",
+        "SpGetPotentialGestures",
+        "SpOnCraneCarry",
+        "SpOnCraneGrab",
+        "SpOnTouchPinchStretch",
+        "SpOnTouchFlick",
+        "SpOnTouchDrag",
+        "SpOnTouchHold",
+        "SpOnTouchShortHold",
+        "SpOnTouchTap",
+        "SpOnTouchSessionEnd",
+        "SpOnTouchMove",
+        "SpOnTouchSessionBegin",
+        "SpOnLoseDeepKeyFocus",
+        "SpOnGainDeepKeyFocus",
+        "SpOnLoseDirectKeyFocus",
+        "SpOnGainDirectKeyFocus",
+        "SpOnKeyCharacter",
+        "SpOnKeyUp",
+        "SpOnKeyDown",
+        "SpGetInputHandlerOptions",
+        "SpUIXListGetIndexForKey",
+        "SpUIXListGetKeyForIndex",
+        "SpUIXListSetItem",
+        "SpUIXListGetItem",
+        "SpUIXListGetCount",
+        "SpUIXListRemoveAt",
+        "SpUIXListRemove",
+        "SpUIXListInsert",
+        "SpUIXListClear",
+        "SpUIXListNotifyVisualsReleased",
+        "SpUIXListNotifyVisualsCreated",
+        "SpUIXListNotifyVisibleRangeChanged",
+        "SpUIXListWantSlowDataRequests",
+        "SpUIXListFetchSlowData",
+        "SpUIXListIsItemAvailable",
+        "SpUIXListMove",
+        "SpUIXListIndexOf",
+        "SpUIXListAdd",
+        "SpUnregisterNativeServicesCallbacks",
+        "SpGetEnumSchema",
+        "SpInvokeEnumToString",
+        "SpGetEnumNameValue",
+        "SpQueryEnumDefinition",
+        "SpCreateNativeBlob",
+        "SpXmlLiteDeleteXmlReader",
+        "SpGetBlobHandle",
+        "SpCreateNativeImage",
+        "SpConvertImageToManaged",
+        "SpGetImageHandle",
+        "SpCopyString",
+        "SpConvertStringToManaged",
+        "SpGetStringHandle",
+        "SpCreateNativeString",
+        "SpGetToStringMethodId",
+        "SpAddRefExternalObject",
+        "SpCreateProxyWrapper",
+        "SpInvokeMethod",
+        "SpSetPropertyValue",
+        "SpGetPropertyValue",
+        "SpFrameworkUninit",
+        "SpSetFrameworkRunningState",
+        "SpInitializeTracing",
+        "SpUninitializeTracing",
+        "SpUpdateTraceSettings",
+        "SpLogTrace",
+        "SpGetModuleHandle",
+        "SpGetModuleFileName",
+        "SpAutomationGetAppFolderPath",
+        "SpLoadLibrary",
+        "SpFreeLibrary",
+        "SpFindResource",
+        "SpLoadString",
+        "SpDisableDeferredInvoke",
+        "SpLoadFontResource",
+        "SpMemAlloc",
+        "SpMemFree",
+        "SpGetDpi",
+        "SpGetIsRtlLocale",
+        "SpGetColorFromName",
+        "SpSystemTimeToFileTime",
+        "SpFileTimeToSystemTime",
+        "SpGetLocalTime",
+        "SpFreeTextBitmap",
+        "SpSendDllSchemaUnloadNotification",
+        "SpCreateDllLoadResultFactory",
+        "SpCreateDllLoadResult",
+        "SpSetSchemaID",
+        "SpQuerySchemaInfo",
+        "SpGetTypeSchema",
+        "SpQueryTypeDefinition",
+        "SpGetTypeMemberCount",
+        "SpGetTypeMemberInfo",
+        "SpGetConstructorSchema",
+        "SpGetPropertySchema",
+        "SpGetMethodSchema",
+        "SpGetEventSchema",
+        "SpInvokeConstructor",
+        "SpQueryConstructorParameterCount",
+        "SpGetConstructorParameterTypes",
+        "SpQueryPropertyDefinition",
+        "SpQueryMethodDefinition",
+        "SpGetMethodParameterTypes",
+        "SpGetStateCache",
+        "SpReleaseExternalObject",
+        "SpGetTypeID",
+        "SpQueryForMarshalAsInterface",
+        "SpSetStateCache",
+        "SpQueryEventDefinition"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-windowserrorreporting-l1-1-0.dll",
+      "names": [
+        "WerRegisterMemoryBlock",
+        "WerRegisterRuntimeExceptionModule"
+      ],
+      "delay": false
+    },
+    {
+      "module": "SHCORE.dll",
+      "names": [
+        "GetScaleFactorForMonitor",
+        244
+      ],
+      "delay": false
+    }
+  ]
+}

@@ -417,3 +417,6 @@ pager-verify:
 .PHONY: elf hh3 ntx all clean compile_commands.json check-pe probe-pe collision-test pager-experiment pager-verify
 
 -include $(DEPFILES)
+
+# Native WinCE-first phone launcher.
+include payload/phone/phone.mk

@@ -1,0 +1,596 @@
+{
+  "module": "STARTMENU.DLL",
+  "source_machine": "0x14c",
+  "export_base": 1,
+  "exports": [
+    {
+      "ordinal": 1,
+      "name": "StartMenuInitialize",
+      "rva": 162416
+    },
+    {
+      "ordinal": 2,
+      "name": "StartMenuUninitialize",
+      "rva": 162576
+    },
+    {
+      "ordinal": 3,
+      "name": "UIXGetSchemaFactory",
+      "rva": 326048
+    },
+    {
+      "ordinal": 4,
+      "name": "UIXSchemaUnloaded",
+      "rva": 326304
+    }
+  ],
+  "imports": [
+    {
+      "module": "api-ms-win-core-synch-l1-2-0.dll",
+      "names": [
+        "CreateMutexExW",
+        "WaitForSingleObjectEx",
+        "InitOnceBeginInitialize",
+        "ReleaseMutex",
+        "EnterCriticalSection",
+        "InitializeCriticalSectionEx",
+        "CreateEventW",
+        "InitializeSRWLock",
+        "InitializeCriticalSection",
+        "ReleaseSemaphore",
+        "InitOnceComplete",
+        "OpenSemaphoreW",
+        "Sleep",
+        "LeaveCriticalSection",
+        "ReleaseSRWLockShared",
+        "AcquireSRWLockShared",
+        "WaitForSingleObject",
+        "CreateSemaphoreExW",
+        "CreateEventExW",
+        "SetEvent",
+        "DeleteCriticalSection",
+        "ReleaseSRWLockExclusive",
+        "AcquireSRWLockExclusive"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-errorhandling-l1-1-1.dll",
+      "names": [
+        "SetUnhandledExceptionFilter",
+        "UnhandledExceptionFilter",
+        "GetLastError",
+        "SetLastError",
+        "RaiseException"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-processthreads-l1-1-2.dll",
+      "names": [
+        "TlsAlloc",
+        "GetCurrentProcess",
+        "TerminateProcess",
+        "GetCurrentThreadId",
+        "GetCurrentProcessId",
+        "CreateThread",
+        "TlsFree",
+        "TlsSetValue"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-debug-l1-1-1.dll",
+      "names": [
+        "OutputDebugStringW",
+        "DebugBreak",
+        "OutputDebugStringA"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-localization-l1-2-1.dll",
+      "names": [
+        "GetGeoInfoW",
+        "GetUserGeoID",
+        "FormatMessageW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-com-l1-1-1.dll",
+      "names": [
+        "CoCreateInstance",
+        "CoFreeUnusedLibrariesEx",
+        "CoTaskMemAlloc",
+        "StringFromGUID2",
+        "CoWaitForMultipleHandles",
+        "CoInitializeSecurity",
+        "CoInitializeEx",
+        "CoCreateFreeThreadedMarshaler",
+        "CoUninitialize",
+        "CoTaskMemFree",
+        "CLSIDFromString",
+        "CoTaskMemRealloc"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-registry-l1-1-0.dll",
+      "names": [
+        "RegGetValueW",
+        "RegSetValueExW",
+        "RegOpenKeyExW",
+        "RegQueryValueExW",
+        "RegDeleteValueW",
+        "RegCreateKeyExW",
+        "RegEnumKeyExW",
+        "RegQueryInfoKeyW",
+        "RegCloseKey"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-string-l1-1-0.dll",
+      "names": [
+        "CompareStringEx",
+        "MultiByteToWideChar",
+        "CompareStringOrdinal",
+        "CompareStringW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-eventing-provider-l1-1-0.dll",
+      "names": [
+        "EventWriteTransfer",
+        "EventSetInformation",
+        "EventRegister",
+        "EventUnregister",
+        "EventActivityIdControl",
+        "EventWrite"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-libraryloader-l1-2-0.dll",
+      "names": [
+        "FreeLibraryAndExitThread",
+        "GetProcAddress",
+        "SizeofResource",
+        "LoadLibraryExW",
+        "FreeLibrary",
+        "LoadResource",
+        "FindResourceExW",
+        "GetModuleFileNameA",
+        "GetModuleHandleExW",
+        "FindStringOrdinal",
+        "GetModuleFileNameW",
+        "GetModuleHandleW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-file-l1-2-1.dll",
+      "names": [
+        "CompareFileTime"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-string-l2-1-0.dll",
+      "names": [
+        "CharNextW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "OLEAUT32.dll",
+      "names": [
+        "SysAllocString",
+        "SysFreeString",
+        "VarUI4FromStr"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-threadpool-l1-2-0.dll",
+      "names": [
+        "CallbackMayRunLong",
+        "SetThreadpoolTimer",
+        "CreateThreadpoolTimer",
+        "CloseThreadpoolTimer",
+        "FreeLibraryWhenCallbackReturns",
+        "WaitForThreadpoolTimerCallbacks",
+        "TrySubmitThreadpoolCallback"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-handle-l1-1-0.dll",
+      "names": [
+        "CloseHandle"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-winrt-string-l1-1-0.dll",
+      "names": [
+        "WindowsCreateString",
+        "WindowsStringHasEmbeddedNull",
+        "WindowsCreateStringReference",
+        "WindowsGetStringRawBuffer",
+        "WindowsDeleteString"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-sysinfo-l1-2-1.dll",
+      "names": [
+        "GetSystemTimeAsFileTime",
+        "GetTickCount",
+        "GetTickCount64"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-synch-l1-2-1.dll",
+      "names": [
+        "CreateSemaphoreW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-heap-l1-2-0.dll",
+      "names": [
+        "HeapAlloc",
+        "HeapFree",
+        "GetProcessHeap"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-registry-l1-1-1.dll",
+      "names": [
+        "RegSetKeyValueW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-winrt-l1-1-0.dll",
+      "names": [
+        "RoActivateInstance",
+        "RoGetActivationFactory"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-heap-l2-1-0.dll",
+      "names": [
+        "LocalAlloc",
+        "LocalFree"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-service-management-l1-1-0.dll",
+      "names": [
+        "CloseServiceHandle",
+        "OpenSCManagerW",
+        "OpenServiceW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-winrt-error-l1-1-1.dll",
+      "names": [
+        "RoOriginateError"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-localization-l1-2-2.dll",
+      "names": [
+        "LCIDToLocaleName"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-shlwapi-legacy-l1-1-0.dll",
+      "names": [
+        "PathFileExistsW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-string-obsolete-l1-1-0.dll",
+      "names": [
+        "lstrcmpW",
+        "lstrcmpiW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "UIXMobile.dll",
+      "names": [
+        "ApplyHighlightingToString",
+        "ThemeGetSystemHighContrast",
+        "NavigationLaunchSessionWithObjects"
+      ],
+      "delay": false
+    },
+    {
+      "module": "ZTrace.dll",
+      "names": [
+        "ZTraceReportIgnore",
+        "ZTraceReportPropagationNoThis",
+        "ZTraceReportPropagation",
+        "ZTraceReportOrigination",
+        "ZTraceReportOriginationNoThis",
+        "ZTraceReportIgnoreNoThis"
+      ],
+      "delay": false
+    },
+    {
+      "module": "ShellChromeAPI.dll",
+      "names": [
+        "Shell_FindNextReminder",
+        "Shell_IsKidZoneEnabled",
+        "Shell_ReleaseReminderData",
+        "Shell_DeleteReminder",
+        "Shell_FindFirstReminder",
+        "Shell_InitReminders",
+        "Shell_FindReminderClose",
+        "Shell_DeInitReminders",
+        "Shell_IsKidZoneActive",
+        "Shell_IsLocked",
+        "Shell_GetCurrentLockdownProfile"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-rtcore-ntuser-synch-l1-1-0.dll",
+      "names": [
+        "MsgWaitForMultipleObjectsEx"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-rtcore-ntuser-window-l1-1-0.dll",
+      "names": [
+        "PostThreadMessageW",
+        "TranslateMessage",
+        "DispatchMessageW",
+        "PeekMessageW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "MrmCoreR.dll",
+      "names": [
+        "ResourceManagerQueueIsResourceReference"
+      ],
+      "delay": false
+    },
+    {
+      "module": "SHCORE.dll",
+      "names": [
+        244,
+        "IStream_Reset",
+        "SHSetThreadRef",
+        "SHCreateThreadRef",
+        "SHCreateMemStream",
+        "IStream_Read",
+        "SHStrDupW",
+        "GetScaleFactorForMonitor"
+      ],
+      "delay": false
+    },
+    {
+      "module": "ntdll.dll",
+      "names": [
+        "RtlSubscribeWnfStateChangeNotification",
+        "RtlUnsubscribeWnfNotificationWaitForCompletion",
+        "NtQueryWnfStateData",
+        "RtlPublishWnfStateData",
+        "WinSqmStartSession",
+        "WinSqmEndSession",
+        "WinSqmSetDWORD",
+        "WinSqmIncrementDWORD"
+      ],
+      "delay": false
+    },
+    {
+      "module": "slh.dll",
+      "names": [
+        "SlhUninitSession",
+        "SlhGetSortGroupID",
+        "SlhGetSortGroupDisplayString",
+        "SlhGetSortGroupCount",
+        "SlhInitSessionEx"
+      ],
+      "delay": false
+    },
+    {
+      "module": "WPCOREUTIL.dll",
+      "names": [
+        "ResetPhoneEx"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-normalization-l1-1-0.dll",
+      "names": [
+        "NormalizeString",
+        "IsNormalizedString"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-service-private-l1-1-1.dll",
+      "names": [
+        "SubscribeServiceChangeNotifications",
+        "UnsubscribeServiceChangeNotifications"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-url-l1-1-0.dll",
+      "names": [
+        "ParseURLW",
+        "UrlEscapeW"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-ntuser-sysparams-l1-1-0.dll",
+      "names": [
+        "GetMonitorInfoW",
+        "GetSystemMetrics",
+        "EnumDisplayMonitors"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-errorhandling-l1-1-3.dll",
+      "names": [
+        "TerminateProcessOnMemoryExhaustion"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-quirks-l1-1-0.dll",
+      "names": [
+        "QuirkIsEnabledForPackage"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-string-l2-1-1.dll",
+      "names": [
+        "SHLoadIndirectString"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-localization-obsolete-l1-3-0.dll",
+      "names": [
+        "GetUserDefaultUILanguage"
+      ],
+      "delay": false
+    },
+    {
+      "module": "UserDataLanguageUtil.dll",
+      "names": [
+        "CHSPinYinHelper_Initialize",
+        "CHSPinYinHelper_HasPossibleCHSPinYin",
+        "CHSPinYinHelper_CreateInstance"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-gdi-dpiinfo-l1-1-0.dll",
+      "names": [
+        "GetCurrentDpiInfo"
+      ],
+      "delay": false
+    },
+    {
+      "module": "msvcrt.dll",
+      "names": [
+        "memset",
+        "_XcptFilter",
+        "_amsg_exit",
+        "_initterm",
+        "_lock",
+        "_unlock",
+        "__dllonexit",
+        "_onexit",
+        "??1type_info@@UAE@XZ",
+        "_errno",
+        "realloc",
+        "__CxxFrameHandler3",
+        "_except_handler4_common",
+        "memcpy",
+        "iswupper",
+        "swprintf_s",
+        "_vsnprintf_s",
+        "??0exception@@QAE@ABV0@@Z",
+        "??0exception@@QAE@XZ",
+        "??1exception@@UAE@XZ",
+        "qsort_s",
+        "_set_errno",
+        "memmove_s",
+        "_wcsicmp",
+        "_wcsnicmp",
+        "??_V@YAXPAX@Z",
+        "wcsncpy_s",
+        "_purecall",
+        "memcpy_s",
+        "malloc",
+        "free",
+        "qsort",
+        "strrchr",
+        "strncpy_s",
+        "strnlen",
+        "wcsnlen",
+        "memmove",
+        "_wtoi",
+        "wcsstr",
+        "_vsnwprintf",
+        "??3@YAXPAX@Z",
+        "_get_errno",
+        "iswspace",
+        "wcschr",
+        "_callnewh",
+        "_CIsqrt",
+        "_CxxThrowException",
+        "_ftol2_sse",
+        "memcmp",
+        "iswpunct"
+      ],
+      "delay": false
+    },
+    {
+      "module": "msvcp110_win.dll",
+      "names": [
+        "?_Xbad_function_call@std@@YAXXZ",
+        "?_Winerror_map@std@@YAPBDH@Z",
+        "?_Xbad_alloc@std@@YAXXZ",
+        "?_Xout_of_range@std@@YAXPBD@Z",
+        "?_Xlength_error@std@@YAXPBD@Z",
+        "?_Syserror_map@std@@YAPBDH@Z"
+      ],
+      "delay": false
+    },
+    {
+      "module": "api-ms-win-core-profile-l1-1-0.dll",
+      "names": [
+        "QueryPerformanceCounter"
+      ],
+      "delay": false
+    },
+    {
+      "module": "Bcp47Langs.dll",
+      "names": [
+        "GetUserLanguages"
+      ],
+      "delay": false
+    },
+    {
+      "module": "ext-ms-win-rtcore-ntuser-dc-access-l1-1-0.dll",
+      "names": [
+        "GetDC",
+        "ReleaseDC"
+      ],
+      "delay": false
+    },
+    {
+      "module": "ext-ms-win-rtcore-gdi-devcaps-l1-1-0.dll",
+      "names": [
+        "GetDeviceCaps"
+      ],
+      "delay": false
+    }
+  ]
+}

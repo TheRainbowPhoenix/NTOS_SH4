@@ -1,0 +1,84 @@
+{
+  "imports": [
+    {
+      "module": "api-ms-win-eventing-provider-l1-1-0.dll",
+      "names": [
+        "EventUnregister",
+        "EventRegister",
+        "EventWrite"
+      ]
+    },
+    {
+      "module": "api-ms-win-core-libraryloader-l1-2-0.dll",
+      "names": [
+        "GetModuleHandleA",
+        "FreeLibrary",
+        "GetProcAddress",
+        "LoadLibraryExW"
+      ]
+    },
+    {
+      "module": "UIXMobile.dll",
+      "names": [
+        "RunApplication"
+      ]
+    },
+    {
+      "module": "msvcrt.dll",
+      "names": [
+        "_except_handler4_common",
+        "_controlfp",
+        "_wcmdln",
+        "_initterm",
+        "__setusermatherr",
+        "__p__fmode",
+        "_cexit",
+        "_exit",
+        "exit",
+        "__set_app_type",
+        "__wgetmainargs",
+        "_amsg_exit",
+        "__p__commode",
+        "_XcptFilter",
+        "?terminate@@YAXXZ",
+        "memset"
+      ]
+    },
+    {
+      "module": "api-ms-win-core-synch-l1-2-0.dll",
+      "names": [
+        "Sleep"
+      ]
+    },
+    {
+      "module": "api-ms-win-core-processthreads-l1-1-2.dll",
+      "names": [
+        "GetCurrentProcess",
+        "GetStartupInfoW",
+        "GetCurrentProcessId",
+        "TerminateProcess",
+        "GetCurrentThreadId"
+      ]
+    },
+    {
+      "module": "api-ms-win-core-errorhandling-l1-1-1.dll",
+      "names": [
+        "UnhandledExceptionFilter",
+        "SetUnhandledExceptionFilter"
+      ]
+    },
+    {
+      "module": "api-ms-win-core-profile-l1-1-0.dll",
+      "names": [
+        "QueryPerformanceCounter"
+      ]
+    },
+    {
+      "module": "api-ms-win-core-sysinfo-l1-2-1.dll",
+      "names": [
+        "GetTickCount",
+        "GetSystemTimeAsFileTime"
+      ]
+    }
+  ]
+}
