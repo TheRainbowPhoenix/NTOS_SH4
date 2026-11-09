@@ -150,8 +150,8 @@ static int rows(void *dc, int hx, int hy)
         }
         if (dc && y + 44 > 76 && y < limit) {
             if (selected == (int)i) {
-                r->fill(dc, 2, y - 1, 313, y + 43, RGB_(166, 200, 227));
-                r->fill(dc, 2, y - 1, 7, y + 43, BLUE);
+                /* XAML selection: full-row shade, no bright L-shaped stripe. */
+                r->fill(dc, 2, y - 1, 313, y + 43, RGB_(191, 205, 219));
             }
             r->fill(dc, 6, y, 44, y + 40, a->color);
             icon_on_light(dc, i, 10, y + 4, 30);
