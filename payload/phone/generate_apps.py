@@ -9,7 +9,7 @@ APPS=[('alarm','Alarms & Clock'),('calc','Calculator'),('camera','Camera'),('sup
  ('news','News'),('note','OneNote'),('mail','Outlook Mail'),('people','People'),('phone','Phone'),
  ('photo','Photos'),('powerpoint','PowerPoint'),('settings','Settings'),('store','Store'),('weather','Weather'),('word','Word')]
 class Vec:
- def __init__(self):self.b=bytearray(b'VEC1\x60'+struct.pack('>hh',32,32))
+ def __init__(self,version=1):self.b=bytearray((b'VEC2' if version==2 else b'VEC1')+b'\x60'+struct.pack('>hh',32,32))
  def color(self,f=0xffff,s=0x7fff):self.b+=b'\x01'+struct.pack('>HH',f,s);return self
  def line(self,a,b,c,d):self.b+=b'\x30'+struct.pack('>hhhh',a,b,c,d);return self
  def stroke(self,a,b,c,d,width=2):self.b+=b'\x31'+struct.pack('>hhhhB',a,b,c,d,width);return self
@@ -24,7 +24,9 @@ def icon(name):
  if name=='phone':v.color(0x7fff).poly(5,2,11,2,15,10,10,14,18,22,22,17,30,22,28,29,24,30,15,25,6,16,2,8)
  elif name=='message':v.rect(2,4,29,23).line(14,23,14,30).line(14,30,24,23).line(7,12,10,12).line(14,12,17,12).line(21,12,24,12)
  elif name=='edge':v.color(0x7fff,0xffff).poly(30,18,8,18,9,23,13,26,21,27,28,24,25,29,17,31,9,29,3,24,1,17,4,8,10,3,18,1,25,3,30,8,31,14,27,14,25,9,20,7,14,7,10,10,8,14,30,14)
- elif name=='cortana':v.circle(16,16,14).circle(16,16,13)
+ elif name=='cortana':
+  v=Vec(version=2).color(0x4210,0xffff).circle(16,16,14)
+  v.color(0x7fff,0xffff).circle(16,16,8)
  elif name in ['camera','photo']:v.rect(2,7,30,28);v.circle(16,17,8) if name=='camera' else v.poly(3,26,12,14,18,21,23,15,29,26)
  elif name=='weather':
   v.color(0x7fff).circle(16,16,7)
@@ -128,7 +130,7 @@ def generate_settings_icons():
  # RGB555 0x7fff => 100% dark tinted ink; 0x4210 => 50% black.
  primary=0x7fff
  secondary=0x4210
- def basic(): return Vec().color(0xffff,primary)
+ def basic(): return Vec(version=2).color(0xffff,primary)
  items=[]
  names=['system','devices','network','personal','accounts','time','gaming',
         'privacy','settings','display','notifications','phone','message',
