@@ -8,6 +8,10 @@
     {
       "name": "SVFDraw",
       "ordinal": 2
+    },
+    {
+      "name": "SVFDrawTint",
+      "ordinal": 3
     }
   ]
 }
