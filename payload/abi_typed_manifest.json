@@ -118,5 +118,33 @@
     "name": "abi_typed_zero",
     "ret": "u32",
     "args": []
+  },
+  {
+    "name": "abi_typed_ret_bytes1",
+    "ret": "bytes1",
+    "args": [
+      "u32"
+    ]
+  },
+  {
+    "name": "abi_typed_ret_bytes4",
+    "ret": "bytes4",
+    "args": [
+      "u32"
+    ]
+  },
+  {
+    "name": "abi_typed_ret_s8",
+    "ret": "s8",
+    "args": [
+      "s8"
+    ]
+  },
+  {
+    "name": "abi_typed_ret_u8",
+    "ret": "u8",
+    "args": [
+      "u8"
+    ]
   }
 ]
