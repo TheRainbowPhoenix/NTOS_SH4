@@ -36,7 +36,7 @@ jobs:
           python3 tools/format_c_sources.py --check
           clang-tidy -quiet -checks='-*,clang-analyzer-*' payload/calc.c payload/phone/starthost.c -- -std=c11 -Ipayload -Ipayload/phone
           python3 tools/check_unified_bundle.py dist
-          python3 tools/check_ntapi_table.py
+          python3 tools/check_ntapi_table.py dist/NTOS.elf
           python3 tools/elf2ntx.py --selftest
           python3 tools/test_multimodule.py
           python3 tools/test_dependency_graph.py
