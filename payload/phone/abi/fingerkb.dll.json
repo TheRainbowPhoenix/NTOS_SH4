@@ -1,0 +1,13 @@
+{
+  "module": "FINGERKB.DLL",
+  "exports": [
+    {
+      "name": "UIXGetSchemaFactory",
+      "ordinal": 1
+    },
+    {
+      "name": "UIXSchemaUnloaded",
+      "ordinal": 2
+    }
+  ]
+}

@@ -2,6 +2,8 @@
 IMP(const Render *,render_SpGetThreadContext,(void))
 IMP(int,render_SpRenderThreadInit,(void))
 IMP(void,render_SpRenderThreadUninit,(void))
+IMP(const Keyboard *,kb_UIXGetSchemaFactory,(void))
+IMP(void,kb_UIXSchemaUnloaded,(void))
 typedef struct {void *hwnd;U32 message,wParam,lParam,time;Pt pt;} Msg;
 typedef struct {void *hdc;int erase;Rect area;int restore,inc;unsigned char reserved[32];} Paint;
 typedef int (*WndProc)(void *,U32,U32,U32);
@@ -17,19 +19,29 @@ IMP(int,DispatchMessageW,(const Msg *))
 IMP(int,DestroyWindow,(void *))
 IMP(void *,BeginPaint,(void *,Paint *))
 IMP(int,EndPaint,(void *,const Paint *))
+IMP(int,SipShowIM,(U32))
+IMP(int,SipGetInfo,(SipInfo *))
 static const W16 cls[]={'S','t','a','r','t','H','o','s','t',0};
 static App app;static void *window;static void (*error_handler)(int);
+static const Keyboard *keyboard;
+static int visible(void){SipInfo s;s.size=sizeof(s);return CALL(SipGetInfo,(&s))&&(s.flags&1u);}
 static int proc(void *hwnd,U32 msg,U32 wp,U32 lp){
  if(msg==WM_PAINT_){Paint p;void *dc=CALL(BeginPaint,(hwnd,&p));
-  if(dc){app.menu->paint(dc);app.chrome->paint(dc);}
+  if(dc){app.menu->paint(dc);app.chrome->paint(dc);if(visible()&&!app.chrome->expanded())keyboard->paint(dc);}
   CALL(EndPaint,(hwnd,&p));return 0;}
- if(app.menu&&app.menu->input(msg,wp,lp)){CALL(InvalidateRect,(hwnd,0,0));CALL(UpdateWindow,(hwnd));}
+ int changed=app.chrome->input(msg,wp,lp);
+ if(changed==2){app.menu->open(APP_SETTINGS_ID);changed=1;}
+ if(!changed&&visible()&&msg==WM_DOWN_&&(int)(short)(lp>>16)>=271){int key=keyboard->input(msg,wp,lp);
+  if(key)app.menu->input(key==8||key==13?WM_KEY_:WM_CHAR_,(U32)key,0);changed=1;}
+ if(!changed&&app.menu)changed=app.menu->input(msg,wp,lp);
+ if(changed){CALL(InvalidateRect,(hwnd,0,0));CALL(UpdateWindow,(hwnd));}
  return 0;
 }
 int UIXInitializeApplication(const App *config){
  if(!config||config->profile!=PROFILE||!config->menu||!config->chrome)return (int)0x80070057u;
  if(window)return (int)0x8000ffffu;
  app.profile=config->profile;app.title=config->title;app.menu=config->menu;app.chrome=config->chrome;
+ keyboard=CALL(kb_UIXGetSchemaFactory,());if(!keyboard||keyboard->profile!=PROFILE)return NOTIMPL;
  return CALL(render_SpRenderThreadInit,());
 }
 int UIXGetServices(const Render **out){if(!out)return (int)0x80070057u;
@@ -56,7 +68,7 @@ int UIXRunApplication(void){
  CALL(DestroyWindow,(window));window=0;return rc<0?-1:0;
 }
 void UIXShutdownApplication(void){if(window){CALL(DestroyWindow,(window));window=0;}
- CALL(render_SpRenderThreadUninit,());app.profile=0;app.menu=0;app.chrome=0;}
+ CALL(SipShowIM,(0));CALL(kb_UIXSchemaUnloaded,());CALL(render_SpRenderThreadUninit,());app.profile=0;app.menu=0;app.chrome=0;}
 void UIXSetErrorReportHandler(void (*handler)(int)){error_handler=handler;}
 int UIXSynchronizeView(void){if(!window)return -1;return CALL(UpdateWindow,(window));}
 void UIXWatchDogFailFast(void){if(error_handler)error_handler((int)0x8000ffffu);}

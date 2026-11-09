@@ -1,0 +1,21 @@
+{
+  "module": "APPCATALOG.DLL",
+  "exports": [
+    {
+      "name": "CatalogGet",
+      "ordinal": 1
+    },
+    {
+      "name": "CatalogReload",
+      "ordinal": 2
+    },
+    {
+      "name": "CatalogPin",
+      "ordinal": 3
+    },
+    {
+      "name": "CatalogDrawIcon",
+      "ordinal": 4
+    }
+  ]
+}

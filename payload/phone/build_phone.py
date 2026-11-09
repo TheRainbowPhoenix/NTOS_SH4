@@ -12,15 +12,19 @@ import shutil
 from pathlib import Path
 import struct
 import subprocess
+from generate_apps import generate_headers,generate_assets,icon,APPS
 
 ROOT=Path(__file__).resolve().parents[2]
 HERE=Path(__file__).resolve().parent
 MODULES=[
  ('uixrender','UIXRENDER.DLL',{}),
+ ('svf','SVF.DLL',{'render_':'UIXRENDER.DLL'}),
+ ('catalog','APPCATALOG.DLL',{'svf_':'SVF.DLL','render_':'UIXRENDER.DLL'}),
+ ('fingerkb','FINGERKB.DLL',{'render_':'UIXRENDER.DLL','svf_':'SVF.DLL'}),
  ('shellcontrols','SHELLCONTROLS.DLL',{'render_':'UIXRENDER.DLL'}),
- ('shellchrome','SHELLCHROME.DLL',{'render_':'UIXRENDER.DLL'}),
- ('uixn','UIXN.DLL',{'render_':'UIXRENDER.DLL'}),
- ('startmenu','STARTMENU.DLL',{'render_':'UIXRENDER.DLL','controls_':'SHELLCONTROLS.DLL'}),
+ ('shellchrome','SHELLCHROME.DLL',{'render_':'UIXRENDER.DLL','svf_':'SVF.DLL'}),
+ ('uixn','UIXN.DLL',{'render_':'UIXRENDER.DLL','kb_':'FINGERKB.DLL'}),
+ ('startmenu','STARTMENU.DLL',{'render_':'UIXRENDER.DLL','catalog_':'APPCATALOG.DLL'}),
  ('uixmobile','UIXMOBILE.DLL',{'engine_':'UIXN.DLL','menu_':'STARTMENU.DLL','chrome_':'SHELLCHROME.DLL'}),
  ('starthost','STARTHOST.EXE',{'mobile_':'UIXMOBILE.DLL','menu_':'STARTMENU.DLL'}),
 ]
@@ -54,22 +58,25 @@ def main():
     ap.add_argument('--pack-only',action='store_true',help='pack ELF files previously built by compile.sh')
     args=ap.parse_args();out=ROOT/args.out;obj=ROOT/args.obj
     out.mkdir(parents=True,exist_ok=True);obj.mkdir(parents=True,exist_ok=True)
+    generate_headers()
     spec=importlib.util.spec_from_file_location('elf2ntx',ROOT/'tools/elf2ntx.py')
     pack=importlib.util.module_from_spec(spec);spec.loader.exec_module(pack)
     original_import_section=pack.build_import_section
     cc=os.environ.get('PHONE_CC','sh4a_nofpueb-elf-gcc')
     ld=os.environ.get('PHONE_LD','sh4a_nofpueb-elf-g++')
     report=[]
+    if not args.pack_only:
+        run([cc,'-c',HERE/'tiny_memory.c','-o',obj/'tiny_memory.o','-Os','-ffreestanding','-fno-builtin','-fno-tree-loop-distribute-patterns'])
     for source,module,groups in MODULES:
         dll=module.endswith('.DLL');base=0x10000000 if dll else 0x400000
         o=obj/(source+'.o');elf_path=obj/(source+'.elf')
         if not args.pack_only:
-          run([cc,'-c',HERE/(source+'.c'),'-o',o,'-std=c11','-Os','-Wall','-Wextra','-Werror',
+          run([cc,'-c',HERE/(source+'.c'),'-o',o,'-std=c11','-Os','-Wall','-Wextra','-Werror','-Wno-misleading-indentation',
              '-ffreestanding','-fno-builtin','-fno-stack-protector','-fno-toplevel-reorder',
              '-fno-unwind-tables','-fno-asynchronous-unwind-tables',
              '-I'+str(HERE),'-I'+str(ROOT/'payload')])
           run([ld,'-nostdlib','-Wl,--emit-relocs','-Wl,-e,_main','-T',
-             ROOT/('payload/xamlui.ld' if dll else 'payload/payload.ld'),'-o',elf_path,o])
+             ROOT/('payload/xamlui.ld' if dll else 'payload/payload.ld'),'-o',elf_path,o,obj/'tiny_memory.o'])
         elf=pack.Elf(elf_path.read_bytes())
         entries=[];implemented=[];stubbed=[]
         if dll:
@@ -104,6 +111,44 @@ def main():
     device=out/'phone-device';device.mkdir(exist_ok=True)
     for name in [r['module'] for r in report]+['COREDLL.DLL']:
         if (out/name).exists():shutil.copyfile(out/name,device/name)
+    records=generate_assets(device)
+    for app in records:
+        slug=app['slug'];id_=app['id'];elf_path=obj/('app-'+slug+'.elf');o=obj/('app-'+slug+'.o')
+        if not args.pack_only:
+            run([cc,'-c',HERE/'stubapp.c','-o',o,'-std=c11','-Os','-ffreestanding','-fno-builtin','-fno-toplevel-reorder','-fno-stack-protector','-DAPP_ID='+str(id_),'-I'+str(HERE),'-I'+str(ROOT/'payload')])
+            run([ld,'-nostdlib','-Wl,--emit-relocs','-Wl,-e,_main','-T',ROOT/'payload/payload.ld','-o',elf_path,o,obj/'tiny_memory.o'])
+        elf=pack.Elf(elf_path.read_bytes());groups={'mobile_':'UIXMOBILE.DLL','menu_':'STARTMENU.DLL'}
+        binary,_=pack.emit_ntx(elf,0x400000,import_module='COREDLL.DLL',extra_imports=list(groups.items()))
+        (device/'Apps'/slug/(slug+'.exe')).write_bytes(add_icon_resource(binary,icon(slug)))
+    if (out/'NTOS.hh3').exists():shutil.copyfile(out/'NTOS.hh3',device/'NTOS.hh3')
+    print('Generated',len(records),'real SH4 app EXEs with embedded SVF and binary sidecars')
     print('Phone modules:',sum(r['bytes'] for r in report),'bytes; COREDLL supplied by make ntx/phone')
+
+def add_icon_resource(binary,svf):
+    """Append a real RT_RCDATA/1/1033 resource without changing code RVAs."""
+    b=bytearray(binary);pe=struct.unpack_from('<I',b,60)[0];coff=pe+4;opt=coff+20
+    count=struct.unpack_from('<H',b,coff+2)[0];assert count<8
+    table=opt+struct.unpack_from('<H',b,coff+16)[0]
+    old_headers=struct.unpack_from('<I',b,opt+60)[0]
+    new_headers=(table+40*(count+1)+511)&~511;shift=max(0,new_headers-old_headers)
+    if shift:
+        b[old_headers:old_headers]=bytes(shift)
+        for i in range(count):
+            p=table+40*i+20;raw=struct.unpack_from('<I',b,p)[0]
+            if raw:struct.pack_into('<I',b,p,raw+shift)
+    struct.pack_into('<I',b,opt+60,max(old_headers,new_headers))
+    va=(struct.unpack_from('<I',b,opt+56)[0]+511)&~511
+    resource=bytearray(88)
+    for at in [0,24,48]:struct.pack_into('<H',resource,at+14,1)
+    struct.pack_into('<II',resource,16,10,0x80000018)
+    struct.pack_into('<II',resource,40,1,0x80000030)
+    struct.pack_into('<II',resource,64,1033,72)
+    struct.pack_into('<IIII',resource,72,va+88,len(svf),0,0);resource.extend(svf)
+    raw=(len(b)+511)&~511;b.extend(bytes(raw-len(b)));size=(len(resource)+511)&~511
+    b.extend(resource);b.extend(bytes(size-len(resource)))
+    struct.pack_into('<8sIIIIIIHHI',b,table+40*count,b'.rsrc\0\0\0',len(resource),va,size,raw,0,0,0,0,0x40000040)
+    struct.pack_into('<H',b,coff+2,count+1);struct.pack_into('<I',b,opt+56,va+size)
+    struct.pack_into('<II',b,opt+96+16,va,len(resource))
+    return bytes(b)
 
 if __name__=='__main__':main()

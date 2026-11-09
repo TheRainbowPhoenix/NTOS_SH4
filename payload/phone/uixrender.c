@@ -53,11 +53,11 @@ static void ellipse(void *dc,int cx,int cy,int rx,int ry,U32 c,int thick){
  }
 }
 static void polygon(void *dc,const Pt *p,unsigned n,U32 c){
- if(!p||n<3||n>12)return;
+ if(!p||n<3||n>255)return;
  int ymin=p[0].y,ymax=ymin;
  for(unsigned i=1;i<n;++i){if(p[i].y<ymin)ymin=p[i].y;if(p[i].y>ymax)ymax=p[i].y;}
  ymin=clampi(ymin,clipping.top,clipping.bottom);ymax=clampi(ymax,clipping.top,clipping.bottom);
- for(int y=ymin;y<ymax;++y){int xs[12];unsigned used=0;
+ for(int y=ymin;y<ymax;++y){int xs[255];unsigned used=0;
   for(unsigned i=0,j=n-1;i<n;j=i++)if((p[i].y<=y&&p[j].y>y)||(p[j].y<=y&&p[i].y>y))
    xs[used++]=p[i].x+div_((y-p[i].y)*(p[j].x-p[i].x),p[j].y-p[i].y);
   for(unsigned i=1;i<used;++i){int v=xs[i];unsigned j=i;while(j&&xs[j-1]>v){xs[j]=xs[j-1];--j;}xs[j]=v;}

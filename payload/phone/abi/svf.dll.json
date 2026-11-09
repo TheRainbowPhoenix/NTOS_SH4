@@ -1,0 +1,13 @@
+{
+  "module": "SVF.DLL",
+  "exports": [
+    {
+      "name": "SVFValidate",
+      "ordinal": 1
+    },
+    {
+      "name": "SVFDraw",
+      "ordinal": 2
+    }
+  ]
+}

@@ -45,6 +45,7 @@ using malloc_fn = void *(*)(size_t);
 using free_fn = void (*)(void *);
 using getkey_fn = uint32_t (*)();
 
+struct NtosFind { uint32_t attr,size; uint16_t name[128]; };
 struct NtosApi {
     puts_fn puts;          // [0] console line output
     printf_fn printf_;     // [1] Debug_Printf passthrough
@@ -70,6 +71,9 @@ struct NtosApi {
     int32_t (*file_mkdir)(const char *);               // [21]
     int32_t (*file_stat)(const char *);                // [22] exists
     int32_t (*page_hint)(uint32_t);                   // [23] private pager experiment
+    int32_t (*find_first)(const char *,int32_t *,NtosFind *); // [24] directory search
+    int32_t (*find_next)(int32_t,NtosFind *);                // [25]
+    int32_t (*find_close)(int32_t);                         // [26]
 };
 
 static int cur_row = 0;
@@ -259,6 +263,30 @@ static uint32_t ntos_getkey(void) {
 
 static int32_t ntos_page_hint(uint32_t va);
 
+// Directory results are bounced through P1 just like file reads.
+static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
+    out->attr=info.type==File_FindInfo::EntryTypeFile ? 0x20u : 0x10u;
+    out->size=info.size;
+    unsigned i=0;for(;i<127u && name[i];++i)out->name[i]=name[i];out->name[i]=0;
+}
+static int32_t ntos_find_first(const char *name,int32_t *handle,NtosFind *out) {
+    if(!name || !handle || !out)return -2;
+    char path[96];if(!kernel_path(path,name))return -2;
+    char_const16_t pattern[96]{},found[260]{};
+    for(unsigned i=0;path[i];++i)pattern[i]=static_cast<unsigned char>(path[i]);
+    File_FindInfo info{};int search=0;
+    int result=File_FindFirst(pattern,&search,found,&info);
+    if(result==0){*handle=search;copy_find(out,found,info);}return result;
+}
+static int32_t ntos_find_next(int32_t handle,NtosFind *out) {
+    if(!out)return -2;
+    char_const16_t found[260]{};File_FindInfo info{};
+    int result=File_FindNext(handle,found,&info);
+    if(result==0)copy_find(out,found,info);
+    return result;
+}
+static int32_t ntos_find_close(int32_t handle) {return File_FindClose(handle);}
+
 static NtosApi g_ntos_api = {
     &ntos_puts,
     Debug_Printf, // SDK declares these as function pointers, not functions
@@ -284,6 +312,9 @@ static NtosApi g_ntos_api = {
     &ntos_file_mkdir,    // [21] mkdir
     &ntos_file_stat,     // [22] stat
     &ntos_page_hint,     // [23] experiment: explicit software page prefault
+    &ntos_find_first,    // [24] bounded WinCE finder bridge
+    &ntos_find_next,     // [25]
+    &ntos_find_close,    // [26]
 };
 
 // ---------------------------------------------------------------------------

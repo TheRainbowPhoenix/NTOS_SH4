@@ -968,3 +968,55 @@ int main(void)
 {
     return 1; /* BOOL TRUE, WinCE DLL initialization contract */
 }
+
+/* NTOS_PHONE_SIP_FINDER: WinCE public APIs over bounded native services. */
+typedef struct {u32 attr,size;u16 name[128];} NT_FIND_NATIVE;
+typedef struct {u32 attrs,times[6],size_hi,size_lo,oid;u16 name[260];} NT_FIND_DATA;
+static struct {int used,fd;} nt_finds[8];
+static void nt_copy_find(NT_FIND_DATA *out,const NT_FIND_NATIVE *in) {
+    out->attrs=in->attr;for(unsigned i=0;i<6;++i)out->times[i]=0;
+    out->size_hi=0;out->size_lo=in->size;out->oid=0;
+    unsigned i=0;for(;i<127 && in->name[i];++i)out->name[i]=in->name[i];out->name[i]=0;
+}
+void *FindFirstFileW(const u16 *pattern,NT_FIND_DATA *out) {
+    const void **a=ntapi();char path[96];NT_FIND_NATIVE found;int fd=-1;
+    if(!out||!a||!a[24]||!narrow_path(pattern,path,sizeof(path)))return NT_INVALID_FILE;
+    unsigned i=0;while(i<8 && nt_finds[i].used)++i;
+    if(i==8){g_last_error=4;return NT_INVALID_FILE;}
+    if(((int (*)(const char *,int *,NT_FIND_NATIVE *))a[24])(path,&fd,&found)<0){g_last_error=2;return NT_INVALID_FILE;}
+    nt_finds[i].used=1;nt_finds[i].fd=fd;nt_copy_find(out,&found);g_last_error=0;
+    return (void *)(0x30000u+i+1u);
+}
+int FindNextFileW(void *search,NT_FIND_DATA *out) {
+    u32 v=(u32)search;const void **a=ntapi();NT_FIND_NATIVE found;
+    if(v<=0x30000u||v>0x30008u||!out||!a||!a[25]){g_last_error=6;return 0;}
+    unsigned i=v-0x30001u;if(!nt_finds[i].used){g_last_error=6;return 0;}
+    if(((int (*)(int,NT_FIND_NATIVE *))a[25])(nt_finds[i].fd,&found)<0){g_last_error=18;return 0;}
+    nt_copy_find(out,&found);g_last_error=0;return 1;
+}
+int FindClose(void *search) {
+    u32 v=(u32)search;const void **a=ntapi();
+    if(v<=0x30000u||v>0x30008u||!a||!a[26])return 0;
+    unsigned i=v-0x30001u;if(!nt_finds[i].used)return 0;
+    int result=((int (*)(int))a[26])(nt_finds[i].fd);nt_finds[i].used=0;return result==0;
+}
+typedef struct {u32 size,flags;NT_RECT desktop,sip;u32 data_size;void *data;} NT_SIP_INFO;
+static u32 nt_sip_flags=2u; /* SIPF_DOCKED; SIPF_ON is bit zero. */
+int SipShowIM(u32 flags) {
+    if(flags>1u){g_last_error=87;return 0;}
+    nt_sip_flags=2u|flags;
+    if(g_window.magic)enqueue((void *)&g_window,0x001Au,0,0); /* WM_SETTINGCHANGE */
+    return 1;
+}
+int SipGetInfo(NT_SIP_INFO *info) {
+    if(!info||info->size!=sizeof(*info)){g_last_error=87;return 0;}
+    info->flags=nt_sip_flags;
+    info->desktop.left=info->desktop.top=0;info->desktop.right=320;
+    info->desktop.bottom=(nt_sip_flags&1u)?271:528;
+    info->sip.left=0;info->sip.top=271;info->sip.right=320;info->sip.bottom=528;
+    info->data_size=0;info->data=0;return 1;
+}
+int SipSetInfo(const NT_SIP_INFO *info) {
+    if(!info||info->size!=sizeof(*info)){g_last_error=87;return 0;}
+    return SipShowIM(info->flags&1u);
+}

@@ -10,6 +10,7 @@ int RunApplication(const AppConfig *config){
  static App a={PROFILE,title,0,0};void *view=0;
  a.menu=CALL(menu_UIXGetSchemaFactory,());a.chrome=CALL(chrome_UIXGetSchemaFactory,());
  if(!a.menu||!a.chrome||a.menu->profile!=PROFILE||a.chrome->profile!=PROFILE)return NOTIMPL;
+ if(config&&config->reserved[0])a.menu->open(config->reserved[0]);
  int rc=CALL(engine_UIXInitializeApplication,(&a));if(rc<0)return rc;
  if(config&&config->root){rc=CALL(engine_UIXLoadMarkup,(config->root,&view));
   if(rc<0){CALL(engine_UIXShutdownApplication,());return rc;}}

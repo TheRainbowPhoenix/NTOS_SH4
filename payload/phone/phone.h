@@ -35,6 +35,8 @@ typedef struct Controls {
 typedef struct Chrome {
  U32 profile;
  void (*paint)(void *);
+ int (*input)(U32,U32,U32);
+ int (*expanded)(void);
 } Chrome;
 typedef struct Menu {
  U32 profile;
@@ -42,7 +44,18 @@ typedef struct Menu {
  int (*input)(U32,U32,U32);
  int (*page)(void);
  int (*scroll)(void);
+ void (*open)(unsigned);
 } Menu;
+typedef struct Keyboard {U32 profile;void (*paint)(void *);int (*input)(U32,U32,U32);int (*page)(void);} Keyboard;
+typedef struct {U32 size,flags;Rect desktop,sip;U32 data_size;void *data;} SipInfo;
+#define MAX_APPS 40
+#define ICON_BYTES 512
+typedef struct {unsigned short id;unsigned char size,flags;U32 color;
+ char name[40],path[96];unsigned short icon_len;unsigned char icon[ICON_BYTES];
+ U32 pe_icon_offset,pe_icon_size;unsigned char pe_icon_type;} AppEntry;
+typedef struct {unsigned short id;unsigned char size,x,y,reserved;} Pin;
+typedef struct Catalog {unsigned count,pin_count;AppEntry apps[MAX_APPS];Pin pins[MAX_APPS];} Catalog;
+#define APP_SETTINGS_ID 21u
 /* RunApplication receives the 0x48-byte configuration seen in StartHost.
  * SH4 BE pointers replace x86 pointers; narrow UI tables stay private. */
 typedef struct AppConfig {const W16 *root,*page;U32 reserved[16];} AppConfig;
