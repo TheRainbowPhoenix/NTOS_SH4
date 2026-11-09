@@ -562,11 +562,13 @@ static void ntos_paint_titlebar(void)
 {
     if (!g_window.title[0] || is_phone_shell())
         return;
-    ntos_fillrect(0, 0, 320, 24, 0x00101010u);
-    ntos_fillrect(289, 2, 316, 22, 0x00282828u);
-    ntos_line(297, 7, 308, 17, 0x00ffffffu);
-    ntos_line(308, 7, 297, 17, 0x00ffffffu);
-    u32 previous = SetTextColor((void *)1, 0x00ffffffu);
+    /* Shared light system title bar; app windows never draw another bar.
+     * RGB565 path retains gentle slate colors without a black screen edge. */
+    ntos_fillrect(0, 0, 320, 24, 0x00f4e9dau);
+    ntos_fillrect(289, 2, 316, 22, 0x00e6d6c5u);
+    ntos_line(297, 7, 308, 17, 0x002a1d16u);
+    ntos_line(308, 7, 297, 17, 0x002a1d16u);
+    u32 previous = SetTextColor((void *)1, 0x003a2a1du);
     int count = 0;
     while (g_window.title[count] && count < 34)
         ++count;
@@ -1361,8 +1363,10 @@ static void legacy_nav_paint(void)
 {
     if (!legacy_enabled())
         return;
-    u32 c = 0xaaaaaau;
-    ntos_fillrect(0, 488, 320, 528, 0);
+    /* Keep native apps and StartHost on exactly the same shell chrome:
+     * pale background, nearly-black Back/Windows/Search glyphs. */
+    const u32 c = 0x002a221bu;
+    ntos_fillrect(0, 488, 320, 528, 0x00f4e9dau);
     ntos_line(55, 508, 75, 508, c);
     ntos_line(55, 508, 63, 500, c);
     ntos_line(55, 508, 63, 516, c);
@@ -1370,12 +1374,14 @@ static void legacy_nav_paint(void)
     ntos_fillrect(161, 499, 169, 507, c);
     ntos_fillrect(151, 509, 159, 517, c);
     ntos_fillrect(161, 509, 169, 517, c);
-    ntos_line(253, 499, 263, 499, c);
-    ntos_line(263, 499, 266, 504, c);
-    ntos_line(266, 504, 263, 510, c);
-    ntos_line(263, 510, 253, 510, c);
-    ntos_line(253, 510, 250, 504, c);
-    ntos_line(250, 504, 253, 499, c);
+    ntos_line(255, 498, 260, 497, c);
+    ntos_line(260, 497, 265, 500, c);
+    ntos_line(265, 500, 266, 505, c);
+    ntos_line(266, 505, 262, 510, c);
+    ntos_line(262, 510, 257, 511, c);
+    ntos_line(257, 511, 252, 507, c);
+    ntos_line(252, 507, 252, 502, c);
+    ntos_line(252, 502, 255, 498, c);
     ntos_line(253, 510, 246, 518, c);
 }
 static int legacy_nav_input(NT_MSG *msg)
