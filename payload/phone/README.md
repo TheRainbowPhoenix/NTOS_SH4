@@ -1,9 +1,9 @@
 # Native phone shell: SH4 BE, WinCE-first
 
-Build: `make phone`. Verify: `make phone-check`. Native visual tests:
+Build: `make -j4` (or `make phone`). Verify: `make phone-check`. Native visual tests:
 `python payload/phone/preview_phone.py` (host GCC + pefile).
 
-Copy **the contents of `dist/phone-device/`, including Apps and home.dat**
+Copy **the contents of `dist/`, including Apps and home.dat**
 to the calculator fls0 root. Use the included **new NTOS.hh3 and COREDLL**:
 this revision requires NTOS 0.4, Phone API 1 / 28 gates (finder + app handoff).
 Do not combine the new DLLs with the older launcher.
@@ -79,7 +79,7 @@ files are live overrides: edit one and use Refresh on Start to see the change.
 Use write_manifest.py to install one of your cleaner svf.py icons:
 
 ```
-python payload/phone/write_manifest.py dist/phone-device/Apps/edge/edge.exe "Microsoft Edge" my-edge.svf --id 11 --color 3960ff
+python payload/phone/write_manifest.py dist/Apps/edge/edge.exe "Microsoft Edge" my-edge.svf --id 11 --color 3960ff
 ```
 
 ## Binary formats
@@ -194,7 +194,7 @@ reset a device whose pins you already customized.
 GitHub C/C++ CI builds the normal distribution (make -> ntx -> phone),
 checks that all 24 app EXEs and SETTINGSUI.DLL exist, validates the launcher
 API tables and PE dependencies, and runs the actual C Settings/input
-previews on Linux. dist/** includes the whole phone-device tree and Apps.
+previews on Linux. dist/** includes the flat Apps tree.
 These workflow changes take effect after committing/pushing them.
 
 ## clemu VFS compatibility
@@ -210,7 +210,7 @@ action-bar Back also close/go back. A drag permanently cancels a pending
 app activation for that contact, including repeated DOWN or a moved release
 without intermediate MOVE events.
 
-The clemu `ntos_launch.py` seeder must copy the complete `dist/phone-device`
+The clemu `ntos_launch.py` seeder must copy the complete `dist`
 tree, including Apps and home-default.dat; root-level EXE/DLL copying alone
 is insufficient. Existing on-device home.dat is retained by seeding.
 
