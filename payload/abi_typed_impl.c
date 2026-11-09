@@ -34,6 +34,15 @@ int16_t nt_native_abi_typed_ret_s16(int16_t x) {return (int16_t)(x-7);}
 uint16_t nt_native_abi_typed_ret_u16(uint16_t x) {return (uint16_t)(x+5u);}
 void *nt_native_abi_typed_ptr(void *p) {return p;}
 uint32_t nt_native_abi_typed_zero(void) {return 0xAB1C0420u;}
+NtosAbiBytes1 nt_native_abi_typed_ret_bytes1(uint32_t x) {
+    NtosAbiBytes1 v={(uint8_t)x};return v;
+}
+NtosAbiBytes4 nt_native_abi_typed_ret_bytes4(uint32_t x) {
+    NtosAbiBytes4 v={(uint8_t)x,(uint8_t)(x>>8),
+                     (uint8_t)(x>>16),(uint8_t)(x>>24)};return v;
+}
+int8_t nt_native_abi_typed_ret_s8(int8_t x) {return (int8_t)(x-7);}
+uint8_t nt_native_abi_typed_ret_u8(uint8_t x) {return (uint8_t)(x+5u);}
 #ifndef NTOS_MSVC_HOST_TEST
 int main(void) {return 1;}
 #endif
