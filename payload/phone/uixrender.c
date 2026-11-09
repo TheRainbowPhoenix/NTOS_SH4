@@ -10,6 +10,11 @@ static void surface(int b)
     surface_bottom = clampi(b, 0, 528);
 }
 static Rect clipping = {0, 0, 320, 528};
+/* COREDLL's CreateSolidBrush is a synthetic RGB565 handle. A shared
+ * 1-entry cache avoids re-creating/deleting it on every glyph pixel run.
+ * The renderer owns this handle and releases it on shutdown. */
+static U32 cached_color;
+static void *cached_brush;
 static void clip(int l, int t, int r, int b)
 {
     clipping.left = clampi(l, 0, 320);
@@ -23,11 +28,14 @@ static void fill(void *dc, int l, int t, int r, int b, U32 c)
               r < clipping.right ? r : clipping.right, b < clipping.bottom ? b : clipping.bottom};
     if (!dc || v.left >= v.right || v.top >= v.bottom)
         return;
-    void *br = CALL(CreateSolidBrush, (c));
-    if (!br)
-        return;
-    CALL(FillRect, (dc, &v, br));
-    CALL(DeleteObject, (br));
+    if (!cached_brush || c != cached_color) {
+        if (cached_brush)
+            CALL(DeleteObject, (cached_brush));
+        cached_brush = CALL(CreateSolidBrush, (c));
+        cached_color = c;
+    }
+    if (cached_brush)
+        CALL(FillRect, (dc, &v, cached_brush));
 }
 static void text(void *dc, int x, int y, const char *s, U32 c, int h)
 {
@@ -171,6 +179,10 @@ int SpRenderThreadInit(void)
 void SpRenderThreadUninit(void)
 {
     clip(0, 0, 320, 528);
+    if (cached_brush) {
+        CALL(DeleteObject, (cached_brush));
+        cached_brush = 0;
+    }
 }
 const Render *SpGetThreadContext(void)
 {
