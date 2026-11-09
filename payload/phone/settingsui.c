@@ -10,7 +10,7 @@ static void bounds(int b)
     content_bottom = b;
 }
 static int view, category, scroll_y, drag_y, drag_scroll, search, len, tracking, moved;
-static int slider_drag, pressed_button;
+static int slider_drag, pressed_button, pressed_row = -1, scale_dropdown;
 static const char *leaf = "Settings";
 static int developer = 2, encryption;
 static int brightness = 50, automatic = 1, rotation, scale = 100;
@@ -18,25 +18,25 @@ static int saved_brightness = 50, saved_automatic = 1, saved_rotation, saved_sca
 static char query[40];
 static const char *names[] = {"System",          "Devices",  "Network & wireless",
                               "Personalization", "Accounts", "Time & language",
-                              "Ease of Access",  "Privacy",  "Update & security"};
+                              "Gaming",          "Privacy",  "Update & security"};
 static const char *details[] = {"Display, notifications, battery",
                                 "Bluetooth, camera",
                                 "Wi-Fi, airplane mode, cellular",
                                 "Start, lock screen, sounds",
                                 "Your accounts, email, sync",
                                 "Speech, region, keyboard",
-                                "Vision, hearing, interaction",
+                                "Game bar, captures, controllers",
                                 "Location, feedback",
                                 "Backup, Find My Phone"};
 static const char *system_names[] = {
     "Display",     "Notifications & actions", "Phone", "Messaging", "Storage", "Battery",
-    "Offline maps"};
+    "Offline maps", "About"};
 static const char *update_names[] = {"Phone update",  "Backup",         "Device encryption",
                                      "Find My Phone", "For developers", "Windows Insider Program"};
 static void icon(void *dc, unsigned which, int x, int y, int size)
 {
     const SettingsIcon *i = &settings_icons[which];
-    CALL(svf_SVFDrawTint, (dc, i->data, i->length, x, y, size, size, INK));
+    CALL(svf_SVFDrawTint, (dc, i->data, i->length, x, y, size, size, NAV_INK));
 }
 static int matches(const char *s)
 {
@@ -71,9 +71,8 @@ static void flat_button(void *dc, const Render *r, int x, int y, int width, cons
                         int pressed)
 {
     U32 fill = pressed ? RGB_(160, 190, 216) : RGB_(195, 215, 232);
-    r->fill(dc, x, y, x + width, y + 32, fill);
-    r->fill(dc, x, y + 31, x + width, y + 32, RGB_(128, 154, 180));
-    r->text(dc, x + 14, y + 9, label, INK, 14);
+    r->fill(dc, x + pressed, y + pressed, x + width - pressed, y + 32 - pressed, fill);
+    r->text(dc, x + 14 + pressed, y + 9 + pressed, label, INK, 14);
 }
 static int slider_value(int x)
 {
@@ -100,6 +99,73 @@ static void slider(void *dc, const Render *r, int y, int value)
     r->ellipse(dc, x, y - 8, 4, 4, BLUE, 0);
     r->ellipse(dc, x, y + 10, 4, 4, BLUE, 0);
 }
+/* Search is global across Settings levels, not restricted to the category
+ * currently displayed. The results are static navigation actions. */
+typedef struct {
+    const char *title;
+    int target;
+} SearchResult;
+static const SearchResult search_items[] = {
+    {"Display", 2}, {"About", 9}, {"System", 1},
+    {"Gaming", 3}, {"Personalization", 3},
+    {"Device encryption", 6}, {"For developers", 5},
+    {"Phone update", 7}, {"Network & wireless", 3},
+    {"Time & language", 3}, {"Privacy", 3}
+};
+static void search_results(void *dc, const Render *r)
+{
+    if (!search || !len)
+        return;
+    r->clip(0, 116, 320, content_bottom);
+    r->fill(dc, 8, 116, 312, content_bottom, RGB_(237, 243, 249));
+    unsigned shown = 0;
+    for (unsigned i = 0; i < sizeof(search_items) / sizeof(search_items[0]); ++i) {
+        if (!matches(search_items[i].title))
+            continue;
+        int y = 120 + (int)shown * 48;
+        if (y + 48 > content_bottom)
+            break;
+        if (pressed_row == (int)i)
+            r->fill(dc, 10, y, 310, y + 46, RGB_(187, 200, 215));
+        r->text(dc, 23, y + 14, search_items[i].title, INK, 14);
+        ++shown;
+    }
+    if (!shown)
+        r->text(dc, 23, 143, "No matching settings", MUTED, 14);
+}
+static int search_hit(int y)
+{
+    if (y < 120)
+        return -1;
+    int row = (y - 120) / 48;
+    unsigned shown = 0;
+    for (unsigned i = 0; i < sizeof(search_items) / sizeof(search_items[0]); ++i) {
+        if (!matches(search_items[i].title))
+            continue;
+        if ((int)shown++ == row)
+            return (int)i;
+    }
+    return -1;
+}
+static void dropdown(void *dc, const Render *r)
+{
+    static const char *options[] = {"100% (Recommended)", "125%", "150%", "175%"};
+    int selected = clampi((scale - 100) / 25, 0, 3);
+    r->fill(dc, 12, 397, 293, 432, RGB_(133, 145, 157));
+    r->fill(dc, 14, 399, 291, 430, RGB_(223, 229, 236));
+    r->text(dc, 23, 407, options[selected], INK, 14);
+    r->line(dc, 273, 412, 280, 419, INK);
+    r->line(dc, 280, 419, 287, 412, INK);
+    if (!scale_dropdown)
+        return;
+    r->fill(dc, 12, 230, 293, 393, RGB_(133, 145, 157));
+    for (int i = 0; i < 4; ++i) {
+        int y = 232 + 40 * i;
+        r->fill(dc, 14, y, 291, y + 40,
+                i == selected ? RGB_(181, 190, 201) : RGB_(242, 246, 250));
+        r->text(dc, 23, y + 12, options[i], INK, 14);
+    }
+}
 static void paint(void *dc)
 {
     const Render *r = CALL(render_SpGetThreadContext, ());
@@ -112,10 +178,11 @@ static void paint(void *dc)
             : view == 5 ? "For developers"
             : view == 6 ? "Device encryption"
             : view == 7 ? "Phone update"
+            : view == 9 ? "About"
             : view == 8 ? leaf
                         : "Settings",
             INK, 14);
-    if (view == 0 || view == 1 || view == 4) {
+    if (view == 0 || view == 1 || view == 4 || search) {
         r->fill(dc, 12, 80, 308, 112, BLUE);
         r->fill(dc, 14, 82, 306, 110, WHITE);
         r->text(dc, 23, 89, len ? query : search ? "" : "Find a setting", search ? INK : MUTED, 14);
@@ -131,16 +198,20 @@ static void paint(void *dc)
             if (!matches(names[i]))
                 continue;
             int y = 132 + row++ * 64 - scroll_y;
-            icon(dc, i < 8 ? i : 8, 12, y + 4, 32);
+            if (pressed_row == (int)i)
+                r->fill(dc, 0, y, 320, y + 58, RGB_(209, 219, 230));
+            icon(dc, i, 12, y + 4, 32);
             r->text(dc, 54, y + 3, names[i], INK, 14);
             r->text(dc, 54, y + 24, details[i], GRAY, 12);
         }
     } else if (view == 1) {
         r->text(dc, 12, 143, "System", GRAY, 14);
         r->clip(0, 178, 320, 528);
-        for (unsigned i = 0; i < 7; ++i) {
+        for (unsigned i = 0; i < 8; ++i) {
             int y = 186 + (int)i * 48 - scroll_y;
-            icon(dc, 9 + i, 12, y + 2, 17);
+            if (pressed_row == (int)i)
+                r->fill(dc, 0, y, 320, y + 46, RGB_(198, 211, 224));
+            icon(dc, i == 7 ? 16 : 9 + i, 12, y + 2, 17);
             r->text(dc, 39, y + 4, system_names[i], INK, 14);
         }
     } else if (view == 2) {
@@ -153,16 +224,34 @@ static void paint(void *dc)
         r->text(dc, 12, 302, "Rotation lock", INK, 14);
         toggle(dc, r, 327, rotation);
         r->text(dc, 12, 371, "Size of text, apps, and items on this display", INK, 14);
-        slider(dc, r, 413, scale);
+        dropdown(dc, r);
         flat_button(dc, r, 12, 439, 90, "Apply", pressed_button == 1);
         flat_button(dc, r, 122, 439, 90, "Cancel", pressed_button == 2);
         r->text(dc, 12, 503, "Show a dot on the connected display when", INK, 14);
+    } else if (view == 9) {
+        r->text(dc, 12, 105, "Device specifications", INK, 20);
+        r->text(dc, 12, 156, "Device", MUTED, 14);
+        r->text(dc, 123, 156, "Casio fx-CP400", INK, 14);
+        r->text(dc, 12, 193, "Processor", MUTED, 14);
+        r->text(dc, 123, 193, "SH4AL-DSP", INK, 14);
+        r->text(dc, 12, 230, "Architecture", MUTED, 14);
+        r->text(dc, 123, 230, "SuperH, big-endian", INK, 14);
+        r->text(dc, 12, 267, "Touch screen", MUTED, 14);
+        r->text(dc, 123, 267, "320 x 528", INK, 14);
+        r->text(dc, 12, 331, "NTOS specifications", INK, 20);
+        r->text(dc, 12, 384, "System", MUTED, 14);
+        r->text(dc, 123, 384, "NTOS / WinCE API", INK, 14);
+        r->text(dc, 12, 419, "Status", MUTED, 14);
+        r->text(dc, 123, 419, "Experimental", INK, 14);
+        r->text(dc, 12, 482, "Preview - not Windows 10", MUTED, 12);
     } else if (view == 4) {
         r->text(dc, 12, 143, "Update & security", GRAY, 14);
         r->clip(0, 178, 320, 528);
         for (unsigned i = 0; i < 6; ++i) {
             int y = 186 + (int)i * 48 - scroll_y;
-            icon(dc, i == 2 ? 7 : 8, 12, y + 2, 17);
+            if (pressed_row == (int)i)
+                r->fill(dc, 0, y, 320, y + 46, RGB_(198, 211, 224));
+            icon(dc, i == 0 ? 17 : i == 2 ? 7 : 8, 12, y + 2, 17);
             r->text(dc, 39, y + 4, update_names[i], INK, 14);
         }
     } else if (view == 5) {
@@ -205,21 +294,30 @@ static void paint(void *dc)
     }
 
     r->clip(0, 0, 320, 528);
+    search_results(dc, r);
+    r->clip(0, 0, 320, 528);
 }
 static int limit(void)
 {
-    int height = view == 0 ? 708 : view == 1 ? 522 : 0;
+    int height = view == 0 ? 708 : view == 1 ? 570 : 0;
     return height > content_bottom ? height - content_bottom : 0;
 }
 static int input(U32 msg, U32 wp, U32 lp)
 {
     int x = (int)(short)(lp & 65535u), y = (int)(short)(lp >> 16);
     if (msg == WM_KEY_) {
-        tracking = 0;
+        tracking = pressed_row = 0;
         if (wp == 0x1b || wp == 0x25) {
             if (view == 0)
                 return -1;
-            view = view == 2 || (view == 8 && category == 0) ? 1 : view >= 5 ? 4 : 0;
+            if (search) {
+                search = len = 0;
+                query[0] = 0;
+                CALL(SipShowIM, (0));
+                return 1;
+            }
+            view = view == 2 || view == 9 || (view == 8 && category == 0)
+                       ? 1 : view >= 5 && view <= 7 ? 4 : 0;
             scroll_y = 0;
             return 1;
         }
@@ -235,6 +333,16 @@ static int input(U32 msg, U32 wp, U32 lp)
             if (len)
                 query[--len] = 0;
             return 1;
+        }
+        if (wp == 13 && search && len) {
+            int hit = search_hit(120);
+            if (hit >= 0) {
+                view = search_items[hit].target;
+                search = len = 0;
+                query[0] = 0;
+                CALL(SipShowIM, (0));
+                return 1;
+            }
         }
         if (wp == 13) {
             search = 0;
@@ -274,7 +382,9 @@ static int input(U32 msg, U32 wp, U32 lp)
             return 1;
         }
         tracking = 1;
-        slider_drag = pressed_button = 0;
+        slider_drag = pressed_button = scale_dropdown = 0;
+    pressed_row = -1;
+        pressed_row = -1;
         moved = 0;
         drag_y = y;
         drag_scroll = scroll_y;
@@ -285,12 +395,20 @@ static int input(U32 msg, U32 wp, U32 lp)
             tracking = 0;
             return 1;
         }
-        if (view == 0 || view == 1 || view == 4) {
+        if (search && len && y >= 120) {
+            pressed_row = search_hit(y);
+            return 1;
+        }
+        if (view == 0 || view == 1 || view == 4 || search) {
             if (y >= 80 && y < 112) {
                 search = 1;
                 CALL(SipShowIM, (1));
                 tracking = 0;
             }
+            if (!search && view == 0 && y >= 132)
+                pressed_row = div_(y - 132 + scroll_y, 64);
+            else if (!search && (view == 1 || view == 4) && y >= 186)
+                pressed_row = div_(y - 186 + scroll_y, 48);
             return 1;
         }
         if (view == 2) {
@@ -301,9 +419,11 @@ static int input(U32 msg, U32 wp, U32 lp)
                 automatic = !automatic;
             else if (y >= 322 && y <= 352)
                 rotation = !rotation;
-            else if (y >= 397 && y <= 429) {
-                slider_drag = 2;
-                scale = slider_value(x);
+            else if (scale_dropdown && y >= 232 && y < 392) {
+                scale = 100 + clampi((y - 232) / 40, 0, 3) * 25;
+                scale_dropdown = 0;
+            } else if (y >= 397 && y <= 432) {
+                scale_dropdown = !scale_dropdown;
             } else if (y >= 439 && y <= 471) {
                 if (x >= 12 && x < 102) {
                     pressed_button = 1;
@@ -334,8 +454,23 @@ static int input(U32 msg, U32 wp, U32 lp)
             slider_drag = pressed_button = tracking = moved = 0;
             return needs_paint;
         }
+        if (search && len && y >= 120) {
+            int hit = search_hit(y);
+            if (hit >= 0) {
+                view = search_items[hit].target;
+                if (view == 3)
+                    category = 3;
+            }
+            tracking = 0;
+            pressed_row = -1;
+            search = len = 0;
+            query[0] = 0;
+            CALL(SipShowIM, (0));
+            return 1;
+        }
         int valid = tracking && !moved && y - drag_y <= 8 && drag_y - y <= 8;
         tracking = 0;
+        pressed_row = -1;
         if (!valid)
             return 1;
         if (view == 0 && y >= 132) {
@@ -348,9 +483,9 @@ static int input(U32 msg, U32 wp, U32 lp)
                 }
         } else if ((view == 1 || view == 4) && y >= 186) {
             int row = div_(y - 186 + scroll_y, 48);
-            if (view == 1 && row < 7) {
+            if (view == 1 && row < 8) {
                 leaf = system_names[row];
-                view = row == 0 ? 2 : 8;
+                view = row == 0 ? 2 : row == 7 ? 9 : 8;
             } else if (view == 4 && row < 6) {
                 leaf = update_names[row];
                 view = row == 0 ? 7 : row == 2 ? 6 : row == 4 ? 5 : 8;
