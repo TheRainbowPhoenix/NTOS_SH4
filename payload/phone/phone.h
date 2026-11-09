@@ -14,8 +14,14 @@ typedef struct {
 } Pt;
 #define RGB_(r, g, b) ((U32)((r) | ((g) << 8) | ((b) << 16)))
 #define WHITE RGB_(255, 255, 255)
-#define BLUE RGB_(57, 96, 255)
-#define GRAY RGB_(170, 170, 170)
+#define BLUE RGB_(40, 121, 181)
+/* NTOS light-default palette: low-glare ivory/slate surfaces with muted blue. */
+#define INK RGB_(29, 42, 58)
+#define SURFACE RGB_(242, 247, 251)
+#define PANEL RGB_(218, 233, 244)
+#define CARD RGB_(231, 241, 249)
+#define MUTED RGB_(101, 120, 138)
+#define GRAY RGB_(124, 142, 158)
 #define PROFILE 0x55495831u
 #define NOTIMPL ((int)0x80004001u)
 #define WM_PAINT_ 15u
