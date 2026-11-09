@@ -64,20 +64,21 @@ static void paint(void *dc)
         for (unsigned i = 0; i < 16; ++i) {
             int x = 4 + (int)(i % 4) * 79, y = 65 + (int)(i / 4) * 64;
             U32 c = toggles & (1u << i) ? BLUE : CARD;
+            U32 label_color = toggles & (1u << i) ? WHITE : INK;
             r->fill(dc, x, y, x + 75, y + 59, c);
             const SysIcon *icon = &system_icons[icons[i]];
             CALL(svf_SVFDraw, (dc, icon->data, icon->length, x + 5, y + 4, 18, 18));
             if (i == 6) {
-                r->text(dc, x + 5, y + 28, "Airplane", WHITE, 12);
-                r->text(dc, x + 5, y + 43, "mode", WHITE, 12);
+                r->text(dc, x + 5, y + 28, "Airplane", label_color, 12);
+                r->text(dc, x + 5, y + 43, "mode", label_color, 12);
             } else if (i == 9) {
-                r->text(dc, x + 5, y + 28, "Mobile", WHITE, 12);
-                r->text(dc, x + 5, y + 43, "hotspot", WHITE, 12);
+                r->text(dc, x + 5, y + 28, "Mobile", label_color, 12);
+                r->text(dc, x + 5, y + 43, "hotspot", label_color, 12);
             } else if (i == 13) {
-                r->text(dc, x + 5, y + 28, "Not", WHITE, 12);
-                r->text(dc, x + 5, y + 43, "connected", WHITE, 12);
+                r->text(dc, x + 5, y + 28, "Not", label_color, 12);
+                r->text(dc, x + 5, y + 43, "connected", label_color, 12);
             } else
-                r->text(dc, x + 5, y + 40, labels[i], WHITE,
+                r->text(dc, x + 5, y + 40, labels[i], label_color,
                         i == 1 || i == 8 || i == 14 || i == 15 ? 11 : 12);
         }
         r->text(dc, 262, 337, "Collapse", GRAY, 12);
