@@ -11,8 +11,7 @@ _abi_msvc5:
     nop
     .align 2
 .Ldesc5:
-    .long .Ltarget5
-    .long 5
+    .long .Ldescriptor5
     .align 2
     .global _abi_msvc8
 _abi_msvc8:
@@ -21,8 +20,7 @@ _abi_msvc8:
     nop
     .align 2
 .Ldesc8:
-    .long .Ltarget8
-    .long 8
+    .long .Ldescriptor8
 
 ! r0 -> descriptor {pointer-to-target,word-count}, r4-r7 from MSVC.
 ! Keep original MSVC entry SP in a private array and invoke GCC dispatcher.
@@ -111,7 +109,9 @@ _ntos_msvc_call_words:
     .align 2
 .Ldispatcher:
     .long _ntos_msvc_dispatch_native
-.Ltarget5:
+.Ldescriptor5:
     .long _ntos_msvc_native5
-.Ltarget8:
+    .long 5
+.Ldescriptor8:
     .long _ntos_msvc_native8
+    .long 8
