@@ -25,8 +25,7 @@ NT_DEFINE(CPlApplet)
 static const WCHAR16 class_name[] = {'N', 'T', 'C', 'O', 'N', 'T', 'R', 'O', 'L', 0};
 static const WCHAR16 window_title[] = {'C', 'o', 'n', 't', 'r', 'o', 'l',
                                        ' ', 'P', 'a', 'n', 'e', 'l', 0};
-static const WCHAR16 cpl_pattern[] = {'\\', 'f', 'l', 's', '0', '\\', 'W', 'i', 'n',
-                                     'd', 'o', 'w', 's', '\\', '*', '.', 'c', 'p', 'l', 0};
+static const WCHAR16 cpl_pattern[] = u"\\\\fls0\\\\Windows\\\\*.cpl";
 #define CPL_MAX 24
 #define CPL_NAME_MAX 40
 /* The original CE NEWCPLINFOW wire payload is 468 bytes. */
