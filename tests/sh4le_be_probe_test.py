@@ -43,6 +43,7 @@ for ranges in ([],[[0x1000,0x1003]],[[0x1000,0x1004],[0x1002,0x1006]],
 result=mod.convert_manual(d,[[0x1000,0x1004]])
 assert result[0x200:0x208]==bytes.fromhex('00 09 00 0b 01 f0 45 67')
 assert result[:0x44]==d[:0x44]
-assert result[0x48:]==d[0x48:]
+assert result[0x48:0x200]==d[0x48:0x200]
+assert result[0x204:]==d[0x204:]
 assert mod.parse(result)['machine']==0x1a8
 print('PASS conservative SH4LE PE inspection and reviewed-range swap, rejected dangerous ranges')
