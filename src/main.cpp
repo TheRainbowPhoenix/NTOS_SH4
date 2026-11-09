@@ -1386,7 +1386,7 @@ int main(int argc, char **argv, char **envp) {
         if ((key1 | key2) != 0) {
             if (testKey(key1, key2, KEY_EXE)) {
                 quit = true;
-            } else if (testKey(key1, key2, KEY_CLEAR)) {
+            } else if ((testKey(key1, key2, KEY_CLEAR) || testKey(key1, key2, KEY_LEFT))) {
                 return 0; // exits NTOS back to the launcher
             } else if (testKey(key1, key2, KEY_ADD) ||
                        testKey(0, key2, KEY_UP) ||
@@ -1586,7 +1586,7 @@ int main(int argc, char **argv, char **envp) {
         } while ((key1 | key2) != 0);
         for (;;) {
             getKey(&key1, &key2);
-            if (testKey(key1, key2, KEY_CLEAR))
+            if ((testKey(key1, key2, KEY_CLEAR) || testKey(key1, key2, KEY_LEFT)))
                 return 0;
             if (testKey(key1, key2, KEY_EXE))
                 break;

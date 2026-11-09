@@ -10,6 +10,7 @@ IMP(void,PostQuitMessage,(int))
 IMP(int,DeleteFileW,(const W16 *))
 IMP(int,SipShowIM,(U32))
 IMP(int,SipGetInfo,(SipInfo *))
+#include "phone_io.h"
 static const Render *r;static const Catalog *cat;
 static const Settings *settings;
 static int mode,offset,list_offset,jump,search,selected=-1,opened=-1,query_len,save_failed;
@@ -66,11 +67,12 @@ static void app_paint(void *dc){const AppEntry *a=&cat->apps[opened];
  r->fill(dc,14,404,306,444,RGB_(42,42,42));r->text(dc,27,415,pin_size(a->id)==1?"Tile size: small":"Tile size: medium",WHITE,14);
  if(save_failed)r->text(dc,14,470,"Could not save preferences",GRAY,14);
 }
+#include "fileview.h"
 static void paint(void *dc){if(!r||!cat)return;r->clip(0,0,320,528);r->fill(dc,0,0,320,528,0);r->clip(0,24,320,528);
  if(opened>=0&&cat->apps[opened].id==APP_SETTINGS_ID)settings->paint(dc);
- else if(opened>=0)app_paint(dc);else if(jump)jump_paint(dc);else if(mode)list(dc);else home(dc);r->clip(0,0,320,528);
+ else if(opened>=0&&cat->apps[opened].id==7)files_paint(dc);else if(opened>=0)app_paint(dc);else if(jump)jump_paint(dc);else if(mode)list(dc);else home(dc);r->clip(0,0,320,528);
  if(save_failed&&opened<0)r->text(dc,6,506,"App missing or NTOS.hh3 needs update",WHITE,12);}
-static void open_id(unsigned id){opened=index_id(id);search=jump=editing=0;if(id==APP_SETTINGS_ID)settings->reset();CALL(SipShowIM,(0));}
+static void open_id(unsigned id){opened=index_id(id);search=jump=editing=0;if(id==APP_SETTINGS_ID)settings->reset();if(id==7)files_reset();CALL(SipShowIM,(0));}
 static void activate(unsigned id){int i=index_id(id);if(i<0)return;
  if(CALL(coredll_launch,(cat->apps[i].path))){save_failed=0;CALL(PostQuitMessage,(0));return;}
  // Settings remains accessible even with an older kernel lacking launch support.
@@ -97,6 +99,7 @@ static void scroll_by(int delta){if(!mode){offset=clampi(offset+delta,0,home_end
 static void refresh_catalog(void){static const W16 cache[]={'\\','f','l','s','0','\\','a','p','p','s','.','d','a','t',0};
  CALL(DeleteFileW,(cache));CALL(catalog_CatalogReload,());selected=opened=tap=-1;mode=offset=list_offset=drag_valid=0;}
 static int input(U32 msg,U32 wp,U32 lp){int x=(int)(short)(lp&65535u),y=(int)(short)(lp>>16);
+ if(opened>=0&&cat->apps[opened].id==7){int result=files_input(msg,wp,x,y);if(result<0){CALL(PostQuitMessage,(0));opened=-1;}return result!=0;}
  if(opened>=0&&cat->apps[opened].id==APP_SETTINGS_ID){
   if(msg==WM_UP_){drag_valid=dragged=0;tap=-1;}
   if(msg==WM_KEY_&&(wp==0x1b||wp==0x25)&&sip_on()){CALL(SipShowIM,(0));return 1;}
@@ -106,7 +109,7 @@ static int input(U32 msg,U32 wp,U32 lp){int x=(int)(short)(lp&65535u),y=(int)(sh
  if(msg==WM_KEY_&&wp==0x72&&selected>=0){open_id(cat->apps[selected].id);editing=1;return 1;}
  if(msg==WM_KEY_&&wp==0x71){opened=-1;mode=search=1;CALL(SipShowIM,(1));return 1;}
  if(msg==WM_KEY_){drag_valid=dragged=0;tap=-1;if(wp==0x1bu||wp==0x25u){if(sip_on()){CALL(SipShowIM,(0));search=0;return 1;}
-  if(opened>=0){CALL(PostQuitMessage,(0));opened=-1;mode=offset=0;}else if(jump)jump=0;else {mode=search=query_len=offset=0;query[0]=0;}return 1;}
+  if(opened>=0){CALL(PostQuitMessage,(0));opened=-1;mode=offset=0;}else if(jump)jump=0;else {if(!mode&&!search&&!query_len)CALL(PostQuitMessage,(0));mode=search=query_len=offset=0;query[0]=0;}return 1;}
   if(wp==0x27u){mode=1;selected=-1;return 1;}
   if(wp==0x26u||wp==0x28u){navigate(wp==0x26u?-1:1);return 1;}
   if(search&&wp==8){if(query_len){--query_len;while(query_len&&((unsigned char)query[query_len]&0xc0)==0x80)--query_len;query[query_len]=0;}list_offset=0;return 1;}

@@ -234,3 +234,19 @@ Placeholder EXEs show a dark title bar with their SVF icon and app name,
 and the name as a page heading. Clear returns to Start. News retains its demo.
 Fugue paths are normalized to exactly one leading slash; adding a second
 creates an empty volume name and ENOVOLUME, unrelated to open-handle exhaustion.
+
+## Settings, file list and exit controls
+
+Settings scrolls to Update & security; Phone update, Device encryption and
+For developers are local preview pages. Gear always returns to Settings root.
+Display uses the same bitmap face for upper/lowercase letters and square toggles.
+None of these preview settings changes hardware, encrypts storage or installs updates.
+
+File Explorer browses fls0 with folders first, up to 48 ASCII entries per folder.
+Tap folders to enter; tap EXEs to launch; arrows select and EXE opens. Clear goes
+up, then closes the app at the volume root. The browser does not modify files.
+
+Clear goes back in the phone UI and exits at app/Start root. Other WinCE apps
+receive WM_QUIT for physical Clear. Notifications dismiss on a short upward
+swipe, Collapse, or the bottom handle; the Exit quick tile quits the current
+EXE. From Start it returns to NTOS; Clear or Left then exits NTOS.hh3.

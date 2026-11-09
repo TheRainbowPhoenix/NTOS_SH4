@@ -19,6 +19,7 @@ IMP(int,DispatchMessageW,(const Msg *))
 IMP(int,DestroyWindow,(void *))
 IMP(void *,BeginPaint,(void *,Paint *))
 IMP(int,EndPaint,(void *,const Paint *))
+IMP(void,PostQuitMessage,(int))
 IMP(int,SipShowIM,(U32))
 IMP(int,SipGetInfo,(SipInfo *))
 static const W16 cls[]={'S','t','a','r','t','H','o','s','t',0};
@@ -34,6 +35,7 @@ static int proc(void *hwnd,U32 msg,U32 wp,U32 lp){
   if(!was_visible)app.menu->input(msg,wp,lp);CALL(SipShowIM,(was_visible?0u:1u));
   CALL(InvalidateRect,(hwnd,0,0));CALL(UpdateWindow,(hwnd));return 0;}
  int changed=app.chrome->input(msg,wp,lp);
+ if(changed==3){CALL(PostQuitMessage,(0));return 0;}
  if(changed==2){app.menu->open(APP_SETTINGS_ID);changed=1;}
  if(!changed&&visible()&&msg==WM_DOWN_&&(int)(short)(lp>>16)>=271){int key=keyboard->input(msg,wp,lp);
   if(key)app.menu->input(key==8||key==13?WM_KEY_:WM_CHAR_,(U32)key,0);changed=1;}

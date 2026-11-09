@@ -16,6 +16,7 @@ static int fake_open(const char *path,u32 flags){assert(path[0]=='\\'&&path[1]!=
 static int fake_read(int fd,void *p,u32 n){last_fd=fd;if(n)((char *)p)[0]='P';return n?1:0;}
 static int fake_size(int fd){last_fd=fd;return 176;}
 static int fake_close(int fd){last_fd=fd;++closed;return 0;}
+static u32 fake_event(u32 *x,u32 *y,u32 *dir){(void)x;(void)y;(void)dir;return 2;}
 int main(void){
  ntos_host_table[11]=(const void *)fake_open;ntos_host_table[12]=(const void *)fake_read;
  ntos_host_table[14]=(const void *)fake_close;ntos_host_table[17]=(const void *)fake_size;
@@ -30,5 +31,9 @@ int main(void){
  assert(!ReadFile(a,data,4,&done,0));assert(CloseHandle(b)&&last_fd==0x10002&&closed==2);
  for(int i=0;i<32;++i)assert(CreateFileW(path,NT_GENERIC_READ,1,0,3,0,0)!=NT_INVALID_FILE);
  assert(CreateFileW(path,NT_GENERIC_READ,1,0,3,0,0)==NT_INVALID_FILE&&GetLastError()==4&&closed==3);
+ ntos_host_table[15]=(const void *)fake_event;NT_MSG msg;
+ g_class_name[0]=0;assert(GetMessageW(&msg,0,0,0)==0&&msg.message==0x12u);
+ const u16 shell[]={'S','t','a','r','t','H','o','s','t',0};copy_wstr(g_class_name,shell,48);
+ assert(GetMessageW(&msg,0,0,0)==1&&msg.message==0x100u&&msg.wParam==0x1bu);
  puts("PASS actual COREDLL: full 32-bit SDK descriptors, simultaneous file handles, read/size/close, exhaustion");return 0;
 }

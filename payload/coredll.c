@@ -436,6 +436,8 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
     if (ev==2) {
         msg->message=0x0100u; /* Physical Clear is Back, not WM_QUIT. */
         msg->wParam=0x1Bu;
+        static const u16 shell_class[]={'S','t','a','r','t','H','o','s','t',0};
+        if(!same_wstr(g_class_name,shell_class)){msg->message=0x12u;return 0;}
         return 1;
     }
     if (ev==3) {

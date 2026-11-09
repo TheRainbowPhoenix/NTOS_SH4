@@ -9,7 +9,7 @@ out=['/* Generated 1-bpp UI glyphs. No TTF parser or font file on device. */',
      'typedef struct {int height,first,count;const PhoneGlyph *glyphs;const unsigned char *bits;} PhoneFont;']
 fonts=[]
 for h,chars in [(9,range(32,127)),(11,range(32,127)),(12,range(32,127)),
-                (14,range(32,127)),(18,range(32,127)),(22,range(65,91)),
+                (14,range(32,127)),(18,range(32,127)),(22,range(32,127)),
                 (28,range(65,91)),(43,range(56,57)),
                 (14,range(0x20ac,0x20ad)),(14,range(0xa3,0xa4)),(14,range(0xa5,0xa6)),
                 (18,range(0x20ac,0x20ad)),(18,range(0xa3,0xa4)),(18,range(0xa5,0xa6))]:
