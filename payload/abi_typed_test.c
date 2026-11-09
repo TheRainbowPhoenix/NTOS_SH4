@@ -26,5 +26,16 @@ int main(void) {
     CHECK(nt_msvc_imp_abi_typed_ret_u16(65530u)==65535u,0xAB1E000Cu);
     CHECK(nt_msvc_imp_abi_typed_ptr(&marker)==&marker,0xAB1E000Du);
     CHECK(nt_msvc_imp_abi_typed_zero()==0xAB1C0420u,0xAB1E000Eu);
+    {
+        NtosAbiBytes1 t=nt_msvc_imp_abi_typed_ret_bytes1(0xA5u);
+        CHECK(t.a==0xA5u,0xAB1E000Fu);
+    }
+    {
+        NtosAbiBytes4 t=nt_msvc_imp_abi_typed_ret_bytes4(0x12345678u);
+        CHECK(t.a==0x78u && t.b==0x56u && t.c==0x34u && t.d==0x12u,
+              0xAB1E0010u);
+    }
+    CHECK(nt_msvc_imp_abi_typed_ret_s8(-123)==126,0xAB1E0011u);
+    CHECK(nt_msvc_imp_abi_typed_ret_u8(250u)==255u,0xAB1E0012u);
     return (int)0xAB1C0421u;
 }
