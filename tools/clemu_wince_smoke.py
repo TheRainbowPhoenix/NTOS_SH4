@@ -14,8 +14,8 @@ import elf2ntx
 def main():
  ap=argparse.ArgumentParser();ap.add_argument('--out',type=Path,default=ROOT/'obj/wince/full-smoke');ap.add_argument('--app',choices=['control','shell','abi'],default='control');ap.add_argument('--direct-hh3',action='store_true');ap.add_argument('--capture-after',type=int,default=20_000_000);ap.add_argument('--budget',type=int,default=600_000_000);args=ap.parse_args();out=args.out;out.mkdir(parents=True,exist_ok=True)
  volume=out/'vfs/fls0';volume.mkdir(parents=True,exist_ok=True)
- chosen={'control':ROOT/'dist/ce-demo/control.exe','shell':ROOT/'dist/ce-demo/shell.exe','abi':ROOT/'dist_msvc_coredll/COREDLLABI.EXE'}[args.app]
- for path in [ROOT/'dist/NTOS.hh3',ROOT/'dist/ce-demo/COREDLL.DLL',ROOT/'dist/ce-demo/COMMCTRL.DLL',ROOT/'dist/ce-demo/toolhelp.dll',chosen,launch.DEFAULT_RUN_BIN]:shutil.copyfile(path,volume/path.name)
+ chosen={'control':ROOT/'dist_ce_demo/control.exe','shell':ROOT/'dist_ce_demo/shell.exe','abi':ROOT/'dist_msvc_coredll/COREDLLABI.EXE'}[args.app]
+ for path in [ROOT/'dist/NTOS.hh3',ROOT/'dist_ce_demo/COREDLL.DLL',ROOT/'dist_ce_demo/COMMCTRL.DLL',ROOT/'dist_ce_demo/toolhelp.dll',chosen,launch.DEFAULT_RUN_BIN]:shutil.copyfile(path,volume/path.name)
  modules,emu=launch.make_emulator(EMU/'refs/fw3070.bin')
  vfs=VirtualFilesystem(out/'vfs');vfs.mounts.append(('fls0',FileSystem(volume)));launch.install_os_hooks(emu,vfs)
  state={'phase':'boot','instructions':0,'ntos':False,'key':False};events=[]
