@@ -526,5 +526,54 @@ msvc-abi-tests: msvc-abi-global msvc-abi-thunks
 
 .PHONY: msvc-abi-global msvc-abi-thunks msvc-abi-tests
 
+# Typed MSVC SH4 ABI boundary experiment. The generated assembly is the
+# actual ABI entry; C marshaling deliberately lets native GCC handle R2
+# struct returns/aggregate calling conventions. No GCC patch is required.
+TYPED_GEN := obj_msvc_typed/generated
+TYPED_OBJ := obj_msvc_typed
+TYPED_DIST := dist_msvc_typed
+TYPED_EXPORTS := abi_typed_5,abi_typed_8,abi_typed_s3,abi_typed_s3split,abi_typed_u64,abi_typed_u64split,abi_typed_ret_s3,abi_typed_ret_u64,abi_typed_ret_bytes3,abi_typed_bytes3,abi_typed_ret_s16,abi_typed_ret_u16,abi_typed_ptr,abi_typed_zero
+
+$(TYPED_GEN)/stamp: tools/gen_sh4_msvc_typed.py payload/abi_typed_manifest.json
+	$(PYTHON) tools/gen_sh4_msvc_typed.py --manifest payload/abi_typed_manifest.json --outdir $(TYPED_GEN)
+	@touch $@
+
+$(TYPED_OBJ)/native.o: payload/abi_typed_impl.c $(TYPED_GEN)/stamp
+	$(CC) -c $< -o $@ -I$(TYPED_GEN) $(PAYLOAD_CFLAGS)
+
+$(TYPED_OBJ)/body.o: $(TYPED_GEN)/stamp
+	$(CC) -c $(TYPED_GEN)/abi_export_body.c -o $@ -I$(TYPED_GEN) $(PAYLOAD_CFLAGS)
+
+$(TYPED_OBJ)/export.o: $(TYPED_GEN)/stamp
+	$(AS) -c $(TYPED_GEN)/abi_export.S -o $@ $(AS_FLAGS)
+
+$(TYPED_OBJ)/import.o: $(TYPED_GEN)/stamp
+	$(CC) -c $(TYPED_GEN)/abi_import.c -o $@ -I$(TYPED_GEN) $(PAYLOAD_CFLAGS)
+
+$(TYPED_OBJ)/call.o: $(TYPED_GEN)/stamp
+	$(AS) -c $(TYPED_GEN)/abi_call.S -o $@ $(AS_FLAGS)
+
+$(TYPED_OBJ)/test.o: payload/abi_typed_test.c $(TYPED_GEN)/stamp
+	$(CC) -c $< -o $@ -I$(TYPED_GEN) $(PAYLOAD_CFLAGS)
+
+$(TYPED_DIST)/ABITYPED.elf: $(TYPED_OBJ)/native.o $(TYPED_OBJ)/body.o $(TYPED_OBJ)/export.o payload/xamlui.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/xamlui.ld -o $@ $(TYPED_OBJ)/native.o $(TYPED_OBJ)/body.o $(TYPED_OBJ)/export.o
+
+$(TYPED_DIST)/ABITYPED.DLL: $(TYPED_DIST)/ABITYPED.elf tools/elf2ntx.py
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name ABITYPED.DLL --exports $(TYPED_EXPORTS)
+
+$(TYPED_DIST)/ABITYPED_TEST.elf: $(TYPED_OBJ)/test.o $(TYPED_OBJ)/import.o $(TYPED_OBJ)/call.o payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(TYPED_OBJ)/test.o $(TYPED_OBJ)/import.o $(TYPED_OBJ)/call.o
+
+$(TYPED_DIST)/ABITYPED.EXE: $(TYPED_DIST)/ABITYPED_TEST.elf $(TYPED_DIST)/ABITYPED.DLL tools/elf2ntx.py
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module ABITYPED.DLL
+
+msvc-abi-typed: $(TYPED_DIST)/ABITYPED.DLL $(TYPED_DIST)/ABITYPED.EXE
+	@echo "TYPED MSVC SH4 ABI experiment: ABITYPED.EXE expects 0xAB1C0421"
+
+.PHONY: msvc-abi-typed
+
 # Native WinCE-first phone launcher.
 include payload/phone/phone.mk
