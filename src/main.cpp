@@ -1428,6 +1428,11 @@ static void wait_error_key_release(void) {
     } while ((key1|key2)!=0u);
 }
 
+// Exit to Hollyhock only after attempting to release the last NTOS-owned
+// descriptor, including the no-files and user-CLEAR picker paths.
+static int safe_host_exit(int status) {
+    return fs_recover() ? status : -1;
+}
 int main(int argc, char **argv, char **envp) {
     (void)argc;
     (void)argv;
@@ -1440,7 +1445,7 @@ int main(int argc, char **argv, char **envp) {
         ntos_puts("FS locked: SDK handle did not close");
         ntos_puts("Stop NTOS - do not retry files");
         LCD_Refresh();
-        return -1;
+        return safe_host_exit(-1);
     }
     banner();
 
@@ -1519,7 +1524,7 @@ int main(int argc, char **argv, char **envp) {
         Debug_PrintString("Put an SH4BE PE EXE there and retry.", false);
         LCD_Refresh();
         Debug_WaitKey();
-        return 0;
+        return safe_host_exit(0);
     }
 
     for (int i = 0; i < count; i++) {
@@ -1552,7 +1557,7 @@ int main(int argc, char **argv, char **envp) {
             if (testKey(key1, key2, KEY_EXE)) {
                 quit = true;
             } else if ((testKey(key1, key2, KEY_CLEAR) || testKey(key1, key2, KEY_LEFT))) {
-                return 0; // exits NTOS back to the launcher
+                return safe_host_exit(0); // exits NTOS back to the launcher
             } else if (testKey(key1, key2, KEY_ADD) ||
                        testKey(0, key2, KEY_UP) ||
                        testKey(0, key2, KEY_DOWN)) {
@@ -1655,7 +1660,7 @@ int main(int argc, char **argv, char **envp) {
             if(mapped_rc==-2) {
                 Mem_Free(file);
                 kernel_fault_screen();
-                return -1;
+                return safe_host_exit(-1);
             }
             app_load_error(err);
             LCD_Refresh();
@@ -1699,7 +1704,7 @@ int main(int argc, char **argv, char **envp) {
     if(!fs_recover()) {
         ntos_puts("FS locked after application; stopping");
         LCD_Refresh();
-        return -1;
+        return safe_host_exit(-1);
     }
     // Tear down each image before starting the next: one app resident at a time.
     if(pending_app[0]) {
@@ -1716,11 +1721,11 @@ int main(int argc, char **argv, char **envp) {
             if(!fs_recover()) {
                 ntos_puts("SDK close failed; stop launching apps");
                 LCD_Refresh();
-                return -1;
+                return safe_host_exit(-1);
             }
             if(g_fatal.reason) {
                 kernel_fault_screen();
-                return -1;
+                return safe_host_exit(-1);
             }
             if(!ok){
                 app_load_error(launch_error?launch_error:"Invalid application");
@@ -1755,7 +1760,7 @@ int main(int argc, char **argv, char **envp) {
         for (;;) {
             getKey(&key1, &key2);
             if ((testKey(key1, key2, KEY_CLEAR) || testKey(key1, key2, KEY_LEFT)))
-                return 0;
+                return safe_host_exit(0);
             if (testKey(key1, key2, KEY_EXE))
                 break;
         }
