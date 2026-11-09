@@ -1,5 +1,5 @@
 name: Clang C and H cleanup
-# Apply Clang-19 formatting to the Settings touch regression and watercolor palette.
+# Clang-19 normalize VEC2 strokes/arcs, SVFEDITOR WinAPI code and Settings interaction tests.
 
 on:
   push:
