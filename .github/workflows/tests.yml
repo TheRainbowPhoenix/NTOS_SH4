@@ -60,6 +60,11 @@ jobs:
           /tmp/ntos-caps
           gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/ntos-core-files
           /tmp/ntos-core-files
+      - name: Exclusive filesystem ownership regression
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/fs_guard_test.cpp -o /tmp/fs-guard
+          /tmp/fs-guard
+          python3 tools/check_fs_guard_wiring.py
       - name: MMU, PE page materializer and relocation regressions
         run: |
           set -e
