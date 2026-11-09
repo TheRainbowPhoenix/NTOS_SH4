@@ -477,6 +477,14 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
         g_qhead = (g_qhead + 1u) % 16u;
         return msg->message == 0x0012u ? 0 : 1;
     }
+    if (g_window.invalidated && g_window.visible && g_window.magic) {
+        msg->hwnd = (void *)&g_window;
+        msg->message = 0x000fu; /* one coalesced WM_PAINT */
+        msg->wParam = msg->lParam = msg->time = 0;
+        msg->pt.x = msg->pt.y = 0;
+        g_window.invalidated = 0;
+        return 1;
+    }
     do {
         ev = ((u32(*)(u32 *, u32 *, u32 *))a[15])(&x, &y, &direction);
     } while (ev == 0);
@@ -865,10 +873,9 @@ int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
     (void)rect;
     (void)erase;
     if (is_hwnd(hwnd)) {
-        if (!g_window.invalidated) {
-            g_window.invalidated = 1;
-            return enqueue(hwnd, 0x000Fu, 0, 0); /* WM_PAINT */
-        }
+        /* Paint requests are coalesced, not queued. A queued WM_PAINT plus
+         * UpdateWindow previously redrew the whole LCD twice. */
+        g_window.invalidated = 1;
         return 1;
     }
     return hwnd == 0;
@@ -879,8 +886,10 @@ int UpdateWindow(void *hwnd)
         g_window.invalidated = 0;
         if (g_window.proc)
             g_window.proc(hwnd, 0x000Fu, 0, 0);
+        else
+            coredll_refresh();
     }
-    coredll_refresh();
+    /* EndPaint already refreshes once; no second LCD_Refresh here. */
     return 1;
 }
 
