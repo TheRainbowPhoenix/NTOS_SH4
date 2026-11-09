@@ -6,7 +6,7 @@ import zipfile
 import pefile
 ROOT=Path(__file__).resolve().parents[2]
 HERE=Path(__file__).resolve().parent
-OUT=ROOT/'dist/ce-demo'
+OUT=ROOT/'dist_ce_demo'
 
 def main():
     for module in ('COREDLL.DLL','COMMCTRL.DLL'):
