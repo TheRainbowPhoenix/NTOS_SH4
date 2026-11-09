@@ -29,6 +29,14 @@ _abi_msvc8:
     sts.l pr,@-r15
     mov r0,r8
     add #-32,r15
+    ! Simulate MSVC /Od: the callee is allowed to overwrite all four
+    ! incoming caller-provided home slots at entry S+0..S+15.
+    mov r15,r1
+    add #40,r1
+    mov.l r4,@r1
+    mov.l r5,@(4,r1)
+    mov.l r6,@(8,r1)
+    mov.l r7,@(12,r1)
     mov.l r4,@r15
     mov.l r5,@(4,r15)
     mov.l r6,@(8,r15)
