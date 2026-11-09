@@ -210,8 +210,8 @@ static void app_paint(void *dc)
     r->fill(dc, 14, 352, 306, 392, PANEL);
     r->text(dc, 27, 363, pin_size(a->id) ? "Unpin from Start" : "Pin to Start", INK, 14);
     r->fill(dc, 14, 404, 306, 444, PANEL);
-    r->text(dc, 27, 415, pin_size(a->id) == 1 ? "Tile size: small" : "Tile size: medium", INK,
-            14);
+    const char *tile_label = pin_size(a->id) == 1 ? "Tile size: small" : "Tile size: medium";
+    r->text(dc, 27, 415, tile_label, INK, 14);
     if (save_failed)
         r->text(dc, 14, 470, "Could not save preferences", GRAY, 14);
 }
