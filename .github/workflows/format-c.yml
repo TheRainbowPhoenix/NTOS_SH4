@@ -1,5 +1,5 @@
 name: Clang C and H cleanup
-# Normalize final light SVF app tiles and high-contrast navigation in Clang 19.
+# Final Clang-19 normalization for tint manifests, pastel tiles, brush cache and renderer.
 
 on:
   push:
