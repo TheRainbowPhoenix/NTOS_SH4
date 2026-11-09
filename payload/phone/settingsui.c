@@ -359,7 +359,7 @@ static int input(U32 msg, U32 wp, U32 lp)
     if (msg == WM_MOVE_ && tracking) {
         if (slider_drag)
             return slider_update(x);
-        if (pressed_button)
+        if (pressed_button || scale_dropdown)
             return 0;
         int delta = y - drag_y;
         if (delta > 8 || delta < -8)
@@ -382,8 +382,7 @@ static int input(U32 msg, U32 wp, U32 lp)
             return 1;
         }
         tracking = 1;
-        slider_drag = pressed_button = scale_dropdown = 0;
-    pressed_row = -1;
+        slider_drag = pressed_button = 0;
         pressed_row = -1;
         moved = 0;
         drag_y = y;
@@ -412,17 +411,17 @@ static int input(U32 msg, U32 wp, U32 lp)
             return 1;
         }
         if (view == 2) {
-            if (y >= 168 && y <= 198) {
+            if (scale_dropdown && y >= 232 && y < 392) {
+                scale = 100 + clampi((y - 232) / 40, 0, 3) * 25;
+                scale_dropdown = 0;
+            } else if (y >= 168 && y <= 198) {
                 slider_drag = 1;
                 brightness = slider_value(x);
             } else if (y >= 252 && y <= 282)
                 automatic = !automatic;
             else if (y >= 322 && y <= 352)
                 rotation = !rotation;
-            else if (scale_dropdown && y >= 232 && y < 392) {
-                scale = 100 + clampi((y - 232) / 40, 0, 3) * 25;
-                scale_dropdown = 0;
-            } else if (y >= 397 && y <= 432) {
+            else if (y >= 397 && y <= 432) {
                 scale_dropdown = !scale_dropdown;
             } else if (y >= 439 && y <= 471) {
                 if (x >= 12 && x < 102) {
@@ -501,7 +500,8 @@ static int input(U32 msg, U32 wp, U32 lp)
 static void reset(void)
 {
     view = category = scroll_y = search = len = tracking = moved = 0;
-    slider_drag = pressed_button = 0;
+    slider_drag = pressed_button = scale_dropdown = 0;
+    pressed_row = -1;
     query[0] = 0;
 }
 static int page(void)
