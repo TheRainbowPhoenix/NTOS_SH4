@@ -419,6 +419,13 @@ int DispatchMessageW(const NT_MSG *msg)
 {
     if (!msg)
         return 0;
+    /* Close belongs to shared chrome, not to individual app WNDPROCs. */
+    if (is_hwnd(msg->hwnd) && !is_phone_shell() &&
+        msg->message == 0x0202u &&
+        msg->pt.x >= 288 && msg->pt.y < 24 && msg->pt.y >= 0) {
+        PostQuitMessage(0);
+        return 0;
+    }
     if (is_hwnd(msg->hwnd) && g_window.proc)
         return g_window.proc(msg->hwnd, msg->message, msg->wParam, msg->lParam);
     return DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
@@ -544,11 +551,34 @@ void *BeginPaint(void *hwnd, NT_PAINT *paint)
     return (void *)1;
 }
 
+/* Single title chrome shared by calculator, Control Panel and native CE apps.
+ * The UIX phone home paints its own shell so it is deliberately excluded.
+ * Keep named Win32 exports and their ABI unchanged.
+ */
+static int is_phone_shell(void);
+int TextOutW(void *hdc, int x, int y, const u16 *text, int n);
+u32 SetTextColor(void *hdc, u32 color);
+static void ntos_paint_titlebar(void)
+{
+    if (!g_window.title[0] || is_phone_shell())
+        return;
+    ntos_fillrect(0, 0, 320, 24, 0x00101010u);
+    ntos_fillrect(289, 2, 316, 22, 0x00282828u);
+    ntos_line(297, 7, 308, 17, 0x00ffffffu);
+    ntos_line(308, 7, 297, 17, 0x00ffffffu);
+    u32 previous = SetTextColor((void *)1, 0x00ffffffu);
+    int count = 0;
+    while (g_window.title[count] && count < 34)
+        ++count;
+    TextOutW((void *)1, 7, 5, g_window.title, count);
+    SetTextColor((void *)1, previous);
+}
 int EndPaint(void *hwnd, const NT_PAINT *paint)
 {
     (void)paint;
     if (is_hwnd(hwnd))
         g_window.invalidated = 0;
+    ntos_paint_titlebar();
     legacy_nav_paint();
     coredll_refresh();
     return 1;
