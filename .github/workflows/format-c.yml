@@ -1,5 +1,5 @@
 name: Clang C and H cleanup
-# Normalize the light-theme native visual test and all final CPL browser changes.
+# Normalize SVF light icon tint, shared chrome and drawing performance paths.
 
 on:
   push:
