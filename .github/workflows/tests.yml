@@ -49,6 +49,9 @@ jobs:
           gcc -std=c11 -Wall -Wextra -Werror -DPHONE_HOST=1 -Ipayload/phone -Ipayload \
             payload/phone/settingsui.c tests/settings_ui_interaction_test.c -o /tmp/ntos-settings-ui
           /tmp/ntos-settings-ui
+          gcc -std=c11 -Wall -Wextra -Werror -DPHONE_HOST=1 -Ipayload/phone -Ipayload \
+            payload/phone/svf.c tests/svf_v2_test.c -o /tmp/ntos-svf-v2
+          /tmp/ntos-svf-v2
           python3 tools/preview_native_gdi.py
           gcc -std=c11 -Wall -Wextra -Werror -Ipayload tests/ntapi_caps_test.c -o /tmp/ntos-caps
           /tmp/ntos-caps
