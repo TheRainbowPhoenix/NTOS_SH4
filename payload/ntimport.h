@@ -23,6 +23,7 @@
 #pragma once
 
 #include <stdint.h> /* uintptr_t for the import-call cast */
+#include "ntabi.h"
 
 /* Declare an imported function: typedef + call helper. */
 #define NT_IMPORT(ret, name, params)                                          \
@@ -41,3 +42,15 @@
 
 /* Call an imported function: NT_CALL(coredll_puts, ("hi")); */
 #define NT_CALL(name, args) __ntx_ref_##name() args
+
+/* Opt-in boundary calling-convention experiment. Both the imported
+ * FUNCTION POINTER TYPE and the exported function must agree. Plain
+ * NT_IMPORT is intentionally unchanged so native NTOS calls stay stable.
+ * This is an SH Renesas ABI candidate, not an asserted MSVC SH4 ABI. */
+#define NT_IMPORT_CE_CANDIDATE(ret, name, params)                               \
+    typedef ret (*__ntx_fn_t_##name) params NT_ABI_CE_CANDIDATE;               \
+    extern const void *volatile __imp_##name;                                  \
+    static __inline __ntx_fn_t_##name __ntx_ref_##name(void)                   \
+    {                                                                          \
+        return (__ntx_fn_t_##name)(uintptr_t)__imp_##name;                     \
+    }
