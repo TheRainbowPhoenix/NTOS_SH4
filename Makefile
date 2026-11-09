@@ -556,6 +556,10 @@ $(TYPED_OBJ)/call.o: $(TYPED_GEN)/stamp
 $(TYPED_OBJ)/test.o: payload/abi_typed_test.c $(TYPED_GEN)/stamp
 	$(CC) -c $< -o $@ -I$(TYPED_GEN) $(PAYLOAD_CFLAGS)
 
+$(TYPED_OBJ)/memcpy.o: payload/abi_typed_memcpy.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
 $(TYPED_DIST)/ABITYPED.elf: $(TYPED_OBJ)/native.o $(TYPED_OBJ)/body.o $(TYPED_OBJ)/export.o payload/xamlui.ld
 	@mkdir -p $(dir $@)
 	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/xamlui.ld -o $@ $(TYPED_OBJ)/native.o $(TYPED_OBJ)/body.o $(TYPED_OBJ)/export.o
@@ -563,9 +567,9 @@ $(TYPED_DIST)/ABITYPED.elf: $(TYPED_OBJ)/native.o $(TYPED_OBJ)/body.o $(TYPED_OB
 $(TYPED_DIST)/ABITYPED.DLL: $(TYPED_DIST)/ABITYPED.elf tools/elf2ntx.py
 	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name ABITYPED.DLL --exports $(TYPED_EXPORTS)
 
-$(TYPED_DIST)/ABITYPED_TEST.elf: $(TYPED_OBJ)/test.o $(TYPED_OBJ)/import.o $(TYPED_OBJ)/call.o payload/payload.ld
+$(TYPED_DIST)/ABITYPED_TEST.elf: $(TYPED_OBJ)/test.o $(TYPED_OBJ)/import.o $(TYPED_OBJ)/call.o $(TYPED_OBJ)/memcpy.o payload/payload.ld
 	@mkdir -p $(dir $@)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(TYPED_OBJ)/test.o $(TYPED_OBJ)/import.o $(TYPED_OBJ)/call.o
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(TYPED_OBJ)/test.o $(TYPED_OBJ)/import.o $(TYPED_OBJ)/call.o $(TYPED_OBJ)/memcpy.o
 
 $(TYPED_DIST)/ABITYPED.EXE: $(TYPED_DIST)/ABITYPED_TEST.elf $(TYPED_DIST)/ABITYPED.DLL tools/elf2ntx.py
 	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module ABITYPED.DLL
