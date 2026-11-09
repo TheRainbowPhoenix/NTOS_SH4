@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #ifdef _WIN32
 #include <io.h>
 #else
@@ -226,6 +227,8 @@ int FindClose(void *f)
     return _findclose(finds[i].fd) == 0;
 }
 static unsigned fills;
+static unsigned long long fill_pixels;
+static FILE *draw_profile;
 static uint16_t host_rgb565(U32 c)
 {
     return (uint16_t)((((c & 255u) >> 3) << 11) | ((((c >> 8) & 255u) >> 2) << 5) |
@@ -245,6 +248,8 @@ int FillRect(void *dc, const Rect *rect, void *b)
     assert(rect->left >= 0 && rect->top >= 0 && rect->right <= 320 && rect->bottom <= 528);
     assert(rect->left < rect->right && rect->top < rect->bottom);
     ++fills;
+    fill_pixels += (unsigned long long)(rect->right - rect->left) *
+                   (unsigned long long)(rect->bottom - rect->top);
     for (int y = rect->top; y < rect->bottom; ++y) {
         for (int x = rect->left; x < rect->right; ++x) {
             pixels[y * 320 + x] = (uint16_t)(uintptr_t)b;
@@ -402,6 +407,9 @@ static void snap(const Menu *m, const Chrome *ch, const char *path)
     int height = ch->navheight();
     m->bounds(528 - height);
     const Render *render = render_SpGetThreadContext();
+    unsigned before_fills = fills;
+    unsigned long long before_pixels = fill_pixels;
+    clock_t begin = clock();
     render->surface(528 - height);
     m->paint((void *)1);
     kb_UIXGetSchemaFactory()->dock(height);
@@ -409,6 +417,17 @@ static void snap(const Menu *m, const Chrome *ch, const char *path)
         kb_UIXGetSchemaFactory()->paint((void *)1);
     render->surface(528);
     ch->paint((void *)1);
+    clock_t end = clock();
+    if (draw_profile) {
+        const char *name = path;
+        for (const char *p = path; *p; ++p)
+            if (*p == '/' || *p == '\\')
+                name = p + 1;
+        fprintf(draw_profile, "%s,%u,%llu,%.3f\n", name, fills - before_fills,
+                fill_pixels - before_pixels,
+                1000.0 * (double)(end - begin) / (double)CLOCKS_PER_SEC);
+        fflush(draw_profile);
+    }
     FILE *f = fopen(path, "wb");
     assert(f);
     fprintf(f, "P6\n320 528\n255\n");
@@ -443,6 +462,11 @@ static void named_snap(const Menu *m, const Chrome *c, const char *folder, const
 int main(int argc, char **argv)
 {
     assert(argc == 3);
+    char profile_path[1200];
+    snprintf(profile_path, sizeof(profile_path), "%s/draw-profile.csv", argv[1]);
+    draw_profile = fopen(profile_path, "w");
+    assert(draw_profile);
+    fprintf(draw_profile, "scene,fill_calls,painted_pixels,host_cpu_ms\n");
     strncpy(fsroot, argv[2], sizeof(fsroot) - 1);
     const Menu *m = menu_UIXGetSchemaFactory();
     const Chrome *ch = chrome_UIXGetSchemaFactory();
