@@ -228,8 +228,7 @@ int FindClose(void *f)
 static unsigned fills;
 static uint16_t host_rgb565(U32 c)
 {
-    return (uint16_t)((((c & 255u) >> 3) << 11) |
-                      ((((c >> 8) & 255u) >> 2) << 5) |
+    return (uint16_t)((((c & 255u) >> 3) << 11) | ((((c >> 8) & 255u) >> 2) << 5) |
                       (((c >> 16) & 255u) >> 3));
 }
 void *CreateSolidBrush(U32 c)
