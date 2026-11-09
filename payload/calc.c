@@ -130,15 +130,12 @@ static void draw(void *dc)
     char result[16];
     const DWORD bg = RGB(235, 238, 243), ink = RGB(30, 37, 53);
     ui_fill(dc, 0, 0, 320, 528, bg);
-    ui_fill(dc, 0, 0, 320, 29, RGB(0, 0, 128));
-    ui_text(dc, 8, 7, "Calculator", RGB(255, 255, 255), 0);
-    ui_classic_button(dc, 284, 3, 317, 26, "X");
-    /* WinCE classic command strip, modeled after the original Calc.exe.
-     * The commands are functional; no resource-menu API is assumed. */
-    ui_fill(dc, 0, 29, 320, 53, RGB(192, 192, 192));
-    ui_text(dc, 9, 34, "File", RGB(0, 0, 0), 0);
-    ui_text(dc, 71, 34, "Edit", RGB(0, 0, 0), 0);
-    ui_text(dc, 134, 34, "View", RGB(0, 0, 0), 0);
+    /* COREDLL draws the only system title bar at y=0..23.
+     * Draw the application menu below it so no fake nested chrome remains. */
+    ui_fill(dc, 0, 24, 320, 53, RGB(222, 234, 244));
+    ui_text(dc, 9, 32, "File", ink, 0);
+    ui_text(dc, 71, 32, "Edit", ink, 0);
+    ui_text(dc, 134, 32, "View", ink, 0);
     ui_classic_button(dc, 9, 58, 119, 85, popup_mode ? "Pop-Up" : "Standard");
     ui_classic_button(dc, 123, 58, 227, 85, popup_mode ? "Standard" : "Pop-Up");
     ui_fill(dc, 14, 98, 306, 141, RGB(255, 255, 255));
@@ -211,11 +208,11 @@ static int wndproc(void *hwnd, DWORD msg, DWORD wp, DWORD lp)
             NT_CALL(InvalidateRect, (hwnd, 0, 1));
             return 0;
         }
-        if (x >= 284 && y < 29) {
+        if (x >= 288 && y < 24) {
             NT_CALL(PostQuitMessage, (0));
             return 0;
         }
-        if (y >= 29 && y < 53) {
+        if (y >= 24 && y < 53) {
             menu_open = x < 65 ? 1 : x < 129 ? 2 : x < 200 ? 3 : 0;
             NT_CALL(InvalidateRect, (hwnd, 0, 1));
             return 0;
