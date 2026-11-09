@@ -16,7 +16,7 @@ int SetIsNavigationBarVisible(int);
 static void navigation_paint(void *dc, const Render *r)
 {
     r->clip(0, 488, 320, 528);
-    r->fill(dc, 0, 488, 320, 528, 0);
+    r->fill(dc, 0, 488, 320, 528, PANEL);
     r->line(dc, 55, 508, 75, 508, GRAY);
     r->line(dc, 55, 508, 63, 500, GRAY);
     r->line(dc, 55, 508, 63, 516, GRAY);
@@ -42,7 +42,7 @@ static const unsigned icons[16] = {SYS_CONNECT, SYS_BATTERY,   SYS_FLASH,    SYS
                                    SYS_WIFI,    SYS_BLUETOOTH, SYS_LOCK,     SYS_SETTINGS};
 static void bar(void *dc, const Render *r)
 {
-    r->fill(dc, 0, 0, 320, 24, 0);
+    r->fill(dc, 0, 0, 320, 24, PANEL);
     for (int i = 0; i < 5; ++i)
         r->fill(dc, 13 + 3 * i, 16 - 2 * i, 15 + 3 * i, 18, GRAY);
     r->line(dc, 249, 7, 266, 7, GRAY);
@@ -58,12 +58,12 @@ static void paint(void *dc)
     const Render *r = CALL(render_SpGetThreadContext, ());
     r->clip(0, 0, 320, 528);
     if (panel) {
-        r->fill(dc, 0, 0, 320, 528, 0);
+        r->fill(dc, 0, 0, 320, 528, SURFACE);
         r->text(dc, 10, 30, "Demo GSM Network LTE+", GRAY, 9);
         r->text(dc, 244, 30, "100%   11/9", GRAY, 9);
         for (unsigned i = 0; i < 16; ++i) {
             int x = 4 + (int)(i % 4) * 79, y = 65 + (int)(i / 4) * 64;
-            U32 c = toggles & (1u << i) ? BLUE : RGB_(48, 48, 48);
+            U32 c = toggles & (1u << i) ? BLUE : CARD;
             r->fill(dc, x, y, x + 75, y + 59, c);
             const SysIcon *icon = &system_icons[icons[i]];
             CALL(svf_SVFDraw, (dc, icon->data, icon->length, x + 5, y + 4, 18, 18));
@@ -82,7 +82,7 @@ static void paint(void *dc)
         }
         r->text(dc, 262, 337, "Collapse", GRAY, 12);
         if (notification[0]) {
-            r->text(dc, 12, 382, "Shell", WHITE, 14);
+            r->text(dc, 12, 382, "Shell", INK, 14);
             r->text(dc, 12, 407, notification, GRAY, 12);
             r->text(dc, 255, 452, "Clear all", GRAY, 12);
         } else
