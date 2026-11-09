@@ -1,6 +1,6 @@
 #include "phone.h"
 IMP(const Render *, render_SpGetThreadContext, (void))
-IMP(int, svf_SVFDraw, (void *, const void *, unsigned, int, int, int, int))
+IMP(int, svf_SVFDrawTint, (void *, const void *, unsigned, int, int, int, int, U32))
 #include "system_icons.h"
 static int layout, shift, caps, dock_y;
 static void dock(int y)
@@ -26,7 +26,7 @@ static void key(void *dc, const Render *r, int l, int t, int rr, const char *lab
 static void symbol(void *dc, unsigned id, int x, int y, int size)
 {
     const SysIcon *s = &system_icons[id];
-    CALL(svf_SVFDraw, (dc, s->data, s->length, x, y - dock_y, size, size));
+    CALL(svf_SVFDrawTint, (dc, s->data, s->length, x, y - dock_y, size, size, INK));
 }
 static void paint(void *dc)
 {
@@ -77,7 +77,7 @@ static void paint(void *dc)
         key(dc, r, 83, 477, 240, "", 0);
     }
     key(dc, r, 244, 477, 272, ".", 0);
-    r->fill(dc, 276, 477 - dock_y, 318, 527 - dock_y, WHITE);
+    r->fill(dc, 276, 477 - dock_y, 318, 527 - dock_y, CARD);
     /* The search magnifier is a separate black VEC1 asset. */
     symbol(dc, SYS_SEARCH_BLACK, 289, 491, 18);
     r->clip(0, 0, 320, 528);
