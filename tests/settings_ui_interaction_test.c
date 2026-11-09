@@ -130,7 +130,7 @@ int main(void)
     tap(s, 64, 488);
     assert(s->page() == 9); /* CP400/NTOS About, not PC specifications */
 
-    assert(s->input(WM_KEY_, 0x71u, 0) == 1);
+    tap(s, 288, 48); /* Search button remains touchable from About. */
     for (const char *p = "display"; *p; ++p)
         assert(s->input(WM_CHAR_, (U32)*p, 0) == 1);
     tap(s, 88, 143); /* Global search: Display from About page. */
