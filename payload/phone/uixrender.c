@@ -83,6 +83,16 @@ static void text(void *dc, int x, int y, const char *s, U32 c, int h)
 }
 static void line(void *dc, int x, int y, int xx, int yy, U32 c)
 {
+    /* Common VEC grid/outline strokes can be one hardware rectangle,
+     * not one GDI fill per pixel of a horizontal/vertical line. */
+    if (y == yy) {
+        fill(dc, x < xx ? x : xx, y, (x > xx ? x : xx) + 1, y + 1, c);
+        return;
+    }
+    if (x == xx) {
+        fill(dc, x, y < yy ? y : yy, x + 1, (y > yy ? y : yy) + 1, c);
+        return;
+    }
     int dx = xx > x ? xx - x : x - xx, sx = x < xx ? 1 : -1;
     int dy = yy > y ? y - yy : yy - y, sy = y < yy ? 1 : -1, e = dx + dy;
     for (;;) {
