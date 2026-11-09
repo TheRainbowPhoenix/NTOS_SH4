@@ -24,7 +24,7 @@ static void navigation_paint(void *dc, const Render *r)
     r->fill(dc, 161, 499, 169, 507, INK);
     r->fill(dc, 151, 509, 159, 517, INK);
     r->fill(dc, 161, 509, 169, 517, INK);
-    r->ellipse(dc, 258, 504, 7, 7, INK, 1);
+    r->ellipse(dc, 258, 504, 7, 7, NAV_INK, 1);
     r->line(dc, 253, 510, 246, 518, INK);
     r->clip(0, 0, 320, 528);
 }
