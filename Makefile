@@ -86,6 +86,9 @@ CHAIN_DLL := $(OUTDIR)/CHAIN.DLL
 CHAINTEST_OBJ := $(BUILDDIR)/payload/chain_test.o
 CHAINTEST_ELF := $(BUILDDIR)/payload/chain_test.elf
 CHAINTEST_EXE := $(OUTDIR)/CHAINTEST.EXE
+ABI_TEST_OBJ := $(BUILDDIR)/payload/abi_test.o
+ABI_TEST_ELF := $(BUILDDIR)/payload/abi_test.elf
+ABI_TEST_EXE := $(OUTDIR)/ABITEST.EXE
 # 12 PE DLLs at identical preferred bases; ST01 fans out to four DLLs.
 STRESS_NAMES := 01 02 03 04 05 06 07 08 09 10 11 12
 STRESS_DLLS := $(addprefix $(OUTDIR)/ST,$(addsuffix .DLL,$(STRESS_NAMES)))
@@ -290,7 +293,7 @@ $(CHAIN_ELF): $(CHAIN_OBJ) $(PAYLOAD_DIR)/xamlui.ld
 
 $(CHAIN_DLL): $(CHAIN_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $(CHAIN_ELF) -o $@ --base 0x10000000 --dll --dll-name CHAIN.DLL --import-module COREDLL.DLL --exports chain_echo
+	$(PYTHON) tools/elf2ntx.py $(CHAIN_ELF) -o $@ --base 0x10000000 --dll --dll-name CHAIN.DLL --import-module COREDLL.DLL --exports chain_echo,chain_abi5
 
 $(CHAINTEST_OBJ): $(PAYLOAD_DIR)/chain_test.c $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
@@ -303,6 +306,20 @@ $(CHAINTEST_ELF): $(CHAINTEST_OBJ) $(PAYLOAD_DIR)/payload.ld
 $(CHAINTEST_EXE): $(CHAINTEST_ELF) $(CHAIN_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(CHAINTEST_ELF) -o $@ --import-module CHAIN.DLL
+
+# Explicit cross-module function-pointer ABI test, five integer arguments.
+# Build standalone in dist_ce_abi with `make ce-abi-probe`.
+$(ABI_TEST_OBJ): $(PAYLOAD_DIR)/abi_test.c $(PAYLOAD_DIR)/ntimport.h $(PAYLOAD_DIR)/ntabi.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(ABI_TEST_ELF): $(ABI_TEST_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $<
+
+$(ABI_TEST_EXE): $(ABI_TEST_ELF) $(CHAIN_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $(ABI_TEST_ELF) -o $@ --import-module CHAIN.DLL
 
 # Stress PE DLL graph: recursive imports across 12 DLLs (+ COREDLL).
 # Generated rules still compile and link with our normal GNU SH4BE tools.
@@ -414,7 +431,13 @@ pager-verify:
 	$(MAKE) -j4 BUILDDIR=obj_pager_verify OUTDIR=dist_pager_verify DEPDIR=.deps_pager_verify DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_VERIFY_UTLB_SLOTS=1" hh3
 	@echo "UTLB READBACK DIAGNOSTIC: dist_pager_verify/NTOS.hh3 (emulator only)"
 
-.PHONY: elf hh3 ntx all clean compile_commands.json check-pe probe-pe collision-test pager-experiment pager-verify
+# This is an isolated Renesas-ABI comparison build, NOT an MSVC
+# compatibility release. The default dist and pager builds do not change.
+ce-abi-probe:
+	$(MAKE) -j4 BUILDDIR=obj_ce_abi OUTDIR=dist_ce_abi DEPDIR=.deps_ce_abi PAYLOAD_CFLAGS="$(PAYLOAD_CFLAGS) -DNTOS_SH_RENESAS_ABI_PROBE=1" dist_ce_abi/COREDLL.DLL dist_ce_abi/CHAIN.DLL dist_ce_abi/ABITEST.EXE
+	@echo "ABI CANDIDATE ONLY: dist_ce_abi/ABITEST.EXE (expect 0x0AB1C0DE)"
+
+.PHONY: elf hh3 ntx all clean compile_commands.json check-pe probe-pe collision-test pager-experiment pager-verify ce-abi-probe
 
 -include $(DEPFILES)
 
