@@ -85,6 +85,7 @@ CALC_EXE := $(OUTDIR)/CALC.EXE
 CONTROL_OBJ := $(BUILDDIR)/payload/control.o
 CONTROL_ELF := $(BUILDDIR)/payload/control.elf
 CONTROL_EXE := $(OUTDIR)/CONTROL.EXE
+CONTROL_MEM_OBJ := $(BUILDDIR)/payload/control_memory.o
 CPL_OBJ := $(BUILDDIR)/payload/demo_cpl.o
 CPL_ELF := $(BUILDDIR)/payload/demo_cpl.elf
 CPL_DLL := $(OUTDIR)/DEMO.CPL
@@ -312,9 +313,13 @@ $(CPL_INSTALL): $(CPL_DLL)
 	@mkdir -p $(dir $@)
 	cp $< $@
 
-$(CONTROL_ELF): $(CONTROL_OBJ) $(PAYLOAD_DIR)/payload.ld
+$(CONTROL_MEM_OBJ): payload/phone/tiny_memory.c
 	@mkdir -p $(dir $@)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(CONTROL_OBJ)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(CONTROL_ELF): $(CONTROL_OBJ) $(CONTROL_MEM_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(CONTROL_OBJ) $(CONTROL_MEM_OBJ)
 
 $(CONTROL_EXE): $(CONTROL_ELF) $(CPL_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
