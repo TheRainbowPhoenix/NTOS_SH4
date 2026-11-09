@@ -44,7 +44,7 @@ deps={d.dll.decode().upper():[i.name.decode() for i in d.imports] for d in host.
 assert deps['UIXMOBILE.DLL']==['RunApplication']
 assert deps['STARTMENU.DLL']==['StartMenuInitialize','StartMenuUninitialize']
 assert total<256*1024,('resident module image budget exceeded',total)
-stubs=list((out/'phone-device/Apps').glob('*/*.exe'))
+stubs=list((out/'Apps').glob('*/*.exe'))
 assert len(stubs)==24
 for path in stubs:
  app=pefile.PE(str(path));assert app.FILE_HEADER.Machine==0x1a8
@@ -67,7 +67,7 @@ assert len(active)<=16 and pages<=55,('resident loader budget exceeded',len(acti
 print('PASS ten DLL export surfaces, all imports resolved, SH4 BE relocations, 24 embedded-resource apps; active graph',pages,'pages; mapped images',total,'bytes')
 
 # Independently decode the portable cache instead of assuming C struct layout.
-cache=(out/'phone-device/apps.dat').read_bytes();assert cache[:4]==b'CAT1' and cache[6:8]==b'\x01\0'
+cache=(out/'apps.dat').read_bytes();assert cache[:4]==b'CAT1' and cache[6:8]==b'\x01\0'
 assert int.from_bytes(cache[4:6],'big')==24
 pos=8;ids=set()
 for _ in range(24):
@@ -77,7 +77,7 @@ for _ in range(24):
  vector=cache[pos:pos+v];pos+=v
  assert id_ not in ids and size in (1,2) and vector.startswith(b'VEC1');ids.add(id_)
  assert path.startswith('\\fls0\\Apps\\') and not path.startswith('\\\\')
- exe=out/'phone-device'/Path(path[len('\\fls0\\'):].replace('\\','/'))
+ exe=out/Path(path[len('\\fls0\\'):].replace('\\','/'))
  assert exe.is_file() and exe.with_suffix('.svf').read_bytes()==vector
 assert pos==len(cache) and ids==set(range(1,25))
 print('PASS compact app cache:',len(cache),'bytes, 24 names/paths/SVF icons')
