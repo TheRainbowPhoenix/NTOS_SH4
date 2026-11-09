@@ -27,7 +27,7 @@ The compilable C code is organized as:
 `COMMCTRL.DLL` retains all **84 export slots**. **76 slots** have dedicated bodies,
 including six identified anonymous container exports. This count includes partial
 models and deliberate stubs; it does NOT mean 76 fully compatible APIs. Eight private
-exports still use the diagnostic unsupported handler. `dist/ce-demo/port-status.json`
+exports still use the diagnostic unsupported handler. `dist_ce_demo/port-status.json`
 classifies every export and lists the remaining gaps.
 
 All **73 COREDLL imports of the reference control.exe** now have typed functions.
@@ -133,13 +133,13 @@ PE metadata stays little endian; known native data/instructions become big endia
 The full binary `commctrl.full-candidate.dll` remains an unverified offline candidate,
 not the compiled C port. Its 87 pages exceed the current 55 resident-image budget.
 
-Outputs stay in ignored `obj/wince` and `dist/ce-demo`. Keep the experimental CE
+Outputs stay in ignored `obj/wince` and `dist_ce_demo`. Keep the experimental CE
 COREDLL separate from the shipping phone bundle. Sources and converted binaries
 have not been pushed to GitHub.
 
 ## Manual clemu profile and visual checks
 
-The local clemu ntos_launch.py now accepts `--wince`, selecting dist/ce-demo and a
+The local clemu ntos_launch.py now accepts `--wince`, selecting dist_ce_demo and a
 separate fugue_vfs_wince volume. This avoids reseeding the native phone COREDLL
 or the five-export ABI-only pilot over the CE ordinal profile.
 
@@ -152,12 +152,12 @@ $env:PYTHONPATH=''
 # Also supports --app shell and --app abi.
 ```
 
-After rebuilding NTOS, copy dist/NTOS.hh3 into dist/ce-demo/NTOS.hh3 before
+After rebuilding NTOS, copy dist/NTOS.hh3 into dist_ce_demo/NTOS.hh3 before
 using --wince. The standard ntos_launch.py command still selects the phone bundle.
 
 ## Sample applet
 
-`demo/demo_cpl.c` builds `dist/ce-demo/Windows/demo.cpl` (2,560 bytes), a genuine
+`demo/demo_cpl.c` builds `dist_ce_demo/Windows/demo.cpl` (2,560 bytes), a genuine
 import-free SH4-BE PE DLL exporting MSVC-compatible CPlApplet. It reports one
 NTOS Demo applet via CPL_INIT, CPL_GETCOUNT and CPL_NEWINQUIRE (468-byte Unicode
 NEWCPLINFO), with synthetic icon metadata. Its activation callback draws a small
