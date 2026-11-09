@@ -118,6 +118,25 @@ jobs:
         cmp dist_pager/NTOS.hh3 dist_unified/NTOS.hh3
         cmp dist_unified/COREDLL.DLL dist_unified/phone-device/COREDLL.DLL
         python3 tools/check_unified_bundle.py dist_unified
+    - name: Cross-build original WinCE ordinal-ABI COREDLL and COMMCTRL compatibility
+      run: |
+        python3 payload/wince/build_compat.py
+        test -s dist/ce-demo/COREDLL.DLL
+        test -s dist/ce-demo/COMMCTRL.DLL
+        test -s dist/ce-demo/Windows/demo.cpl
+        python3 - <<'PY'
+        import pefile
+        native=pefile.PE('dist_unified/COREDLL.DLL')
+        ce=pefile.PE('dist/ce-demo/COREDLL.DLL')
+        assert native.FILE_HEADER.Machine==ce.FILE_HEADER.Machine==0x01a8
+        assert native.get_memory_mapped_image()!=ce.get_memory_mapped_image(), 'CE and phone are still distinct ABI cores'
+        print('CE ordinal-profile compiled; remains separate from unified native COREDLL')
+        PY
+    - name: Check Clang formatting and analyze representative C sources
+      run: |
+        apt-get update -qq && apt-get install -y -qq clang-format clang-tidy
+        python3 tools/format_c_sources.py --check
+        clang-tidy -quiet -checks='-*,clang-analyzer-*' payload/calc.c payload/phone/starthost.c           -- -std=c11 -Ipayload -Ipayload/phone
     - name: Verify all phone apps, launcher ABI and native Settings/input views
       run: |
         python3 payload/phone/check_phone.py
