@@ -29,7 +29,14 @@ static const WCHAR16 cpl_pattern[] = {'\\', 'f', 'l', 's', '0', '\\', 'W', 'i', 
                                      'd', 'o', 'w', 's', '\\', '*', '.', 'c', 'p', 'l', 0};
 #define CPL_MAX 24
 #define CPL_NAME_MAX 40
+/* The original CE NEWCPLINFOW wire payload is 468 bytes. */
+typedef struct {
+    DWORD size, flags, help, data, icon;
+    WCHAR16 name[32], info[64], helpfile[128];
+} CPL_INFO;
+_Static_assert(sizeof(CPL_INFO) == 468, "NEWCPLINFOW layout");
 static char entries[CPL_MAX][CPL_NAME_MAX];
+static char captions[CPL_MAX][CPL_NAME_MAX];
 static int entry_count, selected = -1, menu_open, loading, scanned, scan_failed;
 static const DWORD theme_bg = RGB(244, 247, 251);
 static const DWORD theme_ink = RGB(31, 43, 62);
@@ -73,8 +80,22 @@ static void rescan(void)
     do {
         if (entry_count == CPL_MAX)
             break;
-        if (!(file.attributes & 0x10u))
-            copy_name(entries[entry_count++], file.name);
+        if (!(file.attributes & 0x10u)) {
+            int index = entry_count++;
+            copy_name(entries[index], file.name);
+            copy_name(captions[index], file.name);
+            if (is_demo(entries[index])) {
+                CPL_INFO info = {0};
+                /* Query the installed DLL's real applet metadata over PE IAT. */
+                if (NT_CALL(CPlApplet, (0, 1, 0, 0)) &&
+                    NT_CALL(CPlApplet, (0, 2, 0, 0))) {
+                    NT_CALL(CPlApplet, (0, 8, 0, &info)); /* CPL_NEWINQUIRE */
+                    if (info.name[0])
+                        copy_name(captions[index], info.name);
+                }
+                NT_CALL(CPlApplet, (0, 7, 0, 0));
+            }
+        }
     } while (NT_CALL(FindNextFileW, (handle, &file)));
     NT_CALL(FindClose, (handle));
     scanned = 1;
@@ -123,7 +144,7 @@ static void draw(void *dc)
         ui_fill(dc, x + 26, y, x + 73, y + 33,
                 i == selected ? RGB(166, 203, 239) : RGB(210, 226, 241));
         ui_text(dc, x + 44, y + 8, "C", theme_blue, 0);
-        ui_text(dc, x + 6, y + 36, entries[i], theme_ink, 0);
+        ui_text(dc, x + 6, y + 36, captions[i], theme_ink, 0);
     }
     if (!scanned)
         ui_text(dc, 16, 120, "Loading Control Panel...", theme_ink, 0);
