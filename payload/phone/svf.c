@@ -47,7 +47,11 @@ static int scan(const unsigned char *b, unsigned n)
             return 0;
         if (need > n - p)
             return 0;
-        if ((op == 0x22 || op == 0x31) && b[p + 8] == 0)
+        if ((op == 0x22 || op == 0x31) &&
+            (b[p + 8] == 0 || b[p + 8] > 8))
+            return 0;
+        if (op == 0x22 &&
+            (b[p + 6] >= 32 || b[p + 7] > 32 || signed_word(b + p + 4) < 0))
             return 0;
         if (op == 0x60 && (word(b + p) == 0 || word(b + p) > 4096 || word(b + p + 2) == 0 ||
                            word(b + p + 2) > 4096))
