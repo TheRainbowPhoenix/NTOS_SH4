@@ -1092,7 +1092,10 @@ int CloseHandle(void *handle)
         return 0;
     }
     int result = ((int (*)(int))a[14])(fd);
-    nt_files[(u32)handle - NT_HANDLE_TAG - 1u].used = 0;
+    /* Preserve the synthetic handle if the SDK did not actually close it;
+     * the kernel filesystem gate remains locked and CloseHandle can retry. */
+    if (result == 0)
+        nt_files[(u32)handle - NT_HANDLE_TAG - 1u].used = 0;
     g_last_error = result < 0 ? nt_file_error(result) : 0;
     return result == 0;
 }
@@ -1285,7 +1288,8 @@ int FindClose(void *search)
     if (!nt_finds[i].used)
         return 0;
     int result = ((int (*)(int))a[26])(nt_finds[i].fd);
-    nt_finds[i].used = 0;
+    if (result == 0)
+        nt_finds[i].used = 0;
     return result == 0;
 }
 typedef struct {
