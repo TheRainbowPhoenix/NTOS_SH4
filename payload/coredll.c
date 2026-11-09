@@ -1,3 +1,4 @@
+#include "ntapi_caps.h"
 /* coredll.c -- COREDLL for NTOS, big-endian SH4 (machine 0x01A8).
  *
  * Modeled on WinCE's coredll.dll: the single module every EXE imports its
@@ -988,6 +989,9 @@ static void nt_copy_find(NT_FIND_DATA *out,const NT_FIND_NATIVE *in) {
 }
 void *FindFirstFileW(const u16 *pattern,NT_FIND_DATA *out) {
     const void **a=ntapi();char path[96];NT_FIND_NATIVE found;int fd=-1;
+    if(!ntos_api_has_slot((const volatile uint32_t *)0x08100000u,24u)) {
+        g_last_error=50;return NT_INVALID_FILE;
+    }
     if(!out||!a||!a[24]||!narrow_path(pattern,path,sizeof(path)))return NT_INVALID_FILE;
     unsigned i=0;while(i<8 && nt_finds[i].used)++i;
     if(i==8){g_last_error=4;return NT_INVALID_FILE;}
@@ -997,6 +1001,9 @@ void *FindFirstFileW(const u16 *pattern,NT_FIND_DATA *out) {
 }
 int FindNextFileW(void *search,NT_FIND_DATA *out) {
     u32 v=(u32)search;const void **a=ntapi();NT_FIND_NATIVE found;
+    if(!ntos_api_has_slot((const volatile uint32_t *)0x08100000u,25u)) {
+        g_last_error=50;return 0;
+    }
     if(v<=0x30000u||v>0x30008u||!out||!a||!a[25]){g_last_error=6;return 0;}
     unsigned i=v-0x30001u;if(!nt_finds[i].used){g_last_error=6;return 0;}
     if(((int (*)(int,NT_FIND_NATIVE *))a[25])(nt_finds[i].fd,&found)<0){g_last_error=18;return 0;}
@@ -1004,6 +1011,9 @@ int FindNextFileW(void *search,NT_FIND_DATA *out) {
 }
 int FindClose(void *search) {
     u32 v=(u32)search;const void **a=ntapi();
+    if(!ntos_api_has_slot((const volatile uint32_t *)0x08100000u,26u)) {
+        g_last_error=50;return 0;
+    }
     if(v<=0x30000u||v>0x30008u||!a||!a[26])return 0;
     unsigned i=v-0x30001u;if(!nt_finds[i].used)return 0;
     int result=((int (*)(int))a[26])(nt_finds[i].fd);nt_finds[i].used=0;return result==0;

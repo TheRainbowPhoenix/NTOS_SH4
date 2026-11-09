@@ -22,6 +22,7 @@
 #include <sdk/os/input.h>
 #include <sdk/os/mem.h>
 
+#include "../payload/ntapi_caps.h"
 #include "pe.hpp"
 #include "pe_rebase.hpp"
 #include "pe_pager.hpp"
@@ -32,7 +33,7 @@
 APP_NAME("NTOS")
 APP_DESCRIPTION("Big-endian SH4 COFF EXE loader")
 APP_AUTHOR("recreate project")
-APP_VERSION("0.2")
+APP_VERSION("0.3")
 
 // ---------------------------------------------------------------------------
 // Syscall table handed to payloads (field order == table order)
@@ -1028,6 +1029,12 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     api_block=static_cast<uint8_t *>(align_page(api_raw));
     Mem_Memset(api_block,0,0x4000u);
     *reinterpret_cast<void **>(api_block)=&g_ntos_api;
+    {
+        auto *api_meta=reinterpret_cast<uint32_t *>(api_block);
+        api_meta[1]=NTOS_API_MAGIC;
+        api_meta[2]=NTOS_API_VERSION;
+        api_meta[3]=static_cast<uint32_t>(sizeof(g_ntos_api)/sizeof(uint32_t));
+    }
 
     for(unsigned i=0u;i<count;++i)
         flush_image(nodes[i].mapped.image,nodes[i].mapped.vsize);
@@ -1211,8 +1218,8 @@ static char_const16_t g_find_pattern_dll[] = {
 
 static void banner(void) {
     fillScreen(color(0, 0, 40));
-    Debug_Printf(0, 0, true, 0, "%s", "NTOS 0.2 - SH4BE PE loader + UTLB");
-    Debug_Printf(0, 1, false, 0, "%s", "Select an .EXE (SH4BE PE)");
+    Debug_Printf(0, 0, true, 0, "%s", "NTOS 0.3 - SH4BE PE loader + UTLB");
+    Debug_Printf(0, 1, false, 0, "%s", "Phone API 1 / 27 gates - select EXE");
     LCD_Refresh();
     cur_row = 3;
 }
