@@ -43,6 +43,21 @@ static u32 fake_event(u32 *x, u32 *y, u32 *dir)
     (void)dir;
     return 2;
 }
+static int paint_calls, lcd_refresh_calls;
+static void fake_refresh(void)
+{
+    ++lcd_refresh_calls;
+}
+static int test_window_proc(void *hwnd, u32 message, u32 wp, u32 lp)
+{
+    (void)wp;
+    (void)lp;
+    if (message == 0x000fu) {
+        ++paint_calls;
+        EndPaint(hwnd, 0);
+    }
+    return 0;
+}
 int main(void)
 {
     ntos_host_table[11] = (const void *)fake_open;
@@ -96,6 +111,27 @@ int main(void)
     msg.message = 0x201u;
     msg.pt.y = 508;
     assert(!legacy_nav_input(&msg) && msg.message == 0x201u);
+    /* Synchronous UpdateWindow must not queue a second paint or LCD flip.
+     * Multiple InvalidateRect calls coalesce until one dispatch. */
+    ntos_host_table[2] = (const void *)fake_refresh;
+    static const u16 test_class[] = {'T', 'e', 's', 't', 0};
+    static const u16 no_title[] = {0};
+    copy_wstr(g_class_name, test_class, 48);
+    g_class_proc = test_window_proc;
+    void *hwnd = CreateWindowExW(0, test_class, no_title, 0, 0, 0, 320, 528,
+                                 0, 0, 0, 0);
+    assert(hwnd);
+    ShowWindow(hwnd, 1);
+    assert(UpdateWindow(hwnd) && paint_calls == 1 && lcd_refresh_calls == 1);
+    assert(InvalidateRect(hwnd, 0, 1));
+    assert(InvalidateRect(hwnd, 0, 1));
+    assert(UpdateWindow(hwnd) && paint_calls == 2 && lcd_refresh_calls == 2);
+    assert(GetMessageW(&msg, hwnd, 0, 0) == 0); /* no stale queued WM_PAINT */
+    assert(InvalidateRect(hwnd, 0, 1));
+    assert(GetMessageW(&msg, hwnd, 0, 0) == 1 && msg.message == 0x000fu);
+    assert(DispatchMessageW(&msg) == 0);
+    assert(paint_calls == 3 && lcd_refresh_calls == 3);
+    DestroyWindow(hwnd);
     puts("PASS actual COREDLL: full 32-bit SDK descriptors, simultaneous file handles, "
          "read/size/close, exhaustion");
     return 0;
