@@ -17,11 +17,11 @@ static unsigned kb_len(const char *s)
 static void key(void *dc, const Render *r, int l, int t, int rr, const char *label, int active)
 {
     t -= dock_y;
-    r->fill(dc, l, t, rr, t + 50, active ? RGB_(72, 77, 72) : RGB_(47, 47, 47));
+    r->fill(dc, l, t, rr, t + 50, active ? PANEL : CARD);
     int width = 0;
     for (const char *p = label; *p; ++p)
         width += *p == ' ' ? 4 : 9;
-    r->text(dc, l + ((rr - l - width) >> 1), t + 14, label, WHITE, kb_len(label) > 2 ? 12 : 18);
+    r->text(dc, l + ((rr - l - width) >> 1), t + 14, label, INK, kb_len(label) > 2 ? 12 : 18);
 }
 static void symbol(void *dc, unsigned id, int x, int y, int size)
 {
@@ -32,7 +32,7 @@ static void paint(void *dc)
 {
     const Render *r = CALL(render_SpGetThreadContext, ());
     r->clip(0, 271 - dock_y, 320, 528 - dock_y);
-    r->fill(dc, 0, 271 - dock_y, 320, 528 - dock_y, RGB_(26, 29, 24));
+    r->fill(dc, 0, 271 - dock_y, 320, 528 - dock_y, SURFACE);
     const char *alpha[2] = {"qwertyuiop", "asdfghjkl"};
     const char *num[2] = {"@#$%&*()-\\", "^[]{}<>ELY"};
     for (int row = 0; row < 2; ++row) {
@@ -48,7 +48,7 @@ static void paint(void *dc)
                                        : col == 8 ? "\xc2\xa3"
                                                   : "\xc2\xa5";
                 key(dc, r, x, 317 + row * 53, x + 28, "", 0);
-                r->text(dc, x + 8, 384 - dock_y, currency, WHITE, 18);
+                r->text(dc, x + 8, 384 - dock_y, currency, INK, 18);
             } else
                 key(dc, r, x, 317 + row * 53, x + 28, s, 0);
         }
