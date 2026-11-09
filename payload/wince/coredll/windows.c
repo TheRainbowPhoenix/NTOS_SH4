@@ -124,6 +124,36 @@ static void ce_paint_children(void *parent)
         ce_paint_children(w);
     }
 }
+/* Minimal CE top menu surface for the original Control Panel app.
+ * Real LoadMenuW/resource menus remain a separate implementation.
+ * The command strip is drawn after the application's top-level paint.
+ */
+static int ce_menu_open;
+static void ce_draw_menu(void *dc)
+{
+    static const u16 file_label[] = {'F', 'i', 'l', 'e', 0};
+    static const u16 view_label[] = {'V', 'i', 'e', 'w', 0};
+    static const u16 exit_label[] = {'E', 'x', 'i', 't', 0};
+    static const u16 refresh_label[] = {'R', 'e', 'f', 'r', 'e', 's', 'h', 0};
+    NT_RECT bar = {0, 24, 320, 45};
+    void *brush = CreateSolidBrush(0x00c0c0c0);
+    FillRect(dc, &bar, brush);
+    DeleteObject(brush);
+    u32 old = SetTextColor(dc, 0);
+    TextOutW(dc, 8, 27, file_label, 4);
+    TextOutW(dc, 63, 27, view_label, 4);
+    if (ce_menu_open) {
+        NT_RECT drop = {ce_menu_open == 1 ? 4 : 59, 45,
+                        ce_menu_open == 1 ? 110 : 175, 75};
+        brush = CreateSolidBrush(0x00e0e0e0);
+        FillRect(dc, &drop, brush);
+        DeleteObject(brush);
+        TextOutW(dc, drop.left + 7, 51,
+                 ce_menu_open == 1 ? exit_label : refresh_label,
+                 ce_menu_open == 1 ? 4 : 7);
+    }
+    SetTextColor(dc, old);
+}
 int UpdateWindow(void *h)
 {
     if (CeControlKind(h)) {
@@ -161,6 +191,8 @@ int UpdateWindow(void *h)
         TextOutW(dc, 300, 5, close_text, 1);
         SetTextColor(dc, old);
     }
+    ce_draw_menu(dc);
+    legacy_nav_paint();
     coredll_refresh();
     return result;
 }
@@ -181,6 +213,33 @@ int DispatchMessageW(const NT_MSG *msg)
     if (!msg)
         return 0;
     static int close_pressed;
+    static int menu_pressed;
+    int x = msg->pt.x;
+    int y = msg->pt.y;
+    if (msg->message == 0x201 && y >= 24 && y < 45) {
+        menu_pressed = x < 110 ? (x < 57 ? 1 : 2) : 0;
+        return 0;
+    }
+    if (msg->message == 0x202 && menu_pressed) {
+        int chosen = menu_pressed;
+        menu_pressed = 0;
+        if (y >= 24 && y < 45) {
+            ce_menu_open = ce_menu_open == chosen ? 0 : chosen;
+            UpdateWindow(&g_window);
+            return 0;
+        }
+    }
+    if (msg->message == 0x202 && ce_menu_open && y >= 45 && y < 75) {
+        int action = ce_menu_open;
+        ce_menu_open = 0;
+        if (action == 1) {
+            DestroyWindow(&g_window);
+            PostQuitMessage(0);
+        } else {
+            UpdateWindow(&g_window);
+        }
+        return 0;
+    }
     int over_close = msg->pt.x >= 288 && msg->pt.x < 320 && msg->pt.y >= 0 && msg->pt.y < 24;
     if (msg->message == 0x201)
         close_pressed = over_close;
