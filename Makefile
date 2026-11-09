@@ -664,6 +664,7 @@ msvc-abi-coredll: $(CE_CORE_DIST)/COREDLL.DLL $(CE_CORE_DIST)/COREDLLABI.EXE
 .PHONY: unified
 unified:
 	$(MAKE) pager-experiment
+	$(MAKE) -j4 BUILDDIR=obj_unified OUTDIR=dist_unified DEPDIR=.deps_unified all
 	$(MAKE) -j4 BUILDDIR=obj_unified OUTDIR=dist_unified DEPDIR=.deps_unified phone
 	cp dist_pager/NTOS.hh3 dist_unified/NTOS.hh3
 	cp dist_pager/NTOS.hh3 dist_unified/phone-device/NTOS.hh3
