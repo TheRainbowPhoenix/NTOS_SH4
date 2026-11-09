@@ -1,5 +1,5 @@
 name: Clang C and H cleanup
-# Normalize SVF light icon tint, shared chrome and drawing performance paths.
+# Normalize final light SVF app tiles and high-contrast navigation in Clang 19.
 
 on:
   push:
