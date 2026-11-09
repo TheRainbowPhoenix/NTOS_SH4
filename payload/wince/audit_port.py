@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
-OUT = ROOT/'dist/ce-demo'
+OUT = ROOT/'dist_ce_demo'
 STUBS = {'InvertRect', 'PropertySheetW', 'IsCommandBarMessage',
          'CommandBands_AddBands', 'CommandBands_GetCommandBar',
          'CommandBands_GetRestoreInformation', 'ListView_SetItemSpacing'}
