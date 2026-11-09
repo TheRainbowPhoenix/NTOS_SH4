@@ -1,13 +1,23 @@
 #!/usr/bin/env python3
 """Build the isolated CE ordinal/ABI profile, never the phone COREDLL."""
-import sys,json,subprocess,importlib.util,struct
+import sys,json,subprocess,importlib.util,struct,shutil
 from msvc_boundary import generate,upstream
 from pathlib import Path
 R=Path(__file__).resolve().parents[2]; H=Path(__file__).resolve().parent; O=R/'obj/wince'; D=R/'dist/ce-demo'
 sys.path.insert(0,str(R/'payload/phone'))
 from build_phone import export_section
 spec=importlib.util.spec_from_file_location('pack',R/'tools/elf2ntx.py');p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)
-def run(s): subprocess.run(["docker","run","--rm","-v",str(R)+":/work","-w","/work","ghcr.io/classpaddev/hollyhock-3:v2.2.1","sh","-c","export PATH=/toolchain/bin:$PATH; "+s],check=True,cwd=R)
+def run(command):
+    """Use the installed SH4 toolchain in CI; Docker remains a local fallback."""
+    if shutil.which("sh4a_nofpueb-elf-gcc"):
+        subprocess.run(["sh", "-ec", command], check=True, cwd=R)
+    else:
+        subprocess.run(
+            ["docker", "run", "--rm", "-v", str(R) + ":/work", "-w", "/work",
+             "ghcr.io/classpaddev/hollyhock-3:v2.2.1", "sh", "-ec",
+             "export PATH=/toolchain/bin:$PATH; " + command],
+            check=True, cwd=R,
+        )
 def symbols(path):
  e=p.Elf(path.read_bytes());return {s.name:s.value for s in e.symbols if s.shndx!=p.SHN_UNDEF and s.shndx<p.SHN_LORESERVE}
 O.mkdir(parents=True,exist_ok=True);D.mkdir(parents=True,exist_ok=True)
