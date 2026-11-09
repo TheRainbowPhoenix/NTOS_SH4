@@ -1,5 +1,5 @@
 name: Clang C and H cleanup
-# Final Clang-19 normalization for tint manifests, pastel tiles, brush cache and renderer.
+# Final Clang-19 cleanup for occlusion shortcut, renderer cache and paint tests.
 
 on:
   push:
