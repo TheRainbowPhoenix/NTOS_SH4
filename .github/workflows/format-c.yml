@@ -1,5 +1,5 @@
 name: Clang C and H cleanup
-# Final Clang-19 cleanup for occlusion shortcut, renderer cache and paint tests.
+# Apply Clang-19 formatting to the Settings touch regression and watercolor palette.
 
 on:
   push:
