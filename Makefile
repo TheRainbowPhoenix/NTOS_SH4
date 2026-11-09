@@ -129,6 +129,16 @@ CC_SOURCES:=$(shell find $(SOURCEDIR) -name '*.c')
 CXX_SOURCES:=$(shell find $(SOURCEDIR) -name '*.cpp')
 OBJECTS := $(addprefix $(BUILDDIR)/,$(AS_SOURCES:.S=.o)) 	$(addprefix $(BUILDDIR)/,$(CC_SOURCES:.c=.o)) 	$(addprefix $(BUILDDIR)/,$(CXX_SOURCES:.cpp=.o))
 
+# Flag-stamp forces a safe object rebuild when an existing checkout switches
+# between the former eager loader, pager default and diagnostic variants.
+.PHONY: ntos-config-force
+$(BUILDDIR)/.ntos-build-flags: ntos-config-force
+	@mkdir -p $(dir $@)
+	@printf '%s\n' '$(DEFINES)' > $@.tmp
+	@if test -e $@ && cmp -s $@.tmp $@; then rm -f $@.tmp; else mv $@.tmp $@; fi
+
+$(OBJECTS): $(BUILDDIR)/.ntos-build-flags
+
 NOLTOOBJS := $(foreach obj, $(OBJECTS), $(if $(findstring /nolto/, $(obj)), $(obj)))
 
 DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
