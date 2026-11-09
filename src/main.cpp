@@ -1282,13 +1282,15 @@ done:
 #if NTOS_ENABLE_TLB_MISS_PAGER
     // All host UI work occurs AFTER restoring the original VBR and SR.
     // Report the actual fault/eviction count when emulator testing PAGERTEST.
+    if(rc==0 || ntos_hw::g_context.fault_error!=0u)
     Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
                  "PF=%lu HINT=%lu EV=%lu BAD=%lu",
                  static_cast<unsigned long>(ntos_hw::g_context.hw_faults),
                  static_cast<unsigned long>(ntos_hw::g_context.hint_calls),
                  static_cast<unsigned long>(ntos_hw::g_context.table.evictions),
                  static_cast<unsigned long>(ntos_hw::g_context.fault_error));
-    if(ntos_hw::g_context.hw_faults!=0u) {
+    if(ntos_hw::g_context.hw_faults!=0u &&
+       (rc==0 || ntos_hw::g_context.fault_error!=0u)) {
         Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
                      "TEA=%08lX EV=%03lX SPC=%08lX",
                      static_cast<unsigned long>(ntos_hw::g_context.last_tea),
@@ -1356,6 +1358,16 @@ static void tiny_utoa(uint32_t v, char *buf) {
 
 // A pressed EXE used to acknowledge a load error must be released before
 // the picker is redrawn, or the next scan immediately relaunches that EXE.
+// Nonfatal PE/ABI/import errors are application failures, not kernel BSODs.
+// All mapped pages have already been torn down by run_mapped's done path.
+static void app_load_error(const char *reason) {
+    fillScreen(color(29, 30, 31));
+    Debug_Printf(0, 1, true, 0, "%s", "NTOS - app could not start");
+    Debug_Printf(0, 3, false, 0, "%s", reason ? reason : "unknown application error");
+    Debug_Printf(0, 5, false, 0, "%s", "Kernel and filesystem remain active");
+    Debug_Printf(0, 7, false, 0, "%s", "Any key: return to app picker");
+    LCD_Refresh();
+}
 static void wait_error_key_release(void) {
     // The picker uses the level-based getKey API. Debug_WaitKey uses a
     // different event path and can block after the picker consumed EXE.
@@ -1528,32 +1540,23 @@ int main(int argc, char **argv, char **envp) {
 
     int fd = fs_open(path, FILE_OPEN_READ);
     if (fd < 0) {
-        ntos_puts("File_Open failed");
-        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: return to EXE list");
-        LCD_Refresh();
+        app_load_error("Could not open the selected EXE (file busy?)");
         wait_error_key_release();
         continue;
     }
     uint32_t fsize = sizes[pick[selected]];
     auto *file = static_cast<uint8_t *>(Mem_Malloc(fsize != 0 ? fsize : 1));
     if (file == nullptr) {
-        ntos_puts("OOM reading file");
+        app_load_error("Not enough memory to stage EXE");
         fs_close(fd);
-        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: return to EXE list");
-        LCD_Refresh();
         wait_error_key_release();
         continue;
     }
     if (File_Read(fd, file, static_cast<int>(fsize)) !=
         static_cast<int>(fsize)) {
-        ntos_puts("File_Read failed");
+        app_load_error("Could not read complete EXE");
         Mem_Free(file);
         fs_close(fd);
-        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: return to EXE list");
-        LCD_Refresh();
         wait_error_key_release();
         continue;
     }
@@ -1562,11 +1565,8 @@ int main(int argc, char **argv, char **envp) {
     // Parse the header once to pick the load path.
     pe::Image hdr{};
     if (pe::parse(file, fsize, &hdr) != 0) {
-        ntos_puts("Bad PE header (not SH4BE 0x01A8?)");
+        app_load_error("Invalid SH4BE PE executable");
         Mem_Free(file);
-        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: return to EXE list");
-        LCD_Refresh();
         wait_error_key_release();
         continue;
     }
@@ -1607,14 +1607,10 @@ int main(int argc, char **argv, char **envp) {
         const char *err = nullptr;
         if (run_mapped(file,fsize,hdr,core_path,core_size,
                        extra_path,extra_size,&ret,&err) != 0) {
-            Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
-                         "Mapped load failed: %s", err);
+            app_load_error(err);
             LCD_Refresh();
             Mem_Free(file);
-            Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: return to EXE list");
-        LCD_Refresh();
-        wait_error_key_release();
+            wait_error_key_release();
         continue;
         }
     } else {
@@ -1625,14 +1621,10 @@ int main(int argc, char **argv, char **envp) {
         uint8_t *image = nullptr;
         const char *err = nullptr;
         if (load_coff(file, fsize, &image, &hdr, sections, &err) != 0) {
-            Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
-                         "Load failed: %s", err);
+            app_load_error(err);
             LCD_Refresh();
             Mem_Free(file);
-            Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Any key: return to EXE list");
-        LCD_Refresh();
-        wait_error_key_release();
+            wait_error_key_release();
         continue;
         }
 
@@ -1676,7 +1668,10 @@ int main(int argc, char **argv, char **envp) {
                 LCD_Refresh();
                 return -1;
             }
-            if(!ok){ntos_puts(launch_error?launch_error:"Invalid application");Debug_WaitKey();}
+            if(!ok){
+                app_load_error(launch_error?launch_error:"Invalid application");
+                wait_error_key_release();
+            }
             if(!pending_app[0]) {
                 // A stub/Settings/Calculator exit goes straight back to Start.
                 bool is_home=true;const char *home="\\fls0\\STARTHOST.EXE";
