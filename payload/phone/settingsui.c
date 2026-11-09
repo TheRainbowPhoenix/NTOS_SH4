@@ -89,7 +89,7 @@ static void paint(void *dc)
             : view == 7 ? "Phone update"
             : view == 8 ? leaf
                         : "Settings",
-            WHITE, 14);
+            INK, 14);
     if (view == 0 || view == 1 || view == 4) {
         r->fill(dc, 12, 80, 308, 112, BLUE);
         r->fill(dc, 14, 82, 306, 110, WHITE);
