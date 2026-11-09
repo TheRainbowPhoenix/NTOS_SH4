@@ -89,6 +89,27 @@ jobs:
         assert names==expected,(names,expected)
         assert exe.DIRECTORY_ENTRY_IMPORT[0].dll.upper()==b'COREDLL.DLL'
         PY
+    - name: Stress 2304 MSVC ABI calls and test SH4LE conversion guardrails
+      run: |
+        make msvc-abi-stress
+        test -s dist_msvc_typed/ABISTRESS.EXE
+        test -s dist_msvc_typed/ABITYPED.DLL
+        python3 tests/sh4le_be_probe_test.py
+        python3 - <<'PY'
+        import pefile
+        exe=pefile.PE('dist_msvc_typed/ABISTRESS.EXE')
+        expected={'abi_typed_5','abi_typed_8','abi_typed_s3','abi_typed_s3split',
+                  'abi_typed_u64','abi_typed_u64split','abi_typed_ret_s3',
+                  'abi_typed_ret_u64','abi_typed_ret_bytes3','abi_typed_bytes3',
+                  'abi_typed_ret_s16','abi_typed_ret_u16','abi_typed_ptr',
+                  'abi_typed_zero','abi_typed_ret_bytes1','abi_typed_ret_bytes4',
+                  'abi_typed_ret_s8','abi_typed_ret_u8'}
+        dirs={x.dll.upper():x for x in exe.DIRECTORY_ENTRY_IMPORT}
+        assert b'ABITYPED.DLL' in dirs
+        imports={x.name.decode('ascii') for x in dirs[b'ABITYPED.DLL'].imports if x.name}
+        assert expected <= imports,expected-imports
+        PY
+        echo "PASS stress EXE + conservative PE conversion tests (SH4 emulator still required)"
     - name: Verify all phone apps, launcher ABI and native Settings/input views
       run: |
         python3 payload/phone/check_phone.py
