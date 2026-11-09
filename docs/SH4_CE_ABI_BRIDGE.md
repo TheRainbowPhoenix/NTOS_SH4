@@ -1,4 +1,10 @@
-# SuperH DLL boundary ABI candidate (not MSVC-certified)
+# SuperH DLL boundary ABI candidate (not MSVC-compatible)
+
+Actual compiler comparison now confirms different conventions: MSVC SH4 uses a
+16-byte register home area; Renesas SHC does not. Structs, varargs, 64-bit returns
+and data alignment also differ. GCC 15.2's Renesas attribute is itself not a full
+match for vendor SHC. See [measured compiler results](SH4_ABI_COMPILER_COMPARISON.md)
+for assembly evidence, version limits and boundary translation rules.
 
 NTOS runs native **big-endian SH4AL-DSP without an FPU**. A Windows CE
 Microsoft SH4 binary normally targets **little-endian** SH4. Converting
@@ -14,11 +20,10 @@ change code generation at the call site.
 
 GCC's SuperH backend implements the function/struct
 `__attribute__((renesas))`. It has **no supported**
-`__attribute__((msvc))` for this target. The Renesas convention may
+`__attribute__((msvc))` for this target. The Renesas convention does
 differ from Microsoft's Windows CE SH4 convention (especially the
 four-register home area, fifth argument, structure returns, varargs and
-software floating point). Do not rename it to MSVC ABI until compared
-against independent Microsoft-compiled SH4 fixture assembly.
+software floating point). The independent compiler comparison confirms it must not be renamed MSVC ABI.
 
 The `payload/ntabi.h` marker `NT_ABI_CE_CANDIDATE` expands to GCC's
 Renesas attribute **only** in `NTOS_SH_RENESAS_ABI_PROBE=1` builds.
@@ -47,7 +52,7 @@ Build CI only checks cross-compilation and PE packaging. A runtime
 pass proves the Renesas-attribute caller and callee match **each
 other**, not that they match MSVC.
 
-## Requirements before advertising true MSVC compatibility
+## Remaining work before advertising true MSVC compatibility
 
 Compare against actual Microsoft Windows CE SH4 assembly for 0–8
 arguments, the mandatory home area, 64-bit integers, small/large
@@ -64,3 +69,6 @@ thunks that explicitly copy/translate arguments, rather than applying
 `renesas` across unrelated DLLs or inventing an attribute understood
 by GCC. The native public export can be a small ABI-specific wrapper
 calling an ordinary internal C function.
+
+The dedicated [MSVC Od/O2 probe and BE thunk contract](MSVC_SH4_ABI_RULES.md)
+adds executable checks of the original Microsoft-generated integer code.

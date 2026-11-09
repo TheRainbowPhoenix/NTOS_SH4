@@ -24,6 +24,8 @@
 
 #include "../payload/ntapi_caps.h"
 #include "pe.hpp"
+#include "console.hpp"
+#include "../payload/ugui_font.h"
 #include "pe_rebase.hpp"
 #include "pe_pager.hpp"
 #include "host_world.hpp"
@@ -80,21 +82,45 @@ struct NtosApi {
 
 static int cur_row = 0;
 
-// Console output goes through Debug_Printf -- the small font (the big
-// Debug_PrintString glyphs only fit ~28 columns and drown the screen).
-// The SDK printer must receive a P1 resident string, never an untrusted
-// pointer to a transient P0 page or a user stack after the MMU is switched.
-static void ntos_puts(const char *s) {
-    if (!s) return;
-    char scratch[80];
-    unsigned n = 0;
-    for (; n + 1 < sizeof(scratch) && s[n]; ++n)
-        scratch[n] = s[n];
-    scratch[n] = 0;
-    if (cur_row > 22) cur_row = 0;
-    Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
-                 "%s", scratch);
+// 40 columns by 40 rows: 8-pixel cells, 12 bitmap rows, 13-pixel pitch.
+// This bypasses the firmware debug printer's 14-pixel / 37-row limit.
+static TextConsole<> app_console;
+static bool app_console_started = false;
+static void console_paint(unsigned row, const char *text) {
+    const unsigned top = row * 13;
+    for (unsigned y = top; y < top + 13 && y < height; ++y)
+        line(0, static_cast<int>(y), static_cast<int>(width - 1), static_cast<int>(y), 0xffff);
+    for (unsigned x = 0; x < 40 && text[x]; ++x) {
+        unsigned ch = static_cast<unsigned char>(text[x]);
+        if (ch < 32 || ch > 126) ch = '?';
+        for (unsigned y = 0; y < 12; ++y) {
+            const unsigned bits = nt_font_rows[ch - 32][y * 14 / 12];
+            for (unsigned bit = 0; bit < 8; ++bit)
+                if (bits & (1u << bit)) setPixel(x * 8 + bit, top + y, 0);
+        }
+    }
+}
+static bool console_scroll() {
+    // Copy pixels once instead of rasterizing all 1,600 glyph cells on every line.
+    volatile uint16_t *frame = vram;
+    for (unsigned i = 0; i < 320u * 39u * 13u; ++i)
+        frame[i] = frame[i + 320u * 13u];
+    return true;
+}
+static void ntos_puts(const char *text) {
+    if (!text) return;
+    if (static_cast<unsigned>(cur_row) != app_console.row())
+        app_console.position(static_cast<unsigned>(cur_row));
+    app_console.puts(text, console_paint, console_scroll);
+    cur_row = static_cast<int>(app_console.row());
     LCD_Refresh();
+}
+static void ntos_app_puts(const char *text) {
+    if (!app_console_started) {
+        fillScreen(0xffff);
+        app_console.reset(); cur_row = 0; app_console_started = true;
+    }
+    ntos_puts(text);
 }
 
 // New fixed-width NTOS call gates; all arguments follow the SH4 scalar ABI.
@@ -300,7 +326,7 @@ static int32_t ntos_launch(const char *name) {
     pending_app[i]=0;return 1;
 }
 static NtosApi g_ntos_api = {
-    &ntos_puts,
+    &ntos_app_puts,
     Debug_Printf, // SDK declares these as function pointers, not functions
     LCD_Refresh,
     &Mem_Malloc,  // this one really is an inline function in the SDK
@@ -1149,6 +1175,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     {
         using dll_entry=int (*)(uint32_t,uint32_t,void *);
         using exe_entry=int (*)(const NtosApi *,char **,char **);
+        app_console_started = false;
         bool attached[NTOS_MAX_MODULES]={};
         bool attach_ok=true;
         // DLL_PROCESS_ATTACH=1, DLL_PROCESS_DETACH=0 from WinCE SDK.
@@ -1571,11 +1598,11 @@ int main(int argc, char **argv, char **envp) {
             }
         }
     }
-    Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
-                  "Payload returned 0x%08lX",
-                  static_cast<unsigned long>(static_cast<uint32_t>(ret)));
-    Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0, "%s",
-                 "EXE: pick again   CLEAR: exit");
+    char result_line[] = "Payload returned 0x00000000";
+    const char *digits = "0123456789ABCDEF";
+    for(unsigned i=0;i<8;++i)result_line[19+i]=digits[(static_cast<uint32_t>(ret)>>(28-4*i))&15];
+    ntos_puts(result_line);
+    ntos_puts("EXE: pick again   CLEAR: exit");
     LCD_Refresh();
     // Debug_WaitKey accepts arbitrary keys, while the prompt promises that
     // only EXE reopens the picker and CLEAR exits.  Handle both explicitly.

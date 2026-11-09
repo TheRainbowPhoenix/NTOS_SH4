@@ -1,0 +1,416 @@
+{
+  "module": "control.exe",
+  "sha256": "dd584957ecba576d618ab3d3fb88768e9718fd726f7c5646a970f91e2a15de8f",
+  "machine": 422,
+  "base": 65536,
+  "entry": 4692,
+  "image_size": 32768,
+  "imports": [
+    {
+      "module": "COREDLL.dll",
+      "symbols": [
+        {
+          "ordinal": 1645,
+          "name": "_XcptFilter",
+          "iat": 12288
+        },
+        {
+          "ordinal": 87,
+          "name": "__C_specific_handler",
+          "iat": 12292
+        },
+        {
+          "ordinal": 1018,
+          "name": "free",
+          "iat": 12296
+        },
+        {
+          "ordinal": 2696,
+          "name": "__security_gen_cookie2",
+          "iat": 12300
+        },
+        {
+          "ordinal": 3,
+          "name": "DeleteCriticalSection",
+          "iat": 12304
+        },
+        {
+          "ordinal": 12,
+          "name": "InterlockedExchange",
+          "iat": 12308
+        },
+        {
+          "ordinal": 544,
+          "name": "TerminateProcess",
+          "iat": 12312
+        },
+        {
+          "ordinal": 702,
+          "name": "SetForegroundWindow",
+          "iat": 12316
+        },
+        {
+          "ordinal": 870,
+          "name": "TranslateMessage",
+          "iat": 12320
+        },
+        {
+          "ordinal": 859,
+          "name": "DispatchMessageW",
+          "iat": 12324
+        },
+        {
+          "ordinal": 861,
+          "name": "GetMessageW",
+          "iat": 12328
+        },
+        {
+          "ordinal": 683,
+          "name": "LoadCursorW",
+          "iat": 12332
+        },
+        {
+          "ordinal": 95,
+          "name": "RegisterClassW",
+          "iat": 12336
+        },
+        {
+          "ordinal": 866,
+          "name": "PostQuitMessage",
+          "iat": 12340
+        },
+        {
+          "ordinal": 58,
+          "name": "wcscat",
+          "iat": 12344
+        },
+        {
+          "ordinal": 1047,
+          "name": "memset",
+          "iat": 12348
+        },
+        {
+          "ordinal": 61,
+          "name": "wcscpy",
+          "iat": 12352
+        },
+        {
+          "ordinal": 66,
+          "name": "wcsncpy",
+          "iat": 12356
+        },
+        {
+          "ordinal": 1876,
+          "name": "__report_gsfailure",
+          "iat": 12360
+        },
+        {
+          "ordinal": 271,
+          "name": "IsWindow",
+          "iat": 12364
+        },
+        {
+          "ordinal": 868,
+          "name": "SendMessageW",
+          "iat": 12368
+        },
+        {
+          "ordinal": 267,
+          "name": "UpdateWindow",
+          "iat": 12372
+        },
+        {
+          "ordinal": 266,
+          "name": "ShowWindow",
+          "iat": 12376
+        },
+        {
+          "ordinal": 730,
+          "name": "LoadImageW",
+          "iat": 12380
+        },
+        {
+          "ordinal": 246,
+          "name": "CreateWindowExW",
+          "iat": 12384
+        },
+        {
+          "ordinal": 874,
+          "name": "LoadStringW",
+          "iat": 12388
+        },
+        {
+          "ordinal": 455,
+          "name": "RegCloseKey",
+          "iat": 12392
+        },
+        {
+          "ordinal": 464,
+          "name": "RegSetValueExW",
+          "iat": 12396
+        },
+        {
+          "ordinal": 461,
+          "name": "RegOpenKeyExW",
+          "iat": 12400
+        },
+        {
+          "ordinal": 463,
+          "name": "RegQueryValueExW",
+          "iat": 12404
+        },
+        {
+          "ordinal": 844,
+          "name": "DestroyMenu",
+          "iat": 12408
+        },
+        {
+          "ordinal": 845,
+          "name": "TrackPopupMenuEx",
+          "iat": 12412
+        },
+        {
+          "ordinal": 862,
+          "name": "GetMessagePos",
+          "iat": 12416
+        },
+        {
+          "ordinal": 855,
+          "name": "GetSubMenu",
+          "iat": 12420
+        },
+        {
+          "ordinal": 846,
+          "name": "LoadMenuW",
+          "iat": 12424
+        },
+        {
+          "ordinal": 858,
+          "name": "MessageBoxW",
+          "iat": 12428
+        },
+        {
+          "ordinal": 516,
+          "name": "GetLastError",
+          "iat": 12432
+        },
+        {
+          "ordinal": 484,
+          "name": "SHCreateShortcut",
+          "iat": 12436
+        },
+        {
+          "ordinal": 56,
+          "name": "wsprintfW",
+          "iat": 12440
+        },
+        {
+          "ordinal": 295,
+          "name": "SHGetSpecialFolderPath",
+          "iat": 12444
+        },
+        {
+          "ordinal": 36,
+          "name": "LocalFree",
+          "iat": 12448
+        },
+        {
+          "ordinal": 743,
+          "name": "ImageList_Destroy",
+          "iat": 12452
+        },
+        {
+          "ordinal": 34,
+          "name": "LocalReAlloc",
+          "iat": 12456
+        },
+        {
+          "ordinal": 35,
+          "name": "LocalSize",
+          "iat": 12460
+        },
+        {
+          "ordinal": 33,
+          "name": "LocalAlloc",
+          "iat": 12464
+        },
+        {
+          "ordinal": 849,
+          "name": "CheckMenuRadioItem",
+          "iat": 12468
+        },
+        {
+          "ordinal": 258,
+          "name": "SetWindowLongW",
+          "iat": 12472
+        },
+        {
+          "ordinal": 259,
+          "name": "GetWindowLongW",
+          "iat": 12476
+        },
+        {
+          "ordinal": 284,
+          "name": "MapWindowPoints",
+          "iat": 12480
+        },
+        {
+          "ordinal": 269,
+          "name": "GetParent",
+          "iat": 12484
+        },
+        {
+          "ordinal": 247,
+          "name": "SetWindowPos",
+          "iat": 12488
+        },
+        {
+          "ordinal": 89,
+          "name": "SystemParametersInfoW",
+          "iat": 12492
+        },
+        {
+          "ordinal": 228,
+          "name": "lstrcmpiW",
+          "iat": 12496
+        },
+        {
+          "ordinal": 480,
+          "name": "ShellExecuteEx",
+          "iat": 12500
+        },
+        {
+          "ordinal": 1700,
+          "name": "StringCbPrintfW",
+          "iat": 12504
+        },
+        {
+          "ordinal": 265,
+          "name": "DestroyWindow",
+          "iat": 12508
+        },
+        {
+          "ordinal": 529,
+          "name": "FreeLibrary",
+          "iat": 12512
+        },
+        {
+          "ordinal": 725,
+          "name": "DestroyIcon",
+          "iat": 12516
+        },
+        {
+          "ordinal": 762,
+          "name": "ImageList_ReplaceIcon",
+          "iat": 12520
+        },
+        {
+          "ordinal": 530,
+          "name": "GetProcAddressW",
+          "iat": 12524
+        },
+        {
+          "ordinal": 528,
+          "name": "LoadLibraryW",
+          "iat": 12528
+        },
+        {
+          "ordinal": 885,
+          "name": "GetSystemMetrics",
+          "iat": 12532
+        },
+        {
+          "ordinal": 860,
+          "name": "GetKeyState",
+          "iat": 12536
+        },
+        {
+          "ordinal": 180,
+          "name": "FindClose",
+          "iat": 12540
+        },
+        {
+          "ordinal": 181,
+          "name": "FindNextFileW",
+          "iat": 12544
+        },
+        {
+          "ordinal": 167,
+          "name": "FindFirstFileW",
+          "iat": 12548
+        },
+        {
+          "ordinal": 742,
+          "name": "ImageList_Create",
+          "iat": 12552
+        },
+        {
+          "ordinal": 704,
+          "name": "SetFocus",
+          "iat": 12556
+        },
+        {
+          "ordinal": 249,
+          "name": "GetClientRect",
+          "iat": 12560
+        },
+        {
+          "ordinal": 493,
+          "name": "CreateProcessW",
+          "iat": 12564
+        },
+        {
+          "ordinal": 865,
+          "name": "PostMessageW",
+          "iat": 12568
+        },
+        {
+          "ordinal": 264,
+          "name": "DefWindowProcW",
+          "iat": 12572
+        },
+        {
+          "ordinal": 286,
+          "name": "FindWindowW",
+          "iat": 12576
+        }
+      ]
+    },
+    {
+      "module": "commctrl.dll",
+      "symbols": [
+        {
+          "ordinal": 3,
+          "name": null,
+          "iat": 12584
+        },
+        {
+          "ordinal": 8,
+          "name": null,
+          "iat": 12588
+        },
+        {
+          "ordinal": 10,
+          "name": null,
+          "iat": 12592
+        },
+        {
+          "ordinal": 44,
+          "name": null,
+          "iat": 12596
+        },
+        {
+          "ordinal": 12,
+          "name": null,
+          "iat": 12600
+        },
+        {
+          "ordinal": 2,
+          "name": null,
+          "iat": 12604
+        }
+      ]
+    }
+  ],
+  "exports": []
+}

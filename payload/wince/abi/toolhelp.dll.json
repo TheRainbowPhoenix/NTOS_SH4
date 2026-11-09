@@ -1,0 +1,167 @@
+{
+  "module": "toolhelp.dll",
+  "sha256": "57e19cd61e70cda33fbffcdaf39bec4dc259bd10ce60cf570d28489a2a4c3330",
+  "machine": 422,
+  "base": 1074397184,
+  "entry": 6464,
+  "image_size": 24576,
+  "imports": [
+    {
+      "module": "COREDLL.dll",
+      "symbols": [
+        {
+          "ordinal": 2528,
+          "name": "__GetUserKData",
+          "iat": 8192
+        },
+        {
+          "ordinal": 1232,
+          "name": "DisableThreadLibraryCalls",
+          "iat": 8196
+        },
+        {
+          "ordinal": 52,
+          "name": "GetHeapSnapshot",
+          "iat": 8200
+        },
+        {
+          "ordinal": 511,
+          "name": "THCreateSnapshot",
+          "iat": 8204
+        },
+        {
+          "ordinal": 525,
+          "name": "VirtualFree",
+          "iat": 8208
+        },
+        {
+          "ordinal": 553,
+          "name": "CloseHandle",
+          "iat": 8212
+        },
+        {
+          "ordinal": 506,
+          "name": "ReadProcessMemory",
+          "iat": 8216
+        },
+        {
+          "ordinal": 517,
+          "name": "SetLastError",
+          "iat": 8220
+        },
+        {
+          "ordinal": 509,
+          "name": "OpenProcess",
+          "iat": 8224
+        },
+        {
+          "ordinal": 87,
+          "name": "__C_specific_handler",
+          "iat": 8228
+        },
+        {
+          "ordinal": 1645,
+          "name": "_XcptFilter",
+          "iat": 8232
+        },
+        {
+          "ordinal": 1018,
+          "name": "free",
+          "iat": 8236
+        },
+        {
+          "ordinal": 2696,
+          "name": "__security_gen_cookie2",
+          "iat": 8240
+        },
+        {
+          "ordinal": 3,
+          "name": "DeleteCriticalSection",
+          "iat": 8244
+        },
+        {
+          "ordinal": 12,
+          "name": "InterlockedExchange",
+          "iat": 8248
+        },
+        {
+          "ordinal": 544,
+          "name": "TerminateProcess",
+          "iat": 8252
+        }
+      ]
+    }
+  ],
+  "exports": [
+    {
+      "ordinal": 1,
+      "name": "CloseToolhelp32Snapshot",
+      "rva": 4308
+    },
+    {
+      "ordinal": 2,
+      "name": "CreateToolhelp32Snapshot",
+      "rva": 4224
+    },
+    {
+      "ordinal": 3,
+      "name": "DllMain",
+      "rva": 4196
+    },
+    {
+      "ordinal": 4,
+      "name": "Heap32First",
+      "rva": 5736
+    },
+    {
+      "ordinal": 5,
+      "name": "Heap32ListFirst",
+      "rva": 5248
+    },
+    {
+      "ordinal": 6,
+      "name": "Heap32ListNext",
+      "rva": 5456
+    },
+    {
+      "ordinal": 7,
+      "name": "Heap32Next",
+      "rva": 5944
+    },
+    {
+      "ordinal": 8,
+      "name": "Module32First",
+      "rva": 4992
+    },
+    {
+      "ordinal": 9,
+      "name": "Module32Next",
+      "rva": 5108
+    },
+    {
+      "ordinal": 10,
+      "name": "Process32First",
+      "rva": 4496
+    },
+    {
+      "ordinal": 11,
+      "name": "Process32Next",
+      "rva": 4596
+    },
+    {
+      "ordinal": 12,
+      "name": "Thread32First",
+      "rva": 4716
+    },
+    {
+      "ordinal": 13,
+      "name": "Thread32Next",
+      "rva": 4844
+    },
+    {
+      "ordinal": 14,
+      "name": "Toolhelp32ReadProcessMemory",
+      "rva": 4344
+    }
+  ]
+}

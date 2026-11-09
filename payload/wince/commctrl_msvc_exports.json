@@ -1,0 +1,1040 @@
+[
+  {
+    "ordinal": 35,
+    "name": "CenterWindow",
+    "target": "CenterWindow",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CenterWindow(CE_HANDLE window, CE_HANDLE parent)"
+  },
+  {
+    "ordinal": 39,
+    "name": "CommandBands_AddAdornments",
+    "target": "CommandBands_AddAdornments",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBands_AddAdornments(CE_HANDLE bands, void *instance, unsigned int flags, void *restore)"
+  },
+  {
+    "ordinal": 37,
+    "name": "CommandBands_AddBands",
+    "target": "CommandBands_AddBands",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBands_AddBands(CE_HANDLE bands, void *instance, unsigned int count, const void *info)"
+  },
+  {
+    "ordinal": 36,
+    "name": "CommandBands_Create",
+    "target": "CommandBands_Create",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_HANDLE CommandBands_Create(void *instance, CE_HANDLE parent, unsigned int id, unsigned int style, void *images)"
+  },
+  {
+    "ordinal": 38,
+    "name": "CommandBands_GetCommandBar",
+    "target": "CommandBands_GetCommandBar",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_HANDLE CommandBands_GetCommandBar(CE_HANDLE bands, unsigned int index)"
+  },
+  {
+    "ordinal": 41,
+    "name": "CommandBands_GetRestoreInformation",
+    "target": "CommandBands_GetRestoreInformation",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBands_GetRestoreInformation(CE_HANDLE bands, unsigned int index, void *info)"
+  },
+  {
+    "ordinal": 40,
+    "name": "CommandBands_Show",
+    "target": "CommandBands_Show",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBands_Show(CE_HANDLE bands, int show)"
+  },
+  {
+    "ordinal": 10,
+    "name": "CommandBar_AddAdornments",
+    "target": "CommandBar_AddAdornments",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBar_AddAdornments(CE_HANDLE h, uint32_t flags, uint32_t reserved)"
+  },
+  {
+    "ordinal": 5,
+    "name": "CommandBar_AddBitmap",
+    "target": "CommandBar_AddBitmap",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBar_AddBitmap(CE_HANDLE h, void *instance, uintptr_t resource, int count, int width, int height)"
+  },
+  {
+    "ordinal": 44,
+    "name": "CommandBar_AlignAdornments",
+    "target": "CommandBar_AlignAdornments",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBar_AlignAdornments(CE_HANDLE h)"
+  },
+  {
+    "ordinal": 3,
+    "name": "CommandBar_Create",
+    "target": "CommandBar_Create",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_HANDLE CommandBar_Create(void *instance, CE_HANDLE parent, int id)"
+  },
+  {
+    "ordinal": 43,
+    "name": "CommandBar_DrawMenuBar",
+    "target": "CommandBar_DrawMenuBar",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBar_DrawMenuBar(CE_HANDLE h, int index)"
+  },
+  {
+    "ordinal": 11,
+    "name": "CommandBar_GetItemWindow",
+    "target": "CommandBar_GetItemWindow",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_HANDLE CommandBar_GetItemWindow(CE_HANDLE h, int index)"
+  },
+  {
+    "ordinal": 9,
+    "name": "CommandBar_GetMenu",
+    "target": "CommandBar_GetMenu",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_HANDLE CommandBar_GetMenu(CE_HANDLE h, int index)"
+  },
+  {
+    "ordinal": 12,
+    "name": "CommandBar_Height",
+    "target": "CommandBar_Height",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBar_Height(CE_HANDLE h)"
+  },
+  {
+    "ordinal": 6,
+    "name": "CommandBar_InsertComboBox",
+    "target": "CommandBar_InsertComboBox",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBar_InsertComboBox(CE_HANDLE h, void *instance, int width, unsigned int style, unsigned int id, int index)"
+  },
+  {
+    "ordinal": 7,
+    "name": "CommandBar_InsertControl",
+    "target": "CommandBar_InsertControl",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBar_InsertControl(CE_HANDLE h, void *instance, const CE_WCHAR *class_name, void *create, unsigned int style, unsigned int id, int index, int width)"
+  },
+  {
+    "ordinal": 8,
+    "name": "CommandBar_InsertMenubar",
+    "target": "CommandBar_InsertMenubar",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBar_InsertMenubar(CE_HANDLE h, void *instance, uintptr_t resource, int index)"
+  },
+  {
+    "ordinal": 42,
+    "name": "CommandBar_InsertMenubarEx",
+    "target": "CommandBar_InsertMenubarEx",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBar_InsertMenubarEx(CE_HANDLE h, void *instance, uintptr_t resource, int index, unsigned int flags)"
+  },
+  {
+    "ordinal": 4,
+    "name": "CommandBar_Show",
+    "target": "CommandBar_Show",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CommandBar_Show(CE_HANDLE h, int show)"
+  },
+  {
+    "ordinal": 19,
+    "name": "CreatePropertySheetPageW",
+    "target": "CreatePropertySheetPageW",
+    "ret": "ptr",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_HANDLE CreatePropertySheetPageW(const CE_PROPPAGE *descriptor)"
+  },
+  {
+    "ordinal": 17,
+    "name": "CreateStatusWindowW",
+    "target": "CreateStatusWindowW",
+    "ret": "ptr",
+    "args": [
+      "u32",
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_HANDLE CreateStatusWindowW(uint32_t style, const CE_WCHAR *text, CE_HANDLE parent, unsigned int id)"
+  },
+  {
+    "ordinal": 15,
+    "name": "CreateToolbar",
+    "target": "CreateToolbar",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "ptr",
+      "u32",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_HANDLE CreateToolbar(CE_HANDLE parent, uint32_t style, unsigned int id, int count, void *instance, uintptr_t bitmap, const void *buttons, int n)"
+  },
+  {
+    "ordinal": 16,
+    "name": "CreateToolbarEx",
+    "target": "CreateToolbarEx",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "ptr",
+      "u32",
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_HANDLE CreateToolbarEx(CE_HANDLE parent, uint32_t style, unsigned int id, int count, void *instance, uintptr_t bitmap, const void *buttons, int n, int dx, int dy, int bx, int by, unsigned int size)"
+  },
+  {
+    "ordinal": 14,
+    "name": "CreateUpDownControl",
+    "target": "CreateUpDownControl",
+    "ret": "ptr",
+    "args": [
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "ptr",
+      "u32",
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_HANDLE CreateUpDownControl(uint32_t style, int x, int y, int width, int height, CE_HANDLE parent, int id, void *instance, CE_HANDLE buddy, int maximum, int minimum, int position)"
+  },
+  {
+    "ordinal": 50,
+    "name": "DPA_Create",
+    "target": "DPA_Create",
+    "ret": "ptr",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_DPA * DPA_Create(int grow)"
+  },
+  {
+    "ordinal": 31,
+    "name": "DPA_Destroy",
+    "target": "DPA_Destroy",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_Destroy(CE_DPA *a)"
+  },
+  {
+    "ordinal": 56,
+    "name": "DPA_DestroyCallback",
+    "target": "CeMsvc_DPA_DestroyCallback",
+    "ret": "void",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "void DPA_DestroyCallback(CE_DPA *a, CE_ENUM cb, void *ctx)"
+  },
+  {
+    "ordinal": 32,
+    "name": "DPA_GetPtr",
+    "target": "DPA_GetPtr",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * DPA_GetPtr(CE_DPA *a, int i)"
+  },
+  {
+    "ordinal": 54,
+    "name": "DPA_Grow",
+    "target": "DPA_Grow",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_Grow(CE_DPA *a, int n)"
+  },
+  {
+    "ordinal": 51,
+    "name": "DPA_InsertPtr",
+    "target": "DPA_InsertPtr",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_InsertPtr(CE_DPA *a, int i, void *p)"
+  },
+  {
+    "ordinal": 53,
+    "name": "DPA_SetPtr",
+    "target": "DPA_SetPtr",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_SetPtr(CE_DPA *a, int i, void *p)"
+  },
+  {
+    "ordinal": 52,
+    "name": "DPA_Sort",
+    "target": "CeMsvc_DPA_Sort",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "int DPA_Sort(CE_DPA *a, CE_COMPARE cmp, CE_LPARAM ctx)"
+  },
+  {
+    "ordinal": 46,
+    "name": "DSA_Clone",
+    "target": "DSA_Clone",
+    "ret": "ptr",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_DSA * DSA_Clone(CE_DSA *a)"
+  },
+  {
+    "ordinal": 23,
+    "name": "DSA_Create",
+    "target": "DSA_Create",
+    "ret": "ptr",
+    "args": [
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_DSA * DSA_Create(int size, int grow)"
+  },
+  {
+    "ordinal": 30,
+    "name": "DSA_DeleteAllItems",
+    "target": "DSA_DeleteAllItems",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_DeleteAllItems(CE_DSA *a)"
+  },
+  {
+    "ordinal": 29,
+    "name": "DSA_DeleteItem",
+    "target": "DSA_DeleteItem",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_DeleteItem(CE_DSA *a, int i)"
+  },
+  {
+    "ordinal": 24,
+    "name": "DSA_Destroy",
+    "target": "DSA_Destroy",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_Destroy(CE_DSA *a)"
+  },
+  {
+    "ordinal": 47,
+    "name": "DSA_DestroyCallback",
+    "target": "CeMsvc_DSA_DestroyCallback",
+    "ret": "void",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "void DSA_DestroyCallback(CE_DSA *a, CE_ENUM cb, void *ctx)"
+  },
+  {
+    "ordinal": 48,
+    "name": "DSA_EnumCallback",
+    "target": "CeMsvc_DSA_EnumCallback",
+    "ret": "void",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "void DSA_EnumCallback(CE_DSA *a, CE_ENUM cb, void *ctx)"
+  },
+  {
+    "ordinal": 25,
+    "name": "DSA_GetItem",
+    "target": "DSA_GetItem",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_GetItem(CE_DSA *a, int i, void *dest)"
+  },
+  {
+    "ordinal": 26,
+    "name": "DSA_GetItemPtr",
+    "target": "DSA_GetItemPtr",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * DSA_GetItemPtr(CE_DSA *a, int i)"
+  },
+  {
+    "ordinal": 27,
+    "name": "DSA_InsertItem",
+    "target": "DSA_InsertItem",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_InsertItem(CE_DSA *a, int i, const void *item)"
+  },
+  {
+    "ordinal": 45,
+    "name": "DSA_Search",
+    "target": "CeMsvc_DSA_Search",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "int DSA_Search(CE_DSA *a, const void *item, int start, CE_COMPARE cmp, CE_LPARAM ctx, unsigned int options)"
+  },
+  {
+    "ordinal": 28,
+    "name": "DSA_SetItem",
+    "target": "DSA_SetItem",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_SetItem(CE_DSA *a, int i, const void *item)"
+  },
+  {
+    "ordinal": 20,
+    "name": "DestroyPropertySheetPage",
+    "target": "DestroyPropertySheetPage",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DestroyPropertySheetPage(CE_HANDLE handle)"
+  },
+  {
+    "ordinal": 21,
+    "name": "DrawStatusTextW",
+    "target": "DrawStatusTextW",
+    "ret": "void",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void DrawStatusTextW(void *dc, CE_RECT *rect, const CE_WCHAR *text, unsigned int flags)"
+  },
+  {
+    "ordinal": 34,
+    "name": "Header_Init",
+    "target": "Header_Init",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int Header_Init(void *instance)"
+  },
+  {
+    "ordinal": 64,
+    "name": "InitCapEdit",
+    "target": "InitCapEdit",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitCapEdit(void *instance)"
+  },
+  {
+    "ordinal": 1,
+    "name": "InitCommonControls",
+    "target": "InitCommonControls",
+    "ret": "void",
+    "args": [],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void InitCommonControls(void)"
+  },
+  {
+    "ordinal": 2,
+    "name": "InitCommonControlsEx",
+    "target": "InitCommonControlsEx",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitCommonControlsEx(const CE_INITCOMMON *info)"
+  },
+  {
+    "ordinal": 65,
+    "name": "InitDateClasses",
+    "target": "InitDateClasses",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitDateClasses(void *instance)"
+  },
+  {
+    "ordinal": 66,
+    "name": "InitProgressClass",
+    "target": "InitProgressClass",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitProgressClass(void *instance)"
+  },
+  {
+    "ordinal": 67,
+    "name": "InitReBarClass",
+    "target": "InitReBarClass",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitReBarClass(void *instance)"
+  },
+  {
+    "ordinal": 68,
+    "name": "InitSBEdit",
+    "target": "InitSBEdit",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitSBEdit(void *instance)"
+  },
+  {
+    "ordinal": 69,
+    "name": "InitStatusClass",
+    "target": "InitStatusClass",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitStatusClass(void *instance)"
+  },
+  {
+    "ordinal": 70,
+    "name": "InitTTButton",
+    "target": "InitTTButton",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitTTButton(void *instance)"
+  },
+  {
+    "ordinal": 71,
+    "name": "InitTTStatic",
+    "target": "InitTTStatic",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitTTStatic(void *instance)"
+  },
+  {
+    "ordinal": 72,
+    "name": "InitToolTipsClass",
+    "target": "InitToolTipsClass",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitToolTipsClass(void *instance)"
+  },
+  {
+    "ordinal": 73,
+    "name": "InitToolbarClass",
+    "target": "InitToolbarClass",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitToolbarClass(void *instance)"
+  },
+  {
+    "ordinal": 74,
+    "name": "InitTrackBar",
+    "target": "InitTrackBar",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitTrackBar(void *instance)"
+  },
+  {
+    "ordinal": 75,
+    "name": "InitUpDownClass",
+    "target": "InitUpDownClass",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InitUpDownClass(void *instance)"
+  },
+  {
+    "ordinal": 22,
+    "name": "InvertRect",
+    "target": "InvertRect",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InvertRect(void *dc, const CE_RECT *rect)"
+  },
+  {
+    "ordinal": 13,
+    "name": "IsCommandBarMessage",
+    "target": "IsCommandBarMessage",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int IsCommandBarMessage(CE_HANDLE h, const void *message)"
+  },
+  {
+    "ordinal": 49,
+    "name": "ListView_Init",
+    "target": "ListView_Init",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int ListView_Init(void *instance)"
+  },
+  {
+    "ordinal": 76,
+    "name": "ListView_SetItemSpacing",
+    "target": "ListView_SetItemSpacing",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int ListView_SetItemSpacing(CE_HANDLE list, int x, int y)"
+  },
+  {
+    "ordinal": 18,
+    "name": "PropertySheetW",
+    "target": "PropertySheetW",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_RESULT PropertySheetW(const void *header)"
+  },
+  {
+    "ordinal": 33,
+    "name": "Str_SetPtrW",
+    "target": "Str_SetPtrW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int Str_SetPtrW(CE_WCHAR **dest, const CE_WCHAR *source)"
+  },
+  {
+    "ordinal": 63,
+    "name": "TV_Init",
+    "target": "TV_Init",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int TV_Init(void *instance)"
+  },
+  {
+    "ordinal": 84,
+    "name": "Tab_Init",
+    "target": "Tab_Init",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int Tab_Init(void *instance)"
+  },
+  {
+    "ordinal": 57,
+    "name": null,
+    "target": "CeMsvc_DSA_Sort",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "int DSA_Sort(CE_DSA *a, CE_COMPARE cmp, CE_LPARAM context)"
+  },
+  {
+    "ordinal": 58,
+    "name": null,
+    "target": "DSA_SetItemRange",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_SetItemRange(CE_DSA *a, int start, int count, const void *items)"
+  },
+  {
+    "ordinal": 59,
+    "name": null,
+    "target": "CeMsvc_DPA_Search",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "int DPA_Search(CE_DPA *a, void *item, int start, CE_COMPARE cmp, CE_LPARAM ctx, unsigned int options)"
+  },
+  {
+    "ordinal": 60,
+    "name": null,
+    "target": "DPA_DeletePtr",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * DPA_DeletePtr(CE_DPA *a, int i)"
+  },
+  {
+    "ordinal": 61,
+    "name": null,
+    "target": "DPA_DeleteAllPtrs",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_DeleteAllPtrs(CE_DPA *a)"
+  },
+  {
+    "ordinal": 62,
+    "name": null,
+    "target": "DPA_GetPtrIndex",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_GetPtrIndex(CE_DPA *a, const void *p)"
+  }
+]

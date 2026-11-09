@@ -1,0 +1,491 @@
+{
+  "module": "shell.exe",
+  "sha256": "d3b3620bd6da02b071e48d7f29c7a096178455c31481c17e936bcf865e495265",
+  "machine": 422,
+  "base": 65536,
+  "entry": 30576,
+  "image_size": 69632,
+  "imports": [
+    {
+      "module": "COREDLL.dll",
+      "symbols": [
+        {
+          "ordinal": 1645,
+          "name": "_XcptFilter",
+          "iat": 53248
+        },
+        {
+          "ordinal": 87,
+          "name": "__C_specific_handler",
+          "iat": 53252
+        },
+        {
+          "ordinal": 1018,
+          "name": "free",
+          "iat": 53256
+        },
+        {
+          "ordinal": 2696,
+          "name": "__security_gen_cookie2",
+          "iat": 53260
+        },
+        {
+          "ordinal": 3,
+          "name": "DeleteCriticalSection",
+          "iat": 53264
+        },
+        {
+          "ordinal": 12,
+          "name": "InterlockedExchange",
+          "iat": 53268
+        },
+        {
+          "ordinal": 544,
+          "name": "TerminateProcess",
+          "iat": 53272
+        },
+        {
+          "ordinal": 638,
+          "name": "PPSHRestart",
+          "iat": 53276
+        },
+        {
+          "ordinal": 524,
+          "name": "VirtualAlloc",
+          "iat": 53280
+        },
+        {
+          "ordinal": 463,
+          "name": "RegQueryValueExW",
+          "iat": 53284
+        },
+        {
+          "ordinal": 525,
+          "name": "VirtualFree",
+          "iat": 53288
+        },
+        {
+          "ordinal": 496,
+          "name": "Sleep",
+          "iat": 53292
+        },
+        {
+          "ordinal": 167,
+          "name": "FindFirstFileW",
+          "iat": 53296
+        },
+        {
+          "ordinal": 180,
+          "name": "FindClose",
+          "iat": 53300
+        },
+        {
+          "ordinal": 82,
+          "name": "ProfileStart",
+          "iat": 53304
+        },
+        {
+          "ordinal": 83,
+          "name": "ProfileStop",
+          "iat": 53308
+        },
+        {
+          "ordinal": 621,
+          "name": "CeSetThreadPriority",
+          "iat": 53312
+        },
+        {
+          "ordinal": 622,
+          "name": "CeGetThreadPriority",
+          "iat": 53316
+        },
+        {
+          "ordinal": 1452,
+          "name": "CeLogSetZones",
+          "iat": 53320
+        },
+        {
+          "ordinal": 1467,
+          "name": "CeLogReSync",
+          "iat": 53324
+        },
+        {
+          "ordinal": 64,
+          "name": "wcsncat",
+          "iat": 53328
+        },
+        {
+          "ordinal": 63,
+          "name": "wcslen",
+          "iat": 53332
+        },
+        {
+          "ordinal": 61,
+          "name": "wcscpy",
+          "iat": 53336
+        },
+        {
+          "ordinal": 230,
+          "name": "_wcsicmp",
+          "iat": 53340
+        },
+        {
+          "ordinal": 69,
+          "name": "wcsrchr",
+          "iat": 53344
+        },
+        {
+          "ordinal": 77,
+          "name": "wcstok",
+          "iat": 53348
+        },
+        {
+          "ordinal": 60,
+          "name": "wcscmp",
+          "iat": 53352
+        },
+        {
+          "ordinal": 193,
+          "name": "iswctype",
+          "iat": 53356
+        },
+        {
+          "ordinal": 1083,
+          "name": "wcstoul",
+          "iat": 53360
+        },
+        {
+          "ordinal": 73,
+          "name": "wcsstr",
+          "iat": 53364
+        },
+        {
+          "ordinal": 231,
+          "name": "_wcslwr",
+          "iat": 53368
+        },
+        {
+          "ordinal": 66,
+          "name": "wcsncpy",
+          "iat": 53372
+        },
+        {
+          "ordinal": 2051,
+          "name": "_modi64",
+          "iat": 53376
+        },
+        {
+          "ordinal": 2049,
+          "name": "_divi64",
+          "iat": 53380
+        },
+        {
+          "ordinal": 78,
+          "name": "_wtol",
+          "iat": 53384
+        },
+        {
+          "ordinal": 1417,
+          "name": "_isctype",
+          "iat": 53388
+        },
+        {
+          "ordinal": 1096,
+          "name": "_snwprintf",
+          "iat": 53392
+        },
+        {
+          "ordinal": 1044,
+          "name": "memcpy",
+          "iat": 53396
+        },
+        {
+          "ordinal": 65,
+          "name": "wcsncmp",
+          "iat": 53400
+        },
+        {
+          "ordinal": 75,
+          "name": "wcstombs",
+          "iat": 53404
+        },
+        {
+          "ordinal": 1876,
+          "name": "__report_gsfailure",
+          "iat": 53408
+        },
+        {
+          "ordinal": 1489,
+          "name": "KernelLibIoControl",
+          "iat": 53412
+        },
+        {
+          "ordinal": 494,
+          "name": "EventModify",
+          "iat": 53416
+        },
+        {
+          "ordinal": 2528,
+          "name": "__GetUserKData",
+          "iat": 53420
+        },
+        {
+          "ordinal": 168,
+          "name": "CreateFileW",
+          "iat": 53424
+        },
+        {
+          "ordinal": 553,
+          "name": "CloseHandle",
+          "iat": 53428
+        },
+        {
+          "ordinal": 170,
+          "name": "ReadFile",
+          "iat": 53432
+        },
+        {
+          "ordinal": 171,
+          "name": "WriteFile",
+          "iat": 53436
+        },
+        {
+          "ordinal": 57,
+          "name": "wvsprintfW",
+          "iat": 53440
+        },
+        {
+          "ordinal": 1671,
+          "name": "LoadKernelLibrary",
+          "iat": 53444
+        },
+        {
+          "ordinal": 1689,
+          "name": "StringCchCopyW",
+          "iat": 53448
+        },
+        {
+          "ordinal": 516,
+          "name": "GetLastError",
+          "iat": 53452
+        },
+        {
+          "ordinal": 529,
+          "name": "FreeLibrary",
+          "iat": 53456
+        },
+        {
+          "ordinal": 36,
+          "name": "LocalFree",
+          "iat": 53460
+        },
+        {
+          "ordinal": 33,
+          "name": "LocalAlloc",
+          "iat": 53464
+        },
+        {
+          "ordinal": 530,
+          "name": "GetProcAddressW",
+          "iat": 53468
+        },
+        {
+          "ordinal": 528,
+          "name": "LoadLibraryW",
+          "iat": 53472
+        },
+        {
+          "ordinal": 455,
+          "name": "RegCloseKey",
+          "iat": 53476
+        },
+        {
+          "ordinal": 459,
+          "name": "RegEnumValueW",
+          "iat": 53480
+        },
+        {
+          "ordinal": 462,
+          "name": "RegQueryInfoKeyW",
+          "iat": 53484
+        },
+        {
+          "ordinal": 461,
+          "name": "RegOpenKeyExW",
+          "iat": 53488
+        },
+        {
+          "ordinal": 1700,
+          "name": "StringCbPrintfW",
+          "iat": 53492
+        },
+        {
+          "ordinal": 23,
+          "name": "GetLocalTime",
+          "iat": 53496
+        },
+        {
+          "ordinal": 493,
+          "name": "CreateProcessW",
+          "iat": 53500
+        },
+        {
+          "ordinal": 1693,
+          "name": "StringCchCatW",
+          "iat": 53504
+        },
+        {
+          "ordinal": 517,
+          "name": "SetLastError",
+          "iat": 53508
+        },
+        {
+          "ordinal": 497,
+          "name": "WaitForSingleObject",
+          "iat": 53512
+        },
+        {
+          "ordinal": 506,
+          "name": "ReadProcessMemory",
+          "iat": 53516
+        },
+        {
+          "ordinal": 509,
+          "name": "OpenProcess",
+          "iat": 53520
+        },
+        {
+          "ordinal": 1690,
+          "name": "StringCbCopyW",
+          "iat": 53524
+        },
+        {
+          "ordinal": 1677,
+          "name": "QueryInstructionSet",
+          "iat": 53528
+        },
+        {
+          "ordinal": 542,
+          "name": "GetSystemInfo",
+          "iat": 53532
+        },
+        {
+          "ordinal": 717,
+          "name": "GetVersionExW",
+          "iat": 53536
+        },
+        {
+          "ordinal": 1186,
+          "name": "GetThreadTimes",
+          "iat": 53540
+        },
+        {
+          "ordinal": 2551,
+          "name": "OpenThread",
+          "iat": 53544
+        },
+        {
+          "ordinal": 618,
+          "name": "SetDbgZone",
+          "iat": 53548
+        },
+        {
+          "ordinal": 196,
+          "name": "MultiByteToWideChar",
+          "iat": 53552
+        },
+        {
+          "ordinal": 172,
+          "name": "GetFileSize",
+          "iat": 53556
+        },
+        {
+          "ordinal": 540,
+          "name": "ForcePageout",
+          "iat": 53560
+        },
+        {
+          "ordinal": 1496,
+          "name": "OpenEventW",
+          "iat": 53564
+        },
+        {
+          "ordinal": 1681,
+          "name": "CeLogGetZones",
+          "iat": 53568
+        },
+        {
+          "ordinal": 639,
+          "name": "SignalStarted",
+          "iat": 53572
+        }
+      ]
+    },
+    {
+      "module": "toolhelp.dll",
+      "symbols": [
+        {
+          "ordinal": null,
+          "name": "Heap32ListFirst",
+          "iat": 53580
+        },
+        {
+          "ordinal": null,
+          "name": "Heap32First",
+          "iat": 53584
+        },
+        {
+          "ordinal": null,
+          "name": "Heap32Next",
+          "iat": 53588
+        },
+        {
+          "ordinal": null,
+          "name": "Heap32ListNext",
+          "iat": 53592
+        },
+        {
+          "ordinal": null,
+          "name": "CreateToolhelp32Snapshot",
+          "iat": 53596
+        },
+        {
+          "ordinal": null,
+          "name": "Process32First",
+          "iat": 53600
+        },
+        {
+          "ordinal": null,
+          "name": "Thread32First",
+          "iat": 53604
+        },
+        {
+          "ordinal": null,
+          "name": "Thread32Next",
+          "iat": 53608
+        },
+        {
+          "ordinal": null,
+          "name": "Process32Next",
+          "iat": 53612
+        },
+        {
+          "ordinal": null,
+          "name": "CloseToolhelp32Snapshot",
+          "iat": 53616
+        },
+        {
+          "ordinal": null,
+          "name": "Module32First",
+          "iat": 53620
+        },
+        {
+          "ordinal": null,
+          "name": "Module32Next",
+          "iat": 53624
+        }
+      ]
+    }
+  ],
+  "exports": []
+}

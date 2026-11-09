@@ -1,9 +1,11 @@
 /* Optional SuperH boundary ABI experiment.
  *
  * GCC SH supports __attribute__((renesas)) for a FUNCTION or FUNCTION
- * POINTER type. This is NOT an MSVC ABI and should not be marketed as one
- * until compared with Microsoft Windows CE SH4 assembly (home slots,
- * overflow arguments, varargs, structs, returns, and FPU requirements).
+ * POINTER type. This is NOT an MSVC ABI and should not be marketed as one.
+ * Actual MSVC 12 / SHC 9.4.3 comparison confirms distinct conventions.
+ * GCC 15.2 renesas also differs from SHC on hidden/64-bit returns.
+ * See docs/SH4_ABI_COMPILER_COMPARISON.md for measured home slots,
+ * overflow arguments, varargs, structs, returns, and FPU requirements.
  *
  * Nothing changes in standard NTOS payloads unless the isolated
  * NTOS_SH_RENESAS_ABI_PROBE build flag is set.

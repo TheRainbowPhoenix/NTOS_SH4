@@ -1,0 +1,2052 @@
+{
+  "module": "commctrl.dll",
+  "sha256": "e1d67785367661ef9cd966a31b000ea688c5d6be1c81355e8848bd615cda3bc3",
+  "machine": 422,
+  "base": 1074462720,
+  "entry": 321060,
+  "image_size": 356352,
+  "imports": [
+    {
+      "module": "COREDLL.dll",
+      "symbols": [
+        {
+          "ordinal": 896,
+          "name": "ExtTextOutW",
+          "iat": 331776
+        },
+        {
+          "ordinal": 922,
+          "name": "SetBkColor",
+          "iat": 331780
+        },
+        {
+          "ordinal": 36,
+          "name": "LocalFree",
+          "iat": 331784
+        },
+        {
+          "ordinal": 897,
+          "name": "GetTextExtentExPointW",
+          "iat": 331788
+        },
+        {
+          "ordinal": 945,
+          "name": "DrawTextW",
+          "iat": 331792
+        },
+        {
+          "ordinal": 33,
+          "name": "LocalAlloc",
+          "iat": 331796
+        },
+        {
+          "ordinal": 103,
+          "name": "SetRect",
+          "iat": 331800
+        },
+        {
+          "ordinal": 924,
+          "name": "SetTextColor",
+          "iat": 331804
+        },
+        {
+          "ordinal": 923,
+          "name": "SetBkMode",
+          "iat": 331808
+        },
+        {
+          "ordinal": 750,
+          "name": "ImageList_DrawIndirect",
+          "iat": 331812
+        },
+        {
+          "ordinal": 938,
+          "name": "PatBlt",
+          "iat": 331816
+        },
+        {
+          "ordinal": 912,
+          "name": "DeleteObject",
+          "iat": 331820
+        },
+        {
+          "ordinal": 901,
+          "name": "CreateBitmap",
+          "iat": 331824
+        },
+        {
+          "ordinal": 918,
+          "name": "GetObjectW",
+          "iat": 331828
+        },
+        {
+          "ordinal": 763,
+          "name": "ImageList_SetBkColor",
+          "iat": 331832
+        },
+        {
+          "ordinal": 921,
+          "name": "SelectObject",
+          "iat": 331836
+        },
+        {
+          "ordinal": 910,
+          "name": "CreateCompatibleDC",
+          "iat": 331840
+        },
+        {
+          "ordinal": 911,
+          "name": "DeleteDC",
+          "iat": 331844
+        },
+        {
+          "ordinal": 264,
+          "name": "DefWindowProcW",
+          "iat": 331848
+        },
+        {
+          "ordinal": 35,
+          "name": "LocalSize",
+          "iat": 331852
+        },
+        {
+          "ordinal": 739,
+          "name": "ImageList_AddMasked",
+          "iat": 331856
+        },
+        {
+          "ordinal": 873,
+          "name": "LoadBitmapW",
+          "iat": 331860
+        },
+        {
+          "ordinal": 742,
+          "name": "ImageList_Create",
+          "iat": 331864
+        },
+        {
+          "ordinal": 743,
+          "name": "ImageList_Destroy",
+          "iat": 331868
+        },
+        {
+          "ordinal": 756,
+          "name": "ImageList_GetImageCount",
+          "iat": 331872
+        },
+        {
+          "ordinal": 517,
+          "name": "SetLastError",
+          "iat": 331876
+        },
+        {
+          "ordinal": 258,
+          "name": "SetWindowLongW",
+          "iat": 331880
+        },
+        {
+          "ordinal": 265,
+          "name": "DestroyWindow",
+          "iat": 331884
+        },
+        {
+          "ordinal": 271,
+          "name": "IsWindow",
+          "iat": 331888
+        },
+        {
+          "ordinal": 868,
+          "name": "SendMessageW",
+          "iat": 331892
+        },
+        {
+          "ordinal": 263,
+          "name": "ReleaseDC",
+          "iat": 331896
+        },
+        {
+          "ordinal": 262,
+          "name": "GetDC",
+          "iat": 331900
+        },
+        {
+          "ordinal": 250,
+          "name": "InvalidateRect",
+          "iat": 331904
+        },
+        {
+          "ordinal": 249,
+          "name": "GetClientRect",
+          "iat": 331908
+        },
+        {
+          "ordinal": 284,
+          "name": "MapWindowPoints",
+          "iat": 331912
+        },
+        {
+          "ordinal": 248,
+          "name": "GetWindowRect",
+          "iat": 331916
+        },
+        {
+          "ordinal": 269,
+          "name": "GetParent",
+          "iat": 331920
+        },
+        {
+          "ordinal": 864,
+          "name": "PeekMessageW",
+          "iat": 331924
+        },
+        {
+          "ordinal": 267,
+          "name": "UpdateWindow",
+          "iat": 331928
+        },
+        {
+          "ordinal": 903,
+          "name": "BitBlt",
+          "iat": 331932
+        },
+        {
+          "ordinal": 919,
+          "name": "GetStockObject",
+          "iat": 331936
+        },
+        {
+          "ordinal": 1890,
+          "name": "SetLayout",
+          "iat": 331940
+        },
+        {
+          "ordinal": 1891,
+          "name": "GetLayout",
+          "iat": 331944
+        },
+        {
+          "ordinal": 261,
+          "name": "EndPaint",
+          "iat": 331948
+        },
+        {
+          "ordinal": 932,
+          "name": "DrawEdge",
+          "iat": 331952
+        },
+        {
+          "ordinal": 98,
+          "name": "InflateRect",
+          "iat": 331956
+        },
+        {
+          "ordinal": 260,
+          "name": "BeginPaint",
+          "iat": 331960
+        },
+        {
+          "ordinal": 898,
+          "name": "GetTextMetricsW",
+          "iat": 331964
+        },
+        {
+          "ordinal": 895,
+          "name": "CreateFontIndirectW",
+          "iat": 331968
+        },
+        {
+          "ordinal": 34,
+          "name": "LocalReAlloc",
+          "iat": 331972
+        },
+        {
+          "ordinal": 874,
+          "name": "LoadStringW",
+          "iat": 331976
+        },
+        {
+          "ordinal": 916,
+          "name": "GetDeviceCaps",
+          "iat": 331980
+        },
+        {
+          "ordinal": 755,
+          "name": "ImageList_GetIconSize",
+          "iat": 331984
+        },
+        {
+          "ordinal": 247,
+          "name": "SetWindowPos",
+          "iat": 331988
+        },
+        {
+          "ordinal": 865,
+          "name": "PostMessageW",
+          "iat": 331992
+        },
+        {
+          "ordinal": 709,
+          "name": "ReleaseCapture",
+          "iat": 331996
+        },
+        {
+          "ordinal": 255,
+          "name": "ScreenToClient",
+          "iat": 332000
+        },
+        {
+          "ordinal": 859,
+          "name": "DispatchMessageW",
+          "iat": 332004
+        },
+        {
+          "ordinal": 870,
+          "name": "TranslateMessage",
+          "iat": 332008
+        },
+        {
+          "ordinal": 857,
+          "name": "MessageBeep",
+          "iat": 332012
+        },
+        {
+          "ordinal": 708,
+          "name": "SetCapture",
+          "iat": 332016
+        },
+        {
+          "ordinal": 102,
+          "name": "PtInRect",
+          "iat": 332020
+        },
+        {
+          "ordinal": 707,
+          "name": "GetCapture",
+          "iat": 332024
+        },
+        {
+          "ordinal": 246,
+          "name": "CreateWindowExW",
+          "iat": 332028
+        },
+        {
+          "ordinal": 770,
+          "name": "ImmAssociateContext",
+          "iat": 332032
+        },
+        {
+          "ordinal": 259,
+          "name": "GetWindowLongW",
+          "iat": 332036
+        },
+        {
+          "ordinal": 95,
+          "name": "RegisterClassW",
+          "iat": 332040
+        },
+        {
+          "ordinal": 683,
+          "name": "LoadCursorW",
+          "iat": 332044
+        },
+        {
+          "ordinal": 878,
+          "name": "GetClassInfoW",
+          "iat": 332048
+        },
+        {
+          "ordinal": 1852,
+          "name": "DSA_Create",
+          "iat": 332052
+        },
+        {
+          "ordinal": 1856,
+          "name": "DSA_Destroy",
+          "iat": 332056
+        },
+        {
+          "ordinal": 1858,
+          "name": "DSA_EnumCallback",
+          "iat": 332060
+        },
+        {
+          "ordinal": 1857,
+          "name": "DSA_DestroyCallback",
+          "iat": 332064
+        },
+        {
+          "ordinal": 1859,
+          "name": "DSA_GetItem",
+          "iat": 332068
+        },
+        {
+          "ordinal": 1860,
+          "name": "DSA_GetItemPtr",
+          "iat": 332072
+        },
+        {
+          "ordinal": 1864,
+          "name": "DSA_SetItem",
+          "iat": 332076
+        },
+        {
+          "ordinal": 1865,
+          "name": null,
+          "iat": 332080
+        },
+        {
+          "ordinal": 1862,
+          "name": "DSA_InsertItem",
+          "iat": 332084
+        },
+        {
+          "ordinal": 1855,
+          "name": "DSA_DeleteItem",
+          "iat": 332088
+        },
+        {
+          "ordinal": 1863,
+          "name": "DSA_Search",
+          "iat": 332092
+        },
+        {
+          "ordinal": 1853,
+          "name": "DSA_Clone",
+          "iat": 332096
+        },
+        {
+          "ordinal": 1854,
+          "name": "DSA_DeleteAllItems",
+          "iat": 332100
+        },
+        {
+          "ordinal": 1866,
+          "name": null,
+          "iat": 332104
+        },
+        {
+          "ordinal": 1837,
+          "name": "DPA_Create",
+          "iat": 332108
+        },
+        {
+          "ordinal": 1842,
+          "name": "DPA_Destroy",
+          "iat": 332112
+        },
+        {
+          "ordinal": 1845,
+          "name": "DPA_GetPtr",
+          "iat": 332116
+        },
+        {
+          "ordinal": 1846,
+          "name": null,
+          "iat": 332120
+        },
+        {
+          "ordinal": 1847,
+          "name": "DPA_Grow",
+          "iat": 332124
+        },
+        {
+          "ordinal": 1850,
+          "name": "DPA_SetPtr",
+          "iat": 332128
+        },
+        {
+          "ordinal": 1848,
+          "name": "DPA_InsertPtr",
+          "iat": 332132
+        },
+        {
+          "ordinal": 1841,
+          "name": null,
+          "iat": 332136
+        },
+        {
+          "ordinal": 1840,
+          "name": null,
+          "iat": 332140
+        },
+        {
+          "ordinal": 1843,
+          "name": "DPA_DestroyCallback",
+          "iat": 332144
+        },
+        {
+          "ordinal": 1851,
+          "name": "DPA_Sort",
+          "iat": 332148
+        },
+        {
+          "ordinal": 1849,
+          "name": null,
+          "iat": 332152
+        },
+        {
+          "ordinal": 726,
+          "name": "DrawIconEx",
+          "iat": 332156
+        },
+        {
+          "ordinal": 931,
+          "name": "CreateSolidBrush",
+          "iat": 332160
+        },
+        {
+          "ordinal": 952,
+          "name": "GetNearestColor",
+          "iat": 332164
+        },
+        {
+          "ordinal": 1654,
+          "name": "SetTextAlign",
+          "iat": 332168
+        },
+        {
+          "ordinal": 1655,
+          "name": "GetTextAlign",
+          "iat": 332172
+        },
+        {
+          "ordinal": 987,
+          "name": "DrawFrameControl",
+          "iat": 332176
+        },
+        {
+          "ordinal": 907,
+          "name": "RestoreDC",
+          "iat": 332180
+        },
+        {
+          "ordinal": 975,
+          "name": "IntersectClipRect",
+          "iat": 332184
+        },
+        {
+          "ordinal": 908,
+          "name": "SaveDC",
+          "iat": 332188
+        },
+        {
+          "ordinal": 693,
+          "name": "GetDlgCtrlID",
+          "iat": 332192
+        },
+        {
+          "ordinal": 1672,
+          "name": "RedrawWindow",
+          "iat": 332196
+        },
+        {
+          "ordinal": 1689,
+          "name": "StringCchCopyW",
+          "iat": 332200
+        },
+        {
+          "ordinal": 682,
+          "name": "SetCursor",
+          "iat": 332204
+        },
+        {
+          "ordinal": 732,
+          "name": "GetClipCursor",
+          "iat": 332208
+        },
+        {
+          "ordinal": 876,
+          "name": "KillTimer",
+          "iat": 332212
+        },
+        {
+          "ordinal": 254,
+          "name": "ClientToScreen",
+          "iat": 332216
+        },
+        {
+          "ordinal": 101,
+          "name": "OffsetRect",
+          "iat": 332220
+        },
+        {
+          "ordinal": 100,
+          "name": "IsRectEmpty",
+          "iat": 332224
+        },
+        {
+          "ordinal": 104,
+          "name": "SetRectEmpty",
+          "iat": 332228
+        },
+        {
+          "ordinal": 979,
+          "name": "SelectClipRgn",
+          "iat": 332232
+        },
+        {
+          "ordinal": 968,
+          "name": "CombineRgn",
+          "iat": 332236
+        },
+        {
+          "ordinal": 980,
+          "name": "CreateRectRgn",
+          "iat": 332240
+        },
+        {
+          "ordinal": 969,
+          "name": "CreateRectRgnIndirect",
+          "iat": 332244
+        },
+        {
+          "ordinal": 913,
+          "name": "GetBkColor",
+          "iat": 332248
+        },
+        {
+          "ordinal": 920,
+          "name": "GetTextColor",
+          "iat": 332252
+        },
+        {
+          "ordinal": 741,
+          "name": "ImageList_CopyDitherImage",
+          "iat": 332256
+        },
+        {
+          "ordinal": 738,
+          "name": "ImageList_Add",
+          "iat": 332260
+        },
+        {
+          "ordinal": 826,
+          "name": "GetAsyncKeyState",
+          "iat": 332264
+        },
+        {
+          "ordinal": 875,
+          "name": "SetTimer",
+          "iat": 332268
+        },
+        {
+          "ordinal": 744,
+          "name": "ImageList_DragEnter",
+          "iat": 332272
+        },
+        {
+          "ordinal": 740,
+          "name": "ImageList_BeginDrag",
+          "iat": 332276
+        },
+        {
+          "ordinal": 289,
+          "name": "ScrollWindowEx",
+          "iat": 332280
+        },
+        {
+          "ordinal": 889,
+          "name": "GetSysColor",
+          "iat": 332284
+        },
+        {
+          "ordinal": 747,
+          "name": "ImageList_DragShowNolock",
+          "iat": 332288
+        },
+        {
+          "ordinal": 746,
+          "name": "ImageList_DragMove",
+          "iat": 332292
+        },
+        {
+          "ordinal": 751,
+          "name": "ImageList_EndDrag",
+          "iat": 332296
+        },
+        {
+          "ordinal": 228,
+          "name": "lstrcmpiW",
+          "iat": 332300
+        },
+        {
+          "ordinal": 1839,
+          "name": null,
+          "iat": 332304
+        },
+        {
+          "ordinal": 97,
+          "name": "EqualRect",
+          "iat": 332308
+        },
+        {
+          "ordinal": 96,
+          "name": "CopyRect",
+          "iat": 332312
+        },
+        {
+          "ordinal": 704,
+          "name": "SetFocus",
+          "iat": 332316
+        },
+        {
+          "ordinal": 943,
+          "name": "SetBrushOrgEx",
+          "iat": 332320
+        },
+        {
+          "ordinal": 902,
+          "name": "CreateCompatibleBitmap",
+          "iat": 332324
+        },
+        {
+          "ordinal": 983,
+          "name": "SetViewportOrgEx",
+          "iat": 332328
+        },
+        {
+          "ordinal": 970,
+          "name": "ExcludeClipRect",
+          "iat": 332332
+        },
+        {
+          "ordinal": 935,
+          "name": "FillRect",
+          "iat": 332336
+        },
+        {
+          "ordinal": 971,
+          "name": "GetClipBox",
+          "iat": 332340
+        },
+        {
+          "ordinal": 972,
+          "name": "GetClipRgn",
+          "iat": 332344
+        },
+        {
+          "ordinal": 886,
+          "name": "IsWindowVisible",
+          "iat": 332348
+        },
+        {
+          "ordinal": 282,
+          "name": "GetScrollInfo",
+          "iat": 332352
+        },
+        {
+          "ordinal": 885,
+          "name": "GetSystemMetrics",
+          "iat": 332356
+        },
+        {
+          "ordinal": 933,
+          "name": "DrawFocusRect",
+          "iat": 332360
+        },
+        {
+          "ordinal": 99,
+          "name": "IntersectRect",
+          "iat": 332364
+        },
+        {
+          "ordinal": 455,
+          "name": "RegCloseKey",
+          "iat": 332368
+        },
+        {
+          "ordinal": 463,
+          "name": "RegQueryValueExW",
+          "iat": 332372
+        },
+        {
+          "ordinal": 461,
+          "name": "RegOpenKeyExW",
+          "iat": 332376
+        },
+        {
+          "ordinal": 888,
+          "name": "GetDoubleClickTime",
+          "iat": 332380
+        },
+        {
+          "ordinal": 925,
+          "name": "CreatePatternBrush",
+          "iat": 332384
+        },
+        {
+          "ordinal": 49,
+          "name": "HeapFree",
+          "iat": 332388
+        },
+        {
+          "ordinal": 1844,
+          "name": "DPA_EnumCallback",
+          "iat": 332392
+        },
+        {
+          "ordinal": 106,
+          "name": "UnionRect",
+          "iat": 332396
+        },
+        {
+          "ordinal": 937,
+          "name": "GetSysColorBrush",
+          "iat": 332400
+        },
+        {
+          "ordinal": 1838,
+          "name": null,
+          "iat": 332404
+        },
+        {
+          "ordinal": 752,
+          "name": "ImageList_GetBkColor",
+          "iat": 332408
+        },
+        {
+          "ordinal": 266,
+          "name": "ShowWindow",
+          "iat": 332412
+        },
+        {
+          "ordinal": 279,
+          "name": "SetScrollInfo",
+          "iat": 332416
+        },
+        {
+          "ordinal": 227,
+          "name": "lstrcmpW",
+          "iat": 332420
+        },
+        {
+          "ordinal": 46,
+          "name": "HeapAlloc",
+          "iat": 332424
+        },
+        {
+          "ordinal": 273,
+          "name": "GetUpdateRgn",
+          "iat": 332428
+        },
+        {
+          "ordinal": 274,
+          "name": "GetUpdateRect",
+          "iat": 332432
+        },
+        {
+          "ordinal": 860,
+          "name": "GetKeyState",
+          "iat": 332436
+        },
+        {
+          "ordinal": 535,
+          "name": "GetTickCount",
+          "iat": 332440
+        },
+        {
+          "ordinal": 705,
+          "name": "GetFocus",
+          "iat": 332444
+        },
+        {
+          "ordinal": 50,
+          "name": "GetProcessHeap",
+          "iat": 332448
+        },
+        {
+          "ordinal": 257,
+          "name": "GetWindowTextW",
+          "iat": 332452
+        },
+        {
+          "ordinal": 285,
+          "name": "CallWindowProcW",
+          "iat": 332456
+        },
+        {
+          "ordinal": 536,
+          "name": "GetProcessVersion",
+          "iat": 332460
+        },
+        {
+          "ordinal": 929,
+          "name": "CreateDIBPatternBrushPt",
+          "iat": 332464
+        },
+        {
+          "ordinal": 89,
+          "name": "SystemParametersInfoW",
+          "iat": 332468
+        },
+        {
+          "ordinal": 701,
+          "name": "GetForegroundWindow",
+          "iat": 332472
+        },
+        {
+          "ordinal": 283,
+          "name": "GetClassNameW",
+          "iat": 332476
+        },
+        {
+          "ordinal": 272,
+          "name": "MoveWindow",
+          "iat": 332480
+        },
+        {
+          "ordinal": 268,
+          "name": "SetParent",
+          "iat": 332484
+        },
+        {
+          "ordinal": 856,
+          "name": "DrawMenuBar",
+          "iat": 332488
+        },
+        {
+          "ordinal": 299,
+          "name": "SetAssociatedMenu",
+          "iat": 332492
+        },
+        {
+          "ordinal": 11,
+          "name": "InterlockedDecrement",
+          "iat": 332496
+        },
+        {
+          "ordinal": 688,
+          "name": "CreateDialogIndirectParamW",
+          "iat": 332500
+        },
+        {
+          "ordinal": 699,
+          "name": "MapDialogRect",
+          "iat": 332504
+        },
+        {
+          "ordinal": 534,
+          "name": "SizeofResource",
+          "iat": 332508
+        },
+        {
+          "ordinal": 533,
+          "name": "LoadResource",
+          "iat": 332512
+        },
+        {
+          "ordinal": 532,
+          "name": "FindResourceW",
+          "iat": 332516
+        },
+        {
+          "ordinal": 730,
+          "name": "LoadImageW",
+          "iat": 332520
+        },
+        {
+          "ordinal": 288,
+          "name": "IsWindowEnabled",
+          "iat": 332524
+        },
+        {
+          "ordinal": 200,
+          "name": "GetLocaleInfoW",
+          "iat": 332528
+        },
+        {
+          "ordinal": 256,
+          "name": "SetWindowTextW",
+          "iat": 332532
+        },
+        {
+          "ordinal": 204,
+          "name": "GetNumberFormatW",
+          "iat": 332536
+        },
+        {
+          "ordinal": 1699,
+          "name": "StringCchPrintfW",
+          "iat": 332540
+        },
+        {
+          "ordinal": 276,
+          "name": "GetWindowTextLengthW",
+          "iat": 332544
+        },
+        {
+          "ordinal": 251,
+          "name": "GetWindow",
+          "iat": 332548
+        },
+        {
+          "ordinal": 3,
+          "name": "DeleteCriticalSection",
+          "iat": 332552
+        },
+        {
+          "ordinal": 529,
+          "name": "FreeLibrary",
+          "iat": 332556
+        },
+        {
+          "ordinal": 553,
+          "name": "CloseHandle",
+          "iat": 332560
+        },
+        {
+          "ordinal": 550,
+          "name": "UnmapViewOfFile",
+          "iat": 332564
+        },
+        {
+          "ordinal": 884,
+          "name": "UnregisterClassW",
+          "iat": 332568
+        },
+        {
+          "ordinal": 530,
+          "name": "GetProcAddressW",
+          "iat": 332572
+        },
+        {
+          "ordinal": 4,
+          "name": "EnterCriticalSection",
+          "iat": 332576
+        },
+        {
+          "ordinal": 5,
+          "name": "LeaveCriticalSection",
+          "iat": 332580
+        },
+        {
+          "ordinal": 2,
+          "name": "InitializeCriticalSection",
+          "iat": 332584
+        },
+        {
+          "ordinal": 199,
+          "name": "LCMapStringW",
+          "iat": 332588
+        },
+        {
+          "ordinal": 203,
+          "name": "GetDateFormatW",
+          "iat": 332592
+        },
+        {
+          "ordinal": 206,
+          "name": "EnumCalendarInfoW",
+          "iat": 332596
+        },
+        {
+          "ordinal": 217,
+          "name": "GetStringTypeExW",
+          "iat": 332600
+        },
+        {
+          "ordinal": 215,
+          "name": "GetUserDefaultLCID",
+          "iat": 332604
+        },
+        {
+          "ordinal": 941,
+          "name": "Rectangle",
+          "iat": 332608
+        },
+        {
+          "ordinal": 226,
+          "name": "CharNextW",
+          "iat": 332612
+        },
+        {
+          "ordinal": 844,
+          "name": "DestroyMenu",
+          "iat": 332616
+        },
+        {
+          "ordinal": 23,
+          "name": "GetLocalTime",
+          "iat": 332620
+        },
+        {
+          "ordinal": 19,
+          "name": "SystemTimeToFileTime",
+          "iat": 332624
+        },
+        {
+          "ordinal": 202,
+          "name": "GetTimeFormatW",
+          "iat": 332628
+        },
+        {
+          "ordinal": 930,
+          "name": "CreatePenIndirect",
+          "iat": 332632
+        },
+        {
+          "ordinal": 861,
+          "name": "GetMessageW",
+          "iat": 332636
+        },
+        {
+          "ordinal": 804,
+          "name": "ImmSIPanelState",
+          "iat": 332640
+        },
+        {
+          "ordinal": 287,
+          "name": "EnableWindow",
+          "iat": 332644
+        },
+        {
+          "ordinal": 845,
+          "name": "TrackPopupMenuEx",
+          "iat": 332648
+        },
+        {
+          "ordinal": 849,
+          "name": "CheckMenuRadioItem",
+          "iat": 332652
+        },
+        {
+          "ordinal": 842,
+          "name": "AppendMenuW",
+          "iat": 332656
+        },
+        {
+          "ordinal": 852,
+          "name": "CreatePopupMenu",
+          "iat": 332660
+        },
+        {
+          "ordinal": 887,
+          "name": "AdjustWindowRectEx",
+          "iat": 332664
+        },
+        {
+          "ordinal": 277,
+          "name": "IsChild",
+          "iat": 332668
+        },
+        {
+          "ordinal": 211,
+          "name": "GetSystemDefaultLangID",
+          "iat": 332672
+        },
+        {
+          "ordinal": 862,
+          "name": "GetMessagePos",
+          "iat": 332676
+        },
+        {
+          "ordinal": 1525,
+          "name": "GetMonitorInfo",
+          "iat": 332680
+        },
+        {
+          "ordinal": 1522,
+          "name": "MonitorFromPoint",
+          "iat": 332684
+        },
+        {
+          "ordinal": 286,
+          "name": "FindWindowW",
+          "iat": 332688
+        },
+        {
+          "ordinal": 252,
+          "name": "WindowFromPoint",
+          "iat": 332692
+        },
+        {
+          "ordinal": 1877,
+          "name": "MulDiv",
+          "iat": 332696
+        },
+        {
+          "ordinal": 1701,
+          "name": "StringCchPrintfExW",
+          "iat": 332700
+        },
+        {
+          "ordinal": 692,
+          "name": "GetDlgItem",
+          "iat": 332704
+        },
+        {
+          "ordinal": 528,
+          "name": "LoadLibraryW",
+          "iat": 332708
+        },
+        {
+          "ordinal": 2706,
+          "name": "SetWindowPosOnRotate",
+          "iat": 332712
+        },
+        {
+          "ordinal": 685,
+          "name": "SendDlgItemMessageW",
+          "iat": 332716
+        },
+        {
+          "ordinal": 696,
+          "name": "GetNextDlgTabItem",
+          "iat": 332720
+        },
+        {
+          "ordinal": 686,
+          "name": "SetDlgItemTextW",
+          "iat": 332724
+        },
+        {
+          "ordinal": 725,
+          "name": "DestroyIcon",
+          "iat": 332728
+        },
+        {
+          "ordinal": 762,
+          "name": "ImageList_ReplaceIcon",
+          "iat": 332732
+        },
+        {
+          "ordinal": 698,
+          "name": "IsDialogMessageW",
+          "iat": 332736
+        },
+        {
+          "ordinal": 702,
+          "name": "SetForegroundWindow",
+          "iat": 332740
+        },
+        {
+          "ordinal": 2924,
+          "name": "CloseGestureInfoHandle",
+          "iat": 332744
+        },
+        {
+          "ordinal": 866,
+          "name": "PostQuitMessage",
+          "iat": 332748
+        },
+        {
+          "ordinal": 497,
+          "name": "WaitForSingleObject",
+          "iat": 332752
+        },
+        {
+          "ordinal": 555,
+          "name": "CreateMutexW",
+          "iat": 332756
+        },
+        {
+          "ordinal": 556,
+          "name": "ReleaseMutex",
+          "iat": 332760
+        },
+        {
+          "ordinal": 549,
+          "name": "MapViewOfFile",
+          "iat": 332764
+        },
+        {
+          "ordinal": 516,
+          "name": "GetLastError",
+          "iat": 332768
+        },
+        {
+          "ordinal": 548,
+          "name": "CreateFileMappingW",
+          "iat": 332772
+        },
+        {
+          "ordinal": 890,
+          "name": "SetSysColors",
+          "iat": 332776
+        },
+        {
+          "ordinal": 464,
+          "name": "RegSetValueExW",
+          "iat": 332780
+        },
+        {
+          "ordinal": 456,
+          "name": "RegCreateKeyExW",
+          "iat": 332784
+        },
+        {
+          "ordinal": 869,
+          "name": "SendNotifyMessageW",
+          "iat": 332788
+        },
+        {
+          "ordinal": 1763,
+          "name": "GradientFill",
+          "iat": 332792
+        },
+        {
+          "ordinal": 606,
+          "name": "GetOwnerProcess",
+          "iat": 332796
+        },
+        {
+          "ordinal": 760,
+          "name": "ImageList_Remove",
+          "iat": 332800
+        },
+        {
+          "ordinal": 2925,
+          "name": "GetGestureInfo",
+          "iat": 332804
+        },
+        {
+          "ordinal": 871,
+          "name": "MsgWaitForMultipleObjectsEx",
+          "iat": 332808
+        },
+        {
+          "ordinal": 926,
+          "name": "CreatePen",
+          "iat": 332812
+        },
+        {
+          "ordinal": 803,
+          "name": "ImmReleaseContext",
+          "iat": 332816
+        },
+        {
+          "ordinal": 781,
+          "name": "ImmGetCompositionStringW",
+          "iat": 332820
+        },
+        {
+          "ordinal": 792,
+          "name": "ImmGetOpenStatus",
+          "iat": 332824
+        },
+        {
+          "ordinal": 783,
+          "name": "ImmGetContext",
+          "iat": 332828
+        },
+        {
+          "ordinal": 800,
+          "name": "ImmNotifyIME",
+          "iat": 332832
+        },
+        {
+          "ordinal": 905,
+          "name": "StretchBlt",
+          "iat": 332836
+        },
+        {
+          "ordinal": 723,
+          "name": "CreateIconIndirect",
+          "iat": 332840
+        },
+        {
+          "ordinal": 915,
+          "name": "GetCurrentObject",
+          "iat": 332844
+        },
+        {
+          "ordinal": 940,
+          "name": "Polyline",
+          "iat": 332848
+        },
+        {
+          "ordinal": 281,
+          "name": "SetScrollRange",
+          "iat": 332852
+        },
+        {
+          "ordinal": 914,
+          "name": "GetBkMode",
+          "iat": 332856
+        },
+        {
+          "ordinal": 748,
+          "name": "ImageList_Draw",
+          "iat": 332860
+        },
+        {
+          "ordinal": 749,
+          "name": "ImageList_DrawEx",
+          "iat": 332864
+        },
+        {
+          "ordinal": 1691,
+          "name": "StringCchCopyExW",
+          "iat": 332868
+        },
+        {
+          "ordinal": 661,
+          "name": "ShowCaret",
+          "iat": 332872
+        },
+        {
+          "ordinal": 660,
+          "name": "HideCaret",
+          "iat": 332876
+        },
+        {
+          "ordinal": 280,
+          "name": "SetScrollPos",
+          "iat": 332880
+        },
+        {
+          "ordinal": 2528,
+          "name": "__GetUserKData",
+          "iat": 332884
+        },
+        {
+          "ordinal": 1498,
+          "name": "GetProp",
+          "iat": 332888
+        },
+        {
+          "ordinal": 1519,
+          "name": "GlobalAddAtomW",
+          "iat": 332892
+        },
+        {
+          "ordinal": 292,
+          "name": "GetWindowThreadProcessId",
+          "iat": 332896
+        },
+        {
+          "ordinal": 1497,
+          "name": "SetProp",
+          "iat": 332900
+        },
+        {
+          "ordinal": 1499,
+          "name": "RemoveProp",
+          "iat": 332904
+        },
+        {
+          "ordinal": 2870,
+          "name": "SetWindowAutoGesture",
+          "iat": 332908
+        },
+        {
+          "ordinal": 2869,
+          "name": "GetWindowAutoGesture",
+          "iat": 332912
+        },
+        {
+          "ordinal": 2871,
+          "name": "GetAnimateMessageInfo",
+          "iat": 332916
+        },
+        {
+          "ordinal": 224,
+          "name": "CharUpperW",
+          "iat": 332920
+        },
+        {
+          "ordinal": 197,
+          "name": "WideCharToMultiByte",
+          "iat": 332924
+        },
+        {
+          "ordinal": 213,
+          "name": "GetSystemDefaultLCID",
+          "iat": 332928
+        },
+        {
+          "ordinal": 669,
+          "name": "CloseClipboard",
+          "iat": 332932
+        },
+        {
+          "ordinal": 672,
+          "name": "GetClipboardData",
+          "iat": 332936
+        },
+        {
+          "ordinal": 668,
+          "name": "OpenClipboard",
+          "iat": 332940
+        },
+        {
+          "ordinal": 939,
+          "name": "Polygon",
+          "iat": 332944
+        },
+        {
+          "ordinal": 487,
+          "name": "SHLoadDIBitmap",
+          "iat": 332948
+        },
+        {
+          "ordinal": 61,
+          "name": "wcscpy",
+          "iat": 332952
+        },
+        {
+          "ordinal": 63,
+          "name": "wcslen",
+          "iat": 332956
+        },
+        {
+          "ordinal": 2001,
+          "name": "_divls",
+          "iat": 332960
+        },
+        {
+          "ordinal": 1047,
+          "name": "memset",
+          "iat": 332964
+        },
+        {
+          "ordinal": 66,
+          "name": "wcsncpy",
+          "iat": 332968
+        },
+        {
+          "ordinal": 1046,
+          "name": "memmove",
+          "iat": 332972
+        },
+        {
+          "ordinal": 1044,
+          "name": "memcpy",
+          "iat": 332976
+        },
+        {
+          "ordinal": 1094,
+          "name": "??3@YAXPAX@Z",
+          "iat": 332980
+        },
+        {
+          "ordinal": 1095,
+          "name": "??2@YAPAXI@Z",
+          "iat": 332984
+        },
+        {
+          "ordinal": 2005,
+          "name": "_modls",
+          "iat": 332988
+        },
+        {
+          "ordinal": 229,
+          "name": "_wcsnicmp",
+          "iat": 332992
+        },
+        {
+          "ordinal": 65,
+          "name": "wcsncmp",
+          "iat": 332996
+        },
+        {
+          "ordinal": 2002,
+          "name": "_divlu",
+          "iat": 333000
+        },
+        {
+          "ordinal": 60,
+          "name": "wcscmp",
+          "iat": 333004
+        },
+        {
+          "ordinal": 230,
+          "name": "_wcsicmp",
+          "iat": 333008
+        },
+        {
+          "ordinal": 59,
+          "name": "wcschr",
+          "iat": 333012
+        },
+        {
+          "ordinal": 78,
+          "name": "_wtol",
+          "iat": 333016
+        },
+        {
+          "ordinal": 2006,
+          "name": "_modlu",
+          "iat": 333020
+        },
+        {
+          "ordinal": 87,
+          "name": "__C_specific_handler",
+          "iat": 333024
+        },
+        {
+          "ordinal": 193,
+          "name": "iswctype",
+          "iat": 333028
+        },
+        {
+          "ordinal": 2696,
+          "name": "__security_gen_cookie2",
+          "iat": 333032
+        },
+        {
+          "ordinal": 1876,
+          "name": "__report_gsfailure",
+          "iat": 333036
+        },
+        {
+          "ordinal": 1018,
+          "name": "free",
+          "iat": 333040
+        },
+        {
+          "ordinal": 1041,
+          "name": "malloc",
+          "iat": 333044
+        },
+        {
+          "ordinal": 1054,
+          "name": "realloc",
+          "iat": 333048
+        },
+        {
+          "ordinal": 1049,
+          "name": "_msize",
+          "iat": 333052
+        },
+        {
+          "ordinal": 12,
+          "name": "InterlockedExchange",
+          "iat": 333056
+        },
+        {
+          "ordinal": 544,
+          "name": "TerminateProcess",
+          "iat": 333060
+        },
+        {
+          "ordinal": 1492,
+          "name": "InterlockedCompareExchange",
+          "iat": 333064
+        }
+      ]
+    }
+  ],
+  "exports": [
+    {
+      "ordinal": 35,
+      "name": "CenterWindow",
+      "rva": 110548
+    },
+    {
+      "ordinal": 39,
+      "name": "CommandBands_AddAdornments",
+      "rva": 112588
+    },
+    {
+      "ordinal": 37,
+      "name": "CommandBands_AddBands",
+      "rva": 115584
+    },
+    {
+      "ordinal": 36,
+      "name": "CommandBands_Create",
+      "rva": 111960
+    },
+    {
+      "ordinal": 38,
+      "name": "CommandBands_GetCommandBar",
+      "rva": 112532
+    },
+    {
+      "ordinal": 41,
+      "name": "CommandBands_GetRestoreInformation",
+      "rva": 113484
+    },
+    {
+      "ordinal": 40,
+      "name": "CommandBands_Show",
+      "rva": 115768
+    },
+    {
+      "ordinal": 10,
+      "name": "CommandBar_AddAdornments",
+      "rva": 115188
+    },
+    {
+      "ordinal": 5,
+      "name": "CommandBar_AddBitmap",
+      "rva": 111228
+    },
+    {
+      "ordinal": 44,
+      "name": "CommandBar_AlignAdornments",
+      "rva": 111284
+    },
+    {
+      "ordinal": 3,
+      "name": "CommandBar_Create",
+      "rva": 111104
+    },
+    {
+      "ordinal": 43,
+      "name": "CommandBar_DrawMenuBar",
+      "rva": 114720
+    },
+    {
+      "ordinal": 11,
+      "name": "CommandBar_GetItemWindow",
+      "rva": 111592
+    },
+    {
+      "ordinal": 9,
+      "name": "CommandBar_GetMenu",
+      "rva": 115032
+    },
+    {
+      "ordinal": 12,
+      "name": "CommandBar_Height",
+      "rva": 111888
+    },
+    {
+      "ordinal": 6,
+      "name": "CommandBar_InsertComboBox",
+      "rva": 113640
+    },
+    {
+      "ordinal": 7,
+      "name": "CommandBar_InsertControl",
+      "rva": 114016
+    },
+    {
+      "ordinal": 8,
+      "name": "CommandBar_InsertMenubar",
+      "rva": 115756
+    },
+    {
+      "ordinal": 42,
+      "name": "CommandBar_InsertMenubarEx",
+      "rva": 114416
+    },
+    {
+      "ordinal": 4,
+      "name": "CommandBar_Show",
+      "rva": 115616
+    },
+    {
+      "ordinal": 19,
+      "name": "CreatePropertySheetPageW",
+      "rva": 116264
+    },
+    {
+      "ordinal": 17,
+      "name": "CreateStatusWindowW",
+      "rva": 33632
+    },
+    {
+      "ordinal": 15,
+      "name": "CreateToolbar",
+      "rva": 29544
+    },
+    {
+      "ordinal": 16,
+      "name": "CreateToolbarEx",
+      "rva": 29276
+    },
+    {
+      "ordinal": 14,
+      "name": "CreateUpDownControl",
+      "rva": 121816
+    },
+    {
+      "ordinal": 50,
+      "name": "DPA_Create",
+      "rva": 29928
+    },
+    {
+      "ordinal": 31,
+      "name": "DPA_Destroy",
+      "rva": 29940
+    },
+    {
+      "ordinal": 56,
+      "name": "DPA_DestroyCallback",
+      "rva": 30036
+    },
+    {
+      "ordinal": 32,
+      "name": "DPA_GetPtr",
+      "rva": 29952
+    },
+    {
+      "ordinal": 54,
+      "name": "DPA_Grow",
+      "rva": 29976
+    },
+    {
+      "ordinal": 51,
+      "name": "DPA_InsertPtr",
+      "rva": 30000
+    },
+    {
+      "ordinal": 53,
+      "name": "DPA_SetPtr",
+      "rva": 29988
+    },
+    {
+      "ordinal": 52,
+      "name": "DPA_Sort",
+      "rva": 30048
+    },
+    {
+      "ordinal": 46,
+      "name": "DSA_Clone",
+      "rva": 29892
+    },
+    {
+      "ordinal": 23,
+      "name": "DSA_Create",
+      "rva": 29760
+    },
+    {
+      "ordinal": 30,
+      "name": "DSA_DeleteAllItems",
+      "rva": 29904
+    },
+    {
+      "ordinal": 29,
+      "name": "DSA_DeleteItem",
+      "rva": 29868
+    },
+    {
+      "ordinal": 24,
+      "name": "DSA_Destroy",
+      "rva": 29772
+    },
+    {
+      "ordinal": 47,
+      "name": "DSA_DestroyCallback",
+      "rva": 29796
+    },
+    {
+      "ordinal": 48,
+      "name": "DSA_EnumCallback",
+      "rva": 29784
+    },
+    {
+      "ordinal": 25,
+      "name": "DSA_GetItem",
+      "rva": 29808
+    },
+    {
+      "ordinal": 26,
+      "name": "DSA_GetItemPtr",
+      "rva": 29820
+    },
+    {
+      "ordinal": 27,
+      "name": "DSA_InsertItem",
+      "rva": 29856
+    },
+    {
+      "ordinal": 45,
+      "name": "DSA_Search",
+      "rva": 29880
+    },
+    {
+      "ordinal": 28,
+      "name": "DSA_SetItem",
+      "rva": 29832
+    },
+    {
+      "ordinal": 20,
+      "name": "DestroyPropertySheetPage",
+      "rva": 115892
+    },
+    {
+      "ordinal": 21,
+      "name": "DrawStatusTextW",
+      "rva": 34040
+    },
+    {
+      "ordinal": 34,
+      "name": "Header_Init",
+      "rva": 47912
+    },
+    {
+      "ordinal": 64,
+      "name": "InitCapEdit",
+      "rva": 125496
+    },
+    {
+      "ordinal": 1,
+      "name": "InitCommonControls",
+      "rva": 126136
+    },
+    {
+      "ordinal": 2,
+      "name": "InitCommonControlsEx",
+      "rva": 125916
+    },
+    {
+      "ordinal": 65,
+      "name": "InitDateClasses",
+      "rva": 169420
+    },
+    {
+      "ordinal": 66,
+      "name": "InitProgressClass",
+      "rva": 170300
+    },
+    {
+      "ordinal": 67,
+      "name": "InitReBarClass",
+      "rva": 188300
+    },
+    {
+      "ordinal": 68,
+      "name": "InitSBEdit",
+      "rva": 188452
+    },
+    {
+      "ordinal": 69,
+      "name": "InitStatusClass",
+      "rva": 35536
+    },
+    {
+      "ordinal": 70,
+      "name": "InitTTButton",
+      "rva": 188628
+    },
+    {
+      "ordinal": 71,
+      "name": "InitTTStatic",
+      "rva": 190320
+    },
+    {
+      "ordinal": 72,
+      "name": "InitToolTipsClass",
+      "rva": 199604
+    },
+    {
+      "ordinal": 73,
+      "name": "InitToolbarClass",
+      "rva": 29608
+    },
+    {
+      "ordinal": 74,
+      "name": "InitTrackBar",
+      "rva": 205848
+    },
+    {
+      "ordinal": 75,
+      "name": "InitUpDownClass",
+      "rva": 124836
+    },
+    {
+      "ordinal": 22,
+      "name": "InvertRect",
+      "rva": 110044
+    },
+    {
+      "ordinal": 13,
+      "name": "IsCommandBarMessage",
+      "rva": 307304
+    },
+    {
+      "ordinal": 49,
+      "name": "ListView_Init",
+      "rva": 97848
+    },
+    {
+      "ordinal": 76,
+      "name": "ListView_SetItemSpacing",
+      "rva": 63712
+    },
+    {
+      "ordinal": 18,
+      "name": "PropertySheetW",
+      "rva": 218388
+    },
+    {
+      "ordinal": 33,
+      "name": "Str_SetPtrW",
+      "rva": 30184
+    },
+    {
+      "ordinal": 63,
+      "name": "TV_Init",
+      "rva": 109772
+    },
+    {
+      "ordinal": 84,
+      "name": "Tab_Init",
+      "rva": 234992
+    },
+    {
+      "ordinal": 55,
+      "name": null,
+      "rva": 125240
+    },
+    {
+      "ordinal": 57,
+      "name": null,
+      "rva": 29916
+    },
+    {
+      "ordinal": 58,
+      "name": null,
+      "rva": 29844
+    },
+    {
+      "ordinal": 59,
+      "name": null,
+      "rva": 30060
+    },
+    {
+      "ordinal": 60,
+      "name": null,
+      "rva": 30012
+    },
+    {
+      "ordinal": 61,
+      "name": null,
+      "rva": 30024
+    },
+    {
+      "ordinal": 62,
+      "name": null,
+      "rva": 29964
+    },
+    {
+      "ordinal": 77,
+      "name": null,
+      "rva": 219208
+    },
+    {
+      "ordinal": 78,
+      "name": null,
+      "rva": 219988
+    },
+    {
+      "ordinal": 79,
+      "name": null,
+      "rva": 220588
+    },
+    {
+      "ordinal": 80,
+      "name": null,
+      "rva": 221460
+    },
+    {
+      "ordinal": 81,
+      "name": null,
+      "rva": 73152
+    },
+    {
+      "ordinal": 82,
+      "name": null,
+      "rva": 219444
+    },
+    {
+      "ordinal": 83,
+      "name": null,
+      "rva": 220200
+    }
+  ]
+}

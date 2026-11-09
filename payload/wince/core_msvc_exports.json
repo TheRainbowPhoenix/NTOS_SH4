@@ -1,0 +1,2412 @@
+[
+  {
+    "ordinal": 260,
+    "name": "BeginPaint",
+    "target": "BeginPaint",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * BeginPaint(void *hwnd, NT_PAINT *paint)"
+  },
+  {
+    "ordinal": 622,
+    "name": "CeGetThreadPriority",
+    "target": "CeGetThreadPriority",
+    "ret": "u32",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 CeGetThreadPriority(u32 h)"
+  },
+  {
+    "ordinal": 621,
+    "name": "CeSetThreadPriority",
+    "target": "CeSetThreadPriority",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 CeSetThreadPriority(u32 h, u32 p)"
+  },
+  {
+    "ordinal": 849,
+    "name": "CheckMenuRadioItem",
+    "target": "CheckMenuRadioItem",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CheckMenuRadioItem(void *menu, u32 first, u32 last, u32 check, u32 flags)"
+  },
+  {
+    "ordinal": 553,
+    "name": "CloseHandle",
+    "target": "CloseHandle",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CloseHandle(void *h)"
+  },
+  {
+    "ordinal": 160,
+    "name": "CreateDirectoryW",
+    "target": "CreateDirectoryW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CreateDirectoryW(const u16 *name, void *security)"
+  },
+  {
+    "ordinal": 168,
+    "name": "CreateFileW",
+    "target": "CreateFileW",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "ptr",
+      "u32",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * CreateFileW(const u16 *p, u32 access, u32 share, void *security, u32 creation, u32 attrs, void *templ)"
+  },
+  {
+    "ordinal": 895,
+    "name": "CreateFontIndirectW",
+    "target": "CreateFontIndirectW",
+    "ret": "ptr",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * CreateFontIndirectW(const NT_LOGFONTW *font)"
+  },
+  {
+    "ordinal": 493,
+    "name": "CreateProcessW",
+    "target": "CreateProcessW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "ptr",
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int CreateProcessW(const u16 *image, u16 *args, void *sa, void *ta, int inherit, u32 flags, void *env, const u16 *cwd, void *startup, void *info)"
+  },
+  {
+    "ordinal": 931,
+    "name": "CreateSolidBrush",
+    "target": "CreateSolidBrush",
+    "ret": "ptr",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * CreateSolidBrush(u32 colorref)"
+  },
+  {
+    "ordinal": 246,
+    "name": "CreateWindowExW",
+    "target": "CreateWindowExW",
+    "ret": "ptr",
+    "args": [
+      "u32",
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "ptr",
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 style, int x, int y, int width, int height, void *parent, void *menu, void *instance, void *param)"
+  },
+  {
+    "ordinal": 1837,
+    "name": "DPA_Create",
+    "target": "DPA_Create",
+    "ret": "ptr",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_DPA * DPA_Create(int grow)"
+  },
+  {
+    "ordinal": 1842,
+    "name": "DPA_Destroy",
+    "target": "DPA_Destroy",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_Destroy(CE_DPA *a)"
+  },
+  {
+    "ordinal": 1843,
+    "name": "DPA_DestroyCallback",
+    "target": "CeMsvc_DPA_DestroyCallback",
+    "ret": "void",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "void DPA_DestroyCallback(CE_DPA *a, CE_ENUM cb, void *ctx)"
+  },
+  {
+    "ordinal": 1844,
+    "name": "DPA_EnumCallback",
+    "target": "CeMsvc_DPA_EnumCallback",
+    "ret": "void",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "void DPA_EnumCallback(CE_DPA *a, CE_ENUM cb, void *ctx)"
+  },
+  {
+    "ordinal": 1845,
+    "name": "DPA_GetPtr",
+    "target": "DPA_GetPtr",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * DPA_GetPtr(CE_DPA *a, int i)"
+  },
+  {
+    "ordinal": 1847,
+    "name": "DPA_Grow",
+    "target": "DPA_Grow",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_Grow(CE_DPA *a, int n)"
+  },
+  {
+    "ordinal": 1848,
+    "name": "DPA_InsertPtr",
+    "target": "DPA_InsertPtr",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_InsertPtr(CE_DPA *a, int i, void *p)"
+  },
+  {
+    "ordinal": 1850,
+    "name": "DPA_SetPtr",
+    "target": "DPA_SetPtr",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_SetPtr(CE_DPA *a, int i, void *p)"
+  },
+  {
+    "ordinal": 1851,
+    "name": "DPA_Sort",
+    "target": "CeMsvc_DPA_Sort",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "int DPA_Sort(CE_DPA *a, CE_COMPARE cmp, CE_LPARAM ctx)"
+  },
+  {
+    "ordinal": 1853,
+    "name": "DSA_Clone",
+    "target": "DSA_Clone",
+    "ret": "ptr",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_DSA * DSA_Clone(CE_DSA *a)"
+  },
+  {
+    "ordinal": 1852,
+    "name": "DSA_Create",
+    "target": "DSA_Create",
+    "ret": "ptr",
+    "args": [
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_DSA * DSA_Create(int size, int grow)"
+  },
+  {
+    "ordinal": 1854,
+    "name": "DSA_DeleteAllItems",
+    "target": "DSA_DeleteAllItems",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_DeleteAllItems(CE_DSA *a)"
+  },
+  {
+    "ordinal": 1855,
+    "name": "DSA_DeleteItem",
+    "target": "DSA_DeleteItem",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_DeleteItem(CE_DSA *a, int i)"
+  },
+  {
+    "ordinal": 1856,
+    "name": "DSA_Destroy",
+    "target": "DSA_Destroy",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_Destroy(CE_DSA *a)"
+  },
+  {
+    "ordinal": 1857,
+    "name": "DSA_DestroyCallback",
+    "target": "CeMsvc_DSA_DestroyCallback",
+    "ret": "void",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "void DSA_DestroyCallback(CE_DSA *a, CE_ENUM cb, void *ctx)"
+  },
+  {
+    "ordinal": 1858,
+    "name": "DSA_EnumCallback",
+    "target": "CeMsvc_DSA_EnumCallback",
+    "ret": "void",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "void DSA_EnumCallback(CE_DSA *a, CE_ENUM cb, void *ctx)"
+  },
+  {
+    "ordinal": 1859,
+    "name": "DSA_GetItem",
+    "target": "DSA_GetItem",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_GetItem(CE_DSA *a, int i, void *dest)"
+  },
+  {
+    "ordinal": 1860,
+    "name": "DSA_GetItemPtr",
+    "target": "DSA_GetItemPtr",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * DSA_GetItemPtr(CE_DSA *a, int i)"
+  },
+  {
+    "ordinal": 1862,
+    "name": "DSA_InsertItem",
+    "target": "DSA_InsertItem",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_InsertItem(CE_DSA *a, int i, const void *item)"
+  },
+  {
+    "ordinal": 1863,
+    "name": "DSA_Search",
+    "target": "CeMsvc_DSA_Search",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "int DSA_Search(CE_DSA *a, const void *item, int start, CE_COMPARE cmp, CE_LPARAM ctx, unsigned int options)"
+  },
+  {
+    "ordinal": 1864,
+    "name": "DSA_SetItem",
+    "target": "DSA_SetItem",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_SetItem(CE_DSA *a, int i, const void *item)"
+  },
+  {
+    "ordinal": 264,
+    "name": "DefWindowProcW",
+    "target": "DefWindowProcW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DefWindowProcW(void *hwnd, u32 msg, u32 wp, u32 lp)"
+  },
+  {
+    "ordinal": 3,
+    "name": "DeleteCriticalSection",
+    "target": "DeleteCriticalSection",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 DeleteCriticalSection(void *p)"
+  },
+  {
+    "ordinal": 165,
+    "name": "DeleteFileW",
+    "target": "DeleteFileW",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DeleteFileW(const u16 *path)"
+  },
+  {
+    "ordinal": 912,
+    "name": "DeleteObject",
+    "target": "DeleteObject",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DeleteObject(void *object)"
+  },
+  {
+    "ordinal": 725,
+    "name": "DestroyIcon",
+    "target": "DestroyIcon",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DestroyIcon(void *icon)"
+  },
+  {
+    "ordinal": 844,
+    "name": "DestroyMenu",
+    "target": "DestroyMenu",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DestroyMenu(void *menu)"
+  },
+  {
+    "ordinal": 265,
+    "name": "DestroyWindow",
+    "target": "DestroyWindow",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DestroyWindow(void *h)"
+  },
+  {
+    "ordinal": 1232,
+    "name": "DisableThreadLibraryCalls",
+    "target": "DisableThreadLibraryCalls",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 DisableThreadLibraryCalls(void *m)"
+  },
+  {
+    "ordinal": 859,
+    "name": "DispatchMessageW",
+    "target": "DispatchMessageW",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DispatchMessageW(const NT_MSG *msg)"
+  },
+  {
+    "ordinal": 945,
+    "name": "DrawTextW",
+    "target": "DrawTextW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DrawTextW(void *hdc, const u16 *text, int count, NT_RECT *rect, u32 flags)"
+  },
+  {
+    "ordinal": 261,
+    "name": "EndPaint",
+    "target": "EndPaint",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int EndPaint(void *hwnd, const NT_PAINT *paint)"
+  },
+  {
+    "ordinal": 494,
+    "name": "EventModify",
+    "target": "EventModify",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 EventModify(u32 h, u32 op)"
+  },
+  {
+    "ordinal": 935,
+    "name": "FillRect",
+    "target": "FillRect",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int FillRect(void *hdc, const NT_RECT *rect, void *brush)"
+  },
+  {
+    "ordinal": 180,
+    "name": "FindClose",
+    "target": "FindClose",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int FindClose(void *search)"
+  },
+  {
+    "ordinal": 167,
+    "name": "FindFirstFileW",
+    "target": "FindFirstFileW",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * FindFirstFileW(const u16 *pattern, NT_FIND_DATA *out)"
+  },
+  {
+    "ordinal": 181,
+    "name": "FindNextFileW",
+    "target": "FindNextFileW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int FindNextFileW(void *search, NT_FIND_DATA *out)"
+  },
+  {
+    "ordinal": 286,
+    "name": "FindWindowW",
+    "target": "FindWindowW",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * FindWindowW(const u16 *class_name, const u16 *title)"
+  },
+  {
+    "ordinal": 529,
+    "name": "FreeLibrary",
+    "target": "FreeLibrary",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int FreeLibrary(void *module)"
+  },
+  {
+    "ordinal": 249,
+    "name": "GetClientRect",
+    "target": "GetClientRect",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int GetClientRect(void *h, NT_RECT *rect)"
+  },
+  {
+    "ordinal": 262,
+    "name": "GetDC",
+    "target": "GetDC",
+    "ret": "ptr",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * GetDC(void *hwnd)"
+  },
+  {
+    "ordinal": 166,
+    "name": "GetFileAttributesW",
+    "target": "GetFileAttributesW",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 GetFileAttributesW(const u16 *name)"
+  },
+  {
+    "ordinal": 172,
+    "name": "GetFileSize",
+    "target": "GetFileSize",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 GetFileSize(void *handle, u32 *high)"
+  },
+  {
+    "ordinal": 52,
+    "name": "GetHeapSnapshot",
+    "target": "GetHeapSnapshot",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 GetHeapSnapshot(void *p)"
+  },
+  {
+    "ordinal": 860,
+    "name": "GetKeyState",
+    "target": "GetKeyState",
+    "ret": "u32",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int GetKeyState(int key)"
+  },
+  {
+    "ordinal": 516,
+    "name": "GetLastError",
+    "target": "GetLastError",
+    "ret": "u32",
+    "args": [],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 GetLastError(void)"
+  },
+  {
+    "ordinal": 862,
+    "name": "GetMessagePos",
+    "target": "GetMessagePos",
+    "ret": "u32",
+    "args": [],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 GetMessagePos(void)"
+  },
+  {
+    "ordinal": 861,
+    "name": "GetMessageW",
+    "target": "GetMessageW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)"
+  },
+  {
+    "ordinal": 269,
+    "name": "GetParent",
+    "target": "GetParent",
+    "ret": "ptr",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * GetParent(void *h)"
+  },
+  {
+    "ordinal": 530,
+    "name": "GetProcAddressW",
+    "target": "GetProcAddressW",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * GetProcAddressW(void *module, const u16 *name)"
+  },
+  {
+    "ordinal": 855,
+    "name": "GetSubMenu",
+    "target": "GetSubMenu",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * GetSubMenu(void *menu, int index)"
+  },
+  {
+    "ordinal": 885,
+    "name": "GetSystemMetrics",
+    "target": "GetSystemMetrics",
+    "ret": "u32",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int GetSystemMetrics(int index)"
+  },
+  {
+    "ordinal": 259,
+    "name": "GetWindowLongW",
+    "target": "GetWindowLongW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_LPARAM GetWindowLongW(void *h, int index)"
+  },
+  {
+    "ordinal": 257,
+    "name": "GetWindowTextW",
+    "target": "GetWindowTextW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int GetWindowTextW(void *hwnd, u16 *buffer, int capacity)"
+  },
+  {
+    "ordinal": 88,
+    "name": "GlobalMemoryStatus",
+    "target": "GlobalMemoryStatus",
+    "ret": "void",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void GlobalMemoryStatus(MEMSTATUS *ms)"
+  },
+  {
+    "ordinal": 742,
+    "name": "ImageList_Create",
+    "target": "ImageList_Create",
+    "ret": "ptr",
+    "args": [
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * ImageList_Create(int width, int height, u32 flags, int initial, int grow)"
+  },
+  {
+    "ordinal": 743,
+    "name": "ImageList_Destroy",
+    "target": "ImageList_Destroy",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int ImageList_Destroy(void *handle)"
+  },
+  {
+    "ordinal": 756,
+    "name": "ImageList_GetImageCount",
+    "target": "ImageList_GetImageCount",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int ImageList_GetImageCount(void *handle)"
+  },
+  {
+    "ordinal": 762,
+    "name": "ImageList_ReplaceIcon",
+    "target": "ImageList_ReplaceIcon",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int ImageList_ReplaceIcon(void *handle, int index, void *icon)"
+  },
+  {
+    "ordinal": 12,
+    "name": "InterlockedExchange",
+    "target": "InterlockedExchange",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 InterlockedExchange(volatile u32 *p, u32 v)"
+  },
+  {
+    "ordinal": 250,
+    "name": "InvalidateRect",
+    "target": "InvalidateRect",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int InvalidateRect(void *h, const NT_RECT *rect, int erase)"
+  },
+  {
+    "ordinal": 271,
+    "name": "IsWindow",
+    "target": "IsWindow",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int IsWindow(void *h)"
+  },
+  {
+    "ordinal": 1489,
+    "name": "KernelLibIoControl",
+    "target": "KernelLibIoControl",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32",
+      "ptr",
+      "u32",
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 KernelLibIoControl(u32 h, u32 op, void *in, u32 ins, void *out, u32 outs, u32 *done)"
+  },
+  {
+    "ordinal": 1652,
+    "name": "LineTo",
+    "target": "LineTo",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int LineTo(void *hdc, int x, int y)"
+  },
+  {
+    "ordinal": 683,
+    "name": "LoadCursorW",
+    "target": "LoadCursorW",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * LoadCursorW(void *instance, const u16 *name)"
+  },
+  {
+    "ordinal": 730,
+    "name": "LoadImageW",
+    "target": "LoadImageW",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * LoadImageW(void *module, const u16 *name, u32 type, int cx, int cy, u32 flags)"
+  },
+  {
+    "ordinal": 528,
+    "name": "LoadLibraryW",
+    "target": "LoadLibraryW",
+    "ret": "ptr",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * LoadLibraryW(const u16 *name)"
+  },
+  {
+    "ordinal": 846,
+    "name": "LoadMenuW",
+    "target": "LoadMenuW",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * LoadMenuW(void *module, const u16 *resource)"
+  },
+  {
+    "ordinal": 874,
+    "name": "LoadStringW",
+    "target": "LoadStringW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int LoadStringW(void *module, u32 id, u16 *dest, int count)"
+  },
+  {
+    "ordinal": 33,
+    "name": "LocalAlloc",
+    "target": "LocalAlloc",
+    "ret": "ptr",
+    "args": [
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * LocalAlloc(u32 flags, u32 bytes)"
+  },
+  {
+    "ordinal": 36,
+    "name": "LocalFree",
+    "target": "LocalFree",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 LocalFree(void *p)"
+  },
+  {
+    "ordinal": 34,
+    "name": "LocalReAlloc",
+    "target": "LocalReAlloc",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * LocalReAlloc(void *p, u32 bytes, u32 flags)"
+  },
+  {
+    "ordinal": 35,
+    "name": "LocalSize",
+    "target": "LocalSize",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 LocalSize(void *p)"
+  },
+  {
+    "ordinal": 284,
+    "name": "MapWindowPoints",
+    "target": "MapWindowPoints",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int MapWindowPoints(void *from, void *to, NT_POINT *points, u32 n)"
+  },
+  {
+    "ordinal": 858,
+    "name": "MessageBoxW",
+    "target": "MessageBoxW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int MessageBoxW(void *owner, const u16 *text, const u16 *caption, u32 type)"
+  },
+  {
+    "ordinal": 163,
+    "name": "MoveFileW",
+    "target": "MoveFileW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int MoveFileW(const u16 *oldpath, const u16 *newpath)"
+  },
+  {
+    "ordinal": 1651,
+    "name": "MoveToEx",
+    "target": "MoveToEx",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int MoveToEx(void *hdc, int x, int y, NT_POINT *previous)"
+  },
+  {
+    "ordinal": 196,
+    "name": "MultiByteToWideChar",
+    "target": "MultiByteToWideChar",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32",
+      "ptr",
+      "u32",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 MultiByteToWideChar(u32 cp, u32 flags, const char *s, int n, u16 *d, int capacity)"
+  },
+  {
+    "ordinal": 545,
+    "name": "NKDbgPrintfW",
+    "target": "NKDbgPrintfW",
+    "ret": "void",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void NKDbgPrintfW(const short unsigned int *wide)"
+  },
+  {
+    "ordinal": 1496,
+    "name": "OpenEventW",
+    "target": "OpenEventW",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 OpenEventW(u32 access, u32 inherit, const u16 *name)"
+  },
+  {
+    "ordinal": 509,
+    "name": "OpenProcess",
+    "target": "OpenProcess",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 OpenProcess(u32 access, u32 inherit, u32 pid)"
+  },
+  {
+    "ordinal": 541,
+    "name": "OutputDebugStringW",
+    "target": "OutputDebugStringW",
+    "ret": "void",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void OutputDebugStringW(const u16 *wide)"
+  },
+  {
+    "ordinal": 638,
+    "name": "PPSHRestart",
+    "target": "PPSHRestart",
+    "ret": "u32",
+    "args": [],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 PPSHRestart(void)"
+  },
+  {
+    "ordinal": 865,
+    "name": "PostMessageW",
+    "target": "PostMessageW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int PostMessageW(void *h, u32 msg, u32 wp, u32 lp)"
+  },
+  {
+    "ordinal": 866,
+    "name": "PostQuitMessage",
+    "target": "PostQuitMessage",
+    "ret": "void",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void PostQuitMessage(int exitcode)"
+  },
+  {
+    "ordinal": 170,
+    "name": "ReadFile",
+    "target": "ReadFile",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int ReadFile(void *h, void *b, u32 n, u32 *done, void *ov)"
+  },
+  {
+    "ordinal": 506,
+    "name": "ReadProcessMemory",
+    "target": "ReadProcessMemory",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "ptr",
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 ReadProcessMemory(u32 process, const void *src, void *dst, u32 n, u32 *done)"
+  },
+  {
+    "ordinal": 941,
+    "name": "Rectangle",
+    "target": "Rectangle",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int Rectangle(void *hdc, int l, int t, int r, int b)"
+  },
+  {
+    "ordinal": 455,
+    "name": "RegCloseKey",
+    "target": "RegCloseKey",
+    "ret": "u32",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 RegCloseKey(u32 h)"
+  },
+  {
+    "ordinal": 461,
+    "name": "RegOpenKeyExW",
+    "target": "RegOpenKeyExW",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "ptr",
+      "u32",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 RegOpenKeyExW(u32 h, const u16 *n, u32 opt, u32 access, u32 *out)"
+  },
+  {
+    "ordinal": 463,
+    "name": "RegQueryValueExW",
+    "target": "RegQueryValueExW",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "ptr",
+      "ptr",
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 RegQueryValueExW(u32 h, const u16 *n, void *reserved, u32 *type, void *out, u32 *nbytes)"
+  },
+  {
+    "ordinal": 464,
+    "name": "RegSetValueExW",
+    "target": "RegSetValueExW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 RegSetValueExW(void *key, const u16 *name, u32 reserved, u32 type, const void *data, u32 bytes)"
+  },
+  {
+    "ordinal": 95,
+    "name": "RegisterClassW",
+    "target": "RegisterClassW",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 RegisterClassW(const NT_WNDCLASS *wc)"
+  },
+  {
+    "ordinal": 263,
+    "name": "ReleaseDC",
+    "target": "ReleaseDC",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int ReleaseDC(void *hwnd, void *hdc)"
+  },
+  {
+    "ordinal": 484,
+    "name": "SHCreateShortcut",
+    "target": "SHCreateShortcut",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int SHCreateShortcut(const u16 *shortcut, const u16 *target)"
+  },
+  {
+    "ordinal": 295,
+    "name": "SHGetSpecialFolderPath",
+    "target": "SHGetSpecialFolderPath",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int SHGetSpecialFolderPath(void *owner, u16 *path, int folder, int create)"
+  },
+  {
+    "ordinal": 921,
+    "name": "SelectObject",
+    "target": "SelectObject",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * SelectObject(void *hdc, void *object)"
+  },
+  {
+    "ordinal": 868,
+    "name": "SendMessageW",
+    "target": "SendMessageW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_RESULT SendMessageW(void *h, u32 msg, u32 wp, u32 lp)"
+  },
+  {
+    "ordinal": 922,
+    "name": "SetBkColor",
+    "target": "SetBkColor",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 SetBkColor(void *hdc, u32 color)"
+  },
+  {
+    "ordinal": 923,
+    "name": "SetBkMode",
+    "target": "SetBkMode",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int SetBkMode(void *hdc, int mode)"
+  },
+  {
+    "ordinal": 173,
+    "name": "SetFilePointer",
+    "target": "SetFilePointer",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 SetFilePointer(void *handle, int offset, int *high, u32 move_method)"
+  },
+  {
+    "ordinal": 704,
+    "name": "SetFocus",
+    "target": "SetFocus",
+    "ret": "ptr",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * SetFocus(void *h)"
+  },
+  {
+    "ordinal": 702,
+    "name": "SetForegroundWindow",
+    "target": "SetForegroundWindow",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int SetForegroundWindow(void *h)"
+  },
+  {
+    "ordinal": 630,
+    "name": "SetKMode",
+    "target": "SetKMode",
+    "ret": "u32",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 SetKMode(u32 enable)"
+  },
+  {
+    "ordinal": 517,
+    "name": "SetLastError",
+    "target": "SetLastError",
+    "ret": "void",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void SetLastError(u32 err)"
+  },
+  {
+    "ordinal": 944,
+    "name": "SetPixel",
+    "target": "SetPixel",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 SetPixel(void *hdc, int x, int y, u32 colorref)"
+  },
+  {
+    "ordinal": 611,
+    "name": "SetProcPermissions",
+    "target": "SetProcPermissions",
+    "ret": "u32",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 SetProcPermissions(u32 newperms)"
+  },
+  {
+    "ordinal": 924,
+    "name": "SetTextColor",
+    "target": "SetTextColor",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 SetTextColor(void *hdc, u32 color)"
+  },
+  {
+    "ordinal": 258,
+    "name": "SetWindowLongW",
+    "target": "SetWindowLongW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_LPARAM SetWindowLongW(void *h, int index, CE_LPARAM value)"
+  },
+  {
+    "ordinal": 247,
+    "name": "SetWindowPos",
+    "target": "SetWindowPos",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int SetWindowPos(void *h, void *after, int x, int y, int cx, int cy, u32 flags)"
+  },
+  {
+    "ordinal": 256,
+    "name": "SetWindowTextW",
+    "target": "SetWindowTextW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int SetWindowTextW(void *hwnd, const u16 *text)"
+  },
+  {
+    "ordinal": 480,
+    "name": "ShellExecuteEx",
+    "target": "ShellExecuteEx",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int ShellExecuteEx(void *info)"
+  },
+  {
+    "ordinal": 266,
+    "name": "ShowWindow",
+    "target": "ShowWindow",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int ShowWindow(void *h, int command)"
+  },
+  {
+    "ordinal": 639,
+    "name": "SignalStarted",
+    "target": "SignalStarted",
+    "ret": "u32",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 SignalStarted(u32 id)"
+  },
+  {
+    "ordinal": 1172,
+    "name": "SipGetInfo",
+    "target": "SipGetInfo",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int SipGetInfo(NT_SIP_INFO *info)"
+  },
+  {
+    "ordinal": 1173,
+    "name": "SipSetInfo",
+    "target": "SipSetInfo",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int SipSetInfo(const NT_SIP_INFO *info)"
+  },
+  {
+    "ordinal": 1171,
+    "name": "SipShowIM",
+    "target": "SipShowIM",
+    "ret": "u32",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int SipShowIM(u32 flags)"
+  },
+  {
+    "ordinal": 496,
+    "name": "Sleep",
+    "target": "Sleep",
+    "ret": "u32",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 Sleep(u32 ms)"
+  },
+  {
+    "ordinal": 1700,
+    "name": "StringCbPrintfW",
+    "target": "StringCbPrintfW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "ptr"
+    ],
+    "abi": "varargs-words",
+    "callbacks": false,
+    "prototype": "u32 StringCbPrintfW(u16 *dest, u32 bytes, const u16 *format, ...)"
+  },
+  {
+    "ordinal": 89,
+    "name": "SystemParametersInfoW",
+    "target": "SystemParametersInfoW",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int SystemParametersInfoW(u32 action, u32 value, void *out, u32 flags)"
+  },
+  {
+    "ordinal": 511,
+    "name": "THCreateSnapshot",
+    "target": "THCreateSnapshot",
+    "ret": "ptr",
+    "args": [
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * THCreateSnapshot(u32 flags, u32 pid)"
+  },
+  {
+    "ordinal": 544,
+    "name": "TerminateProcess",
+    "target": "TerminateProcess",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 TerminateProcess(void *p, u32 result)"
+  },
+  {
+    "ordinal": 845,
+    "name": "TrackPopupMenuEx",
+    "target": "TrackPopupMenuEx",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "u32",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int TrackPopupMenuEx(void *menu, u32 flags, int x, int y, void *owner, void *params)"
+  },
+  {
+    "ordinal": 870,
+    "name": "TranslateMessage",
+    "target": "TranslateMessage",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int TranslateMessage(const NT_MSG *msg)"
+  },
+  {
+    "ordinal": 267,
+    "name": "UpdateWindow",
+    "target": "UpdateWindow",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int UpdateWindow(void *h)"
+  },
+  {
+    "ordinal": 524,
+    "name": "VirtualAlloc",
+    "target": "VirtualAlloc",
+    "ret": "ptr",
+    "args": [
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * VirtualAlloc(u32 base, u32 size, u32 type, u32 protection)"
+  },
+  {
+    "ordinal": 525,
+    "name": "VirtualFree",
+    "target": "VirtualFree",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 VirtualFree(void *base, u32 size, u32 freetype)"
+  },
+  {
+    "ordinal": 497,
+    "name": "WaitForSingleObject",
+    "target": "WaitForSingleObject",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 WaitForSingleObject(u32 h, u32 ms)"
+  },
+  {
+    "ordinal": 171,
+    "name": "WriteFile",
+    "target": "WriteFile",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int WriteFile(void *h, const void *b, u32 n, u32 *done, void *ov)"
+  },
+  {
+    "ordinal": 1645,
+    "name": "_XcptFilter",
+    "target": "_XcptFilter",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int _XcptFilter(u32 code, void *pointers)"
+  },
+  {
+    "ordinal": 87,
+    "name": "__C_specific_handler",
+    "target": "__C_specific_handler",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int __C_specific_handler(void *record, void *frame, void *context, void *dispatcher)"
+  },
+  {
+    "ordinal": 2528,
+    "name": "__GetUserKData",
+    "target": "__GetUserKData",
+    "ret": "u32",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 __GetUserKData(u32 offset)"
+  },
+  {
+    "ordinal": 1876,
+    "name": "__report_gsfailure",
+    "target": "__report_gsfailure",
+    "ret": "void",
+    "args": [],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void __report_gsfailure(void)"
+  },
+  {
+    "ordinal": 2696,
+    "name": "__security_gen_cookie2",
+    "target": "__security_gen_cookie2",
+    "ret": "u32",
+    "args": [],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 __security_gen_cookie2(void)"
+  },
+  {
+    "ordinal": 230,
+    "name": "_wcsicmp",
+    "target": "_wcsicmp",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 _wcsicmp(const u16 *a, const u16 *b)"
+  },
+  {
+    "ordinal": 78,
+    "name": "_wtol",
+    "target": "_wtol",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 _wtol(const u16 *p)"
+  },
+  {
+    "ordinal": 1018,
+    "name": "free",
+    "target": "coredll_free",
+    "ret": "void",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void coredll_free(void *p)"
+  },
+  {
+    "ordinal": 193,
+    "name": "iswctype",
+    "target": "iswctype",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 iswctype(u32 ch, u32 mask)"
+  },
+  {
+    "ordinal": 228,
+    "name": "lstrcmpiW",
+    "target": "lstrcmpiW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int lstrcmpiW(const u16 *a, const u16 *b)"
+  },
+  {
+    "ordinal": 1041,
+    "name": "malloc",
+    "target": "coredll_malloc",
+    "ret": "ptr",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * coredll_malloc(u32 n)"
+  },
+  {
+    "ordinal": 1044,
+    "name": "memcpy",
+    "target": "memcpy",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * memcpy(void *d, const void *s, unsigned int n)"
+  },
+  {
+    "ordinal": 1047,
+    "name": "memset",
+    "target": "memset",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * memset(void *d, int v, unsigned int n)"
+  },
+  {
+    "ordinal": 58,
+    "name": "wcscat",
+    "target": "wcscat",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u16 * wcscat(u16 *d, const u16 *s)"
+  },
+  {
+    "ordinal": 60,
+    "name": "wcscmp",
+    "target": "wcscmp",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 wcscmp(const u16 *a, const u16 *b)"
+  },
+  {
+    "ordinal": 61,
+    "name": "wcscpy",
+    "target": "wcscpy",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u16 * wcscpy(u16 *d, const u16 *s)"
+  },
+  {
+    "ordinal": 63,
+    "name": "wcslen",
+    "target": "wcslen",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 wcslen(const u16 *a)"
+  },
+  {
+    "ordinal": 64,
+    "name": "wcsncat",
+    "target": "wcsncat",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u16 * wcsncat(u16 *d, const u16 *s, u32 n)"
+  },
+  {
+    "ordinal": 65,
+    "name": "wcsncmp",
+    "target": "wcsncmp",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 wcsncmp(const u16 *a, const u16 *b, u32 n)"
+  },
+  {
+    "ordinal": 66,
+    "name": "wcsncpy",
+    "target": "wcsncpy",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u16 * wcsncpy(u16 *d, const u16 *s, u32 n)"
+  },
+  {
+    "ordinal": 69,
+    "name": "wcsrchr",
+    "target": "wcsrchr",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u16 * wcsrchr(const u16 *p, u32 c)"
+  },
+  {
+    "ordinal": 73,
+    "name": "wcsstr",
+    "target": "wcsstr",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u16 * wcsstr(const u16 *p, const u16 *needle)"
+  },
+  {
+    "ordinal": 77,
+    "name": "wcstok",
+    "target": "wcstok",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u16 * wcstok(u16 *s, const u16 *delimiters)"
+  },
+  {
+    "ordinal": 75,
+    "name": "wcstombs",
+    "target": "wcstombs",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "u32 wcstombs(char *d, const u16 *s, u32 n)"
+  },
+  {
+    "ordinal": 56,
+    "name": "wsprintfW",
+    "target": "wsprintfW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "varargs-words",
+    "callbacks": false,
+    "prototype": "int wsprintfW(u16 *dest, const u16 *format, ...)"
+  },
+  {
+    "ordinal": 57,
+    "name": "wvsprintfW",
+    "target": "CeMsvc_wvsprintfW",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "ptr"
+    ],
+    "abi": "va-list-words",
+    "callbacks": true,
+    "prototype": "int wvsprintfW(u16 *dest, const u16 *format, va_list args)"
+  },
+  {
+    "ordinal": 1838,
+    "name": null,
+    "target": "DPA_CreateEx",
+    "ret": "ptr",
+    "args": [
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_DPA * DPA_CreateEx(int grow, void *heap)"
+  },
+  {
+    "ordinal": 1839,
+    "name": null,
+    "target": "DPA_Clone",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "CE_DPA * DPA_Clone(CE_DPA *a, CE_DPA *b)"
+  },
+  {
+    "ordinal": 1840,
+    "name": null,
+    "target": "DPA_DeleteAllPtrs",
+    "ret": "u32",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_DeleteAllPtrs(CE_DPA *a)"
+  },
+  {
+    "ordinal": 1841,
+    "name": null,
+    "target": "DPA_DeletePtr",
+    "ret": "ptr",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "void * DPA_DeletePtr(CE_DPA *a, int i)"
+  },
+  {
+    "ordinal": 1846,
+    "name": null,
+    "target": "DPA_GetPtrIndex",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DPA_GetPtrIndex(CE_DPA *a, const void *p)"
+  },
+  {
+    "ordinal": 1849,
+    "name": null,
+    "target": "CeMsvc_DPA_Search",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32",
+      "ptr",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "int DPA_Search(CE_DPA *a, void *item, int start, CE_COMPARE cmp, CE_LPARAM ctx, unsigned int options)"
+  },
+  {
+    "ordinal": 1861,
+    "name": null,
+    "target": "DSA_Grow",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_Grow(CE_DSA *a, int capacity)"
+  },
+  {
+    "ordinal": 1865,
+    "name": null,
+    "target": "DSA_SetItemRange",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "u32",
+      "u32",
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "int DSA_SetItemRange(CE_DSA *a, int start, int count, const void *items)"
+  },
+  {
+    "ordinal": 1866,
+    "name": null,
+    "target": "CeMsvc_DSA_Sort",
+    "ret": "u32",
+    "args": [
+      "ptr",
+      "ptr",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": true,
+    "prototype": "int DSA_Sort(CE_DSA *a, CE_COMPARE cmp, CE_LPARAM context)"
+  },
+  {
+    "ordinal": 4090,
+    "name": "coredll_abi5",
+    "target": "nt_native_coredll_abi5",
+    "ret": "u32",
+    "args": [
+      "u32",
+      "u32",
+      "u32",
+      "u32",
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "upstream payload/coredll_msvc_manifest.json"
+  },
+  {
+    "ordinal": 4091,
+    "name": "coredll_puts",
+    "target": "coredll_puts",
+    "ret": "void",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "upstream payload/coredll_msvc_manifest.json"
+  },
+  {
+    "ordinal": 4092,
+    "name": "coredll_getkey",
+    "target": "coredll_getkey",
+    "ret": "u32",
+    "args": [],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "upstream payload/coredll_msvc_manifest.json"
+  },
+  {
+    "ordinal": 4093,
+    "name": "coredll_malloc",
+    "target": "coredll_malloc",
+    "ret": "ptr",
+    "args": [
+      "u32"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "upstream payload/coredll_msvc_manifest.json"
+  },
+  {
+    "ordinal": 4094,
+    "name": "coredll_free",
+    "target": "coredll_free",
+    "ret": "void",
+    "args": [
+      "ptr"
+    ],
+    "abi": "fixed-words",
+    "callbacks": false,
+    "prototype": "upstream payload/coredll_msvc_manifest.json"
+  }
+]
