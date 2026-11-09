@@ -1,0 +1,39 @@
+name: Clang C and H cleanup
+
+on:
+  push:
+    paths:
+      - ".github/workflows/format-c.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  format-owned-c:
+    if: github.actor != 'github-actions[bot]' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+      - name: Install Clang formatter
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-format
+          clang-format --version
+      - name: Apply and validate formatting
+        run: |
+          python3 tools/format_c_sources.py --apply
+          python3 tools/format_c_sources.py --check
+      - name: Commit and push normalized sources
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -u -- '*.c' '*.h'
+          if ! git diff --cached --quiet; then
+            git commit -m "style: apply clang-format to authored C/H source tree"
+            git push origin HEAD:main
+          else
+            echo "All selected C/H files already formatted"
+          fi
