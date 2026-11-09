@@ -656,5 +656,20 @@ msvc-abi-coredll: $(CE_CORE_DIST)/COREDLL.DLL $(CE_CORE_DIST)/COREDLLABI.EXE
 
 .PHONY: msvc-abi-coredll
 
+# Single experimental deployable image for the native phone and WinCE-style
+# apps that share the production COREDLL. A graph larger than 55 pages must
+# run on the exception-driven pager; do not substitute the standard HH3.
+# All bundled DLLs use the same production native COREDLL image. Full
+# Microsoft ordinal CE interoperability remains a separate ABI migration.
+.PHONY: unified
+unified:
+	$(MAKE) pager-experiment
+	$(MAKE) -j4 BUILDDIR=obj_unified OUTDIR=dist_unified DEPDIR=.deps_unified phone
+	cp dist_pager/NTOS.hh3 dist_unified/NTOS.hh3
+	cp dist_pager/NTOS.hh3 dist_unified/phone-device/NTOS.hh3
+	$(PYTHON) tools/check_unified_bundle.py dist_unified
+	@echo "Unified native phone/WinCE bundle uses pager NTOS.hh3 and one COREDLL.DLL"
+	@echo "Experimental MSVC ordinal WinCE applications remain ABI-gated"
+
 # Native WinCE-first phone launcher.
 include payload/phone/phone.mk
