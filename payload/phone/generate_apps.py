@@ -12,6 +12,8 @@ class Vec:
  def __init__(self):self.b=bytearray(b'VEC1\x60'+struct.pack('>hh',32,32))
  def color(self,f=0xffff,s=0x7fff):self.b+=b'\x01'+struct.pack('>HH',f,s);return self
  def line(self,a,b,c,d):self.b+=b'\x30'+struct.pack('>hhhh',a,b,c,d);return self
+ def stroke(self,a,b,c,d,width=2):self.b+=b'\x31'+struct.pack('>hhhhB',a,b,c,d,width);return self
+ def arc(self,cx,cy,r,start,count,width=2):self.b+=b'\x22'+struct.pack('>hhhBBB',cx,cy,r,start,count,width);return self
  def rect(self,a,b,c,d):self.b+=b'\x10'+struct.pack('>hhhh',a,b,c,d);return self
  def circle(self,x,y,r):self.b+=b'\x20'+struct.pack('>hhh',x,y,r);return self
  def poly(self,*p):self.b+=bytes((0x40,len(p)//2))+struct.pack('>'+'h'*len(p),*p);return self
@@ -120,31 +122,98 @@ def generate_assets(out):
  (out/'apps.dat').write_bytes(cache)
  return records
 def generate_settings_icons():
+ # All Settings SVGs are authored for exactly the target 17px (row),
+ # 24px (header) and 32px (category) outputs. Single-weight VEC2
+ # strokes and simple 32-segment arcs avoid runtime Bezier evaluation.
+ # RGB555 0x7fff => 100% dark tinted ink; 0x4210 => 50% black.
+ primary=0x7fff
+ secondary=0x4210
+ def basic(): return Vec().color(0xffff,primary)
  items=[]
- for name in ['system','devices','network','personal','accounts','time','access','privacy','settings','display','notifications','phone','message','storage','battery','maps']:
-  v=Vec().color(0xffff,0x1d9f if len(items)<9 else 0x7fff)
-  if name in ['system','display']:v.rect(7,1,25,31).line(15,27,17,27)
+ names=['system','devices','network','personal','accounts','time','gaming',
+        'privacy','settings','display','notifications','phone','message',
+        'storage','battery','maps','about','update']
+ for name in names:
+  v=basic()
+  if name in ('system','display'):
+   # MDL2 DeviceTablet: crisp uniform body and small home dash.
+   v.stroke(7,2,25,2,2).stroke(7,2,7,30,2).stroke(25,2,25,30,2)
+   v.stroke(7,30,25,30,2).stroke(13,26,19,26,2)
   elif name=='devices':
-   v.rect(1,2,27,16).rect(17,13,31,31).circle(24,24,3)
-   for y in [6,10]:
-    for x in [5,10,15,20]:v.line(x,y,x+1,y)
-  elif name=='network':v.circle(16,16,15).poly(16,1,9,6,7,16,9,26,16,31,23,26,25,16,23,6).line(1,12,31,12).line(1,21,31,21)
-  elif name=='personal':v.rect(1,9,27,26).line(11,30,20,30).poly(8,21,11,14,26,0,31,5,16,20,8,21)
-  elif name=='accounts':v.circle(16,9,8).poly(2,31,5,22,11,18,21,18,27,22,30,31)
-  elif name=='time':v.circle(12,12,11).line(12,4,12,12).line(12,12,18,12).text('A')
-  elif name=='access':v.circle(16,4,3).line(2,11,30,11).line(16,8,16,23).line(16,23,7,31).line(16,23,25,31)
-  elif name=='privacy':v.rect(5,12,27,31).circle(16,10,8).line(16,19,16,26)
-  elif name in ['settings','phone','message','maps']:
-   b=icon(name);b=b.replace(b'\x01\xff\xff\x7f\xff',b'\x01\xff\xff\x1d\x9f') if name=='settings' else b
-   items.append((name,b));continue
-  elif name=='notifications':v.poly(1,2,31,2,31,25,18,25,12,31,12,25,1,25)
-  elif name=='storage':v.poly(6,1,27,1,27,31,6,31,6,1,10,6,22,6,22,1).line(10,10,10,17)
-  elif name=='battery':v.rect(1,8,28,25).rect(28,13,31,20)
+   # DeviceLaptop + small foreground tablet.
+   v.stroke(2,5,24,5,2).stroke(2,5,2,19,2).stroke(24,5,24,17,2)
+   v.stroke(1,20,20,20,2).stroke(0,23,20,23,2)
+   v.stroke(17,13,31,13,2).stroke(17,13,17,30,2)
+   v.stroke(31,13,31,30,2).stroke(17,30,31,30,2)
+   v.stroke(22,27,26,27,2)
+  elif name=='network':
+   v.arc(16,16,14,0,32,2)
+   v.arc(16,16,8,8,16,2).arc(16,16,8,24,16,2)
+   v.stroke(2,16,30,16,2).stroke(16,2,16,30,2)
+  elif name=='personal':
+   v.stroke(1,12,24,12,2).stroke(1,12,1,27,2).stroke(1,27,25,27,2)
+   v.stroke(1,24,25,24,2).stroke(9,30,18,30,2)
+   v.color(0xffff,secondary).stroke(12,19,27,4,3).stroke(19,23,30,12,2)
+  elif name=='accounts':
+   v.arc(16,10,7,0,32,2)
+   v.arc(16,32,15,17,14,2)
+   v.color(0xffff,secondary).arc(16,10,4,0,32,1)
+  elif name=='time':
+   v.arc(11,11,9,0,32,2).stroke(11,11,11,5,2).stroke(11,11,16,13,2)
+   v.arc(23,23,8,0,32,2)
+   v.color(0xffff,secondary).stroke(23,23,23,18,2).stroke(23,23,27,23,2)
+  elif name=='gaming':
+   v.poly(4,12,9,7,23,7,28,12,31,24,26,26,19,22,13,22,7,27,4)
+   v.color(0xffff,secondary).stroke(9,13,9,21,2).stroke(5,17,13,17,2)
+   v.arc(24,14,2,0,32,2).arc(19,19,2,0,32,2)
+  elif name=='privacy':
+   v.stroke(6,15,26,15,2).stroke(6,15,6,30,2).stroke(26,15,26,30,2)
+   v.stroke(6,30,26,30,2).arc(16,15,9,16,16,2)
+  elif name=='settings':
+   # Radial square teeth + hollow ring: regular visual stroke weight.
+   v.poly(14,1,18,1,20,5,24,7,28,6,31,10,28,14,29,18,
+          31,22,28,26,24,25,20,28,18,31,14,31,12,27,8,25,
+          4,26,1,22,4,18,3,14,1,10,4,8,7,4,6,1,10,4,14,3,18,1)
+   v.color(0x4210,0xffff).circle(16,16,8)
+   v.color(0xffff,primary).circle(16,16,4)
+  elif name=='notifications':
+   v.arc(16,13,9,16,16,2).stroke(7,13,7,23,2)
+   v.stroke(7,23,25,23,2).stroke(25,23,25,13,2)
+   v.color(0xffff,secondary).arc(16,23,4,0,16,2)
+  elif name=='phone':
+   v.color(0xffff,primary).poly(6,2,12,3,14,9,11,13,18,20,21,18,
+                                  28,21,29,27,25,30,20,29,12,24,7,17,3,9,2,6)
+  elif name=='message':
+   v.stroke(2,5,29,5,2).stroke(2,5,2,24,2).stroke(29,5,29,24,2)
+   v.stroke(2,24,14,24,2).stroke(14,24,14,30,2)
+   v.stroke(14,30,22,24,2).stroke(22,24,29,24,2)
+  elif name=='storage':
+   v.stroke(5,3,26,3,2).stroke(5,3,5,30,2)
+   v.stroke(26,3,26,30,2).stroke(5,30,26,30,2)
+   v.color(0xffff,secondary).stroke(9,9,22,9,2).stroke(9,15,22,15,2)
+  elif name=='battery':
+   v.stroke(2,9,28,9,2).stroke(2,9,2,24,2)
+   v.stroke(28,9,28,24,2).stroke(2,24,28,24,2)
+   v.stroke(29,14,31,14,2).stroke(29,19,31,19,2)
+   v.color(secondary,0xffff).rect(6,13,17,21)
+  elif name=='maps':
+   v.stroke(3,5,12,2,2).stroke(12,2,21,6,2).stroke(21,6,29,2,2)
+   v.stroke(3,5,3,29,2).stroke(12,2,12,26,2).stroke(21,6,21,30,2)
+   v.stroke(29,2,29,27,2).stroke(3,29,12,26,2)
+   v.stroke(12,26,21,30,2).stroke(21,30,29,27,2)
+  elif name=='about':
+   v.arc(16,16,14,0,32,2).stroke(16,14,16,23,2)
+   v.color(secondary,0xffff).circle(16,9,2)
+  elif name=='update':
+   v.arc(16,16,12,19,22,2).stroke(3,20,3,29,2)
+   v.stroke(3,29,12,29,2).arc(16,16,12,3,13,2)
   items.append((name,v.end()))
- lines=['/* Generated settings SVFs: accent categories and white system rows. */','typedef struct {const unsigned char *data;unsigned length;} SettingsIcon;']
+ lines=['/* Generated two-tone MDL2-style Settings icons; 17/24/32 pixel targets. */',
+        'typedef struct {const unsigned char *data;unsigned length;} SettingsIcon;']
  assets=HERE/'assets/settings';assets.mkdir(parents=True,exist_ok=True)
  for i,(name,b) in enumerate(items):
-  (assets/(name+'.svf')).write_bytes(b);lines.append('static const unsigned char sc%d[]={%s};'%(i,','.join(map(str,b))))
+  (assets/(name+'.svf')).write_bytes(b)
+  lines.append('static const unsigned char sc%d[]={%s};'%(i,','.join(map(str,b))))
  lines.append('static const SettingsIcon settings_icons[]={'+','.join('{sc%d,sizeof(sc%d)}'%(i,i) for i in range(len(items)))+'};')
  (HERE/'settings_icons.h').write_text('\n'.join(lines)+'\n')
 if __name__=='__main__':
