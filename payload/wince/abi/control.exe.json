@@ -381,32 +381,32 @@
       "symbols": [
         {
           "ordinal": 3,
-          "name": null,
+          "name": "CommandBar_Create",
           "iat": 12584
         },
         {
           "ordinal": 8,
-          "name": null,
+          "name": "CommandBar_InsertMenubar",
           "iat": 12588
         },
         {
           "ordinal": 10,
-          "name": null,
+          "name": "CommandBar_AddAdornments",
           "iat": 12592
         },
         {
           "ordinal": 44,
-          "name": null,
+          "name": "CommandBar_AlignAdornments",
           "iat": 12596
         },
         {
           "ordinal": 12,
-          "name": null,
+          "name": "CommandBar_Height",
           "iat": 12600
         },
         {
           "ordinal": 2,
-          "name": null,
+          "name": "InitCommonControlsEx",
           "iat": 12604
         }
       ]
