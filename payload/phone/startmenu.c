@@ -112,8 +112,11 @@ static void home(void *dc)
         if (p->size == 2)
             r->text(dc, x + 7, y + size - 20, a->name, INK, 12);
         if (selected == idx) {
-            r->fill(dc, x, y, x + size, y + 2, WHITE);
-            r->fill(dc, x, y, x + 2, y + size, WHITE);
+            /* Light tiles need an unmistakable selection outline. */
+            r->fill(dc, x, y, x + size, y + 3, BLUE);
+            r->fill(dc, x, y, x + 3, y + size, BLUE);
+            r->fill(dc, x, y + size - 3, x + size, y + size, BLUE);
+            r->fill(dc, x + size - 3, y, x + size, y + size, BLUE);
         }
     }
     r->clip(0, 24, 320, view_bottom);
@@ -146,8 +149,10 @@ static int rows(void *dc, int hx, int hy)
             y += 40;
         }
         if (dc && y + 44 > 76 && y < limit) {
-            if (selected == (int)i)
-                r->fill(dc, 2, y - 1, 313, y + 43, CARD);
+            if (selected == (int)i) {
+                r->fill(dc, 2, y - 1, 313, y + 43, RGB_(166, 200, 227));
+                r->fill(dc, 2, y - 1, 7, y + 43, BLUE);
+            }
             r->fill(dc, 6, y, 44, y + 40, a->color);
             icon_on_light(dc, i, 10, y + 4, 30);
             r->text(dc, 57, y + 8, a->name, INK, 18);
@@ -207,9 +212,9 @@ static void app_paint(void *dc)
         r->text(dc, 14, 161, "Welcome to your phone.", GRAY, 14);
     if (!editing)
         return;
-    r->fill(dc, 14, 352, 306, 392, PANEL);
+    r->fill(dc, 14, 352, 306, 392, RGB_(197, 216, 232));
     r->text(dc, 27, 363, pin_size(a->id) ? "Unpin from Start" : "Pin to Start", INK, 14);
-    r->fill(dc, 14, 404, 306, 444, PANEL);
+    r->fill(dc, 14, 404, 306, 444, RGB_(197, 216, 232));
     const char *tile_label = pin_size(a->id) == 1 ? "Tile size: small" : "Tile size: medium";
     r->text(dc, 27, 415, tile_label, INK, 14);
     if (save_failed)
