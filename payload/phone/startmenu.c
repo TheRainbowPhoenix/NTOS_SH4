@@ -78,7 +78,7 @@ static int home_end(void)
 }
 static void icon_on_light(void *dc, unsigned i, int x, int y, int size)
 {
-    CALL(catalog_CatalogDrawIconTint, (dc, i, x, y, size, INK));
+    CALL(catalog_CatalogDrawIconTint, (dc, i, x, y, size, RGB_(0, 0, 0)));
 }
 static void arrow(void *dc, int x, int y, int back)
 {
