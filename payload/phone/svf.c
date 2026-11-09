@@ -27,7 +27,7 @@ static int scan(const unsigned char *b, unsigned n)
             need = 4;
         else if (op == 0x10 || op == 0x21 || op == 0x30)
             need = 8;
-        else if (op == 0x11)
+        else if (op == 0x11 || op == 0x22 || op == 0x31)
             need = 9;
         else if (op == 0x20)
             need = 6;
@@ -46,6 +46,8 @@ static int scan(const unsigned char *b, unsigned n)
         } else
             return 0;
         if (need > n - p)
+            return 0;
+        if ((op == 0x22 || op == 0x31) && b[p + 8] == 0)
             return 0;
         if (op == 0x60 && (word(b + p) == 0 || word(b + p) > 4096 || word(b + p + 2) == 0 ||
                            word(b + p + 2) > 4096))
@@ -73,9 +75,40 @@ static U32 ink(unsigned rgb555, U32 tint)
     unsigned max = red > green ? red : green;
     if (blue > max)
         max = blue;
+    if (tint != 0xffffffffu && rgb555 == 0x4210u)
+        return RGB_(127, 127, 127); /* second, 50%-black ink, never alpha-blended */
     if (tint != 0xffffffffu && min >= 22u && max - min <= 3u)
         return tint;
     return color(rgb555);
+}
+/* 32 angular samples, generated once offline (cos/sin * 1024).
+ * ARC uses no floating point, transcendental functions or heap memory. */
+static const short arc_x[32] = {
+    1024, 1004, 946, 851, 724, 569, 392, 200, 0, -200, -392, -569,
+    -724, -851, -946, -1004, -1024, -1004, -946, -851, -724, -569,
+    -392, -200, 0, 200, 392, 569, 724, 851, 946, 1004
+};
+static const short arc_y[32] = {
+    0, 200, 392, 569, 724, 851, 946, 1004, 1024, 1004, 946, 851,
+    724, 569, 392, 200, 0, -200, -392, -569, -724, -851,
+    -946, -1004, -1024, -1004, -946, -851, -724, -569, -392, -200
+};
+static void stroke_segment(const Render *r, void *dc, int x0, int y0, int x1, int y1,
+                           unsigned width, U32 ink_color)
+{
+    /* Width is in output pixels and capped by the decoder. Center the
+     * parallel offsets across the shortest axis, with no trig required. */
+    int begin = -(int)((width - 1u) / 2u);
+    for (unsigned i = 0; i < width; ++i) {
+        int off = begin + (int)i;
+        int dx = x1 - x0, dy = y1 - y0;
+        if (dx < 0) dx = -dx;
+        if (dy < 0) dy = -dy;
+        if (dx >= dy)
+            r->line(dc, x0, y0 + off, x1, y1 + off, ink_color);
+        else
+            r->line(dc, x0 + off, y0, x1 + off, y1, ink_color);
+    }
 }
 static int draw_icon(void *dc, const void *data, unsigned length, int x, int y, int w, int h,
                      U32 tint)
@@ -142,6 +175,37 @@ static int draw_icon(void *dc, const void *data, unsigned length, int x, int y, 
         if (a < -4096 || a > 4096 || c < -4096 || c > 4096 || d < -4096 || d > 4096 || e < -4096 ||
             e > 4096)
             return 0;
+        if (op == 0x31) {
+            if (stroke != 0xffff)
+                stroke_segment(r, dc, CX(a), CY(c), CX(d), CY(e),
+                               (unsigned)clampi(div_((int)b[p + 8] * w, vw), 1, 8),
+                               ink(stroke, tint));
+            p += 9;
+            continue;
+        }
+        if (op == 0x22) {
+            /* ARC: cx,cy,r (BE i16), start sample, length in 1/32 turns,
+             * logical stroke width; 32 means a complete circle. */
+            unsigned start = b[p + 6], count = b[p + 7], thickness = b[p + 8];
+            if (start >= 32 || count > 32 || d < 0)
+                return 0;
+            if (stroke != 0xffff && count) {
+                int oldx = CX(a + (d * arc_x[start]) / 1024);
+                int oldy = CY(c + (d * arc_y[start]) / 1024);
+                for (unsigned i = 1; i <= count; ++i) {
+                    unsigned step = (start + i) & 31u;
+                    int newx = CX(a + (d * arc_x[step]) / 1024);
+                    int newy = CY(c + (d * arc_y[step]) / 1024);
+                    stroke_segment(r, dc, oldx, oldy, newx, newy,
+                                   (unsigned)clampi(div_((int)thickness * w, vw), 1, 8),
+                                   ink(stroke, tint));
+                    oldx = newx;
+                    oldy = newy;
+                }
+            }
+            p += 9;
+            continue;
+        }
         if (op == 0x30) {
             if (stroke != 0xffff)
                 r->line(dc, CX(a), CY(c), CX(d), CY(e), ink(stroke, tint));
