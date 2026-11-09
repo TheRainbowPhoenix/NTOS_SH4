@@ -11,7 +11,9 @@ SDK_DIR?=/sdk
 DEPFLAGS=-MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 WARNINGS=-Wall -Wextra -pedantic -Werror -pedantic-errors
 INCLUDES=-I$(SDK_DIR)/include #-I$(SOURCEDIR)
-DEFINES=
+# Pager validated in emulator: the default loader now handles graphs beyond
+# the 55-slot eager translation budget. Use DEFINES= for the conservative build.
+DEFINES=-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1
 FUNCTION_FLAGS=-flto=auto -ffat-lto-objects -fno-builtin -ffunction-sections -fdata-sections -gdwarf-5 -O2
 COMMON_FLAGS=$(FUNCTION_FLAGS) $(INCLUDES) $(WARNINGS) $(DEFINES)
 
@@ -83,6 +85,10 @@ CALC_EXE := $(OUTDIR)/CALC.EXE
 CONTROL_OBJ := $(BUILDDIR)/payload/control.o
 CONTROL_ELF := $(BUILDDIR)/payload/control.elf
 CONTROL_EXE := $(OUTDIR)/CONTROL.EXE
+CPL_OBJ := $(BUILDDIR)/payload/demo_cpl.o
+CPL_ELF := $(BUILDDIR)/payload/demo_cpl.elf
+CPL_DLL := $(OUTDIR)/DEMO.CPL
+CPL_INSTALL := $(OUTDIR)/Windows/demo.cpl
 CHAIN_OBJ := $(BUILDDIR)/payload/chain.o
 CHAIN_ELF := $(BUILDDIR)/payload/chain.elf
 CHAIN_DLL := $(OUTDIR)/CHAIN.DLL
@@ -128,7 +134,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -290,13 +296,29 @@ $(CONTROL_OBJ): $(PAYLOAD_DIR)/control.c $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR
 	@mkdir -p $(dir $@)
 	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
 
+$(CPL_OBJ): payload/wince/demo/demo_cpl.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS) -DDemoCPlApplet=CPlApplet
+
+$(CPL_ELF): $(CPL_OBJ) $(PAYLOAD_DIR)/coredll.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/coredll.ld -o $@ $(CPL_OBJ)
+
+$(CPL_DLL): $(CPL_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name DEMO.CPL --exports CPlApplet
+
+$(CPL_INSTALL): $(CPL_DLL)
+	@mkdir -p $(dir $@)
+	cp $< $@
+
 $(CONTROL_ELF): $(CONTROL_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
 	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(CONTROL_OBJ)
 
-$(CONTROL_EXE): $(CONTROL_ELF) tools/elf2ntx.py
+$(CONTROL_EXE): $(CONTROL_ELF) $(CPL_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $(CONTROL_ELF) -o $@ --import-module COREDLL.DLL
+	$(PYTHON) tools/elf2ntx.py $(CONTROL_ELF) -o $@ --import-module COREDLL.DLL --extra-import-prefix CPlApplet:DEMO.CPL
 
 # A third named DLL with its own recursive import: CHAIN.DLL -> COREDLL.
 $(CHAIN_OBJ): $(PAYLOAD_DIR)/chain.c $(PAYLOAD_DIR)/ntimport.h
