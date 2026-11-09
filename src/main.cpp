@@ -201,6 +201,7 @@ static uint32_t ntos_read_event(uint32_t *x, uint32_t *y,
         if (direction) *direction = static_cast<uint32_t>(event.data.touch_single.direction);
         return 1;
     }
+    if(event.type==EVENT_ACTBAR_ESC)return 2;
     if (event.type == EVENT_KEY && event.data.key.direction == KEY_PRESSED) {
         if (event.data.key.keyCode == KEYCODE_POWER_CLEAR) return 2;
         if (x) *x = static_cast<uint32_t>(event.data.key.keyCode);

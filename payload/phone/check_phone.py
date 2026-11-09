@@ -65,3 +65,19 @@ while pending:
  pending.extend(d.dll.decode().upper() for d in getattr(image,'DIRECTORY_ENTRY_IMPORT',[]))
 assert len(active)<=16 and pages<=55,('resident loader budget exceeded',len(active),pages)
 print('PASS ten DLL export surfaces, all imports resolved, SH4 BE relocations, 24 embedded-resource apps; active graph',pages,'pages; mapped images',total,'bytes')
+
+# Independently decode the portable cache instead of assuming C struct layout.
+cache=(out/'phone-device/apps.dat').read_bytes();assert cache[:4]==b'CAT1' and cache[6:8]==b'\x01\0'
+assert int.from_bytes(cache[4:6],'big')==24
+pos=8;ids=set()
+for _ in range(24):
+ id_,flags,size,color,n,p,v,off,sz,kind=struct.unpack_from('>HBBIBBHIIB3x',cache,pos);pos+=24
+ name=cache[pos:pos+n].decode();pos+=n
+ path=cache[pos:pos+p].decode();pos+=p
+ vector=cache[pos:pos+v];pos+=v
+ assert id_ not in ids and size in (1,2) and vector.startswith(b'VEC1');ids.add(id_)
+ assert path.startswith('\\fls0\\Apps\\') and not path.startswith('\\\\')
+ exe=out/'phone-device'/Path(path[len('\\fls0\\'):].replace('\\','/'))
+ assert exe.is_file() and exe.with_suffix('.svf').read_bytes()==vector
+assert pos==len(cache) and ids==set(range(1,25))
+print('PASS compact app cache:',len(cache),'bytes, 24 names/paths/SVF icons')

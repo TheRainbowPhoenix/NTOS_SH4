@@ -27,11 +27,17 @@ typedef unsigned int u32;
  *   [0] puts(s) [1] printf [2] refresh [3] malloc(n) [4] free(p)
  *   [5] get_key() [6] clear [7] pixel [8] line [9] fillrect [10] input
  */
+#ifdef NTOS_CORE_HOST_TEST
+extern const void *ntos_host_table[28];
+static const void **ntapi(void){return ntos_host_table;}
+#else
 static const void **ntapi(void)
 {
     const void *tbl = *API_WINDOW;
     return (const void **)(tbl != 0 ? tbl : 0);
 }
+
+#endif
 
 void coredll_puts(const char *s)
 {
@@ -743,6 +749,8 @@ int UpdateWindow(void *hwnd)
  * Only the existing WinCE function names are exposed to PE clients. */
 #define NT_INVALID_FILE ((void *)-1)
 #define NT_HANDLE_TAG 0x00010000u
+/* SDK/Fugue descriptors include the mount index in their upper 16 bits. */
+static struct {int used,fd;} nt_files[32];
 #define NT_GENERIC_READ  0x80000000u
 #define NT_GENERIC_WRITE 0x40000000u
 #define NT_CREATE_ALWAYS 2u
@@ -756,16 +764,14 @@ static int narrow_path(const u16 *src, char *dest, u32 capacity)
 {
     u32 i=0, j=0;
     if (!src || capacity < 12u) return 0;
-    /* The Hollyhock SDK uses "\\fls0\file" (two leading backslashes).
-     * Accept either the WinCE-style single leading slash or the canonical
-     * SDK spelling, then always pass the canonical form to File_Open. */
+    /* Fugue needs one leading slash; two give an empty volume name.
+     * Accept either input spelling and normalize to one. */
     while (src[i] == '\\' && i < 2u) ++i;
     if (i == 0 || !((src[i]=='f'||src[i]=='F') &&
                     (src[i+1]=='l'||src[i+1]=='L') &&
                     (src[i+2]=='s'||src[i+2]=='S') &&
                     src[i+3]=='0' && src[i+4]=='\\'))
         return 0;
-    dest[j++]='\\';
     dest[j++]='\\';
     while (src[i] && j+1 < capacity) {
         if (src[i] > 127u) return 0;
@@ -779,9 +785,9 @@ static int narrow_path(const u16 *src, char *dest, u32 capacity)
 static int handle_fd(void *handle)
 {
     u32 value=(u32)handle;
-    if ((value & 0xFFFF0000u) != NT_HANDLE_TAG ||
-        (value & 0xFFFFu) == 0u) return -1;
-    return (int)(value & 0xFFFFu)-1;
+    if(value<=NT_HANDLE_TAG||value>NT_HANDLE_TAG+32u)return -1;
+    unsigned slot=value-NT_HANDLE_TAG-1u;
+    return nt_files[slot].used?nt_files[slot].fd:-1;
 }
 
 static u32 g_last_error;
@@ -828,11 +834,14 @@ void *CreateFileW(const u16 *path, u32 access, u32 share,
         }
     }
     fd=((int (*)(const char *,u32))a[11])(narrow,flags);
-    if (fd < 0 || fd >= 0xFFFF) {
+    if (fd < 0) {
         g_last_error=nt_file_error(fd); return NT_INVALID_FILE;
     }
     g_last_error=0;
-    return (void *)(NT_HANDLE_TAG | ((u32)fd+1u));
+    unsigned slot=0;while(slot<32u&&nt_files[slot].used)++slot;
+    if(slot==32u){if(a[14])((int (*)(int))a[14])(fd);g_last_error=4;return NT_INVALID_FILE;}
+    nt_files[slot].used=1;nt_files[slot].fd=fd;
+    return (void *)(NT_HANDLE_TAG+slot+1u);
 }
 
 u32 GetFileSize(void *handle, u32 *high)
@@ -882,6 +891,7 @@ int CloseHandle(void *handle)
     int fd=handle_fd(handle);
     if (fd < 0 || !a || !a[14]) { g_last_error=87; return 0; }
     int result=((int (*)(int))a[14])(fd);
+    nt_files[(u32)handle-NT_HANDLE_TAG-1u].used=0;
     g_last_error=result<0 ? nt_file_error(result) : 0;
     return result==0;
 }

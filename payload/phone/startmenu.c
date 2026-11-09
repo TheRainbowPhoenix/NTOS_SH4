@@ -7,12 +7,13 @@ IMP(void,catalog_CatalogDrawIcon,(void *,unsigned,int,int,int))
 IMP(const Settings *,settings_SettingsGetView,(void))
 IMP(int,coredll_launch,(const char *))
 IMP(void,PostQuitMessage,(int))
+IMP(int,DeleteFileW,(const W16 *))
 IMP(int,SipShowIM,(U32))
 IMP(int,SipGetInfo,(SipInfo *))
 static const Render *r;static const Catalog *cat;
 static const Settings *settings;
 static int mode,offset,list_offset,jump,search,selected=-1,opened=-1,query_len,save_failed;
-static int drag_y,drag_x,drag_scroll,drag_mode,drag_valid,tap=-1,editing;
+static int drag_y,drag_x,drag_scroll,drag_mode,drag_valid,tap=-1,editing,dragged;
 static char query[48];
 static int lower(int c){return c>='A'&&c<='Z'?c+32:c;}
 static int match(const char *s){if(!query_len)return 1;
@@ -34,7 +35,7 @@ static void home(void *dc){for(unsigned i=0;i<cat->pin_count;++i){const Pin *p=&
  if(p->size==2)r->text(dc,x+7,y+size-20,a->name,WHITE,12);
  if(selected==idx){r->fill(dc,x,y,x+size,y+2,WHITE);r->fill(dc,x,y,x+2,y+size,WHITE);}
  }
- r->clip(0,24,320,528);int y=home_end()-offset;r->text(dc,232,y-12,"All apps",WHITE,14);arrow(dc,306,y-4,0);
+ r->clip(0,24,320,528);int y=home_end()-offset;r->text(dc,8,y-12,"Refresh",GRAY,12);r->text(dc,232,y-12,"All apps",WHITE,14);arrow(dc,306,y-4,0);
  if(!cat->count)r->text(dc,12,80,"No apps in Apps folder",GRAY,16);
 }
 static int rows(void *dc,int hx,int hy){int y=80-list_offset,last=0,hit=-1,found=0,limit=bottom();
@@ -56,10 +57,10 @@ static int group_exists(int c){for(unsigned i=0;i<cat->count;++i)if(lower(cat->a
 static void jump_paint(void *dc){r->fill(dc,0,24,320,528,0);
  for(int i=0;i<28;++i){int x=48+(i%4)*64,y=54+div_(i,4)*64;char s[2]={i==0?'#':i==27?'@':(char)('A'+i-1),0};
   r->text(dc,x,y,s,group_exists(s[0])?WHITE:RGB_(53,53,53),28);}}
-static void app_paint(void *dc){const AppEntry *a=&cat->apps[opened];arrow(dc,21,48,1);r->text(dc,45,38,a->name,WHITE,18);
- r->fill(dc,120,102,200,182,a->color);icon(dc,(unsigned)opened,137,119,46);
- if(a->flags&1u){r->text(dc,14,216,"Latest headlines",WHITE,22);r->text(dc,14,254,"Welcome to your phone.",GRAY,14);}
- else r->text(dc,14,224,"Ready when you are.",GRAY,18);
+static void app_paint(void *dc){const AppEntry *a=&cat->apps[opened];
+ r->fill(dc,0,24,320,72,RGB_(23,23,23));icon(dc,(unsigned)opened,14,36,26);
+ r->text(dc,49,42,a->name,WHITE,14);r->text(dc,14,101,a->name,WHITE,24);
+ if(a->flags&1u)r->text(dc,14,161,"Welcome to your phone.",GRAY,14);
  if(!editing)return;
  r->fill(dc,14,352,306,392,RGB_(42,42,42));r->text(dc,27,363,pin_size(a->id)?"Unpin from Start":"Pin to Start",WHITE,14);
  r->fill(dc,14,404,306,444,RGB_(42,42,42));r->text(dc,27,415,pin_size(a->id)==1?"Tile size: small":"Tile size: medium",WHITE,14);
@@ -93,14 +94,18 @@ static void jump_to(int c){int y=0,last=0;for(unsigned i=0;i<cat->count;++i){int
  if(last!=l){if(l>=c){list_offset=y;return;}last=l;y+=40;}y+=44;}}
 static void scroll_by(int delta){if(!mode){offset=clampi(offset+delta,0,home_end()>512?home_end()-512:0);return;}
  int height=rows(0,-1,-1)-80,view=bottom()-80;list_offset=clampi(list_offset+delta,0,height>view?height-view:0);}
+static void refresh_catalog(void){static const W16 cache[]={'\\','f','l','s','0','\\','a','p','p','s','.','d','a','t',0};
+ CALL(DeleteFileW,(cache));CALL(catalog_CatalogReload,());selected=opened=tap=-1;mode=offset=list_offset=drag_valid=0;}
 static int input(U32 msg,U32 wp,U32 lp){int x=(int)(short)(lp&65535u),y=(int)(short)(lp>>16);
  if(opened>=0&&cat->apps[opened].id==APP_SETTINGS_ID){
+  if(msg==WM_UP_){drag_valid=dragged=0;tap=-1;}
   if(msg==WM_KEY_&&(wp==0x1b||wp==0x25)&&sip_on()){CALL(SipShowIM,(0));return 1;}
   int result=settings->input(msg,wp,lp);if(result<0){CALL(PostQuitMessage,(0));opened=-1;mode=offset=0;CALL(SipShowIM,(0));return 1;}return result;
  }
+ if(msg==WM_KEY_&&wp==0x74){refresh_catalog();return 1;}
  if(msg==WM_KEY_&&wp==0x72&&selected>=0){open_id(cat->apps[selected].id);editing=1;return 1;}
  if(msg==WM_KEY_&&wp==0x71){opened=-1;mode=search=1;CALL(SipShowIM,(1));return 1;}
- if(msg==WM_KEY_){if(wp==0x1bu||wp==0x25u){if(sip_on()){CALL(SipShowIM,(0));search=0;return 1;}
+ if(msg==WM_KEY_){drag_valid=dragged=0;tap=-1;if(wp==0x1bu||wp==0x25u){if(sip_on()){CALL(SipShowIM,(0));search=0;return 1;}
   if(opened>=0){CALL(PostQuitMessage,(0));opened=-1;mode=offset=0;}else if(jump)jump=0;else {mode=search=query_len=offset=0;query[0]=0;}return 1;}
   if(wp==0x27u){mode=1;selected=-1;return 1;}
   if(wp==0x26u||wp==0x28u){navigate(wp==0x26u?-1:1);return 1;}
@@ -111,9 +116,15 @@ static int input(U32 msg,U32 wp,U32 lp){int x=(int)(short)(lp&65535u),y=(int)(sh
   else if(wp<2048){query[query_len++]=(char)(0xc0|(wp>>6));query[query_len++]=(char)(0x80|(wp&63));}
   else {query[query_len++]=(char)(0xe0|(wp>>12));query[query_len++]=(char)(0x80|((wp>>6)&63));query[query_len++]=(char)(0x80|(wp&63));}
   query[query_len]=0;list_offset=0;return 1;}
- if(msg==WM_UP_){int app=tap;tap=-1;drag_valid=0;
-  if(app>=0)activate(cat->apps[app].id);return app>=0;}
- if(msg==WM_DOWN_){tap=-1;drag_x=x;drag_y=y;drag_scroll=mode?list_offset:offset;drag_mode=mode;drag_valid=1;if(y<24)return 0;
+ if(msg==WM_UP_){int app=tap,dy=y-drag_y,dx=x-drag_x;
+  int launch=drag_valid&&!dragged&&dx>=-8&&dx<=8&&dy>=-8&&dy<=8&&app>=0;
+  tap=-1;drag_valid=dragged=0;if(launch)activate(cat->apps[app].id);return launch;}
+ if(msg==WM_DOWN_&&drag_valid){
+  int dy=y-drag_y,dx=x-drag_x;if(dx>8||dx< -8||dy>8||dy< -8){dragged=1;tap=-1;
+   if(opened<0&&!jump&&drag_mode==mode){int target=drag_scroll+drag_y-y;scroll_by(target-(mode?list_offset:offset));selected=-1;}}
+  return 1;}
+
+ if(msg==WM_DOWN_){dragged=0;tap=-1;drag_x=x;drag_y=y;drag_scroll=mode?list_offset:offset;drag_mode=mode;drag_valid=1;if(y<24)return 0;
   if(opened>=0){const AppEntry *a=&cat->apps[opened];if(y<80){opened=-1;mode=offset=0;return 1;}
    if(editing&&y>=352&&y<392)save_failed=!CALL(catalog_CatalogPin,(a->id,pin_size(a->id)?0u:2u));
    if(editing&&y>=404&&y<444)save_failed=!CALL(catalog_CatalogPin,(a->id,pin_size(a->id)==1?2u:1u));return 1;}
@@ -122,16 +133,16 @@ static int input(U32 msg,U32 wp,U32 lp){int x=(int)(short)(lp&65535u),y=(int)(sh
   if(mode){if(y<65){if(x>286&&query_len){query_len=0;query[0]=0;list_offset=0;}search=1;CALL(SipShowIM,(1));return 1;}
    if(y>=bottom())return 0;int i=rows(0,x,y);if(i==-2){jump=1;search=0;CALL(SipShowIM,(0));return 1;}
    if(i>=0){selected=i;tap=i;return 1;}}
-  else {if(y+offset>=home_end()-24){mode=1;selected=-1;return 1;}
+  else {if(y+offset>=home_end()-24){if(x<100)refresh_catalog();else {mode=1;selected=-1;}return 1;}
    for(unsigned i=0;i<cat->pin_count;++i){const Pin *p=&cat->pins[i];int xx=6+p->x*52,yy=28+p->y*52,sz=p->size*52-4;
     if(x>=xx&&x<xx+sz&&y+offset>=yy&&y+offset<yy+sz){selected=index_id(p->id);tap=selected;return 1;}}}}
  if(msg==WM_MOVE_&&drag_valid&&opened<0&&!jump&&drag_mode==mode){
   int dy=y-drag_y,dx=x-drag_x;if(dy>=-8&&dy<=8&&dx>=-8&&dx<=8)return 0;
-  tap=-1;int target=drag_scroll+drag_y-y;
+  dragged=1;tap=-1;int target=drag_scroll+drag_y-y;
   scroll_by(target-(mode?list_offset:offset));selected=-1;return 1;}return 0;}
 void StartMenuInitialize(void){r=CALL(render_SpGetThreadContext,());CALL(catalog_CatalogReload,());cat=CALL(catalog_CatalogGet,());
  settings=CALL(settings_SettingsGetView,());
- mode=offset=list_offset=jump=search=query_len=save_failed=drag_valid=0;selected=opened=tap=-1;editing=0;query[0]=0;CALL(SipShowIM,(0));}
+ mode=offset=list_offset=jump=search=query_len=save_failed=drag_valid=dragged=0;selected=opened=tap=-1;editing=0;query[0]=0;CALL(SipShowIM,(0));}
 void StartMenuUninitialize(void){CALL(SipShowIM,(0));r=0;cat=0;}
 static int page(void){return mode;}
 static int scroll(void){return mode?list_offset:offset;}

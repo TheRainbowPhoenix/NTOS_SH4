@@ -90,6 +90,7 @@ static void draw(void *dc)
     ui_fill(dc,0,0,320,528,bg);
     ui_fill(dc,0,0,320,55,RGB(12,73,132));
     ui_text(dc,17,17,"CALCULATOR",RGB(255,255,255),1);
+    ui_button(dc,266,8,312,47,"X",RGB(150,32,44),RGB(255,255,255));
     ui_text(dc,17,70,"STANDARD  /  INTEGER",RGB(78,88,103),0);
     ui_fill(dc,14,98,306,141,RGB(255,255,255));
     ui_fill(dc,14,140,306,143,RGB(191,197,206));
@@ -121,6 +122,7 @@ static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp)
     }
     if(msg==WM_LBUTTONDOWN) {
         int x=(short)(lp&65535u),y=(short)(lp>>16);
+        if(x>=258&&y<55){NT_CALL(PostQuitMessage,(0));return 0;}
         if(x>=14 && x<314 && y>=159 && y<451) {
             int col=(x-14)/75,row=(y-159)/73;
             if(col<4 && row<4) key=labels[row*4+col][0];
@@ -129,7 +131,7 @@ static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp)
         if(wp>=0x30u && wp<=0x39u) key=(char)wp;
         else if(wp==VK_RETURN) key='=';
         else if(wp=='+' || wp=='-' || wp=='*' || wp=='/') key=(char)wp;
-        else if(wp==0x1bu) { NT_CALL(PostQuitMessage,(0)); return 0; }
+        else if(wp==0x1bu||wp==0x80u) { NT_CALL(PostQuitMessage,(0)); return 0; }
         else if(wp==0x97u || wp=='C') key='C';
     } else return 0;
     if(key) { press(key); NT_CALL(InvalidateRect,(hwnd,0,1)); }

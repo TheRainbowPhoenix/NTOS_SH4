@@ -100,10 +100,56 @@ static void pack_pins(void){unsigned char used[64][6];for(unsigned y=0;y<64;++y)
    if(!fits)continue;p->x=(unsigned char)x;p->y=(unsigned char)y;
    for(unsigned yy=0;yy<s;++yy)for(unsigned xx=0;xx<s;++xx)used[y+yy][x+xx]=1;placed=1;break;}}
 }
+/* CAT1 cache: 8-byte header, bounded variable records; streamed in 4K chunks.
+ * Pins remain independently editable in home.dat. F5 removes this cache. */
+static unsigned cache_pos,cache_size;
+static int cache_read(void *f,void *out,unsigned n){unsigned char *d=out;
+ while(n){if(cache_pos==cache_size){U32 got=0;if(!CALL(ReadFile,(f,work,4096,&got,0))||!got)return 0;cache_pos=0;cache_size=got;}
+  unsigned take=cache_size-cache_pos;if(take>n)take=n;
+  for(unsigned i=0;i<take;++i)d[i]=work[cache_pos+i];cache_pos+=take;d+=take;n-=take;}return 1;}
+static U32 big32(const unsigned char *b){return ((U32)b[0]<<24)|((U32)b[1]<<16)|((U32)b[2]<<8)|b[3];}
+static void put32(unsigned char *b,U32 v){b[0]=(unsigned char)(v>>24);b[1]=(unsigned char)(v>>16);b[2]=(unsigned char)(v>>8);b[3]=(unsigned char)v;}
+static int cache_load(void){void *f=file_("\\fls0\\apps.dat",0);if(f==(void *)(intptr_t)-1)return 0;
+ unsigned char h[24];unsigned consumed=8;int ok=0;cache_pos=cache_size=0;
+ if(!cache_read(f,h,8)||h[0]!='C'||h[1]!='A'||h[2]!='T'||h[3]!='1'||h[6]!=1||h[7])goto done;
+ unsigned count=be16_(h+4);if(!count||count>MAX_APPS)goto done;
+ for(unsigned i=0;i<count;++i){if(!cache_read(f,h,24))goto done;
+  AppEntry *a=&cat.apps[i];unsigned name=h[8],path=h[9],bytes=be16_(h+10);
+  if(!name||name>=sizeof(a->name)||!path||path>=sizeof(a->path)||bytes>ICON_BYTES||(h[3]!=1&&h[3]!=2)||h[20]>1)goto done;
+  unsigned char *clear=(unsigned char *)a;for(unsigned j=0;j<sizeof(*a);++j)clear[j]=0;
+  a->id=(unsigned short)be16_(h);a->flags=h[2];a->size=h[3];a->color=big32(h+4);
+  a->icon_len=(unsigned short)bytes;a->pe_icon_offset=big32(h+12);a->pe_icon_size=big32(h+16);a->pe_icon_type=h[20];
+  if(a->pe_icon_size>sizeof(work)||!cache_read(f,a->name,name)||!cache_read(f,a->path,path)||!cache_read(f,a->icon,bytes))goto done;
+  for(unsigned j=0;j<name;++j)if(!a->name[j])goto done;
+  for(unsigned j=0;j<path;++j)if(!a->path[j]||(a->path[j]=='.'&&j+1<path&&a->path[j+1]=='.'))goto done;
+  if(bytes&&!CALL(svf_SVFValidate,(a->icon,bytes)))goto done;
+  for(unsigned j=0;j<i;++j)if(cat.apps[j].id==a->id)goto done;
+  consumed+=24+name+path+bytes;
+ }
+ if(CALL(GetFileSize,(f,0))!=consumed)goto done;cat.count=count;ok=1;
+ done:CALL(CloseHandle,(f));if(!ok)cat.count=0;return ok;
+}
+static int cache_flush(void *f){if(!cache_size)return 1;U32 done=0;
+ int ok=CALL(WriteFile,(f,work,cache_size,&done,0))&&done==cache_size;cache_size=0;return ok;}
+static int cache_write(void *f,const void *data,unsigned n){const unsigned char *b=data;
+ while(n){unsigned take=4096-cache_size;if(take>n)take=n;
+  for(unsigned i=0;i<take;++i)work[cache_size+i]=b[i];cache_size+=take;b+=take;n-=take;
+  if(cache_size==4096&&!cache_flush(f))return 0;}return 1;}
+static void cache_save(void){if(!cat.count)return;void *f=file_("\\fls0\\apps.dat",1);if(f==(void *)(intptr_t)-1)return;
+ unsigned char h[24]={'C','A','T','1',0,0,1,0};put16_(h+4,cat.count);cache_size=0;
+ int ok=cache_write(f,h,8);
+ for(unsigned i=0;i<cat.count&&ok;++i){const AppEntry *a=&cat.apps[i];for(unsigned j=0;j<24;++j)h[j]=0;
+  put16_(h,a->id);h[2]=a->flags;h[3]=a->size;put32(h+4,a->color);h[8]=(unsigned char)len_(a->name);h[9]=(unsigned char)len_(a->path);
+  put16_(h+10,a->icon_len);put32(h+12,a->pe_icon_offset);put32(h+16,a->pe_icon_size);h[20]=a->pe_icon_type;
+  ok=cache_write(f,h,24)&&cache_write(f,a->name,h[8])&&cache_write(f,a->path,h[9])&&cache_write(f,a->icon,a->icon_len);
+ }
+ if(ok)cache_flush(f);CALL(CloseHandle,(f));
+}
 const Catalog *CatalogGet(void){return &cat;}
-int CatalogReload(void){cat.count=cat.pin_count=0;scan_dir(root,0);
+int CatalogReload(void){cat.count=cat.pin_count=0;int cached=cache_load();if(!cached)scan_dir(root,0);
  for(unsigned i=1;i<cat.count;++i){unsigned j=i;while(j&&compare(cat.apps[j-1].name,cat.apps[j].name)>0){
    AppEntry tmp=cat.apps[j-1];cat.apps[j-1]=cat.apps[j];cat.apps[j]=tmp;--j;}}
+ if(!cached)cache_save();
  int n=load_("\\fls0\\home.dat",work,1024);
  int uniform=n>=8&&work[0]=='P'&&work[1]=='I'&&work[2]=='N'&&work[3]=='1'&&be16_(work+4)>=16&&8+be16_(work+4)*8==(unsigned)n;
  if(uniform)for(unsigned i=0;i<be16_(work+4);++i)if(work[10+i*8]!=2)uniform=0;

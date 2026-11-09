@@ -13,7 +13,7 @@ def main():
  ap=argparse.ArgumentParser();ap.add_argument('--cc',default=os.environ.get('HOST_CC','gcc'));args=ap.parse_args()
  obj=ROOT/'obj/phone-host';out=ROOT/'dist/phone-preview';obj.mkdir(parents=True,exist_ok=True);out.mkdir(parents=True,exist_ok=True)
  flags=['-std=c11','-O2','-Wall','-Wextra','-Werror','-Wno-misleading-indentation','-DPHONE_HOST','-I'+str(HERE),'-I'+str(ROOT/'payload')]
- flags+=['-D'+n+'=host_'+n for n in ['CreateFileW','ReadFile','WriteFile','CloseHandle','GetFileSize','SetFilePointer','FindFirstFileW','FindNextFileW','FindClose']]
+ flags+=['-D'+n+'=host_'+n for n in ['CreateFileW','ReadFile','WriteFile','CloseHandle','GetFileSize','SetFilePointer','FindFirstFileW','FindNextFileW','FindClose','DeleteFileW']]
  rename={
  'uixrender':{'SpGetThreadContext':'render_SpGetThreadContext','SpRenderThreadInit':'render_SpRenderThreadInit','SpRenderThreadUninit':'render_SpRenderThreadUninit'},
  'svf':{'SVFValidate':'svf_SVFValidate','SVFDraw':'svf_SVFDraw'},
@@ -38,6 +38,7 @@ def main():
   if p.is_dir():dest.mkdir(parents=True,exist_ok=True)
   else:dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(p,dest)
  shutil.copyfile(ROOT/'dist/phone-device/home.dat',fs/'home.dat')
+ if (fs/'apps.dat').exists():(fs/'apps.dat').unlink()
  extra=fs/'Apps/Extra';extra.mkdir(exist_ok=True)
  shutil.copyfile(ROOT/'dist/phone-device/Apps/camera/camera.exe',extra/'Zeta.exe')
  shutil.copyfile(ROOT/'dist/STARTHOST.EXE',extra/'Plain.exe')

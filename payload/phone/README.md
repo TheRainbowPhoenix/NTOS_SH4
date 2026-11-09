@@ -67,7 +67,7 @@ than a compiled-in app list. It parses the binary sidecar for app metadata and c
    4608 bytes. PNG-compressed, paletted and large ICO resources fall back.
 3. First letter of the app name.
 
-Discovery occurs when StartMenu initializes. Restart StartHost to pick up
+Discovery occurs when StartMenu initializes. Use Refresh on Start to pick up
 new folders or edited sidecars. Files with duplicate app IDs are skipped.
 
 `generate_apps.py` contains the sample catalog/icons; build_phone.py creates
@@ -75,7 +75,7 @@ all EXEs, resources and sidecars in one batch. Each build refreshes the
 shipping home.dat to the mixed 1x1/2x2 layout, saving changed preferences in
 home-backup.dat. On device, missing or legacy uniformly-medium layouts load
 home-default.dat; existing mixed user layouts stay intact. Adjacent .svf
-files are live overrides: edit one and restart StartHost to see the change.
+files are live overrides: edit one and use Refresh on Start to see the change.
 Use write_manifest.py to install one of your cleaner svf.py icons:
 
 ```
@@ -196,3 +196,41 @@ checks that all 24 app EXEs and SETTINGSUI.DLL exist, validates the launcher
 API tables and PE dependencies, and runs the actual C Settings/input
 previews on Linux. dist/** includes the whole phone-device tree and Apps.
 These workflow changes take effect after committing/pushing them.
+
+## clemu VFS compatibility
+
+COREDLL keeps a bounded table of complete SDK file descriptors. Fugue uses
+mount-tagged descriptors such as 0x00010001; they must not be truncated or
+rejected as oversized Win32 handles. This applies to preferences, app manifests,
+SVF icons and nested app files. The actual bridge regression is
+`tests/coredll_files_test.c` (run by CI).
+
+Calculator has an X close button in its title bar. Clear/ESC and firmware
+action-bar Back also close/go back. A drag permanently cancels a pending
+app activation for that contact, including repeated DOWN or a moved release
+without intermediate MOVE events.
+
+The clemu `ntos_launch.py` seeder must copy the complete `dist/phone-device`
+tree, including Apps and home-default.dat; root-level EXE/DLL copying alone
+is insufficient. Existing on-device home.dat is retained by seeding.
+
+## Catalog cache and placeholder pages
+
+`apps.dat` is a portable big-endian CAT1 catalog, separate from PIN1 home.dat.
+It caches each app ID, name, executable path, colour, size, flags and SVF icon.
+The sample build generates it up front. Normal startup reads apps.dat and
+home.dat only (two file opens, no folder enumeration or per-app metadata reads).
+A missing/truncated/invalid cache is rebuilt from Apps using bounded, sequential
+file access. Tap Refresh below the Start tiles, press F5 in Start, or delete apps.dat to refresh after installing
+apps or editing sidecars/icons. Deployment regenerates the sample cache.
+
+CAT1: magic, u16 count, u8 version=1, u8 reserved=0. Each record is 24 bytes:
+u16 ID, u8 flags, u8 size, u32 COLORREF, u8 name length, u8 path length,
+u16 SVF length, u32 PE icon offset, u32 PE icon size, u8 PE icon type,
+three reserved bytes; then name, path and SVF bytes without NUL terminators.
+Reads/writes are buffered in 4096-byte chunks, sharing the existing work buffer.
+
+Placeholder EXEs show a dark title bar with their SVF icon and app name,
+and the name as a page heading. Clear returns to Start. News retains its demo.
+Fugue paths are normalized to exactly one leading slash; adding a second
+creates an empty volume name and ENOVOLUME, unrelated to open-handle exhaustion.

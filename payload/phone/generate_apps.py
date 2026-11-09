@@ -100,6 +100,11 @@ def generate_assets(out):
  if prefs.exists() and prefs.read_bytes()!=defaults:(out/'home-backup.dat').write_bytes(prefs.read_bytes())
  prefs.write_bytes(defaults)
  (out/'home-default.dat').write_bytes(defaults)
+ cache=bytearray(b'CAT1'+struct.pack('>HBB',len(records),1,0))
+ for a in sorted(records,key=lambda a:a['name'].lower()):
+  name=a['name'].encode();path=('\\fls0\\Apps\\'+a['slug']+'\\'+a['slug']+'.exe').encode();svf=icon(a['slug'])
+  cache+=struct.pack('>HBBIBBH IIB3x',a['id'],a['flags'],2,a['color'],len(name),len(path),len(svf),0,0,0)+name+path+svf
+ (out/'apps.dat').write_bytes(cache)
  return records
 def generate_settings_icons():
  items=[]

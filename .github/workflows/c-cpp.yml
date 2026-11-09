@@ -50,6 +50,8 @@ jobs:
         python3 tools/check_ntapi_table.py
         gcc -std=c11 -Wall -Wextra -Werror -Ipayload tests/ntapi_caps_test.c -o /tmp/ntapi-caps-test
         /tmp/ntapi-caps-test
+        gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/coredll-files-test
+        /tmp/coredll-files-test
         python3 payload/phone/preview_phone.py
         test -s dist/phone-device/Apps/settings/settings.exe
         test -s dist/phone-device/SETTINGSUI.DLL
