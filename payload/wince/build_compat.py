@@ -3,7 +3,7 @@
 import sys,json,subprocess,importlib.util,struct,shutil
 from msvc_boundary import generate,upstream
 from pathlib import Path
-R=Path(__file__).resolve().parents[2]; H=Path(__file__).resolve().parent; O=R/'obj/wince'; D=R/'dist/ce-demo'
+R=Path(__file__).resolve().parents[2]; H=Path(__file__).resolve().parent; O=R/'obj/wince'; D=R/'dist_ce_demo'
 sys.path.insert(0,str(R/'payload/phone'))
 from build_phone import export_section
 spec=importlib.util.spec_from_file_location('pack',R/'tools/elf2ntx.py');p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)
