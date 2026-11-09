@@ -1526,7 +1526,7 @@ int main(int argc, char **argv, char **envp) {
         path[p] = '\0';
     }
 
-    int fd = File_Open(path, FILE_OPEN_READ);
+    int fd = fs_open(path, FILE_OPEN_READ);
     if (fd < 0) {
         ntos_puts("File_Open failed");
         Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
