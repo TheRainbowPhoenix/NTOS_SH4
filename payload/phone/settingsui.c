@@ -180,6 +180,9 @@ static void paint(void *dc)
             : view == 8 ? leaf
                         : "Settings",
             INK, 14);
+    /* Search can be opened by touch on every Settings level. */
+    r->ellipse(dc, 287, 46, 7, 7, INK, 1);
+    r->line(dc, 292, 51, 299, 58, INK);
     if (view == 0 || view == 1 || view == 4 || search) {
         r->fill(dc, 12, 80, 308, 112, BLUE);
         r->fill(dc, 14, 82, 306, 110, WHITE);
@@ -304,7 +307,8 @@ static int input(U32 msg, U32 wp, U32 lp)
 {
     int x = (int)(short)(lp & 65535u), y = (int)(short)(lp >> 16);
     if (msg == WM_KEY_) {
-        tracking = pressed_row = 0;
+        tracking = 0;
+        pressed_row = -1;
         if (wp == 0x1b || wp == 0x25) {
             if (view == 0)
                 return -1;
@@ -386,6 +390,14 @@ static int input(U32 msg, U32 wp, U32 lp)
         moved = 0;
         drag_y = y;
         drag_scroll = scroll_y;
+        if (y >= 24 && y < 72 && x >= 264) {
+            search = 1;
+            len = 0;
+            query[0] = 0;
+            CALL(SipShowIM, (1));
+            tracking = 0;
+            return 1;
+        }
         if (y >= 24 && y < 72 && x < 44) {
             view = scroll_y = search = len = 0;
             query[0] = 0;
