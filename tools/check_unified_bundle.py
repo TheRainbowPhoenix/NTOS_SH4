@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ensure one shared loader/COREDLL and one flat root for native phone apps."""
+"""Validate developer dist and deployed Windows/System32 layouts."""
 import argparse
 from pathlib import Path
 
@@ -11,10 +11,14 @@ def check(root):
         "NTOS.hh3", "COREDLL.DLL", "STARTHOST.EXE", "CALC.EXE",
         "METROWIN.EXE", "CONTROL.EXE", "DEMO.CPL",
     )
+    system32 = root / "Windows" / "System32"
+    deployed = system32.is_dir()
+    def module(name):
+        return (system32 if deployed and name.upper().endswith((".DLL", ".CPL")) else root) / name
     for name in required:
-        assert (root / name).is_file(), f"missing {name}"
+        assert module(name).is_file(), f"missing {name}"
     assert (root / "Windows/demo.cpl").is_file(), "Windows/demo.cpl not installed"
-    assert (root / "DEMO.CPL").read_bytes() == (root / "Windows/demo.cpl").read_bytes(), (
+    assert module("DEMO.CPL").read_bytes() == (root / "Windows/demo.cpl").read_bytes(), (
         "the installed demo CPL differs from the linked module")
     assert not (root / "phone-device").exists(), "obsolete phone-device tree"
     apps = sorted((root / "Apps").glob("*/*.exe"))
@@ -24,13 +28,16 @@ def check(root):
         assert pe.FILE_HEADER.Machine == 0x01A8
         for dep in getattr(pe, "DIRECTORY_ENTRY_IMPORT", []):
             dll = dep.dll.decode("ascii").upper()
-            assert (root / dll).is_file(), (name, "missing dependency", dll)
-            actual = pefile.PE(str(root / dll))
+            assert module(dll).is_file(), (name, "missing dependency", dll)
+            actual = pefile.PE(str(module(dll)))
             names = {e.name for e in actual.DIRECTORY_ENTRY_EXPORT.symbols if e.name}
             for symbol in dep.imports:
                 if symbol.name:
                     assert symbol.name in names, (name, dll, symbol.name)
-    print("PASS flat distribution: one COREDLL, CONTROL.EXE, DEMO.CPL and 24 phone apps")
+    if deployed:
+        assert not list(root.glob("*.DLL")), "duplicate DLL outside System32"
+        assert not list(root.glob("*.CPL")), "duplicate CPL outside System32"
+    print("PASS single shared COREDLL, CONTROL.EXE, DEMO.CPL and 24 phone apps", "System32" if deployed else "developer dist")
     print("Original Microsoft ordinal imports need separate runtime validation")
 
 
