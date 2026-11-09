@@ -60,6 +60,11 @@ def main():
     ap.add_argument('--pack-only',action='store_true',help='pack ELF files previously built by compile.sh')
     args=ap.parse_args();out=ROOT/args.out;obj=ROOT/args.obj
     out.mkdir(parents=True,exist_ok=True);obj.mkdir(parents=True,exist_ok=True)
+    # Clean only this obsolete generated staging folder when upgrading builds.
+    obsolete = out / 'phone-device'
+    if obsolete.exists():
+        shutil.rmtree(obsolete)
+
     if not args.msvc:generate_headers()
     spec=importlib.util.spec_from_file_location('elf2ntx',ROOT/'tools/elf2ntx.py')
     pack=importlib.util.module_from_spec(spec);spec.loader.exec_module(pack)
