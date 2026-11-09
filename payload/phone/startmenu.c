@@ -106,16 +106,16 @@ static void home(void *dc)
         r->clip(x, y < 24 ? 24 : y, x + size, y + size > view_bottom ? view_bottom : y + size);
         r->fill(dc, x, y, x + size, y + size, a->color);
         if ((a->flags & 1u) && p->size == 2) {
-            r->text(dc, x + 7, y + 9, "Latest news", WHITE, 14);
-            r->text(dc, x + 7, y + 32, "Hello from", WHITE, 12);
-            r->text(dc, x + 7, y + 49, "your phone", WHITE, 12);
+            r->text(dc, x + 7, y + 9, "Latest news", INK, 14);
+            r->text(dc, x + 7, y + 32, "Hello from", INK, 12);
+            r->text(dc, x + 7, y + 49, "your phone", INK, 12);
         } else {
             int s = p->size == 1 ? 27 : 36;
-            icon(dc, (unsigned)idx, x + ((size - s) >> 1),
-                 y + ((size - s) >> 1) - (p->size == 2 ? 5 : 0), s);
+            icon_on_light(dc, (unsigned)idx, x + ((size - s) >> 1),
+                          y + ((size - s) >> 1) - (p->size == 2 ? 5 : 0), s);
         }
         if (p->size == 2)
-            r->text(dc, x + 7, y + size - 20, a->name, WHITE, 12);
+            r->text(dc, x + 7, y + size - 20, a->name, INK, 12);
         if (selected == idx) {
             r->fill(dc, x, y, x + size, y + 2, WHITE);
             r->fill(dc, x, y, x + 2, y + size, WHITE);
