@@ -9,7 +9,10 @@ static unsigned tinted_icons;
 static U32 last_icon_tint;
 static void clip_mock(int a, int b, int c, int d)
 {
-    (void)a; (void)b; (void)c; (void)d;
+    (void)a;
+    (void)b;
+    (void)c;
+    (void)d;
 }
 static void fill_mock(void *dc, int x0, int y0, int x1, int y1, U32 color)
 {
@@ -19,27 +22,45 @@ static void fill_mock(void *dc, int x0, int y0, int x1, int y1, U32 color)
 }
 static void text_mock(void *dc, int x, int y, const char *str, U32 color, int size)
 {
-    (void)dc; (void)x; (void)y; (void)str; (void)color; (void)size;
+    (void)dc;
+    (void)x;
+    (void)y;
+    (void)str;
+    (void)color;
+    (void)size;
 }
 static void line_mock(void *dc, int x0, int y0, int x1, int y1, U32 color)
 {
-    (void)dc; (void)x0; (void)y0; (void)x1; (void)y1; (void)color;
+    (void)dc;
+    (void)x0;
+    (void)y0;
+    (void)x1;
+    (void)y1;
+    (void)color;
 }
 static void ellipse_mock(void *dc, int x, int y, int rx, int ry, U32 color, int filled)
 {
-    (void)dc; (void)x; (void)y; (void)rx; (void)ry; (void)color; (void)filled;
+    (void)dc;
+    (void)x;
+    (void)y;
+    (void)rx;
+    (void)ry;
+    (void)color;
+    (void)filled;
 }
 static void polygon_mock(void *dc, const Pt *pts, unsigned count, U32 color)
 {
-    (void)dc; (void)pts; (void)count; (void)color;
+    (void)dc;
+    (void)pts;
+    (void)count;
+    (void)color;
 }
 static void surface_mock(int height)
 {
     (void)height;
 }
-static const Render render = {
-    PROFILE, clip_mock, fill_mock, text_mock, line_mock, ellipse_mock, polygon_mock, surface_mock
-};
+static const Render render = {PROFILE,   clip_mock,    fill_mock,    text_mock,
+                              line_mock, ellipse_mock, polygon_mock, surface_mock};
 const Render *render_SpGetThreadContext(void)
 {
     return &render;
@@ -49,10 +70,15 @@ int SipShowIM(U32 show)
     (void)show;
     return 1;
 }
-int svf_SVFDrawTint(void *dc, const void *data, unsigned len,
-                    int x, int y, int w, int h, U32 tint)
+int svf_SVFDrawTint(void *dc, const void *data, unsigned len, int x, int y, int w, int h, U32 tint)
 {
-    (void)dc; (void)data; (void)len; (void)x; (void)y; (void)w; (void)h;
+    (void)dc;
+    (void)data;
+    (void)len;
+    (void)x;
+    (void)y;
+    (void)w;
+    (void)h;
     ++tinted_icons;
     last_icon_tint = tint;
     return 1;

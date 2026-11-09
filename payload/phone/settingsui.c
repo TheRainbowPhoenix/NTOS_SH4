@@ -297,16 +297,14 @@ static int input(U32 msg, U32 wp, U32 lp)
             if (y >= 168 && y <= 198) {
                 slider_drag = 1;
                 brightness = slider_value(x);
-            }
-            else if (y >= 252 && y <= 282)
+            } else if (y >= 252 && y <= 282)
                 automatic = !automatic;
             else if (y >= 322 && y <= 352)
                 rotation = !rotation;
             else if (y >= 397 && y <= 429) {
                 slider_drag = 2;
                 scale = slider_value(x);
-            }
-            else if (y >= 439 && y <= 471) {
+            } else if (y >= 439 && y <= 471) {
                 if (x >= 12 && x < 102) {
                     pressed_button = 1;
                     saved_brightness = brightness;
