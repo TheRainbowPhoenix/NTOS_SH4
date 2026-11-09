@@ -441,5 +441,90 @@ ce-abi-probe:
 
 -include $(DEPFILES)
 
+# Experimental measured MSVC SH4 ABI bridges. Both targets are completely
+# isolated: no compiler patch, no modified release or pager output.
+MSVC_GEN_DIR := obj_msvc_thunks
+MSVC_GLOBAL_OBJ := obj_msvc_global
+MSVC_GLOBAL_DIST := dist_msvc_global
+MSVC_THUNKS_DIST := dist_msvc_thunks
+
+$(MSVC_GLOBAL_OBJ)/native.o: payload/abi_msvc_native.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(MSVC_GLOBAL_OBJ)/dispatch.o: payload/abi_msvc_dispatch.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(MSVC_GLOBAL_OBJ)/runtime.o: payload/abi_msvc_runtime.S
+	@mkdir -p $(dir $@)
+	$(AS) -c $< -o $@ $(AS_FLAGS)
+
+$(MSVC_GLOBAL_OBJ)/call.o: payload/abi_msvc_call.S
+	@mkdir -p $(dir $@)
+	$(AS) -c $< -o $@ $(AS_FLAGS)
+
+$(MSVC_GLOBAL_OBJ)/test.o: payload/abi_msvc_test.c payload/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -DNTOS_MSVC_TEST_GLOBAL=1 -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(MSVC_GLOBAL_DIST)/ABIGLOBAL.elf: $(MSVC_GLOBAL_OBJ)/native.o $(MSVC_GLOBAL_OBJ)/runtime.o $(MSVC_GLOBAL_OBJ)/dispatch.o payload/xamlui.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/xamlui.ld -o $@ $(MSVC_GLOBAL_OBJ)/native.o $(MSVC_GLOBAL_OBJ)/runtime.o $(MSVC_GLOBAL_OBJ)/dispatch.o
+
+$(MSVC_GLOBAL_DIST)/ABIGLOBAL.DLL: $(MSVC_GLOBAL_DIST)/ABIGLOBAL.elf tools/elf2ntx.py
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name ABIGLOBAL.DLL --exports abi_msvc5,abi_msvc8
+
+$(MSVC_GLOBAL_DIST)/ABIGLOBAL_TEST.elf: $(MSVC_GLOBAL_OBJ)/test.o $(MSVC_GLOBAL_OBJ)/call.o payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(MSVC_GLOBAL_OBJ)/test.o $(MSVC_GLOBAL_OBJ)/call.o
+
+$(MSVC_GLOBAL_DIST)/ABIGLOBAL.EXE: $(MSVC_GLOBAL_DIST)/ABIGLOBAL_TEST.elf $(MSVC_GLOBAL_DIST)/ABIGLOBAL.DLL tools/elf2ntx.py
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module ABIGLOBAL.DLL
+
+$(MSVC_GEN_DIR)/export.S: tools/gen_sh4_msvc_thunks.py
+	$(PYTHON) $< --role export --output $@
+
+$(MSVC_GEN_DIR)/import.S: tools/gen_sh4_msvc_thunks.py
+	$(PYTHON) $< --role import --output $@
+
+$(MSVC_GEN_DIR)/export.o: $(MSVC_GEN_DIR)/export.S
+	$(AS) -c $< -o $@ $(AS_FLAGS)
+
+$(MSVC_GEN_DIR)/import.o: $(MSVC_GEN_DIR)/import.S
+	$(AS) -c $< -o $@ $(AS_FLAGS)
+
+$(MSVC_GEN_DIR)/native.o: payload/abi_msvc_native.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(MSVC_GEN_DIR)/test.o: payload/abi_msvc_test.c payload/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -DNTOS_MSVC_TEST_GLOBAL=0 -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(MSVC_THUNKS_DIST)/ABITHUNKS.elf: $(MSVC_GEN_DIR)/native.o $(MSVC_GEN_DIR)/export.o payload/xamlui.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/xamlui.ld -o $@ $(MSVC_GEN_DIR)/native.o $(MSVC_GEN_DIR)/export.o
+
+$(MSVC_THUNKS_DIST)/ABITHUNKS.DLL: $(MSVC_THUNKS_DIST)/ABITHUNKS.elf tools/elf2ntx.py
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name ABITHUNKS.DLL --exports abi_msvc5,abi_msvc8
+
+$(MSVC_THUNKS_DIST)/ABITHUNKS_TEST.elf: $(MSVC_GEN_DIR)/test.o $(MSVC_GEN_DIR)/import.o payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(MSVC_GEN_DIR)/test.o $(MSVC_GEN_DIR)/import.o
+
+$(MSVC_THUNKS_DIST)/ABITHUNKS.EXE: $(MSVC_THUNKS_DIST)/ABITHUNKS_TEST.elf $(MSVC_THUNKS_DIST)/ABITHUNKS.DLL tools/elf2ntx.py
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module ABITHUNKS.DLL
+
+msvc-abi-global: $(MSVC_GLOBAL_DIST)/ABIGLOBAL.DLL $(MSVC_GLOBAL_DIST)/ABIGLOBAL.EXE
+	@echo "MSVC SH4 shared runtime ABI test: ABIGLOBAL.EXE (not emulator-validated)"
+
+msvc-abi-thunks: $(MSVC_THUNKS_DIST)/ABITHUNKS.DLL $(MSVC_THUNKS_DIST)/ABITHUNKS.EXE
+	@echo "MSVC SH4 generated thunks ABI test: ABITHUNKS.EXE (not emulator-validated)"
+
+msvc-abi-tests: msvc-abi-global msvc-abi-thunks
+
+.PHONY: msvc-abi-global msvc-abi-thunks msvc-abi-tests
+
 # Native WinCE-first phone launcher.
 include payload/phone/phone.mk
