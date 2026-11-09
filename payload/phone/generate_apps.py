@@ -209,7 +209,16 @@ def generate_settings_icons():
   elif name=='update':
    v.arc(16,16,12,19,22,2).stroke(3,20,3,29,2)
    v.stroke(3,29,12,29,2).arc(16,16,12,3,13,2)
-  items.append((name,v.end()))
+  # User-authored overrides from the browser studio are kept separate from
+  # generated defaults so rebuilding never overwrites hand-edited icons.
+  override=HERE/'custom_settings'/(name+'.svf')
+  if override.is_file():
+   data=override.read_bytes()
+   if not 9<=len(data)<=1024 or data[:4] not in (b'VEC1',b'VEC2') or data[-1]!=0:
+    raise ValueError(f'Invalid custom Settings SVF: {override}')
+  else:
+   data=v.end()
+  items.append((name,data))
  lines=['/* Generated two-tone MDL2-style Settings icons; 17/24/32 pixel targets. */',
         'typedef struct {const unsigned char *data;unsigned length;} SettingsIcon;']
  assets=HERE/'assets/settings';assets.mkdir(parents=True,exist_ok=True)
