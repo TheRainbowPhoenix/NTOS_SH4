@@ -124,6 +124,7 @@ jobs:
         test -s dist/ce-demo/COREDLL.DLL
         test -s dist/ce-demo/COMMCTRL.DLL
         test -s dist/ce-demo/Windows/demo.cpl
+        python3 tests/control_ce_import_names.py
         python3 - <<'PY'
         import pefile
         native=pefile.PE('dist/COREDLL.DLL')
