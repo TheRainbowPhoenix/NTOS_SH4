@@ -46,6 +46,9 @@ jobs:
         run: |
           python3 payload/phone/check_phone.py
           python3 payload/phone/preview_phone.py
+          gcc -std=c11 -Wall -Wextra -Werror -DPHONE_HOST=1 -Ipayload/phone -Ipayload \
+            payload/phone/settingsui.c tests/settings_ui_interaction_test.c -o /tmp/ntos-settings-ui
+          /tmp/ntos-settings-ui
           python3 tools/preview_native_gdi.py
           gcc -std=c11 -Wall -Wextra -Werror -Ipayload tests/ntapi_caps_test.c -o /tmp/ntos-caps
           /tmp/ntos-caps
