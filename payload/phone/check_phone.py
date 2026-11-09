@@ -51,7 +51,7 @@ for path in stubs:
  assert app.FILE_HEADER.NumberOfSections<=8
  assert app.OPTIONAL_HEADER.DATA_DIRECTORY[2].VirtualAddress
  data=app.DIRECTORY_ENTRY_RESOURCE.entries[0].directory.entries[0].directory.entries[0].data.struct
- assert app.get_data(data.OffsetToData,data.Size).startswith(b'VEC1')
+ assert app.get_data(data.OffsetToData,data.Size).startswith((b'VEC1',b'VEC2'))
  for dep in app.DIRECTORY_ENTRY_IMPORT:
   names={e.name for e in images[dep.dll.decode().upper()].DIRECTORY_ENTRY_EXPORT.symbols if e.name}
   assert all(i.name in names for i in dep.imports)
@@ -75,7 +75,7 @@ for _ in range(24):
  name=cache[pos:pos+n].decode();pos+=n
  path=cache[pos:pos+p].decode();pos+=p
  vector=cache[pos:pos+v];pos+=v
- assert id_ not in ids and size in (1,2) and vector.startswith(b'VEC1');ids.add(id_)
+ assert id_ not in ids and size in (1,2) and vector.startswith((b'VEC1',b'VEC2'));ids.add(id_)
  assert path.startswith('\\fls0\\Apps\\') and not path.startswith('\\\\')
  exe=out/Path(path[len('\\fls0\\'):].replace('\\','/'))
  assert exe.is_file() and exe.with_suffix('.svf').read_bytes()==vector
