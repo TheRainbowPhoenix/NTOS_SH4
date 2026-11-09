@@ -802,7 +802,9 @@ static bool safe_dll_name(const char *name) {
     }
     if(n<5u || n>38u || name[n]) return false;
     const char *suffix=name+n-4u;
-    /* WinCE Control Panel applets are executable PE DLL modules with .CPL\n     * filenames; reject all other suffixes and directory traversal. */\n    return module_matches(suffix,".DLL") || module_matches(suffix,".CPL");
+    /* WinCE Control Panel applets are executable PE DLL modules with .CPL
+     * filenames; reject all other suffixes and directory traversal. */
+    return module_matches(suffix,".DLL") || module_matches(suffix,".CPL");
 }
 
 static bool dll_path(char *dst,uint32_t capacity,const char *name) {
