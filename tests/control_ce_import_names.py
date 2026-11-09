@@ -26,7 +26,7 @@ reference = json.loads((ROOT / "payload/wince/abi/commctrl.dll.json").read_text(
 exports = {x["ordinal"]: x["name"] for x in reference["exports"]}
 for ordinal, name in REFERENCE.items():
     assert exports[ordinal] == name, (ordinal, exports.get(ordinal), name)
-out = ROOT / "dist/ce-demo/COMMCTRL.DLL"
+out = ROOT / "dist_ce_demo/COMMCTRL.DLL"
 if out.is_file():
     binary = pefile.PE(str(out))
     emitted = {x.ordinal: x.name.decode() if x.name else None
