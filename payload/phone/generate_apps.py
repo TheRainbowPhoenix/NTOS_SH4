@@ -81,11 +81,20 @@ def generate_assets(out):
  out=Path(out);root=out/'Apps';root.mkdir(parents=True,exist_ok=True);records=[]
  for app_id,(slug,name) in enumerate(APPS,1):
   folder=root/slug;folder.mkdir(exist_ok=True);svf=icon(slug)
-  # VEC1 app icons are mostly white legacy glyphs; soft light tiles use
-  # slate/ink glyphs with subtle category color instead of harsh blue fields.
-  color={'excel':0xd9efdd,'powerpoint':0xdbe5f7,'note':0xf3e1f4,
-         'weather':0xd6edf9,'news':0xe3f0e1,'alarm':0xf3e9d5,
-         'settings':0xe8e6f5,'calc':0xe7f1f9}.get(slug,0xf8f0e5)
+  # Distinct watercolor tile colors. The packed color format is 0xBBGGRR,
+  # i.e. the same RGB_ layout used by the SH4 renderer.
+  # Saturated enough to identify apps, but never a high-glare solid fill.
+  colors={
+   'alarm':0xB6DCF7, 'calc':0xE2CF9E, 'camera':0xD7D1F2,
+   'support':0xD5E7B0, 'cortana':0xF0C8DA, 'excel':0xBAE6B1,
+   'files':0xB2E8FB, 'music':0xDBBFF2, 'maps':0xC2E7BC,
+   'message':0xD9E9A6, 'edge':0xE5DEAA, 'money':0xB9E0CA,
+   'video':0xD0B6E7, 'news':0xCBE5BC, 'note':0xE6BCE8,
+   'mail':0xF0CFB1, 'people':0xD6D3F0, 'phone':0xDFEAA5,
+   'photo':0xC4C1F5, 'powerpoint':0xADD4F5, 'settings':0xF0D7CE,
+   'store':0xB7E0F8, 'weather':0xF1E0AE, 'word':0xEAD7A8,
+  }
+  color=colors[slug]
   flags=1 if slug=='news' else 0
   b=b'PAM1'+struct.pack('>HBBIBBH',app_id,flags,2,color,len(name.encode()),0,len(svf))+name.encode()+svf
   (folder/(slug+'.exe.manifest')).write_bytes(b);(folder/(slug+'.svf')).write_bytes(svf)
