@@ -598,6 +598,10 @@ $(CE_CORE_OBJ)/native.o: payload/coredll.c $(CE_CORE_GEN)/stamp
 	  -Dcoredll_malloc=nt_native_coredll_malloc \
 	  -Dcoredll_free=nt_native_coredll_free
 
+$(CE_CORE_OBJ)/probe.o: payload/coredll_msvc_probe.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
 $(CE_CORE_OBJ)/body.o: $(CE_CORE_GEN)/stamp
 	$(CC) -c $(CE_CORE_GEN)/abi_export_body.c -o $@ -I$(CE_CORE_GEN) $(PAYLOAD_CFLAGS)
 
@@ -613,12 +617,12 @@ $(CE_CORE_OBJ)/call.o: $(CE_CORE_GEN)/stamp
 $(CE_CORE_OBJ)/test.o: payload/coredll_msvc_test.c $(CE_CORE_GEN)/stamp
 	$(CC) -c $< -o $@ -I$(CE_CORE_GEN) $(PAYLOAD_CFLAGS)
 
-$(CE_CORE_DIST)/COREDLL.elf: $(CE_CORE_OBJ)/native.o $(CE_CORE_OBJ)/body.o $(CE_CORE_OBJ)/export.o payload/coredll.ld
+$(CE_CORE_DIST)/COREDLL.elf: $(CE_CORE_OBJ)/native.o $(CE_CORE_OBJ)/probe.o $(CE_CORE_OBJ)/body.o $(CE_CORE_OBJ)/export.o payload/coredll.ld
 	@mkdir -p $(dir $@)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/coredll.ld -o $@ $(CE_CORE_OBJ)/native.o $(CE_CORE_OBJ)/body.o $(CE_CORE_OBJ)/export.o
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/coredll.ld -o $@ $(CE_CORE_OBJ)/native.o $(CE_CORE_OBJ)/probe.o $(CE_CORE_OBJ)/body.o $(CE_CORE_OBJ)/export.o
 
 $(CE_CORE_DIST)/COREDLL.DLL: $(CE_CORE_DIST)/COREDLL.elf tools/elf2ntx.py
-	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name COREDLL.DLL --exports coredll_puts,coredll_getkey,coredll_malloc,coredll_free
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name COREDLL.DLL --exports coredll_puts,coredll_getkey,coredll_malloc,coredll_free,coredll_abi5
 
 $(CE_CORE_DIST)/COREDLLABI.elf: $(CE_CORE_OBJ)/test.o $(CE_CORE_OBJ)/import.o $(CE_CORE_OBJ)/call.o payload/payload.ld
 	@mkdir -p $(dir $@)
