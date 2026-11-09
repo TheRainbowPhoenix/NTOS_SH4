@@ -6,6 +6,24 @@
     .align 2
     .global _ntos_msvc_call_words
 _ntos_msvc_call_words:
+    ! The shared frame has exactly 8 argument words (32 bytes).
+    ! Fail closed on unsupported arities; never corrupt the caller stack.
+    mov #5,r0
+    cmp/eq r6,r0
+    bt .Larity_ok
+    mov #8,r0
+    cmp/eq r6,r0
+    bt .Larity_ok
+    mov.l .Larity_error,r0
+    rts
+    nop
+.Larity_ok:
+    tst r4,r4
+    bf .Ltarget_ok
+    mov.l .Larity_error,r0
+    rts
+    nop
+.Ltarget_ok:
     mov.l r8,@-r15
     mov.l r9,@-r15
     mov.l r10,@-r15
@@ -45,3 +63,6 @@ _ntos_msvc_call_words:
     rts
     nop
 
+
+    .align 2
+.Larity_error: .long 0xBADAB100
