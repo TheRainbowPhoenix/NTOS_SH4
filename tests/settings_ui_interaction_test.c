@@ -99,7 +99,7 @@ int main(void)
     assert(s && s->profile == PROFILE);
     s->reset();
     s->paint((void *)1);
-    assert(tinted_icons && last_icon_tint == NAV_INK);
+    assert(tinted_icons && last_icon_tint == RGB_(0, 0, 0));
     tap(s, 85, 145); /* System */
     assert(s->page() == 1);
     tap(s, 85, 190); /* Display */
