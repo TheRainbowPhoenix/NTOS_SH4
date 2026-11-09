@@ -1,40 +1,35 @@
 #!/usr/bin/env python3
-"""Validate the single native phone/WinCE payload bundle's real invariants.
-
-This does NOT certify Microsoft's ordinal ABI or physical CP400 VBR ownership.
-"""
+"""Ensure one shared loader/COREDLL and one flat root for native phone apps."""
 import argparse
-import hashlib
 from pathlib import Path
+
 import pefile
 
 
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).digest()
-
-
 def check(root):
-    required = ("NTOS.hh3", "COREDLL.DLL", "STARTHOST.EXE",
-                "CALC.EXE", "METROWIN.EXE")
+    required = (
+        "NTOS.hh3", "COREDLL.DLL", "STARTHOST.EXE", "CALC.EXE",
+        "METROWIN.EXE", "CONTROL.EXE", "COMMCTRL.DLL",
+    )
     for name in required:
         assert (root / name).is_file(), f"missing {name}"
-    device = root / "phone-device"
-    assert digest(root / "COREDLL.DLL") == digest(device / "COREDLL.DLL"), (
-        "device and WinCE folder use different COREDLLs")
-    assert digest(root / "NTOS.hh3") == digest(device / "NTOS.hh3"), (
-        "phone and WinCE bundles have mismatched NTOS loader builds")
-    apps = sorted((device / "Apps").glob("*/*.exe"))
+    assert not (root / "phone-device").exists(), "obsolete phone-device tree"
+    assert not (root / "ce-demo").exists(), "separate CE profile in install root"
+    apps = sorted((root / "Apps").glob("*/*.exe"))
     assert len(apps) == 24, f"expected 24 phone apps; found {len(apps)}"
-    names = ("STARTHOST.EXE", "CALC.EXE", "METROWIN.EXE")
-    for name in names:
-        pe = pefile.PE(str(root / name), fast_load=False)
+    for name in ("STARTHOST.EXE", "CALC.EXE", "METROWIN.EXE", "CONTROL.EXE"):
+        pe = pefile.PE(str(root / name))
         assert pe.FILE_HEADER.Machine == 0x01A8
         for dep in getattr(pe, "DIRECTORY_ENTRY_IMPORT", []):
-            depname = dep.dll.decode("ascii").upper()
-            assert (root / depname).is_file() or (device / depname).is_file(), (
-                name, depname)
-    print("PASS one loader, one COREDLL, 24 phone apps, native WinCE-style EXEs")
-    print("NOTE Microsoft CE ordinal ABI remains outside this validated bundle")
+            dll = dep.dll.decode("ascii").upper()
+            assert (root / dll).is_file(), (name, "missing dependency", dll)
+            actual = pefile.PE(str(root / dll))
+            names = {e.name for e in actual.DIRECTORY_ENTRY_EXPORT.symbols if e.name}
+            for symbol in dep.imports:
+                if symbol.name:
+                    assert symbol.name in names, (name, dll, symbol.name)
+    print("PASS flat distribution: one COREDLL, CONTROL.EXE, 24 phone apps")
+    print("Original Microsoft ordinal imports need separate runtime validation")
 
 
 if __name__ == "__main__":
