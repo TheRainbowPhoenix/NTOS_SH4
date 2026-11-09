@@ -1,264 +1,51 @@
-name: C/C++ CI
+name: Build · copy to calculator
 
 on:
   push:
-    branches: [ "main", "ugfx" ]
-    # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
+    branches: [main]
+    tags: ['v*.*.*']
   pull_request:
-    branches: [ "main", "ugfx" ]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
-jobs:   
-  build-artifact:
+concurrency:
+  group: device-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  device:
+    name: Device package
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/classpaddev/hollyhock-3:v2.2.2
       credentials:
-       username: ${{ github.actor }}
-       password: ${{ secrets.github_token }}
-
-    steps:
-    - uses: actions/checkout@v7
-      with:
-        submodules: true
-    - name: Install python3 (for tools/elf2ntx.py)
-      run: apt-get update -qq && apt-get install -y -qq python3 python3-pefile gcc
-    - name: Build pager-default NTOS and every PE payload
-      run: |
-        make -j
-        test -s dist/NTOS.hh3
-        test -s dist/FAULTTEST.EXE
-        test -s dist/FAULTSTRESS.DLL
-        test -s dist/Windows/demo.cpl
-        test -s dist/DEMO.CPL
-        sh4a_nofpueb-elf-nm dist/NTOS.elf | grep -q ntos_vbr_template_start
-    - name: Build both opt-in SH7305 paging images for download
-      run: |
-        make pager-experiment
-        make pager-verify
-        test -s dist_pager/NTOS.hh3
-        test -s dist_pager_verify/NTOS.hh3
-        sh4a_nofpueb-elf-nm dist_pager/NTOS.elf | grep -q ntos_vbr_template_start
-        sh4a_nofpueb-elf-nm dist_pager_verify/NTOS.elf | grep -q ntos_pager_exception_callback
-        # Default NTOS now uses the exception-driven pager too.
-        sh4a_nofpueb-elf-nm dist/NTOS.elf | grep -q ntos_vbr_template_start
-        ! cmp -s dist_pager/NTOS.hh3 dist_pager_verify/NTOS.hh3
-    - name: Compile isolated SH Renesas ABI candidate DLL and import test
-      run: |
-        make ce-abi-probe
-        test -s dist_ce_abi/COREDLL.DLL
-        test -s dist_ce_abi/CHAIN.DLL
-        test -s dist_ce_abi/ABITEST.EXE
-        sh4a_nofpueb-elf-objdump -dr obj_ce_abi/payload/chain.o > /tmp/ntos-abi-export.s
-        sh4a_nofpueb-elf-objdump -dr obj_ce_abi/payload/abi_test.o > /tmp/ntos-abi-import.s
-        test -s /tmp/ntos-abi-export.s
-        test -s /tmp/ntos-abi-import.s
-        echo "PASS Renesas candidate boundary compiled (NOT Microsoft ABI certified)"
-    - name: Cross-compile both measured Microsoft SH4 ABI boundary experiments
-      run: |
-        make msvc-abi-tests
-        test -s dist_msvc_global/ABIGLOBAL.DLL
-        test -s dist_msvc_global/ABIGLOBAL.EXE
-        test -s dist_msvc_thunks/ABITHUNKS.DLL
-        test -s dist_msvc_thunks/ABITHUNKS.EXE
-        python3 tests/msvc_abi_bridge_codegen_test.py --pe
-        sh4a_nofpueb-elf-nm dist_msvc_global/ABIGLOBAL.elf | grep -q _abi_msvc5
-        sh4a_nofpueb-elf-nm dist_msvc_thunks/ABITHUNKS.elf | grep -q _abi_msvc8
-        echo "PASS shared and generated ABI bridges linked (emulator runtime untested)"
-    - name: Build and test typed MSVC SH4 ABI thunk edge-case suite
-      run: |
-        make msvc-abi-typed
-        test -s dist_msvc_typed/ABITYPED.DLL
-        test -s dist_msvc_typed/ABITYPED.EXE
-        python3 tests/msvc_typed_generator_test.py --pe
-        gcc -std=c11 -DNTOS_MSVC_HOST_TEST=1 -O2 -Wall -Wextra -Werror             -Iobj_msvc_typed/generated payload/abi_typed_impl.c             obj_msvc_typed/generated/abi_export_body.c             tests/msvc_typed_host_test.c -o /tmp/msvc-typed-host
-        /tmp/msvc-typed-host
-        echo "PASS typed MSVC SH4 codegen and host oracle; emulator runtime still required"
-    - name: Cross-build isolated real COREDLL MSVC ABI subset
-      run: |
-        make msvc-abi-coredll
-        test -s dist_msvc_coredll/COREDLL.DLL
-        test -s dist_msvc_coredll/COREDLLABI.EXE
-        python3 - <<'PY'
-        import pefile
-        dll=pefile.PE('dist_msvc_coredll/COREDLL.DLL')
-        exe=pefile.PE('dist_msvc_coredll/COREDLLABI.EXE')
-        names={x.name.decode('ascii') for x in dll.DIRECTORY_ENTRY_EXPORT.symbols if x.name}
-        expected={'coredll_puts','coredll_getkey','coredll_malloc','coredll_free','coredll_abi5'}
-        assert names==expected,(names,expected)
-        assert exe.DIRECTORY_ENTRY_IMPORT[0].dll.upper()==b'COREDLL.DLL'
-        PY
-    - name: Stress 2304 MSVC ABI calls and test SH4LE conversion guardrails
-      run: |
-        make msvc-abi-stress
-        test -s dist_msvc_typed/ABISTRESS.EXE
-        test -s dist_msvc_typed/ABITYPED.DLL
-        python3 tests/sh4le_be_probe_test.py
-        python3 - <<'PY'
-        import pefile
-        exe=pefile.PE('dist_msvc_typed/ABISTRESS.EXE')
-        expected={'abi_typed_5','abi_typed_8','abi_typed_s3','abi_typed_s3split',
-                  'abi_typed_u64','abi_typed_u64split','abi_typed_ret_s3',
-                  'abi_typed_ret_u64','abi_typed_ret_bytes3','abi_typed_bytes3',
-                  'abi_typed_ret_s16','abi_typed_ret_u16','abi_typed_ptr',
-                  'abi_typed_zero','abi_typed_ret_bytes1','abi_typed_ret_bytes4',
-                  'abi_typed_ret_s8','abi_typed_ret_u8'}
-        dirs={x.dll.upper():x for x in exe.DIRECTORY_ENTRY_IMPORT}
-        assert b'ABITYPED.DLL' in dirs
-        imports={x.name.decode('ascii') for x in dirs[b'ABITYPED.DLL'].imports if x.name}
-        assert expected <= imports,expected-imports
-        PY
-        echo "PASS stress EXE + conservative PE conversion tests (SH4 emulator still required)"
-    - name: Validate flat default phone/WinCE-native build
-      run: |
-        make unified
-        test -s dist/NTOS.hh3
-        test -s dist/CONTROL.EXE
-        test -s dist/COREDLL.DLL
-        test ! -e dist/phone-device
-        python3 tools/check_unified_bundle.py dist
-    - name: Cross-build original WinCE ordinal-ABI COREDLL and COMMCTRL compatibility
-      run: |
-        python3 payload/wince/build_compat.py
-        test -s dist_ce_demo/COREDLL.DLL
-        test -s dist_ce_demo/COMMCTRL.DLL
-        test -s dist_ce_demo/Windows/demo.cpl
-        python3 tests/control_ce_import_names.py
-        python3 - <<'PY'
-        import pefile
-        native=pefile.PE('dist/COREDLL.DLL')
-        ce=pefile.PE('dist_ce_demo/COREDLL.DLL')
-        assert native.FILE_HEADER.Machine==ce.FILE_HEADER.Machine==0x01a8
-        assert native.get_memory_mapped_image()!=ce.get_memory_mapped_image(), 'CE and phone are still distinct ABI cores'
-        print('CE ordinal-profile compiled; remains separate from unified native COREDLL')
-        PY
-    - name: Check Clang formatting and analyze representative C sources
-      run: |
-        apt-get update -qq && apt-get install -y -qq clang-format clang-tidy
-        python3 tools/format_c_sources.py --check
-        clang-tidy -quiet -checks='-*,clang-analyzer-*' payload/calc.c payload/phone/starthost.c           -- -std=c11 -Ipayload -Ipayload/phone
-    - name: Verify all phone apps, launcher ABI and native Settings/input views
-      run: |
-        python3 payload/phone/check_phone.py
-        python3 tools/check_ntapi_table.py
-        gcc -std=c11 -Wall -Wextra -Werror -Ipayload tests/ntapi_caps_test.c -o /tmp/ntapi-caps-test
-        /tmp/ntapi-caps-test
-        gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/coredll-files-test
-        /tmp/coredll-files-test
-        python3 payload/phone/preview_phone.py
-        test -s dist/Apps/settings/settings.exe
-        test -s dist/SETTINGSUI.DLL
-        test "$(find dist/Apps -name '*.exe' | wc -l)" -eq 24
-    - name: Validate PE import tables
-      run: python3 tools/elf2ntx.py --selftest && python3 tools/test_multimodule.py && python3 tools/preview_native_gdi.py
-    - name: Test recursive PE dependency closure
-      run: python3 tools/test_dependency_graph.py
-    - name: Validate GNU BFD parity and all PE DLL imports
-      run: sh tools/test_binutils_parity.sh
-    - name: Test hardware UTLB fault replacement model and 12-DLL virtual memory
-      run: |
-        apt-get update -qq && apt-get install -y -qq --no-install-recommends g++
-        g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 \
-            tests/fault_pager_test.cpp -o /tmp/ntos-fault-pager
-        /tmp/ntos-fault-pager
-    - name: Test IRQ ownership remains disabled in host mode
-      run: |
-        apt-get update -qq && apt-get install -y -qq --no-install-recommends g++
-        g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 \
-            tests/irq_handoff_test.cpp -o /tmp/ntos-irq-handoff
-        /tmp/ntos-irq-handoff
-    - name: Test on-demand PE page materializer (fault handler disabled)
-      run: |
-        apt-get update -qq && apt-get install -y -qq --no-install-recommends g++
-        g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 \
-            tests/pe_pager_test.cpp -o /tmp/ntos-pe-pager
-        /tmp/ntos-pe-pager
-    - name: Compare lazy-page materialization to real PE section images
-      run: |
-        g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 \
-            tests/pe_page_parity_test.cpp -o /tmp/ntos-pe-page-parity
-        /tmp/ntos-pe-page-parity \
-            dist/COREDLL.DLL dist/XAMLUI.DLL dist/CHAIN.DLL \
-            dist/CHAINTEST.EXE dist/METROWIN.EXE
-    - name: Audit native SH4BE PE image headers as WinCE binaries
-      run: python3 tools/audit_wince_pe.py dist/COREDLL.DLL dist/XAMLUI.DLL dist/METROWIN.EXE
-    - name: Validate WinCE SH relocation kinds and large image tables
-      run: |
-        apt-get update -qq && apt-get install -y -qq --no-install-recommends g++
-        g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 \
-            tests/pe_fixup_types_test.cpp -o /tmp/ntos-pe-fixup-types
-        /tmp/ntos-pe-fixup-types
-    - name: Test overlapping-base DLL relocation with native PE images
-      run: |
-        apt-get update -qq && apt-get install -y -qq --no-install-recommends g++
-        g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 \
-            tests/pe_rebase_test.cpp -o /tmp/ntos-pe-rebase-test
-        python3 tools/make_collision_dll.py dist/XAMLUI.DLL \
-            -o dist_collision/XAMLUI.DLL --base 0x01000000
-        /tmp/ntos-pe-rebase-test \
-            dist/COREDLL.DLL dist/XAMLUI.DLL dist/METROWIN.EXE \
-            dist_collision/XAMLUI.DLL
-    - name: Upload standard, exception-pager and UTLB-verify distributions
-      uses: actions/upload-artifact@v7
-      with:
-        name: ntos-sh4-all-builds
-        if-no-files-found: error
-        path: |
-          dist/**
-          dist_pager/**
-          dist_pager_verify/**
-          dist_ce_abi/**
-          dist_msvc_global/**
-          dist_msvc_thunks/**
-          dist_msvc_typed/**
-          dist_msvc_coredll/**
-          
-          dist_collision/**
-
-  build-hh3-v221:
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/classpaddev/hollyhock-3:v2.2.1
-      credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v7
-    - name: Install Python for PE packaging
-      run: apt-get update -qq && apt-get install -y -qq --no-install-recommends python3
-    - name: Build with the exact user Podman toolchain
-      run: |
-        export PATH=/toolchain/bin:$PATH
-        make -j4
-        test -s dist/NTOS.hh3
-        test -s dist/COREDLL.DLL
-        test -s dist/XAMLUI.DLL
-        test -s dist/METROWIN.EXE
-        test -s dist/MEMTOOL.EXE
-        make check-pe
-        echo "PASS HH3 v2.2.1: NTOS and all DLL/EXE images built and verified"
-
-  # Experimental P1 RAM-backed MMU fault vector. Compile-only: NEVER
-  # execute VBR ownership changes in CI or default device artifacts.
-  build-experimental-tlb-fault:
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/classpaddev/hollyhock-3:v2.2.1
-    steps:
-    - uses: actions/checkout@v7
-    - name: Install PE packaging support
-      run: apt-get update -qq && apt-get install -y -qq --no-install-recommends python3
-    - name: Compile isolated opt-in SH4A exception pager
-      run: |
-        export PATH=/toolchain/bin:$PATH
-        make pager-experiment
-        test -s dist_pager/NTOS.hh3
-        make pager-verify
-        test -s dist_pager_verify/NTOS.hh3
-        sh4a_nofpueb-elf-nm dist_pager/NTOS.elf | grep -q ntos_vbr_template_start
-        sh4a_nofpueb-elf-nm dist_pager/NTOS.elf | grep -q ntos_pager_exception_callback
-        echo "PASS regular + P4-readback diagnostic pager binaries linked (NOT hardware tested)"
+      - uses: actions/checkout@v7
+      - name: Install PE packaging dependency
+        run: apt-get update -qq && apt-get install -y -qq python3 python3-pefile
+      - name: Build NTOS and installed applications
+        run: make -j4
+      - name: Prepare calculator-ready files only
+        run: |
+          python3 tools/check_unified_bundle.py dist
+          python3 tools/package_device.py --from-dist dist --out install
+          python3 tools/check_unified_bundle.py install
+          test -s install/NTOS.hh3
+          test -s install/Windows/demo.cpl
+          test ! -e install/NTOS.elf
+          test ! -e install/FAULTTEST.EXE
+          test ! -e install/phone-device
+          find install -maxdepth 1 -type f -printf '%f\n' | sort
+      - name: Download this artifact and copy its contents to the calculator
+        uses: actions/upload-artifact@v7
+        with:
+          name: NTOS-CP400
+          path: install/
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 30
