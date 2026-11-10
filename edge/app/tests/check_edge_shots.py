@@ -310,6 +310,28 @@ PRESENCE = {
         (278, 489, 317, 509, 200, 200, 0),  # white go key
         (289, 493, 307, 507, 10, -100, 0),  # search-magnifier glyph (black)
     ],
+    # HTML form controls page (form.test; no device reference — our engine)
+    'form': [
+        (12, 12, 130, 32, 15, 150, 0),     # "HTML form elements" heading
+        (20, 228, 310, 260, 25, 100, 0),   # checkbox row (boxes + labels)
+        (20, 264, 310, 300, 30, 100, 0),   # radio row + select labels
+        (20, 300, 310, 335, 30, 100, 0),   # select boxes w/ chosen labels + chevrons
+        (20, 120, 310, 168, 20, 100, 0),   # textarea box + "Comments..." inside
+        (30, 84, 200, 105, 8, 120, 0),     # password field dots (dark glyphs)
+    ],
+    'form-scrolled': [
+        (20, 30, 310, 70, 25, 100, 0),     # reset/submit buttons row
+        (100, 30, 220, 70, 10, 150, 0),    # "submit" label on the grey pill
+    ],
+    # ACID2: reachable page; render is a structural subset (see WORKLOG:
+    # int16 geometry wraps the em-heavy face; the intro/Hello World land
+    # beyond the fold). Probe only proves the state renders a pale page.
+    'acid2': [
+        (0, 24, 320, 430, 4000, 200, 0),   # pale page area
+    ],
+    'acid2-scrolled': [
+        (0, 24, 320, 430, 4000, 200, 0),
+    ],
     'mdfind-next': [
         (0, 0, 320, 480, 200, 230, 0),      # orange active match (red ch)
         (0, 0, 320, 480, 300, 200, 0),      # yellow matches

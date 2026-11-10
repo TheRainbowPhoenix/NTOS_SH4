@@ -1,0 +1,97 @@
+---
+title: FAQ
+description: Frequently asked questions about ClassPad development, Hollyhock and gint.
+sidebar:
+  order: 99
+---
+
+Welcome to the **frequently asked questions** page! Here you'll find simple answers to the questions that come up the most in our community — about Hollyhock, programming the calculator, and what's actually going on inside that ClassPad of yours. If you're brand new, this is a great place to start.
+
+## What is Hollyhock?
+
+Hollyhock (HHK) is a **community-made modification** (a custom firmware add-on) for the Casio ClassPad II fx-CP400. Once installed, it lets your calculator run **custom programs** made by the community — games, tools, Python, and much more. There are two generations today: **V2** (the classic version) and **V3** (the current one). Hollyhock is built by the community, so everyone plays a part in making it better.
+
+## What's the difference between V2 and V3?
+
+Back in the early V2 days (over 6 years ago), there was no shared compiler — everyone built their own local toolchain with custom patches, and V2 programs were **simple programs compiled for one fixed memory address**, a bit like burned ROM. That made programs very hard to build and port. **V3 fixes this**: programs are now real, standard **ELF files**, and the loader is **dynamic and flexible**, so it can support multiple OS versions — including future ones. Almost every V2 app has already been ported to V3, so V3 is the recommended version today.
+
+## What is a .hh3 file?
+
+A `.hh3` file is a **small ELF executable** : the standard executable format used on Linux. If you're more familiar with Windows, think of it like a `.exe` file, but for your calculator. When you compile your C/C++ code, the compiler produces a `.hh3` file, and the Hollyhock launcher ("**YAL**") loads it and runs your program.
+
+## Can I still use V2?
+
+Yes! Switching between V2 and V3 is just a matter of swapping the `run.bin` file at the root of your calculator (V2 apps still work). That said, **V3 is recommended** as it is actively developed, more flexible, and nearly everything has been ported to it.
+
+## Is my calculator backwards compatible between versions?
+
+Mostly, but **don't expect perfect forward compatibility**. Apps made for one setup generally keep working, but there's no guarantee that something built today will work on a future OS or firmware version without an update. When in doubt, check the [app store](https://classpaddev.github.io/store/) for the latest version of a program.
+
+## How do I update back to the official OS?
+
+Before exams, we recommend restoring the official Casio OS so your calculator is not modified. Download the official updater from [TI-Planet's archive](https://tiplanet.org/forum/archives_voir.php?id=5032905) [Mac Version](https://tiplanet.org/forum/archives_voir.php?id=5032910), then put the calculator in normal OS update mode.
+
+On the calculator:
+
+1. Connect the ClassPad to your computer with a standard USB cable.
+2. When the USB menu appears, press `Clear` or choose `5: Cancel`.
+3. Open the `Communication` app.
+4. Open the top menu `Link`.
+5. Choose `OS Update`, then press `OK`.
+6. Leave the calculator alone until the update is complete. The screen will go blank, then the calculator will ask for touch screen alignment and initial setup again.
+
+On the computer, wait 10 to 20 seconds for the USB drivers to install if needed, then click `OK` in the updater to start the official update. The update takes several minutes. Do not unplug the calculator while it is running.
+
+## I'm new to programming : where should I start?
+
+The community recommendation is to **start with Python**, using the calculator's Python support. It's forgiving, interactive, and you'll learn how the calculator works along the way. Once you're comfortable, moving to **C/C++** is natural as most of what you learned in Python still applies. A great entry point is the [Python app](https://classpaddev.github.io/store/p/python) and the [Python section of this wiki](/wiki/python/introduction/).
+
+## What are the ways to make native programs?
+
+There are basically **two ways** to create native programs, and both produce `.hh3` files that look identical to the user:
+
+1. **The Hollyhock native SDK** — it tries to **play as nicely as possible with the Casio OS**, so your hello world just prints on the screen as expected. This is the friendlier route.
+2. **The gint kernel** — a custom kernel that **talks directly to the hardware**, ignoring most of the Casio OS. It's the way to go if you want full control and performance: fast drawing, direct access to the LCD controller, USB, and so on. Most games are made with gint. See the [gint getting started guide](/wiki/gint/getting-started/introduction/).
+
+It's mostly a matter of which **template** you start from — the template guides your code quite a lot.
+
+## Which compiler does the calculator use?
+
+The Hollyhock native SDK uses a **recent GCC** toolchain that even supports modern C++, which is quite impressive for an embedded toolchain. The **gint** toolchain uses a **slightly older GCC with custom patches**. That's also why we all prefer to use the same compiler — shared toolchains make troubleshooting *much* easier, and the two toolchains are **not interchangeable**.
+
+## What CPU is inside the ClassPad?
+
+The fx-CP400 is powered by a **Hitachi (now Renesas) SuperH SH4A-DSP** — the same CPU family that powered the **Sega Dreamcast**, so we share a passion with the Dreamcast homebrew scene. The SuperH is a simple, well-designed Japanese architecture (you could call it the "grandma of ARM"). Because it's an **SoC** (a single chip doing CPU, audio DSP, battery measurement and more) with almost no modern features, it's actually a **wonderful chip to learn CPU basics** hands-on — things other platforms make deliberately hard to touch.
+
+## Does it have an FPU?
+
+No — unlike the Dreamcast's SH4, **the CP400's CPU has no floating-point unit (FPU)**, the small extra circuit that computes decimal numbers like 3.14 very fast in hardware. Floating-point math is **emulated in software**, which is slower. Fun fact: in the 90s most CPUs had no FPU either — it's the modern ones that are the exception! This limitation is exactly why the DSP and audio side of the chip is such an interesting thing to explore.
+
+## How much RAM does it have?
+
+The ClassPad has **around 16 MB of RAM** — an enormous amount for a calculator — but it's split into **several regions** with different personalities: a small but **very fast** RAM intended for the DSP (audio), and larger but **slower** RAM for general use. There's also **no MMU** (see the next question), so no virtual memory. Exploring the address space and learning which region is good for what is a fun part of ClassPad hacking.
+
+## Why can't programs load anywhere in memory like on a PC?
+
+Because the ClassPad has **no MMU and no dynamic linker**. On a modern system like Linux, the dynamic linker loads programs and libraries at whatever position is free and fixes everything on the fly; the MMU also gives each program its own "virtual" memory so it believes it's alone. On the ClassPad, code is **compiled for fixed load addresses** — if you load it somewhere else, all the addresses inside are wrong. The classic workaround is an **interpreter**: something like Python is essentially the "stub" you described — it reads bytecode from anywhere and executes it, just more slowly than native code.
+
+## How does the screen work?
+
+Two ways! You can either **write pixels into a buffer** — a large region of memory that gets mirrored to the screen — or **talk directly to the LCD controller** by sending commands to a memory address. The panel is **partially MIPI**, so a few basic commands (put pixel, refresh...) exist at the hardware level. Drawing directly to the LCD controller is the fastest route, and it's one of the things gint makes easy.
+
+## How fast is the CPU? Can I overclock it?
+
+The CPU runs at around **100 MHz** and can be overclocked — tools like **CPtune** exist for that. In practice, keep it modest: the touchscreen stops responding when input polling goes above roughly **50 MHz** (it's related to the I2C bus used by the touch controller), and memory limits (CL3 vs CL2 timings) also come into play. Don't expect magic either — overclocking mostly makes the UI feel snappier, not necessarily your calculations.
+
+## Can I compile on Linux?
+
+**Yes, absolutely!** Both toolchains ship as **Docker images**, so you don't need Windows at all:
+
+- **Hollyhock native SDK**: `ghcr.io/classpaddev/hollyhock-3`
+- **gint**: `ghcr.io/therainbowphoenix/gint-docker`
+
+And if you want a **zero-setup** option, the templates work in **GitHub Codespaces** — you get a ready-to-code environment in your browser without installing anything.
+
+## Is there a compiler that runs on the calculator itself?
+
+Nothing concrete yet. The flash is small and **C compilers are hungry**, which makes self-hosting very difficult — though there have been projects tr

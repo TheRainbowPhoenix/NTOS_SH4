@@ -404,3 +404,35 @@ over the shared SHELLCHROME nav bar (the only bar painter, in edge AND
 settings), tab center = its own toolbar, hub/clear/readlist = empty black,
 SIP-up = keyboard through the strip. light-tabs now keeps its reference
 (tabs_menu.png) shape: raised toolbar + chrome bar below.
+
+## Session 7 (cont.) — HTML form controls + ACID2 staging
+
+- **Form controls** (markdown.dll engine, no host changes):
+  - <select> (incl. multiple) swallows its options via a scan-ahead in
+    html_parse and renders one field with the selected label + a chevron;
+    last `selected` wins, first option as fallback. Labels are trimmed
+    and newline-flattened (real-world markup indents them).
+  - <textarea>: scan-ahead value, cols/rows -> box size, value painted
+    line by line inside (only rows that fit).
+  - type=password renders dots, never the secret; type=hidden AND the
+    HTML5 `hidden` boolean attr render nothing (attr order independent);
+    type=reset/image fall back to submit-style buttons ("Submit" label
+    when valueless); size=N sets control width (input and select).
+  - checkbox tick redrawn as a bold 2px diagonal checkmark (the old 1px
+    "L" was invisible at page zoom); select labels clamp before the
+    chevron (text_w-aware).
+  - Verified by eye (vision model): third checkbox ticks, radio 2 carries
+    the dot, "Selection Item 4" sits inside the box with a chevron, no
+    garbled text. e2e states: form, form-scrolled (form.test mock page).
+- **ACID2 staging**: acid2.test serves the real test page (page source in
+  tests/assets/acid2.htm, generator reads repo assets now — the mdtest/
+  sandbox paths died with that sandbox; array sources restored from the
+  committed mockweb.h). Current render status, honestly: blank above the
+  fold. md_load parses it (43 blocks / 65 rules) and layout runs, but the
+  em-heavy geometry (margin: 100em, width: 140%) wraps the int16 op
+  coordinates — all 63 ops land at wrapped-negative x/y and paint
+  nothing at any scroll. parse_len now saturates at +-3000px; the rest
+  needs the ACID2 milestone: int32/saturating layout arithmetic,
+  position:absolute/fixed, display:table, min/max-*, line-height,
+  margin-collapsing, data:URI PNG inflate (the eyes), object fallback.
+- **Forms + engine hardening share the smoke**: MDSmokeTest 0x103F.

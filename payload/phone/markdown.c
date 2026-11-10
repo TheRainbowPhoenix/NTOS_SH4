@@ -160,7 +160,8 @@ typedef struct {
 
 /* inline items */
 enum { T_TEXT, T_BR, T_IMG, T_INPUT };
-enum { IN_RADIO, IN_CHECK, IN_TEXT, IN_SUBMIT };
+enum { IN_RADIO, IN_CHECK, IN_TEXT, IN_SUBMIT, IN_PASS, IN_SELECT, IN_AREA,
+       IN_HIDDEN };
 
 typedef struct {
     unsigned char kind, flags; /* MDTF_* in flags */
@@ -352,6 +353,13 @@ static int parse_len(const char **pp, short *out, unsigned char *unit)
     v = v * 10 + tenth;
     if (neg)
         v = -v;
+    /* saturation: lengths are carried as SHORTS (x10). Without this,
+     * pages like ACID2 (margin: 100em, width: 140%) wrap int16 negative
+     * and poison the whole layout; ±3000px is beyond any phone page. */
+    if (v > 30000)
+        v = 30000;
+    else if (v < -30000)
+        v = -30000;
     unsigned char u = U_NUM;
     if (p[0] == 'p' && p[1] == 'x') { u = U_PX; p += 2; }
     else if (p[0] == 'p' && p[1] == 't') { u = U_PX; p += 2; v = v * 96 / 72; }
@@ -1169,10 +1177,12 @@ typedef struct {
     const char *style, *href, *src, *val;
     int style_len, href_len, src_len, val_len, alt_len;
     int w, h;
+    short iw, ih;          /* input width/height hints (size/cols/rows attrs) */
     unsigned char align; /* 0 none 1 center 2 right */
     unsigned color;      /* font color attr, UNSET */
     unsigned char inp;   /* IN_* */
     unsigned char checked;
+    unsigned char hidden_; /* <input hidden ...> boolean attr */
     unsigned char fsize; /* font size attr 1..7 -> delta */
 } TagAttr;
 
@@ -1235,15 +1245,37 @@ static void attr_parse(const char *p, const char *end, TagAttr *at)
             if (parse_color(&vp, &c))
                 at->color = c;
         } else if (A_IS("size")) {
-            if (vlen && v[0] >= '1' && v[0] <= '7')
-                at->fsize = (unsigned char)(v[0] - '4'); /* delta around medium */
+            if (vlen && v[0] >= '1' && v[0] <= '7' &&
+                (vlen == 1 || !(v[1] >= '0' && v[1] <= '9')))
+                at->fsize = (unsigned char)(v[0] - '4'); /* font size 1..7 */
+            int n = 0, any = 0;
+            for (int i = 0; i < vlen && v[i] >= '0' && v[i] <= '9'; ++i) { n = n * 10 + v[i] - '0'; any = 1; }
+            /* <input size=N> / <select size=N>: control width in chars */
+            if (any && n >= 8 && n <= 80)
+                at->iw = (short)(n * 6 + 10);
+        } else if (A_IS("cols")) {
+            int n = 0, any = 0;
+            for (int i = 0; i < vlen && v[i] >= '0' && v[i] <= '9'; ++i) { n = n * 10 + v[i] - '0'; any = 1; }
+            if (any && n >= 4 && n <= 80)
+                at->iw = (short)(n * 6 + 14);
+        } else if (A_IS("rows")) {
+            int n = 0, any = 0;
+            for (int i = 0; i < vlen && v[i] >= '0' && v[i] <= '9'; ++i) { n = n * 10 + v[i] - '0'; any = 1; }
+            if (any && n >= 1 && n <= 20)
+                at->ih = (short)(n * 12 + 10);
         } else if (A_IS("type")) {
             if (vlen >= 5 && xeq(v, "radio", 5)) at->inp = IN_RADIO;
             else if (vlen >= 8 && xeq(v, "checkbox", 8)) at->inp = IN_CHECK;
             else if (vlen >= 6 && (xeq(v, "submit", 6) || xeq(v, "button", 6))) at->inp = IN_SUBMIT;
+            else if (vlen >= 5 && (xeq(v, "reset", 5) || xeq(v, "image", 5))) at->inp = IN_SUBMIT;
+            else if (vlen >= 8 && xeq(v, "password", 8)) at->inp = IN_PASS;
+            else if (vlen >= 6 && xeq(v, "hidden", 6)) at->inp = IN_HIDDEN;
+            else if (vlen >= 4 && xeq(v, "file", 4)) at->inp = IN_TEXT; /* field + value */
             else at->inp = IN_TEXT;
         } else if (A_IS("checked")) {
             at->checked = 1;
+        } else if (A_IS("hidden")) {
+            at->hidden_ = 1; /* HTML5 boolean, independent of type= */
         }
 #undef A_IS
     }
@@ -1484,14 +1516,29 @@ static const char *html_inline_tag(HParser *ps, const char *p, const char *end)
                 }
             }
         } else if (TG_IS("input")) {
-            int idx = add_inl(ps, T_INPUT);
-            if (idx >= 0) {
-                inls[idx].inp = at.inp;
-                inls[idx].h = at.checked;
-                if (at.val_len > 0) {
-                    int off = txt_put(at.val, at.val_len);
-                    inls[idx].s = g_txt + off;
-                    inls[idx].len = (short)at.val_len;
+            if (at.inp == IN_HIDDEN || at.hidden_)
+                { /* renders nothing (hidden fields are invisible) */ }
+            else {
+                int idx = add_inl(ps, T_INPUT);
+                if (idx >= 0) {
+                    inls[idx].inp = at.inp;
+                    inls[idx].h = at.checked;
+                    inls[idx].w = at.iw; /* size attr width hint, 0 = default */
+                    if (at.inp == IN_SUBMIT && at.val_len == 0) {
+                        /* image/reset inputs without a value: usable label */
+                        static const char SUB[] = "Submit";
+                        int off = txt_put(SUB, 6);
+                        inls[idx].s = g_txt + off;
+                        inls[idx].len = 6;
+                    } else if (at.val_len > 0) {
+                        int off = txt_put(at.val, at.val_len);
+                        inls[idx].s = g_txt + off;
+                        inls[idx].len = (short)at.val_len;
+                        if (at.inp == IN_PASS) { /* dots, never the secret */
+                            for (int q = 0; q < at.val_len && q < 60; ++q)
+                                g_txt[off + q] = '*';
+                        }
+                    }
                 }
             }
         } else if (TG_IS("a")) {
@@ -1692,6 +1739,143 @@ static void html_parse(HParser *ps, const char *p, const char *end)
             }
             if (in_head)
                 TRACE(12);
+            /* ---- form controls with scan-ahead content: select/textarea.
+             * Both swallow their whole element (options never leak as page
+             * text) and emit one T_INPUT with the chosen label / value. */
+            if (!close && TIS("select")) {
+                TagAttr at;
+                attr_parse(te, tagend, &at);
+                /* find </select (case-insens) */
+                const char *q = tagend + 1;
+                while (q + 8 <= end && !(q[0] == '<' && q[1] == '/' &&
+                      xlow((unsigned char)q[2]) == 's' &&
+                      xlow((unsigned char)q[3]) == 'e' &&
+                      xlow((unsigned char)q[4]) == 'l'))
+                    ++q;
+                if (q + 8 <= end) {
+                    const char *chosen = 0;
+                    int chosen_len = 0, any_opt = 0;
+                    const char *op = tagend + 1;
+                    while (op < q) {
+                        /* next <option ...> */
+                        const char *no = op;
+                        while (no + 7 < end && !(no[0] == '<' &&
+                              xlow((unsigned char)no[1]) == 'o' &&
+                              xlow((unsigned char)no[2]) == 'p'))
+                            ++no;
+                        if (no + 7 >= end || no >= q)
+                            break;
+                        const char *noend = no;
+                        while (noend < end && *noend != '>')
+                            ++noend;
+                        if (noend >= end)
+                            break;
+                        /* selected flag inside the option's attrs */
+                        int sel = 0;
+                        for (const char *a = no; a < noend; ++a)
+                            if (a + 8 <= noend && xlow((unsigned char)a[0]) == 's' &&
+                                xlow((unsigned char)a[1]) == 'e' && a[2] == 'l' &&
+                                (a == no || xisspace((unsigned char)a[-1]) ||
+                                 a[-1] == '/'))
+                                sel = 1;
+                        /* option label: up to </option, the next <option, or
+                         * </select — tags inside the label are stripped */
+                        const char *lab = noend + 1;
+                        const char *le = q;
+                        const char *scan = lab;
+                        while (scan + 8 <= end) {
+                            if (scan[0] == '<' && (xlow((unsigned char)scan[1]) == 'o' ||
+                                scan[1] == '/')) {
+                                le = scan < le ? scan : le;
+                                break;
+                            }
+                            ++scan;
+                        }
+                        if (le > q)
+                            le = q;
+                        if (!any_opt || sel) {
+                            /* last `selected` wins; first option as fallback */
+                            chosen = lab;
+                            chosen_len = (int)(le - lab);
+                        }
+                        if (sel)
+                            any_opt = -1; /* an explicit selection happened */
+                        else if (any_opt == 0)
+                            any_opt = 1;
+                        op = le;
+                    }
+                    if (chosen && chosen_len > 0) {
+                        int idx = add_inl(ps, T_INPUT);
+                        if (idx >= 0) {
+                            int clamped = chosen_len > 40 ? 40 : chosen_len;
+                            int off = txt_put(chosen, clamped);
+                            /* trim + flatten: option labels are indented in
+                             * real-world markup; collapse the runs to spaces */
+                            int a = off, b = g_txt_len;
+                            while (a < b && xisspace((unsigned char)g_txt[a]))
+                                ++a;
+                            while (b > a && xisspace((unsigned char)g_txt[b - 1]))
+                                --b;
+                            for (int k = a; k < b; ++k)
+                                if (g_txt[k] == '\n' || g_txt[k] == '\r' || g_txt[k] == '\t')
+                                    g_txt[k] = ' ';
+                            inls[idx].inp = IN_SELECT;
+                            inls[idx].s = g_txt + a;
+                            inls[idx].len = (short)(b - a);
+                            inls[idx].w = at.iw ? at.iw : 118;
+                            inls[idx].h = 0;
+                        }
+                    }
+                    p = q;
+                    while (p < end && *p != '>')
+                        ++p;
+                    if (p < end)
+                        ++p;
+                    continue;
+                }
+                p = tagend + 1; /* unterminated: treat as transparent */
+                continue;
+            }
+            if (!close && TIS("textarea")) {
+                TagAttr at;
+                attr_parse(te, tagend, &at);
+                const char *q = tagend + 1;
+                while (q + 10 <= end && !(q[0] == '<' && q[1] == '/' &&
+                      xlow((unsigned char)q[2]) == 't' &&
+                      xlow((unsigned char)q[3]) == 'e' &&
+                      xlow((unsigned char)q[4]) == 'x'))
+                    ++q;
+                if (q + 10 <= end) {
+                    const char *val = tagend + 1;
+                    int vlen = (int)(q - val);
+                    if (vlen > 200)
+                        vlen = 200;
+                    int idx = add_inl(ps, T_INPUT);
+                    if (idx >= 0) {
+                        int off = txt_put(val, vlen);
+                        /* trim the outer whitespace, keep inner newlines: the
+                         * area paints the value line by line */
+                        int a = off, b = g_txt_len;
+                        while (a < b && xisspace((unsigned char)g_txt[a]))
+                            ++a;
+                        while (b > a && xisspace((unsigned char)g_txt[b - 1]))
+                            --b;
+                        inls[idx].inp = IN_AREA;
+                        inls[idx].s = g_txt + a;
+                        inls[idx].len = (short)(b - a);
+                        inls[idx].w = at.iw ? at.iw : 240;
+                        inls[idx].h = at.ih ? at.ih : 58;
+                    }
+                    p = q;
+                    while (p < end && *p != '>')
+                        ++p;
+                    if (p < end)
+                        ++p;
+                    continue;
+                }
+                p = tagend + 1;
+                continue;
+            }
             if (!close && (in_head || TIS("link") || TIS("meta") ||
                            TIS("base") || TIS("doctype"))) {
                 p = tagend + 1;
@@ -3285,8 +3469,15 @@ int layout_inline(int bi, int cx, int cy, int cw)
                               ? g_host->text_w(it->s, it->len, r->fh)
                               : it->len * 6) + 18;
                     ih = 22;
+                } else if (it->inp == IN_SELECT) {
+                    iw = it->w ? it->w : 118;
+                    ih = 20;
+                } else if (it->inp == IN_AREA) {
+                    iw = it->w ? it->w : 240;
+                    ih = it->h ? it->h : 58;
                 } else {
-                    iw = 90;
+                    /* text/password/file: width from the size attr hint */
+                    iw = it->w ? it->w : 90;
                     ih = 18;
                 }
             }
@@ -3434,9 +3625,13 @@ static void paint_one(const MdHost *h, const POp *o, int sx, int sy)
             h->fill(h->dc, x, y + o->h - 1, x + o->w, y + o->h, o->c);
             h->fill(h->dc, x, y, x + 1, y + o->h, o->c);
             h->fill(h->dc, x + o->w - 1, y, x + o->w, y + o->h, o->c);
-            if (o->img) { /* tick */
-                h->fill(h->dc, x + 2, y + o->h / 2, x + o->w / 2, y + o->h / 2 + 1, o->c);
-                h->fill(h->dc, x + o->w / 2, y + o->h / 2, x + o->w / 2 + 1, y + o->h - 3, o->c);
+            if (o->img) { /* bold tick: down-right leg then up-right leg */
+                for (int k = 0; k < 3; ++k)
+                    h->fill(h->dc, x + 3 + k * 2, y + 6 + k, x + 5 + k * 2,
+                            y + 8 + k, o->c);
+                for (int k = 0; k < 5; ++k)
+                    h->fill(h->dc, x + 7 + k, y + 8 - k * 2, x + 9 + k,
+                            y + 10 - k * 2, o->c);
             }
         } else if (o->f == IN_SUBMIT) {
             h->fill(h->dc, x, y, x + o->w, y + o->h, 0xCCCCCC);
@@ -3445,7 +3640,56 @@ static void paint_one(const MdHost *h, const POp *o, int sx, int sy)
             if (o->len > 0)
                 h->text(h->dc, x + 9, y + (o->h - o->fh) / 2, o->s, o->len,
                         0x000000, o->fh, 0);
-        } else { /* text field */
+        } else if (o->f == IN_SELECT) {
+            /* dropdown: field + label + a chevron-down at the right */
+            h->fill(h->dc, x, y, x + o->w, y + o->h, 0xFFFFFF);
+            h->fill(h->dc, x, y, x + o->w, y + 1, o->c);
+            h->fill(h->dc, x, y + o->h - 1, x + o->w, y + o->h, o->c);
+            h->fill(h->dc, x, y, x + 1, y + o->h, o->c);
+            h->fill(h->dc, x + o->w - 1, y, x + o->w, y + o->h, o->c);
+            if (o->len > 0) {
+                /* clamp the label so it never runs under the chevron */
+                int n = o->len, lim = o->w > 24 ? o->w - 20 : o->w;
+                if (h->text_w)
+                    while (n > 0 && h->text_w(o->s, n, o->fh) > lim)
+                        --n;
+                h->text(h->dc, x + 5, y + (o->h - o->fh) / 2, o->s, n,
+                        0x000000, o->fh, 0);
+            }
+            {
+                int cx = x + o->w - 13, cy = y + o->h / 2 - 3;
+                for (int k = 0; k < 3; ++k) /* 3-step chevron */
+                    h->fill(h->dc, cx + k * 2 - 1, cy + k, cx + k * 2 + 1,
+                            cy + k + 2, 0x000000);
+                for (int k = 0; k < 3; ++k)
+                    h->fill(h->dc, cx + 5 - k * 2 - 1, cy + 2 + k, cx + 5 - k * 2 + 1,
+                            cy + 4 + k, 0x000000);
+            }
+        } else if (o->f == IN_AREA) {
+            /* textarea: bordered box, value drawn line by line (the value
+             * keeps its '\n'; only rows that fit inside the box are painted) */
+            h->fill(h->dc, x, y, x + o->w, y + o->h, 0xFFFFFF);
+            h->fill(h->dc, x, y, x + o->w, y + 1, o->c);
+            h->fill(h->dc, x, y + o->h - 1, x + o->w, y + o->h, o->c);
+            h->fill(h->dc, x, y, x + 1, y + o->h, o->c);
+            h->fill(h->dc, x + o->w - 1, y, x + o->w, y + o->h, o->c);
+            if (o->len > 0) {
+                int a = 0, ln = 0;
+                for (int k = 0; k <= o->len && ln < 30; ++k) {
+                    if (k == o->len || o->s[k] == '\n') {
+                        if (k > a) {
+                            int ly = y + 5 + ln * 12;
+                            if (ly + o->fh > y + o->h - 2)
+                                break;
+                            h->text(h->dc, x + 5, ly, o->s + a, k - a,
+                                    0x000000, o->fh, 0);
+                        }
+                        ++ln;
+                        a = k + 1;
+                    }
+                }
+            }
+        } else { /* text/password field */
             h->fill(h->dc, x, y, x + o->w, y + o->h, 0xFFFFFF);
             h->fill(h->dc, x, y, x + o->w, y + 1, o->c);
             h->fill(h->dc, x, y + o->h - 1, x + o->w, y + o->h, o->c);

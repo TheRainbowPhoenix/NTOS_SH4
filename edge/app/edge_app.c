@@ -1580,6 +1580,12 @@ static int web_serve(const char *host, const char *url)
     if (xstr_contains(url, "test5526c") || xstr_contains(host, "acid1")) {
         dialect = MD_SRC_HTML;
         body = MW_ACID1;
+    } else if (xstr_contains(host, "acid2")) {
+        dialect = MD_SRC_HTML;
+        body = MW_ACID2;
+    } else if (xstr_contains(host, "form")) { /* "form.test" demo page */
+        dialect = MD_SRC_HTML;
+        body = MW_FORM;
     } else if (xstr_contains(host, "classpad") &&
                !xstr_contains(host, "classpaddev")) {
         body = MW_WIKI_CP300; /* wikipedia Casio ClassPad 300 */
