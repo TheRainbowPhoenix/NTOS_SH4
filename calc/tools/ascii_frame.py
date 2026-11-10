@@ -4,7 +4,7 @@ the layout can be inspected without a vision model."""
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..',
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..',
                                 'edge', 'ntos_linux', 'tests'))
 from check_shots import read_png
 
