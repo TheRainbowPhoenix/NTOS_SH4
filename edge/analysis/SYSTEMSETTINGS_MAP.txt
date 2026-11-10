@@ -1,0 +1,47 @@
+SystemSettings (W10M 1607) triage — refs/edge/Microsoft.Windows.SystemSettings_cw5n1h2txyewy.zip
+================================================================================
+Modules: SystemSettings.Phone.exe 2.4MB (UI), SystemSettingsViewModel.Phone.dll
+456KB (view models), Telemetry.Phone.dll 40KB, resources.pri 9.3MB.
+
+UI architecture (from pri XBF references, ~185 total):
+- RootPage + L1Page (category list) -> L2Page (sub-page with rows,
+  toggles, chevrons) + DeepDiveL2Page (3rd level).
+- FullSearchPage + SettingsSearchBox/SettingsAutoSuggestSearchBox.
+- SettingsFlyout, FullScreenPage, DialogFlowPage (modal flows).
+- Per-page Templates.xbf + ViewModel pairs (e.g. BluetoothSettingsPage
+  ViewModel.xbf + BluetoothSettingsPageTemplates.xbf).
+
+Categories (L1) map to page families:
+- Accounts (Sync/Picture/Email app)
+- Apps (Notifications/Sizes/For websites)
+- BatterySaver (page+usage)
+- Bluetooth
+- Calls (SIM1/SIM2/advanced/audio routing)
+- CameraPhotos
+- DataSense (overview/settings/usage)
+- DeveloperOptions
+- EaseOfAccess (Narrator/Magnifier/HighContrast/Captions/More)
+- FindMyDevice
+- Maps
+- Messaging (SIM1/SIM2/emergency)
+- MobileHotspot
+- Network (VPN/MBB/connections/APN/PLMN)
+- OneBackup
+- Personalization (Background/Colors/LockScreen/Glance/
+-   NavigationBar/Sounds)
+- PhoneAbout
+- Privacy (18 pages: Webcam..AccountInfo)
+- Provisioning
+- QuickActions
+- Speech
+- StorageSense (overview+13 breakdowns)
+- System (Display/Usb/MouseTouchpad)
+- TimeRegion
+- Update (WU/Mus: history/
+-   details/change settings/restart options)
+- Users
+- WorkAccess
+
+uXAML targets for the next session: L1Page (list of category rows with
+icon+chevron), L2Page (rows: toggle switches, value pickers, link rows),
+reusing Edge's Check/Toggle/chevron vocabulary from the Edge POC.
