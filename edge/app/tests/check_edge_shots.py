@@ -103,7 +103,6 @@ REFERENCE = {
     'boot': 'home.png',
     'menu': 'context.png',
     'address': 'type.png',
-    'wiki': 'webpage.png',
     'readlist': 'add_reading.png',
     'tabs': 'tabs.png',
     'manytabs': 'manytabs.png',
@@ -238,9 +237,13 @@ PRESENCE = {
         (130, 170, 190, 226, 40, 150, 0),  # white hero glyph
     ],
     'wiki': [
-        (16, 6, 90, 34, 40, -100, 0),      # "Exam" title (dark on white)
-        (16, 38, 60, 56, 8, 120, 2),       # "Article" link + underline
-        (64, 38, 92, 56, 8, 120, 2),       # "Talk" link + underline
+        # real content render: the Casio ClassPad 300 article through the
+        # HTML.DLL engine (mock DNS: wikipedia.org -> wiki_cp300.md). These
+        # probes are content-driven — a procedural mimic would have to draw
+        # the actual article text to pass.
+        (14, 4, 300, 40, 400, -100, 0),     # "Casio ClassPad 300" h1 (dark)
+        (10, 95, 300, 130, 250, 140, 2),    # blue links in the intro
+        (10, 140, 300, 260, 1500, -100, 0), # dense article body text
         (104, 496, 120, 516, 8, 60, 0),     # lock glyph in the address bar
     ],
     # settings family: state discriminators + shared nav-bar glyphs.
@@ -336,7 +339,21 @@ PRESENCE = {
         (0, 0, 320, 480, 200, 230, 0),      # orange active match (red ch)
         (0, 0, 320, 480, 300, 200, 0),      # yellow matches
     ],
+    # unknown host (nope.test): the generated offline error page, rendered
+    # from real HTML by the engine. ANCHOR reads the exact #A2A9B1 border
+    # colour the CSS asks for; the presence probes read the heading, the
+    # requested-host line and the explanation paragraph.
+    'errorpage': [
+        (14, 26, 306, 55, 300, -100, 0),    # "Can't reach this page" h3
+        (10, 56, 310, 95, 300, -100, 0),    # "nope.test is not in the mock DNS."
+        (12, 90, 308, 135, 600, -100, 0),   # explanation paragraph
+    ],
 }
+
+# exact pixel probes: the error page border must be the authored #A2A9B1
+ANCHORS['edge-errorpage'] = [
+    (10, 100, (0xA2, 0xA9, 0xB1)),
+]
 
 
 class Img:

@@ -1150,92 +1150,6 @@ static void paint_node(void *dc, unsigned ni)
         paint_node(dc, n->child[i]);
 }
 
-/* ---- mock web content (the "engine") ---- */
-/* token: a word + colour; used to lay out article text with inline links */
-typedef struct {
-    const char *s;
-    U32 c;
-} Tok;
-
-#define BLK RGB_(0x00, 0x00, 0x00)
-#define LNK RGB_(0x06, 0x45, 0xAD) /* link blue on white pages (any theme) */
-
-static void paint_tok_line(void *dc, int x, int y, const Tok *t, int n)
-{
-    for (int i = 0; i < n; ++i) {
-        int w = text_w(t[i].s, 11);
-        draw_text(dc, x, y, t[i].s, t[i].c, 11, 0, 0);
-        /* links are underlined (webpage.png): 1px rule under the text */
-        if (t[i].c == LNK && t[i].s[0])
-            fill(dc, x, y + 11, x + w, y + 12, LNK);
-        x += w;
-    }
-}
-
-static void paint_wiki(void *dc)
-{
-    fill(dc, 0, 0, 320, 480, C_PAGEBG);
-    /* article title + language tabs + outline buttons (webpage.png) */
-    draw_text(dc, 16, 8, "Exam", BLK, 22, 0, 1);
-    draw_text(dc, 16, 40, "Article", LNK, 11, 0, 0);
-    fill(dc, 16, 51, 16 + text_w("Article", 11), 52, LNK);
-    draw_text(dc, 66, 40, "Talk", LNK, 11, 0, 0);
-    fill(dc, 66, 51, 66 + text_w("Talk", 11), 52, LNK);
-    ic_rect(ifill, dc, 16, 60, 78, 80, 1, RGB_(0xA2, 0xA9, 0xB1));
-    draw_text(dc, 26, 65, "Language", BLK, 11, 0, 0);
-    ic_rect(ifill, dc, 242, 60, 304, 80, 1, RGB_(0xA2, 0xA9, 0xB1));
-    draw_text(dc, 262, 65, "Edit", BLK, 11, 0, 0);
-    draw_text(dc, 16, 90, "(Redirected from Test (assessment))",
-              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
-    draw_text(dc, 16, 104, "For other uses, see Exam (disambiguation)",
-              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
-    draw_text(dc, 16, 118, "and Examination (disambiguation).",
-              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
-    /* body with inline links */
-    static const Tok L1[] = {{"An ", BLK}, {"examination", BLK}, {" (exam or ", BLK},
-        {"test", LNK}, {"), or ", BLK}, {"test", LNK}, {", is an ", BLK},
-        {"educational", LNK}, {" ", BLK}, {"assessment", LNK}};
-    static const Tok L2[] = {{"intended to measure a test-taker's ", BLK},
-        {"knowledge", LNK}, {", ", BLK}, {"skill", LNK}, {", ", BLK},
-        {"aptitude", LNK}, {",", BLK}};
-    static const Tok L3[] = {{"", BLK}, {"physical fitness", LNK}, {", or ", BLK},
-        {"classification", LNK}, {" in many other", BLK}};
-    static const Tok L4[] = {{"topics (e.g. ", BLK}, {"beliefs", LNK}, {" or ", BLK},
-        {"personal opinion", LNK}, {"). A ", BLK}, {"test", LNK}, {" may", BLK}};
-    static const Tok L5[] = {{"be administered ", BLK}, {"verbally", LNK}, {", on ", BLK},
-        {"paper", LNK}, {", on a ", BLK}, {"computer", LNK}, {", or in a", BLK}};
-    static const Tok L6[] = {{"formal or informal setting. An ", BLK},
-        {"exam", LNK}, {" may be", BLK}};
-    static const Tok L7[] = {{"administered by an ", BLK}, {"examination board", LNK},
-        {", an", BLK}};
-    static const Tok L8[] = {{"instructor, a ", BLK}, {"proctor", LNK},
-        {", or a ", BLK}, {"testing service", LNK}, {".", BLK}};
-    static const Tok L9[] = {{"The ", BLK}, {"Wikipedia", LNK},
-        {" article on examinations", BLK}};
-    static const Tok L10[] = {{"covers the history of ", BLK}, {"testing", LNK},
-        {" in", BLK}};
-    static const Tok L11[] = {{"education and ", BLK}, {"psychometrics", LNK},
-        {".", BLK}};
-    static const Tok L12[] = {{"This page is rendered locally by the NTOS mock",
-                               RGB_(0x54, 0x59, 0x5D)}};
-    int y = 140;
-    paint_tok_line(dc, 16, y, L1, 10); y += 17;
-    paint_tok_line(dc, 16, y, L2, 7); y += 17;
-    paint_tok_line(dc, 16, y, L3, 4); y += 17;
-    paint_tok_line(dc, 16, y, L4, 7); y += 17;
-    paint_tok_line(dc, 16, y, L5, 7); y += 17;
-    paint_tok_line(dc, 16, y, L6, 3); y += 17;
-    paint_tok_line(dc, 16, y, L7, 3); y += 17;
-    paint_tok_line(dc, 16, y, L8, 5); y += 24;
-    paint_tok_line(dc, 16, y, L9, 3); y += 17;
-    paint_tok_line(dc, 16, y, L10, 3); y += 17;
-    paint_tok_line(dc, 16, y, L11, 3); y += 24;
-    draw_text(dc, 16, y, "This page is rendered locally by the NTOS mock",
-              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
-    draw_text(dc, 16, y + 13, "engine. No network stack involved.",
-              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
-}
-
 /* light chrome geometry: the browser toolbar strip sits at y432-479 with
  * the system nav bar below (light refs); dark keeps it at y480-527 */
 static int chrome_yoff(void)
@@ -1292,30 +1206,10 @@ static void paint_page(void *dc)
         clip_set(0, 0, 320, 528);
         return;
     }
-    int wiki = 0;
-    for (const char *p = t->host; *p; ++p)
-        if (p[0] == 'w' && p[1] == 'i' && p[2] == 'k' && p[3] == 'i')
-            wiki = 1;
-    if (wiki) {
-        paint_wiki(dc);
-        return;
-    }
+    /* every navigated URL is an engine page now — mock DNS, fls0 file,
+     * or the generated offline error page. The only non-engine case left
+     * is the engine itself failing to load: a plain blank surface. */
     fill(dc, 0, 0, 320, 480, C_PAGEBG);
-    draw_text(dc, 16, 16, t->title, BLK, 18, 0, 1);
-    draw_text(dc, 16, 48, t->host, LNK, 12, 0, 0);
-    fill(dc, 16, 60, 16 + text_w(t->host, 12), 61, LNK); /* underlined link */
-    static const int P1[4] = {288, 260, 274, 180};
-    for (int i = 0; i < 4; ++i)
-        fill(dc, 16, 78 + i * 16, 16 + P1[i], 78 + i * 16 + 8,
-             RGB_(0xEA, 0xEC, 0xF0));
-    static const int P2[4] = {288, 274, 252, 210};
-    for (int i = 0; i < 4; ++i)
-        fill(dc, 16, 156 + i * 16, 16 + P2[i], 156 + i * 16 + 8,
-             RGB_(0xEA, 0xEC, 0xF0));
-    draw_text(dc, 16, 240, "This page is rendered locally by the NTOS mock",
-              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
-    draw_text(dc, 16, 254, "engine. No network stack involved.",
-              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
 }
 
 /* two-tone URL: subdomain grey, domain white (webpage.png).
@@ -1592,6 +1486,11 @@ static int web_serve(const char *host, const char *url)
     } else if (xstr_contains(host, "classpaddev") || xstr_contains(host, "hh3") ||
                xstr_contains(host, "hollyhock")) {
         body = MW_CWIKI_FAQ;
+    } else if (xstr_contains(host, "wiki")) {
+        /* wikipedia.org: the real Casio ClassPad 300 article (markdown
+         * capture, tests/assets/wiki_cp300.md) — rendered by the engine
+         * from the actual content, never procedurally painted */
+        body = MW_WIKI_CP300;
     } else {
         return 0;
     }
@@ -1614,9 +1513,19 @@ static int web_open_file(const char *name)
     return NT_CALL(md_load, (dialect, (const char *)fbuf, n)) ? 1 : 0;
 }
 
+/* reader view is per-page: every navigation leaves it (real browsers
+ * behave the same). Without this the warm-paper view leaked across
+ * acid2/form/error-page navigations in the e2e flow. */
+static void web_reader_reset(void)
+{
+    web_reader_on = 0;
+    NT_CALL(md_reader, (0));
+}
+
 /* load a url into the engine; returns web_kind for the tab */
 static int web_load(const char *url)
 {
+    web_reader_reset();
     const char *p = url;
     if (p[0] == 'f' && p[1] == 'i' && p[2] == 'l' && p[3] == 'e' &&
         p[4] == ':' && p[5] == '/' && p[6] == '/') {
@@ -1656,6 +1565,51 @@ static int web_load(const char *url)
             NT_CALL(md_layout, (320));
             return 1;
         }
+    }
+    /* unknown host: no procedural painting anywhere — generate a real
+     * HTML error page naming the host (the offline twin of a browser's
+     * "can't reach this page") and let the engine render it. Change the
+     * HTML, the render changes: it is content-driven like every page. */
+    static char errpage[1400];
+    int el = 0;
+    static const char *const EP[] = {
+        "<!DOCTYPE html><html><head><title>Can't reach this page</title>"
+        "</head><body style=\"margin:0;background-color:#FFFFFF\">"
+        "<div style=\"margin:16px 10px;padding:14px 12px;"
+        "border:1px solid #A2A9B1\">"
+        "<h3 style=\"font-size:17px;color:#1A1A1A;margin:0\">"
+        "Can't reach this page</h3>"
+        "<p style=\"font-size:12px;color:#54595D;margin:10px 0 0\">",
+        "</p>"
+        "<p style=\"font-size:12px;color:#54595D;margin:6px 0 0\">"
+        "This browser is offline. The mock DNS serves acid1.test,"
+        " acid2.test, form.test, classpad.dev and wikipedia.org; any"
+        " *.md, *.html or *.txt file in \\fls0 opens too.</p>"
+        "</div></body></html>",
+    };
+    for (int e = 0; e < 2; ++e) {
+        const char *q = EP[e];
+        while (*q && el < (int)sizeof errpage - 1)
+            errpage[el++] = *q++;
+        if (!e) { /* the requested host between the two paragraphs */
+            const char *h = url;
+            while (*h && *h != '/' && el < (int)sizeof errpage - 1)
+                errpage[el++] = *h++;
+            errpage[el++] = ' '; errpage[el++] = 'i'; errpage[el++] = 's';
+            errpage[el++] = ' '; errpage[el++] = 'n'; errpage[el++] = 'o';
+            errpage[el++] = 't'; errpage[el++] = ' '; errpage[el++] = 'i';
+            errpage[el++] = 'n'; errpage[el++] = ' '; errpage[el++] = 't';
+            errpage[el++] = 'h'; errpage[el++] = 'e'; errpage[el++] = ' ';
+            errpage[el++] = 'm'; errpage[el++] = 'o'; errpage[el++] = 'c';
+            errpage[el++] = 'k'; errpage[el++] = ' '; errpage[el++] = 'D';
+            errpage[el++] = 'N'; errpage[el++] = 'S'; errpage[el++] = '.';
+        }
+    }
+    errpage[el] = 0;
+    if (NT_CALL(md_load, (MD_SRC_HTML, errpage, el))) {
+        xcopy(web_loaded_url, url, xstrlen(url) + 1);
+        NT_CALL(md_layout, (320));
+        return 1;
     }
     return 0;
 }
@@ -1714,6 +1668,7 @@ static void nav_url(const char *url)
         hist_add(t->file, t->title);
         /* load through the engine now that the tab is set up */
         web_view_reset();
+        web_reader_reset();
         web_kind = web_open_file(t->file) ? 1 : 0;
         if (web_kind) {
             int tl2 = 0;
@@ -1756,8 +1711,8 @@ static void nav_url(const char *url)
     if (web_kind) {
         int tl2 = 0;
         const char *dt = NT_CALL(md_title, (&tl2));
-        if (dt && tl2 > 0 && !xstr_contains(t->url, "wikipedia.org"))
-            title = dt; /* <title>/h1 wins for engine pages (not the wiki mock) */
+        if (dt && tl2 > 0)
+            title = dt; /* <title>/first heading wins for engine pages */
     }
     int tl = xstrlen(title);
     if (tl > 39)
