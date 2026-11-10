@@ -255,6 +255,62 @@ ANCHORS = {
         (110, 67, (0x00, 0x5A, 0xA1)),   # pivot 2 underline
         (100, 510, (0xCE, 0xCF, 0xCE)),
     ],
+    # fixes_1 flow states (fx-*): the issue-repro script, now gated
+    'fx-search-or-browse': [
+        (160, 100, (0x7F, 0x7F, 0x7F)),  # dimmed page behind the empty field
+        (160, 190, (0xFF, 0xFF, 0xFF)),  # white field
+        (160, 240, (0xDE, 0xDF, 0xDE)),  # toolbar row
+        (100, 510, (0xCE, 0xCF, 0xCE)),  # nav bar below the SIP
+    ],
+    'fx-field-tap': [
+        (160, 190, (0xFF, 0xFF, 0xFF)),
+        (100, 510, (0xCE, 0xCF, 0xCE)),
+    ],
+    'fx-typed-test': [
+        (160, 100, (0xFF, 0xFF, 0xFF)),  # LIVE page behind typed text
+        (160, 190, (0xFF, 0xFF, 0xFF)),
+    ],
+    'fx-test123': [
+        (160, 100, (0xFF, 0xFF, 0xFF)),
+    ],
+    'fx-menu': [
+        (160, 60, (0x7F, 0x7F, 0x7F)),   # scrim from y24 (below the status bar)
+        (160, 250, (0xF7, 0xF3, 0xF7)),  # sheet panel
+        (160, 455, (0xE7, 0xE7, 0xE7)),  # hub row + toolbar
+    ],
+    'fx-search-test': [
+        (160, 100, (0xFF, 0xFF, 0xFF)),  # live page, typed field
+    ],
+    'fx-tabs': [
+        (80, 80, (0xE7, 0xE7, 0xE7)),    # card title strip
+        (80, 455, (0xE7, 0xE7, 0xE7)),   # toolbar
+        (100, 510, (0xCE, 0xCF, 0xCE)),  # nav bar
+    ],
+    # address-editor selection states (ad-*): drag-select + tap-to-edit
+    'ad-light-empty': [
+        (160, 100, (0x7F, 0x7F, 0x7F)),  # dimmed page (placeholder only)
+        (160, 190, (0xFF, 0xFF, 0xFF)),  # white field
+        (160, 240, (0xDE, 0xDF, 0xDE)),  # toolbar row
+    ],
+    'ad-light-test123': [
+        (160, 100, (0xFF, 0xFF, 0xFF)),  # LIVE page behind typed text
+    ],
+    'ad-light-seldrag': [
+        (30, 203, (0x30, 0x60, 0xC0)),   # drag-selected head of the text
+    ],
+    'ad-light-del': [
+        (160, 100, (0xFF, 0xFF, 0xFF)),  # live page
+    ],
+    'ad-swap-loaded': [
+        (160, 60, (0x00, 0x00, 0xFF)),   # swap.html blue canvas
+    ],
+    'ad-edit-url': [
+        (80, 203, (0x30, 0x60, 0xC0)),   # tap-to-edit selects the whole URL
+        (160, 190, (0xFF, 0xFF, 0xFF)),  # field tail stays white
+    ],
+    'ad-swap2': [
+        (160, 144, (0xA2, 0xA9, 0xB1)),  # x.html -> the error-page border
+    ],
     # light tabs list (fixes_1/SIDEBSIDE_tabs_list.png spec): #E7E7E7
     # title strips, 1px #E6E6E6 frames, toolbar 432-480 above the nav bar
     'edge-light-tabs': [
@@ -276,11 +332,20 @@ ANCHORS = {
     ],
     'edge-search-connect': [
         (160, 300, (0xFF, 0xFF, 0xFF)),    # white page
+        (160, 163, (0xA2, 0xA9, 0xB1)),    # the settings-button box border
+        (10, 120, (0xA2, 0xA9, 0xB1)),     # the card border, left edge
         (100, 510, (0xCE, 0xCF, 0xCE)),    # nav bar
     ],
     'edge-search-edge': [
         (160, 300, (0xFF, 0xFF, 0xFF)),
+        (10, 120, (0xA2, 0xA9, 0xB1)),
         (100, 510, (0xCE, 0xCF, 0xCE)),
+    ],
+    # unknown-host error page: the #A2A9B1 border the CSS asks for
+    # (top at y144, left at x10 under the status bar)
+    'edge-errorpage': [
+        (160, 144, (0xA2, 0xA9, 0xB1)),
+        (10, 120, (0xA2, 0xA9, 0xB1)),
     ],
     'edge-light-find-next': [
         (160, 209, (0x00, 0x79, 0xD6)),  # blue focus underline
@@ -491,6 +556,46 @@ PRESENCE = {
         (240, 188, 258, 206, 6, -100, 0),   # prev chevron in the field
         (274, 188, 292, 206, 6, -100, 0),   # next chevron in the field
         (100, 510, 180, 518, 10, -150, 0),  # nav bar glyphs below the SIP
+    ],
+    'fx-search-or-browse': [
+        (15, 186, 140, 218, 30, -200, 0),  # "Search or browse" placeholder
+    ],
+    'fx-typed-test': [
+        (15, 186, 50, 218, 20, -100, 0),   # "test" glyphs in the field
+    ],
+    'fx-test123': [
+        (15, 186, 70, 218, 25, -100, 0),   # "test123" glyphs
+    ],
+    'fx-menu': [
+        (13, 150, 150, 170, 20, -100, 0),  # "Share" row text
+        (60, 400, 92, 420, 10, -100, 0),   # a hub-row icon (labels y412)
+    ],
+    'fx-search-test': [
+        (15, 186, 50, 218, 20, -100, 0),   # "test" in the field
+    ],
+    'ad-light-empty': [
+        (15, 186, 140, 218, 30, -200, 0),  # placeholder
+    ],
+    'ad-light-test123': [
+        (15, 186, 70, 218, 25, -100, 0),   # "test123"
+    ],
+    'ad-light-seldrag': [
+        (16, 190, 52, 216, 25, 170, 2),    # partial selection block (blue)
+        (20, 192, 50, 214, 20, 240, 0),    # white glyphs ON the block
+    ],
+    'ad-light-del': [
+        (15, 186, 55, 218, 15, -100, 0),   # remaining text after the delete
+    ],
+    'ad-swap-loaded': [
+        (10, 28, 310, 62, 36, 200, 0),     # red 22px heading (red channel
+                                           # >=200: blue canvas is 0 there)
+    ],
+    'ad-edit-url': [
+        (16, 190, 80, 216, 40, 170, 2),    # selection block over the URL
+        (20, 192, 76, 214, 25, 240, 0),    # white glyphs ON the block
+    ],
+    'ad-swap2': [
+        (14, 26, 306, 55, 300, -100, 0),   # "Can't reach this page" h3
     ],
     'light-tabs': [
         (15, 76, 140, 88, 15, -100, 0),   # card title-strip glyphs
