@@ -53,7 +53,7 @@ package: all
 	printf 'ntos_windows.exe markdown.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --fs fs --record session.script\r\n'; \
 	printf 'echo session.script + ntos-win.log + shot-*.png record what you did\r\n'; } > $(PKG)/run-edge.bat
 	cp README.txt $(PKG)/
-	cd $(PKG) && zip -q -r ../$(PKG_ZIP) . && cd ..
+	python3 mkzip.py $(PKG_ZIP) $(PKG)
 	@echo "package: $(PKG_ZIP) ready"
 
 # test: run the SAME winboot.script through BOTH hosts ($(PKG)/fs for both)
