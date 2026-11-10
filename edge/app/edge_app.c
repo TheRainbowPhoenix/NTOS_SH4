@@ -1980,7 +1980,9 @@ static void paint_menu(void *dc)
     /* dim the live page above the sheet (addressbar_menu.png keeps the
      * content visible through the scrim) */
     if (g_light) {
-        dim_scrim(dc, 0, 0, 320, top - 1);
+        /* dim from y24: the launcher status bar (SHELLCHROME) stays
+         * crisp above the scrim, like the system bars on the device */
+        dim_scrim(dc, 0, 24, 320, top - 1);
         fill(dc, 0, top - 1, 320, top, C_SEP);
         fill(dc, 0, top, 320, hub, RGB_(0xF7, 0xF3, 0xF7));
     } else {
