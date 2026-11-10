@@ -16,6 +16,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  windows:
+    name: Windows Edge demo
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Zig 0.14.0
+        run: |
+          curl --fail --location --retry 3 \
+            https://ziglang.org/download/0.14.0/zig-linux-x86_64-0.14.0.tar.xz \
+            -o "$RUNNER_TEMP/zig.tar.xz"
+          tar -xf "$RUNNER_TEMP/zig.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/zig-linux-x86_64-0.14.0" >> "$GITHUB_PATH"
+      - name: Build Windows executable and demo DLLs
+        run: |
+          zig version
+          # Rebuild even the DLLs currently tracked in Git.
+          make -B -C edge/app ZIG="$(command -v zig)"
+          make -C edge/ntos_win ZIG="$(command -v zig)" package
+          test -s edge/ntos_win/ntos-windows/ntos_windows.exe
+          python3 -m zipfile -t edge/ntos_win/ntos-windows.zip
+      - name: Download and extract this artifact, then run run-edge.bat
+        uses: actions/upload-artifact@v7
+        with:
+          name: NTOS-Windows-Edge
+          path: edge/ntos_win/ntos-windows/
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 30
+
   device:
     name: Device package
     runs-on: ubuntu-latest

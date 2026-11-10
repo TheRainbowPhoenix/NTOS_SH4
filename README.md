@@ -27,9 +27,20 @@ alternative ABI profiles, `dist_pager*`, ELF objects, or build maps.
 Build locally with `make -j4 && python3 tools/package_device.py`; copy the
 contents of `install/`, not the unfiltered development `dist/` directory.
 
+## Windows Edge demo
+
+The same [Build workflow](https://github.com/TheRainbowPhoenix/NTOS_SH4/actions/workflows/c-cpp.yml)
+also builds **NTOS-Windows-Edge**, independently of the SuperH device job.
+Download and extract that artifact, then double-click `run-edge.bat`.
+Keep the executable, five DLLs and `fs/` directory together.
+
+This is a native x86-64 Windows host built from shared UI sources, not an
+SH4 emulator. CI uses Zig 0.14.0 to build the executable and DLLs and package
+the demo assets; visual regression tests are not required for this job.
+
 CI is intentionally split:
 [Build](https://github.com/TheRainbowPhoenix/NTOS_SH4/actions/workflows/c-cpp.yml)
-provides one installable artifact,
+provides the calculator package and the Windows demo,
 [Tests](https://github.com/TheRainbowPhoenix/NTOS_SH4/actions/workflows/tests.yml)
 checks correctness without uploading test binaries, and
 [Experiments](https://github.com/TheRainbowPhoenix/NTOS_SH4/actions/workflows/experiments.yml)
