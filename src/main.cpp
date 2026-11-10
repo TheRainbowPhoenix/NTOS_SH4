@@ -1694,14 +1694,12 @@ int main(int argc, char **argv, char **envp) {
         continue;
         }
 
-        Debug_Printf(0, static_cast<unsigned int>(cur_row++), false, 0,
-                     "Loaded at 0x%08lX entry 0x%08lX",
-                     static_cast<unsigned long>(
-                         reinterpret_cast<uintptr_t>(image)),
-                     static_cast<unsigned long>(
-                         reinterpret_cast<uintptr_t>(image)) +
-                         hdr.oh.entry_rva);
-        LCD_Refresh();
+        char loaded_msg[64], *loaded_p=loaded_msg;
+        log_text(loaded_p,"Loaded at 0x");
+        log_number(loaded_p,static_cast<uint32_t>(reinterpret_cast<uintptr_t>(image)),16,8);
+        log_text(loaded_p," entry 0x");
+        log_number(loaded_p,static_cast<uint32_t>(reinterpret_cast<uintptr_t>(image)) + hdr.oh.entry_rva,16,8);
+        *loaded_p=0; ntos_puts(loaded_msg);
 
         // Entry contract: r4 = &NtosApi, r5 = argv, r6 = envp.
         using entry_fn = int (*)(const NtosApi *, char **, char **);
