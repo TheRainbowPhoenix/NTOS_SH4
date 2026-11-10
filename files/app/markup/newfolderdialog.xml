@@ -1,8 +1,9 @@
 <Page name="NewFolderDialog">
-  <!-- same top-anchored prompt shape as the rename sheet (create_folder.png) -->
+  <!-- same top-anchored shard as the rename sheet (create_folder.png):
+       full-surface overlay from y0, title bar included -->
   <Canvas>
-    <Rect name="NfScrim" x="0" y="48" w="320" h="392" bg="#7F7F7F"/>
-    <Rect x="0" y="48" w="320" h="180" bg="#FFFFFF"/>
+    <Rect name="NfScrim" x="0" y="0" w="320" h="488" bg="#7F7F7F"/>
+    <Rect x="0" y="0" w="320" h="228" bg="#FFFFFF"/>
     <Text x="24" y="60" text="Create a new folder" color="#000000" size="22"/>
     <Text x="24" y="94" text="Folder name" color="#000000" size="14"/>
     <Rect name="NewFolderField" x="24" y="112" w="272" h="32" bg="#FFFFFF"/>

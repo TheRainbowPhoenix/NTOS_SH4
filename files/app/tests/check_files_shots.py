@@ -132,23 +132,29 @@ CHECKS = {
     ],
     'confirm': [
         ('sheet', 160, 120, WHITE),
+        # the shard covers the app title bar: former chrome strip is sheet
+        ('titlebar-covered', 160, 24, WHITE),
         ('scrim', 160, 300, SCRIM),
         ('accent-line', 160, 234, ACCENT),
-        ('appbar-live', 40, 464, CHROME),
+        # the app bar is dimmed under the scrim down to the nav bar
+        ('appbar-dimmed', 40, 464, SCRIM),
     ],
     'delete-done': [
         ('page', 160, 300, WHITE),
         ('appbar', 40, 464, CHROME),
     ],
     'rename-sheet': [
-        # top sheet 48..228 + docked SIP 231..488 + navbar: no scrim shows
+        # full-surface shard: sheet 0..228 (title bar covered) + docked SIP
+        # 231..488 + navbar: no scrim shows
         ('sheet', 160, 120, WHITE),
+        ('titlebar-covered', 160, 24, WHITE),
         ('sheet-title', 100, 66, WHITE),
         ('kb-backdrop', 160, 240, PANE),
         ('accent-line', 160, 226, ACCENT),
     ],
     'rename-typed': [
         ('sheet', 160, 120, WHITE),
+        ('titlebar-covered', 160, 24, WHITE),
         ('kb-key', 49, 302, WHITE),
     ],
     'rename-done': [

@@ -1,9 +1,11 @@
 <Page name="ConfirmDialog">
-  <!-- top-anchored prompt (delete_confirm.png): title + message + OK/Cancel
-       under the NavBar, no SIP; dimmed list below, app bar stays live -->
+  <!-- top-anchored shard (delete_confirm.png): title + message + OK/Cancel
+       over the FULL app surface from y0 (title bar covered, reference has
+       no chrome above the scrim), no SIP; everything below the sheet dims
+       down to the nav bar -->
   <Canvas>
-    <Rect name="CfScrim" x="0" y="48" w="320" h="392" bg="#7F7F7F"/>
-    <Rect x="0" y="48" w="320" h="188" bg="#FFFFFF"/>
+    <Rect name="CfScrim" x="0" y="0" w="320" h="488" bg="#7F7F7F"/>
+    <Rect x="0" y="0" w="320" h="236" bg="#FFFFFF"/>
     <Text name="ConfirmTitle" x="24" y="60" text="Delete" color="#000000" size="22"/>
     <Text x="24" y="96" text="It will be removed permanently." color="#000000" size="14"/>
     <Text x="24" y="116" text="Are you sure you want to delete?" color="#000000" size="14"/>

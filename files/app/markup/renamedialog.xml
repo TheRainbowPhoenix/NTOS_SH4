@@ -1,10 +1,12 @@
 <Page name="RenameDialog">
-  <!-- top-anchored prompt (rename_folder_focused_input.png): the sheet
-       starts right under the NavBar and ends on the docked SIP (y231);
-       the W10M dialog is NOT screen-centered -->
+  <!-- top-anchored prompt (rename_folder_focused_input.png): the shard
+       covers the WHOLE app surface from y0 (the app title bar included —
+       W10M ContentDialogs display over everything except SIP and nav bar)
+       and ends on the docked SIP (y231); the dialog is NOT screen-centered.
+       Content geometry matches the reference screen rows (title y61) -->
   <Canvas>
-    <Rect name="RnScrim" x="0" y="48" w="320" h="392" bg="#7F7F7F"/>
-    <Rect x="0" y="48" w="320" h="180" bg="#FFFFFF"/>
+    <Rect name="RnScrim" x="0" y="0" w="320" h="488" bg="#7F7F7F"/>
+    <Rect x="0" y="0" w="320" h="228" bg="#FFFFFF"/>
     <Text name="RenameTitle" x="24" y="60" text="Rename file" color="#000000" size="22"/>
     <Text name="RenameLabel" x="24" y="94" text="File name" color="#000000" size="14"/>
     <Rect name="RenameField" x="24" y="112" w="272" h="32" bg="#FFFFFF"/>
