@@ -2,7 +2,7 @@ name: edge CI
 
 on:
   push:
-    branches: [main, 310c]
+    branches: [main]
   pull_request:
 
 jobs:
