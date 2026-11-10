@@ -1,0 +1,8 @@
+# sample e2e script: boot, screenshot, tap nav buttons, toggle sip, exit
+shot boot
+key 0x70
+shot f1-selected
+tap 216 500
+shot fwd-selected
+tap 112 500
+puts interaction done
