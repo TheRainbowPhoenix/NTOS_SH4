@@ -1,0 +1,158 @@
+=== SystemSettings.Phone.exe (2,370,024 bytes) ===
+machine=IMAGE_FILE_MACHINE_I386 subsystem=IMAGE_SUBSYSTEM_WINDOWS_GUI timestamp=1468632654 (2016-07-16T01:30:54+00:00)
+bits=32 entry=0x151e00 base=0x400000
+dllchars=0xc140 NX DYNAMIC_BASE TERMINAL_SERVER_AWARE
+sections: .text .rdata .data .didat .rsrc .reloc
+
+--- IMPORTS ---
+api-ms-win-core-heap-l1-2-0.dll: 3 functions
+    HeapFree
+    GetProcessHeap
+    HeapAlloc
+api-ms-win-core-libraryloader-l1-2-0.dll: 5 functions
+    GetProcAddress
+    GetModuleHandleA
+    GetModuleHandleExW
+    LoadLibraryExW
+    GetModuleFileNameA
+api-ms-win-core-debug-l1-1-1.dll: 1 functions
+    OutputDebugStringW
+api-ms-win-core-processthreads-l1-1-2.dll: 4 functions
+    GetCurrentProcess
+    GetCurrentProcessId
+    TerminateProcess
+    GetCurrentThreadId
+api-ms-win-core-localization-l1-2-1.dll: 5 functions
+    GetLocaleInfoEx
+    GetUserPreferredUILanguages
+    LCMapStringEx
+    FormatMessageW
+    FindNLSStringEx
+api-ms-win-core-synch-l1-2-0.dll: 19 functions
+    ResetEvent
+    SetEvent
+    ReleaseSRWLockExclusive
+    CreateSemaphoreExW
+    EnterCriticalSection
+    LeaveCriticalSection
+    WaitForSingleObject
+    ReleaseSemaphore
+    AcquireSRWLockExclusive
+    OpenSemaphoreW
+    ReleaseMutex
+    WaitForSingleObjectEx
+    InitOnceBeginInitialize
+    InitOnceComplete
+    CreateEventExW
+    DeleteCriticalSection
+    Sleep
+    InitializeCriticalSectionEx
+    CreateMutexExW
+api-ms-win-core-threadpool-l1-2-0.dll: 4 functions
+    WaitForThreadpoolTimerCallbacks
+    CloseThreadpoolTimer
+    CreateThreadpoolTimer
+    SetThreadpoolTimer
+api-ms-win-core-errorhandling-l1-1-1.dll: 5 functions
+    GetLastError
+    RaiseException
+    UnhandledExceptionFilter
+    SetUnhandledExceptionFilter
+    SetLastError
+api-ms-win-core-handle-l1-1-0.dll: 1 functions
+    CloseHandle
+api-ms-win-eventing-provider-l1-1-0.dll: 5 functions
+    EventActivityIdControl
+    EventRegister
+    EventSetInformation
+    EventWriteTransfer
+    EventUnregister
+api-ms-win-core-com-l1-1-1.dll: 7 functions
+    CoGetObjectContext
+    CoGetApartmentType
+    CoTaskMemAlloc
+    CoTaskMemFree
+    CoGetInterfaceAndReleaseStream
+    CoCreateFreeThreadedMarshaler
+    CoMarshalInterThreadInterfaceInStream
+api-ms-win-core-sysinfo-l1-2-1.dll: 4 functions
+    GetTickCount
+    GetTickCount64
+    GetSystemTimeAsFileTime
+    GetProductInfo
+api-ms-win-core-string-l1-1-0.dll: 5 functions
+    CompareStringEx
+    MultiByteToWideChar
+    GetStringTypeW
+    WideCharToMultiByte
+    CompareStringOrdinal
+api-ms-win-core-winrt-error-l1-1-1.dll: 4 functions
+    RoFailFastWithErrorContext
+    RoOriginateError
+    RoReportUnhandledError
+    SetRestrictedErrorInfo
+api-ms-win-core-util-l1-1-0.dll: 2 functions
+    DecodePointer
+    EncodePointer
+api-ms-win-core-winrt-l1-1-0.dll: 1 functions
+    RoGetActivationFactory
+api-ms-win-core-winrt-string-l1-1-0.dll: 9 functions
+    WindowsCompareStringOrdinal
+    WindowsGetStringRawBuffer
+    WindowsIsStringEmpty
+    WindowsCreateString
+    WindowsCreateStringReference
+    WindowsConcatString
+    WindowsGetStringLen
+    WindowsDeleteString
+    WindowsDuplicateString
+msvcrt.dll: 77 functions
+    _lock
+    _unlock
+    __dllonexit
+    _onexit
+    ??1type_info@@UAE@XZ
+    __CxxFrameHandler3
+    _XcptFilter
+    __p__commode
+    _amsg_exit
+    __getmainargs
+    __set_app_type
+    exit
+    _exit
+    _cexit
+    __p__fmode
+    ... (62 more)
+wincorlib.DLL: 67 functions
+    ?GetCmdArguments@Details@Platform@@YGPAPA_WPAH@Z
+    ?GetIidsFn@@YGJHPAKPBU__s_GUID@@PAPAVGuid@Platform@@@Z
+    ?UninitializeData@Details@Platform@@YGXH@Z
+    ?InitializeData@Details@Platform@@YGJH@Z
+    ?Equals@Object@Platform@@Q$AAA_NP$AAV12@@Z
+    ?get@Bottom@Rect@Foundation@Windows@@QAAMXZ
+    ?GetProxyImpl@Details@Platform@@YGJPAUIUnknown@@ABU_GUID@@0PAPAU3@@Z
+    ?ReleaseInContextImpl@Details@Platform@@YGJPAUIUnknown@@0@Z
+    ?GetObjectContext@Details@Platform@@YGPAUIUnknown@@XZ
+    ?ToString@Guid@Platform@@QAAP$AAVString@2@XZ
+    ?CreateException@Exception@Platform@@SAP$AAV12@HP$AAVString@2@@Z
+    ?get@Message@Exception@Platform@@Q$AAAP$AAVString@3@XZ
+    ?get@FullName@Type@Platform@@Q$AAAP$AAVString@3@XZ
+    ?ToString@uint32@default@@QAAP$AAVString@Platform@@XZ
+    ?ResolveWeakReference@Details@Platform@@YGP$AAVObject@2@ABU_GUID@@PAPAU__abi_IUnknown@@@Z
+    ... (52 more)
+api-ms-win-core-profile-l1-1-0.dll: 1 functions
+    QueryPerformanceCounter
+api-ms-win-core-kernel32-legacy-l1-1-1.dll: 1 functions
+    GetStartupInfoA
+api-ms-win-core-delayload-l1-1-1.dll: 2 functions
+    DelayLoadFailureHook
+    ResolveDelayLoadedAPI
+
+--- DELAY IMPORTS ---
+ext-ms-onecore-shellchromeapi-l1-1-2.dll (DELAY): 1 functions
+    Shell_LaunchSessionByUriEx
+
+--- EXPORTS ---
+2 exported symbols:
+       1 DllCanUnloadNow
+       2 DllGetActivationFactory
