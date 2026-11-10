@@ -97,6 +97,23 @@ static int script_step(void)
             host_post(WM_UP_, 0, lp);
             return 1; /* messages queued; loop will process them */
         }
+        /* raw touch primitives: multi-event gestures (mid-drag shots,
+         * long-press, alt-drag) that tap/drag can't express */
+        if (sscanf(line, "down %d %d", &x, &y) == 2) {
+            U32 lp = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
+            host_post(WM_DOWN_, 1, lp);
+            return 1;
+        }
+        if (sscanf(line, "move %d %d", &x, &y) == 2) {
+            U32 lp = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
+            host_post(WM_MOVE_, 1, lp);
+            return 1;
+        }
+        if (sscanf(line, "up %d %d", &x, &y) == 2) {
+            U32 lp = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
+            host_post(WM_UP_, 0, lp);
+            return 1;
+        }
         if (sscanf(line, "drag %d %d %d %d", &x, &y, &x2, &y2) == 4) {
             /* touch drag: DOWN, interpolated MOVEs, UP (scrolls lists) */
             U32 lp = (U32)(((y & 0xffff) << 16) | (x & 0xffff));

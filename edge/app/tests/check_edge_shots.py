@@ -206,6 +206,45 @@ ANCHORS = {
     'edge-swap-edit-sel': [
         (30, 203, (0x30, 0x60, 0xC0)),   # drag-selected head of the URL
     ],
+    # "..." sheet mid-drag (menu-drag): the mini scrollbar exists ONLY
+    # while the gesture is active — track #3A3A3A, thumb #767676, chevrons
+    # #8C8C8C at the track ends (all measured on the shot)
+    'edge-menu-drag': [
+        (160, 80, (0x7F, 0x7F, 0x7F)),   # dimmed live page
+        (160, 200, (0x2B, 0x2B, 0x2B)),  # sheet
+        (317, 170, (0x3A, 0x3A, 0x3A)),  # scrollbar track (drag-only)
+        (317, 300, (0x76, 0x76, 0x76)),  # scrollbar thumb over the track
+        (160, 440, (0x1F, 0x1F, 0x1F)),  # hub icon strip
+    ],
+    # light find-on-page (fixes_1/find_on_page_prompt.png): 2px blue top
+    # rule + 3px focus underline around the white field, C_SEP gap, the
+    # light SIP surface, SHELLCHROME nav bar below
+    'edge-light-find-bar': [
+        (160, 100, (0xFF, 0xFF, 0xFF)),  # live page above the bar
+        (160, 455, (0xE7, 0xE7, 0xE7)),  # no-SIP bar raised above the nav bar
+        (100, 510, (0xCE, 0xCF, 0xCE)),  # nav bar bg
+    ],
+    'edge-light-find-kbd': [
+        (160, 100, (0xFF, 0xFF, 0xFF)),  # live page
+        (160, 177, (0x00, 0x79, 0xD6)),  # 2px blue top rule
+        (160, 190, (0xFF, 0xFF, 0xFF)),  # white field
+        (160, 209, (0x00, 0x79, 0xD6)),  # 3px blue focus underline
+        (160, 215, (0xCE, 0xCF, 0xCE)),  # separator above the SIP
+        (160, 260, (0xF7, 0xF3, 0xF7)),  # light SIP surface
+        (100, 510, (0xCE, 0xCF, 0xCE)),  # nav bar below the docked SIP
+    ],
+    'edge-light-find': [
+        (160, 177, (0x00, 0x79, 0xD6)),  # blue top rule
+        (160, 190, (0xFF, 0xFF, 0xFF)),  # white field with the query
+        (160, 209, (0x00, 0x79, 0xD6)),  # blue focus underline
+        (160, 215, (0xCE, 0xCF, 0xCE)),  # separator
+        (100, 510, (0xCE, 0xCF, 0xCE)),  # nav bar
+    ],
+    'edge-light-find-next': [
+        (160, 209, (0x00, 0x79, 0xD6)),  # blue focus underline
+        (160, 215, (0xCE, 0xCF, 0xCE)),  # separator
+        (100, 510, (0xCE, 0xCF, 0xCE)),  # nav bar
+    ],
 }
 
 ATOL = 8  # anchor tolerance per channel
@@ -222,10 +261,15 @@ PRESENCE = {
         (235, 494, 258, 518, 8, 60, 0),    # reader icon (#4C4C4C)
     ],
     'menu': [
-        (13, 200, 120, 235, 40, 150, 0),   # "Share" row text
-        (13, 380, 200, 415, 60, 150, 0),   # "Pin this page to Start"
-        (60, 432, 92, 458, 12, 100, 0),    # star icon (y434-454)
-        (40, 460, 300, 478, 40, 150, 0),   # icon-bar labels (y464)
+        (13, 165, 120, 200, 40, 150, 0),   # "Share" row text (row 0, y157-201)
+        (13, 345, 200, 372, 60, 150, 0),  # "Pin this page to Start" (row 4, y333-377)
+        (60, 432, 92, 458, 12, 100, 0),   # star icon (y434-454)
+        (40, 460, 300, 478, 40, 150, 0),  # icon-bar labels (y462)
+    ],
+    'menu-drag': [
+        (13, 385, 130, 418, 40, 150, 0),  # "Settings" row revealed by the drag
+        (310, 154, 324, 172, 8, 100, 0),  # up chevron at the track head
+        (310, 408, 324, 426, 8, 100, 0),  # down chevron at the track tail
     ],
     'address': [
         (11, 238, 130, 258, 30, 100, 0),   # hint text in the white field
@@ -387,6 +431,29 @@ PRESENCE = {
     'mdfind-next': [
         (0, 0, 320, 480, 200, 230, 0),      # orange active match (red ch)
         (0, 0, 320, 480, 300, 200, 0),      # yellow matches
+    ],
+    # light find states: prompt/counter/chevrons inside the field, and
+    # orange-vs-yellow discrimination via the green channel (active
+    # #FF8C00 g140, matches #FFD700 g215)
+    'light-find-bar': [
+        (150, 440, 175, 470, 15, 100, 0),   # prev chevron glyph on the bar
+        (220, 440, 245, 470, 15, 100, 0),   # next chevron glyph on the bar
+    ],
+    'light-find-kbd': [
+        (15, 186, 170, 206, 30, -200, 0),   # gray "Enter text to search" prompt
+    ],
+    'light-find': [
+        (15, 186, 66, 206, 25, -100, 0),    # "heading" query glyphs (black)
+        (58, 186, 66, 206, 4, 150, 2),      # blue caret after the text
+        (200, 186, 232, 206, 15, -200, 0),  # cur/total counter
+        (240, 188, 258, 206, 6, -100, 0),   # prev chevron in the field
+        (274, 188, 292, 206, 6, -100, 0),   # next chevron in the field
+        (100, 510, 180, 518, 10, -150, 0),  # nav bar glyphs below the SIP
+    ],
+    'light-find-next': [
+        (0, 0, 320, 175, 60, -180, 1),      # orange active match (g<180)
+        (0, 0, 320, 175, 100, 200, 1),      # yellow matches (g>=200)
+        (200, 186, 232, 206, 15, -200, 0),  # counter after next
     ],
     # unknown host (nope.test): the generated offline error page, rendered
     # from real HTML by the engine. ANCHOR reads the exact #A2A9B1 border

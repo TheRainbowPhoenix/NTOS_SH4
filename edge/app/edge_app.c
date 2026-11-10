@@ -1909,6 +1909,147 @@ static void toast(const char *s)
     toast_text[i] = 0;
 }
 
+/* ---- "..." actions sheet ------------------------------------------------
+ * Procedural (context.png dark, fixes_1/addressbar_menu.png +
+ * light/home_empty_menu.png light): the page behind is dimmed through
+ * DimRect so real content shows through, the item list is
+ * context-dependent (a web page gets "Go forward"; the home hub adds
+ * "Send feedback"), and the scrollbar only appears while the list is
+ * dragged. Geometry per theme:
+ *   dark : dim y0-156, panel #2B2B2B y157-423 (7 x 44 rows — 6 visible
+ *          + a peek of Settings, so the list really scrolls and the
+ *          drag-only mini scrollbar has content to reveal),
+ *          hub strip #1F1F1F y423-480 (icons y434-454, labels y462)
+ *   light: dim y0-132, 1px #CECFCE, panel #F7F3F7 y133-371 (7 x 34),
+ *          hub row #E7E7E7 y371-432 (icons y385-405, labels y412) */
+static int menu_scroll, menu_dragging;
+
+typedef struct {
+    const char *label, *cmd;
+    char dis;
+} MenuRow;
+static const MenuRow MENU_PAGE[] = {
+    {"Go forward", "fwd", 1},          /* no forward stack in the POC   */
+    {"Share", "share", 1},             /* offline: nothing to share yet */
+    {"Add to favorites", "addfav", 0},
+    {"Add to reading list", "addread", 0},
+    {"Find on page", "findonpage", 0},
+    {"Pin this page to Start", "pintostart", 0},
+    {"Settings", "settings", 0},
+};
+static const MenuRow MENU_HOME[] = {
+    {"Share", "share", 0},
+    {"Add to favorites", "addfav", 0},
+    {"Add to reading list", "addread", 0},
+    {"Find on page", "findonpage", 0},
+    {"Pin this page to Start", "pintostart", 0},
+    {"Settings", "settings", 0},
+    {"Send feedback", "feedback", 0},
+};
+#define MENU_N(a) ((int)(sizeof(a) / sizeof((a)[0])))
+
+static const MenuRow *menu_rows(int *count)
+{
+    Tab *t = &tabs[tab_cur];
+    if (t->url[0] && web_kind) {
+        *count = MENU_N(MENU_PAGE);
+        return MENU_PAGE;
+    }
+    *count = MENU_N(MENU_HOME);
+    return MENU_HOME;
+}
+
+static int menu_top(void)   { return g_light ? 133 : 157; }
+static int menu_row_h(void) { return g_light ? 34 : 44; }
+static int menu_hub_top(void) { return g_light ? 371 : 423; }
+
+static void paint_menu(void *dc)
+{
+    int count;
+    const MenuRow *rows = menu_rows(&count);
+    int top = menu_top(), rh = menu_row_h(), hub = menu_hub_top();
+    int content_h = count * rh;
+    int max_scroll = content_h - (hub - top);
+    if (max_scroll < 0)
+        max_scroll = 0;
+    if (menu_scroll > max_scroll)
+        menu_scroll = max_scroll;
+    if (menu_scroll < 0)
+        menu_scroll = 0;
+
+    /* dim the live page above the sheet (addressbar_menu.png keeps the
+     * content visible through the scrim) */
+    if (g_light) {
+        dim_scrim(dc, 0, 0, 320, top - 1);
+        fill(dc, 0, top - 1, 320, top, C_SEP);
+        fill(dc, 0, top, 320, hub, RGB_(0xF7, 0xF3, 0xF7));
+    } else {
+        dim_scrim(dc, 0, 0, 320, top);
+        fill(dc, 0, top, 320, hub, RGB_(0x2B, 0x2B, 0x2B));
+    }
+
+    /* item rows: black/white ink, #949294 disabled (addressbar_menu.png) */
+    clip_set(0, top, 320, hub);
+    for (int i = 0; i < count; ++i) {
+        int y = top + i * rh - menu_scroll;
+        if (y + rh <= top || y >= hub)
+            continue;
+        U32 col = rows[i].dis
+                      ? RGB_(0x94, 0x92, 0x94)
+                      : (g_light ? RGB_(0x00, 0x00, 0x00) : C_INK);
+        draw_text(dc, g_light ? 12 : 13, y + (rh - 14) / 2 + 1,
+                  rows[i].label, col, 14, 0, 0);
+    }
+    clip_set(0, 0, 320, 528);
+
+    /* hub row: Favorites / Reading list / History / Downloads */
+    if (g_light)
+        fill(dc, 0, hub, 320, 432, RGB_(0xE7, 0xE7, 0xE7)); /* above toolbar */
+    else
+        fill(dc, 0, hub, 320, 480, RGB_(0x1F, 0x1F, 0x1F));
+    static const struct {
+        int ic, cx;
+        const char *label;
+    } HUBB[] = {
+        {IC_STAR, 75, "Favorites"},
+        {IC_READLIST, 144, "Reading list"},
+        {IC_CLOCK, 212, "History"},
+        {IC_DOWNLOAD, 280, "Downloads"},
+    };
+    U32 icon_c = g_light ? RGB_(0x1A, 0x1A, 0x1A) : RGB_(0xFF, 0xFF, 0xFF);
+    U32 label_c = g_light ? RGB_(0x00, 0x00, 0x00) : RGB_(0xFF, 0xFF, 0xFF);
+    for (int i = 0; i < 4; ++i) {
+        int iy = g_light ? hub + 14 : hub + 11;
+        ic_draw(ifill, dc, HUBB[i].cx - 10, iy, 20, icon_c, HUBB[i].ic);
+        draw_text(dc, HUBB[i].cx, g_light ? hub + 41 : hub + 39,
+                  HUBB[i].label, label_c, 11, 1, 0);
+    }
+
+    /* collapse chevron in the top-right corner (home_empty_menu.png) */
+    if (g_light)
+        ic_draw(ifill, dc, 302, top + 6, 12, RGB_(0x1A, 0x1A, 0x1A), IC_CHEVU);
+
+    /* scrollbar: W10M reveals it only while the list is dragged */
+    if (menu_dragging && max_scroll > 0) {
+        int track_y0 = top + 10, track_y1 = hub - 10;
+        fill(dc, 316, track_y0, 319, track_y1,
+             g_light ? RGB_(0xE0, 0xDC, 0xE0) : RGB_(0x3A, 0x3A, 0x3A));
+        int thumb_h = (hub - top) * (track_y1 - track_y0) / content_h;
+        if (thumb_h < 24)
+            thumb_h = 24;
+        int ty = track_y0 + menu_scroll * (track_y1 - track_y0 - thumb_h) /
+                              max_scroll;
+        fill(dc, 316, ty, 319, ty + thumb_h,
+             g_light ? RGB_(0xC9, 0xC9, 0xC9) : RGB_(0x76, 0x76, 0x76));
+        ic_draw(ifill, dc, 312, top + 1, 10,
+                g_light ? RGB_(0x66, 0x66, 0x66) : RGB_(0x8C, 0x8C, 0x8C),
+                IC_CHEVU);
+        ic_draw(ifill, dc, 312, hub - 11, 10,
+                g_light ? RGB_(0x66, 0x66, 0x66) : RGB_(0x8C, 0x8C, 0x8C),
+                IC_CHEVD);
+    }
+}
+
 /* ---- repaint ---- */
 static void paint_browser(void *dc)
 {
@@ -1942,43 +2083,104 @@ static void paint_all(void *dc)
         }
         if (mode == M_FIND && find_sip) {
             /* with the SIP up the find bar rides above the keyboard */
-            clip_set(0, 0, 320, 223);
-            paint_browser(dc);
-            paint_find_highlights(dc, 223);
-            clip_set(0, 0, 320, 528);
-            if ((d = ux_find_doc(&ux, "FindOnPageBar"))) {
-                layout_doc(d, 0, 223 - 480, 320, 528);
-                paint_node(dc, d->root);
-                /* typed query + caret in the field: theme ink (white on
-                 * the dark bar, black on the light one) like the markup's
-                 * FindText node (#FFFFFF -> #000000 in the light build) */
+            if (g_light) {
+                /* light find stack (fixes_1/find_on_page_prompt.png): live
+                 * page with highlights, thin separator, blue-accented field
+                 * (2px top rule + 3px focus underline), the shared SIP
+                 * docked 48px up, SHELLCHROME nav bar at y480-528. The
+                 * empty field carries the gray "Enter text to search"
+                 * prompt; a live query gets the caret, a match counter and
+                 * prev/next chevrons inside the field, right of the text */
+                paint_page_vh(dc, 175);
+                paint_find_highlights(dc, 175);
+                clip_set(0, 0, 320, 528);
+                fill(dc, 0, 175, 320, 176, C_SEP);
+                fill(dc, 0, 176, 320, 178, RGB_(0x00, 0x79, 0xD6));
+                fill(dc, 0, 178, 320, 208, RGB_(0xFF, 0xFF, 0xFF));
+                fill(dc, 0, 208, 320, 211, RGB_(0x00, 0x79, 0xD6));
+                fill(dc, 0, 211, 320, 223, C_SEP);
                 if (find_len) {
-                    draw_text(dc, 12, 240, find_query, C_INK, 14, 0, 0);
+                    draw_text(dc, 12, 188, find_query,
+                              RGB_(0x00, 0x00, 0x00), 14, 0, 0);
                     int cx = 12 + text_w(find_query, 14);
-                    if (cx < 150)
-                        fill(dc, cx + 2, 231, cx + 4, 259, C_BLUE);
+                    if (cx < 230)
+                        fill(dc, cx + 2, 181, cx + 4, 205,
+                             RGB_(0x00, 0x79, 0xD6));
+                    if (find_nmatch) {
+                        /* "cur/total" counter + prev/next chevrons */
+                        char ctr[16];
+                        int n = 0, v;
+                        char t[8];
+                        int tn = 0;
+                        v = find_active + 1;
+                        do {
+                            t[tn++] = (char)('0' + v % 10);
+                            v /= 10;
+                        } while (v);
+                        while (tn)
+                            ctr[n++] = t[--tn];
+                        ctr[n++] = '/';
+                        tn = 0;
+                        v = find_nmatch;
+                        do {
+                            t[tn++] = (char)('0' + v % 10);
+                            v /= 10;
+                        } while (v);
+                        while (tn)
+                            ctr[n++] = t[--tn];
+                        ctr[n] = 0;
+                        draw_text(dc, 232 - text_w(ctr, 14), 188, ctr,
+                                  RGB_(0x76, 0x76, 0x76), 14, 0, 0);
+                        ic_draw(ifill, dc, 244, 190, 14, C_INK, IC_CHEVL);
+                        ic_draw(ifill, dc, 278, 190, 14, C_INK, IC_CHEVRON);
+                    }
+                } else {
+                    draw_text(dc, 12, 188, "Enter text to search",
+                              RGB_(0x8A, 0x8A, 0x8A), 14, 0, 0);
                 }
+                if (g_kb)
+                    g_kb->paint(dc);
+                if (g_chrome)
+                    g_chrome->paint(dc);
+            } else {
+                clip_set(0, 0, 320, 223);
+                paint_browser(dc);
+                paint_find_highlights(dc, 223);
+                clip_set(0, 0, 320, 528);
+                if ((d = ux_find_doc(&ux, "FindOnPageBar"))) {
+                    layout_doc(d, 0, 223 - 480, 320, 528);
+                    paint_node(dc, d->root);
+                    /* typed query + caret in the field: theme ink (white on
+                     * the dark bar, black on the light one) like the markup's
+                     * FindText node (#FFFFFF -> #000000 in the light build) */
+                    if (find_len) {
+                        draw_text(dc, 12, 240, find_query, C_INK, 14, 0, 0);
+                        int cx = 12 + text_w(find_query, 14);
+                        if (cx < 150)
+                            fill(dc, cx + 2, 231, cx + 4, 259, C_BLUE);
+                    }
+                }
+                if (g_kb)
+                    g_kb->paint(dc); /* search-scope go key set on open */
             }
-            if (g_kb)
-                g_kb->paint(dc); /* search-scope go key set on open */
         } else {
             paint_browser(dc);
             if (mode == M_FIND) {
                 paint_find_highlights(dc, 480);
                 if ((d = ux_find_doc(&ux, "FindOnPageBar"))) {
-                    layout_doc(d, 0, 0, 320, 528);
+                    /* no-SIP bar takes the toolbar slot: raised above the
+                     * nav bar in light, the classic bottom slot in dark */
+                    layout_doc(d, 0, chrome_yoff(), 320, 528);
                     paint_node(dc, d->root);
                     if (find_len)
-                        draw_text(dc, 12, 497, find_query, C_INK, 14, 0, 0);
+                        draw_text(dc, 12, 497 + chrome_yoff(), find_query,
+                                  C_INK, 14, 0, 0);
                 }
             }
         }
     } else if (mode == M_MENU) {
         paint_browser(dc);
-        if ((d = ux_find_doc(&ux, "ActionsMenu"))) {
-            layout_doc(d, 0, chrome_yoff(), 320, 528);
-            paint_node(dc, d->root);
-        }
+        paint_menu(dc);
     } else if (mode == M_TABS || mode == M_TABSMENU) {
         if ((d = ux_find_doc(&ux, "TabCenterPage"))) {
             layout_doc(d, 0, chrome_yoff(), 320, 528);
@@ -2123,8 +2325,10 @@ static void do_command(const char *cmd)
 {
     if (xeq(cmd, "tabs"))
         mode = M_TABS;
-    else if (xeq(cmd, "menu"))
+    else if (xeq(cmd, "menu")) {
         mode = M_MENU;
+        menu_scroll = 0; /* fresh sheet: list starts at the top */
+    }
     else if (xeq(cmd, "address")) {
         mode = M_ADDRESS;
         /* editing starts from the current page's URL, fully selected
@@ -2171,8 +2375,15 @@ static void do_command(const char *cmd)
         mode = M_DLG_READLIST;
     else if (xeq(cmd, "addfav"))
         mode = M_DLG_FAV;
-    else if (xeq(cmd, "findonpage"))
+    else if (xeq(cmd, "findonpage")) {
+        /* a fresh find session starts empty (W10M behaviour); the
+         * query is session state, not global chrome state */
         mode = M_FIND;
+        find_len = 0;
+        find_query[0] = 0;
+        find_nmatch = 0;
+        find_active = 0;
+    }
     else if (xeq(cmd, "pintostart"))
         toast("Pinned to Start");
     else if (xeq(cmd, "settings"))
@@ -2194,8 +2405,10 @@ static void do_command(const char *cmd)
     else if (xeq(cmd, "ddsel-4")) { cookies_sel = 2; dd_open = 0; }
     else if (xeq(cmd, "find-type")) {
         find_sip = 1;
-        if (g_kb)
+        if (g_kb) {
+            g_kb->dock(g_light ? 48 : 0); /* SIP above the nav bar */
             g_kb->context(1); /* go key: search magnifier (find field) */
+        }
     }
     else if (xeq(cmd, "find-prev")) {
         if (find_nmatch)
@@ -2326,6 +2539,42 @@ static void process_tap(int x, int y)
          * handled in wndproc, which owns the drag-selection state */
         return;
     }
+    if (mode == M_MENU) {
+        /* "..." sheet (procedural, paint_menu): scrim dismiss, item rows,
+         * hub icon row, collapse chevron. Row hit uses the live scroll
+         * like a real list view. */
+        int top = menu_top(), rh = menu_row_h(), hub = menu_hub_top();
+        int hub_end = g_light ? 432 : 480;
+        if (y >= top && y < hub) {
+            int count;
+            const MenuRow *rows = menu_rows(&count);
+            int idx = (y + menu_scroll - top) / rh;
+            if (idx >= 0 && idx < count && !rows[idx].dis) {
+                do_command(rows[idx].cmd);
+                return;
+            }
+            return; /* disabled row / strip padding: swallow */
+        }
+        if (y >= hub && y < hub_end) {
+            /* Favorites / Reading list / History / Downloads under the
+             * icons (home_empty_menu.png: centres x75/144/212/280) */
+            if (x < 110)
+                do_command("hub-favorites");
+            else if (x < 178)
+                do_command("hub-reading");
+            else if (x < 246)
+                do_command("hub-history");
+            else
+                do_command("hub-downloads");
+            return;
+        }
+        if (g_light && x >= 290 && y >= top + 2 && y < top + 24) {
+            mode = M_BROWSER; /* collapse chevron (top-right) */
+            return;
+        }
+        mode = M_BROWSER; /* scrim or below-sheet tap dismisses */
+        return;
+    }
     if (mode == M_TABS) {
         /* tab card grid hot zones (cards painted procedurally):
          * 142x146 cards at x12/x166, top y44, pitch 148. The light
@@ -2389,8 +2638,11 @@ static void process_tap(int x, int y)
         return;
     }
     if (mode == M_FIND && find_sip) {
-        /* find bar rides above the SIP at y223..271; keys below */
-        if (y >= 317 && g_kb) {
+        /* find bar rides above the SIP: dark at y223..271 with the keys
+         * from y317; light 48px higher (field y178..208, toolbar
+         * y223..269, keys y269..478, nav bar below) */
+        int yo = chrome_yoff();
+        if (y >= 317 + yo && g_kb) {
             U32 lp2 = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
             int c = g_kb->input(WM_DOWN_, 1, lp2);
             if (c == 13) { /* go: keep the bar, drop the keyboard */
@@ -2407,7 +2659,20 @@ static void process_tap(int x, int y)
             }
             return;
         }
-        if (y >= 223 && y < 317) { /* the bar strip (223..271) + kb backdrop */
+        if (g_light) {
+            /* light stack: prev/next chevrons live INSIDE the field right
+             * of the query (with the counter); the rest of the strip is a
+             * dead zone — page taps (y<175) close the bar below */
+            if (find_len && y >= 178 && y < 208) {
+                if (x >= 236 && x < 264)
+                    do_command("find-prev");
+                else if (x >= 264)
+                    do_command("find-next");
+            }
+            if (y >= 175)
+                return; /* field strip: swallow */
+        } else if (y >= 223 && y < 317) {
+            /* dark: the bar strip (223..271) + kb backdrop */
             if (y < 271 && (d = ux_find_doc(&ux, "FindOnPageBar")) &&
                 (b = hit_test(d, x, y))) {
                 do_command(ux_str(&ux, b, UXA_COMMAND, ""));
@@ -2439,8 +2704,7 @@ static void process_tap(int x, int y)
         }
         return;
     }
-    const char *docn = mode == M_MENU ? "ActionsMenu"
-                    : mode == M_CLEAR ? "ClearBrowsingDataPage"
+    const char *docn = mode == M_CLEAR ? "ClearBrowsingDataPage"
                     : mode == M_DLG_READLIST ? "AddToReadingListDialog"
                     : mode == M_DLG_FAV ? "AddToFavoritesDialog"
                     : mode == M_FIND ? "FindOnPageBar"
@@ -2451,10 +2715,6 @@ static void process_tap(int x, int y)
         const char *cmd = ux_str(&ux, b, UXA_COMMAND, 0);
         if (cmd && *cmd)
             do_command(cmd);
-        else if (mode == M_MENU)
-            mode = M_BROWSER; /* scrim dismiss */
-    } else if (mode == M_MENU) {
-        mode = M_BROWSER; /* scrim tap dismisses */
     } else if (mode == M_FIND) {
         mode = M_BROWSER; /* tap on the page closes the find bar */
     } else if (mode == M_BROWSER && web_kind && y > 45 && y < 480) {
@@ -2676,6 +2936,34 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
                         set_scroll = 0;
                 }
                 dragging = 0;
+            }
+            NT_CALL(InvalidateRect, (hwnd, 0, 0));
+            NT_CALL(UpdateWindow, (hwnd));
+            return 0;
+        }
+        if (mode == M_MENU) {
+            /* the "..." sheet: drags scroll the item list (W10M reveals
+             * the mini scrollbar only while a drag is active) */
+            if (msg == WM_DOWN_) {
+                dragging = 1;
+                drag_y = y;
+                drag_moved = 0;
+                menu_dragging = (y >= menu_top());
+            } else if (msg == WM_MOVE_ && dragging) {
+                if (menu_dragging) {
+                    int dy = drag_y - y;
+                    if (dy < -3 || dy > 3)
+                        drag_moved = 1;
+                    menu_scroll += dy;
+                    if (menu_scroll < 0)
+                        menu_scroll = 0;
+                }
+                drag_y = y;
+            } else if (msg == WM_UP_) {
+                if (dragging && !drag_moved)
+                    process_tap(x, y);
+                dragging = 0;
+                menu_dragging = 0;
             }
             NT_CALL(InvalidateRect, (hwnd, 0, 0));
             NT_CALL(UpdateWindow, (hwnd));
