@@ -2441,14 +2441,21 @@ static void *g_wnd;
 
 static void nav_bar_action(int key);
 
+#define HOSTED_HAS_PROCESS_IMPORT
+#include "hosted_shell.h"
+
 static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
 {
+    if (hosted_shell_input(hwnd, msg, wp, lp))
+        return 0;
     if (msg == WM_PAINT_) {
         Paint ps;
         void *dc = NT_CALL(BeginPaint, (hwnd, &ps));
         if (dc) {
             clip_set(0, 0, 320, 528);
             paint_all(dc);
+            if (g_chrome)
+                g_chrome->paint(dc);
         }
         NT_CALL(EndPaint, (hwnd, &ps));
         return 0;

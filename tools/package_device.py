@@ -19,7 +19,8 @@ APPS = (
     "PAINT.EXE", "WINLAB.EXE", "GUIWIN.EXE",
 )
 EXTRA_MODULES = ("DEMO.CPL",)
-SIDE_CARS = ("home.dat", "apps.dat", "nav.dat")
+SIDE_CARS = ("home.dat", "apps.dat", "nav.dat", "edge.uxaml", "edgelight.uxaml",
+             "calc.uxaml", "files.uxaml", "cortana.uxaml")
 README = """NTOS for Casio fx-CP400 — copy this folder's CONTENTS to storage.
 Keep Apps/ and Windows/System32/ directory structure. Install NTOS.hh3 as
 the calculator add-in. COREDLL.DLL is shared by ALL phone and native
@@ -48,12 +49,17 @@ def build(source: Path, target: Path) -> None:
 
     system32 = target / 'Windows' / 'System32'
     system32.mkdir(parents=True)
-    pending = list(APPS) + list(EXTRA_MODULES)
+    apps_dir = source / "Apps"
+    if not apps_dir.is_dir():
+        raise FileNotFoundError(apps_dir)
+    app_paths = list(apps_dir.glob("*/*.exe"))
+    pending = list(APPS) + list(EXTRA_MODULES) + [str(p.relative_to(source)) for p in app_paths]
     seen: set[str] = set()
     while pending:
         name = pending.pop()
-        normalized = name.upper()
-        if normalized in seen:
+        normalized = Path(name).name.upper()
+        key = name.upper()
+        if key in seen:
             continue
         original = source / name
         if not original.is_file():
@@ -71,9 +77,10 @@ def build(source: Path, target: Path) -> None:
             if not candidate.exists():
                 raise FileNotFoundError(f"{name} imports missing {dep}")
             pending.append(candidate.name)
-        destination = system32 if normalized.endswith((".DLL", ".CPL")) else target
-        shutil.copy2(original, destination / normalized)
-        seen.add(normalized)
+        if Path(name).parent == Path('.'):
+            destination = system32 if normalized.endswith((".DLL", ".CPL")) else target
+            shutil.copy2(original, destination / normalized)
+        seen.add(key)
 
     windows = source / "Windows" / "demo.cpl"
     if not windows.is_file():
@@ -83,9 +90,6 @@ def build(source: Path, target: Path) -> None:
     if (system32 / "DEMO.CPL").read_bytes() != windows.read_bytes():
         raise ValueError("DEMO.CPL and Windows/demo.cpl differ")
 
-    apps_dir = source / "Apps"
-    if not apps_dir.is_dir():
-        raise FileNotFoundError(apps_dir)
     shutil.copytree(apps_dir, target / "Apps")
     if len(list((target / "Apps").glob("*/*.exe"))) != 24:
         raise ValueError("Expected exactly 24 phone applications")

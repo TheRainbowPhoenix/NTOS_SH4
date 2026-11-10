@@ -457,6 +457,16 @@ def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
             index = matches[0][0] + 1 if matches else 0
             groups[index][1].append((rva, name))
         groups = [(module, funcs) for module, funcs in groups if funcs]
+        # Imports from separate source files can interleave in .idata.  PE
+        # permits several descriptors for the same DLL; split each group
+        # into contiguous IAT runs rather than requiring source ordering.
+        runs = []
+        for module, funcs in groups:
+            for slot in sorted(funcs):
+                if not runs or runs[-1][0] != module or slot[0] != runs[-1][1][-1][0] + 4:
+                    runs.append((module, []))
+                runs[-1][1].append(slot)
+        groups = runs
         if not groups:
             raise SystemExit("error: import-module but no __imp_ symbols")
         imp_data = build_import_section(groups, extra_rva)

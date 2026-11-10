@@ -2,6 +2,7 @@
 .PHONY: phone phone-check phone-preview
 phone: $(COREDLL_DLL) $(APP_HH3) $(CALC_EXE)
 	$(PYTHON) payload/phone/build_phone.py --out $(OUTDIR) --obj $(BUILDDIR)/phone
+	$(PYTHON) payload/phone/build_hosted_apps.py --out $(OUTDIR) --obj $(BUILDDIR)/hosted
 phone-check: phone
 	$(PYTHON) payload/phone/check_phone.py --out $(OUTDIR)
 phone-preview:

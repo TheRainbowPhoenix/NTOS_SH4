@@ -2,7 +2,7 @@ name: Build · copy to calculator
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'codex/sh4-hosted-apps']
     tags: ['v*.*.*']
   pull_request:
     branches: [main]

@@ -23,7 +23,8 @@ def check(root):
     assert not (root / "phone-device").exists(), "obsolete phone-device tree"
     apps = sorted((root / "Apps").glob("*/*.exe"))
     assert len(apps) == 24, f"expected 24 phone apps; found {len(apps)}"
-    for name in ("STARTHOST.EXE", "CALC.EXE", "METROWIN.EXE", "CONTROL.EXE"):
+    for name in ("STARTHOST.EXE", "CALC.EXE", "METROWIN.EXE", "CONTROL.EXE",
+                 "Apps/calc/calc.exe", "Apps/edge/edge.exe", "Apps/files/files.exe", "Apps/cortana/cortana.exe"):
         pe = pefile.PE(str(root / name))
         assert pe.FILE_HEADER.Machine == 0x01A8
         for dep in getattr(pe, "DIRECTORY_ENTRY_IMPORT", []):
@@ -34,6 +35,8 @@ def check(root):
             for symbol in dep.imports:
                 if symbol.name:
                     assert symbol.name in names, (name, dll, symbol.name)
+    for asset in ("calc.uxaml", "edge.uxaml", "edgelight.uxaml", "files.uxaml", "cortana.uxaml"):
+        assert (root / asset).is_file(), f"missing {asset}"
     if deployed:
         assert not list(root.glob("*.DLL")), "duplicate DLL outside System32"
         assert not list(root.glob("*.CPL")), "duplicate CPL outside System32"

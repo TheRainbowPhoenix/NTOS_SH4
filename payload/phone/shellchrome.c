@@ -302,13 +302,18 @@ const Chrome *UIXGetSchemaFactory(void)
 static void hosted_paint(void *dc)
 {
     const Render *r = CALL(render_SpGetThreadContext, ());
+    if (panel) {
+        paint(dc);
+        return;
+    }
     status_paint(dc, r);
     if (nav)
         navigation_paint(dc, r);
 }
 static int hosted_input(U32 msg, U32 wp, U32 lp)
 {
-    (void)wp;
+    return input(msg, wp, lp);
+#if 0
     int x = (int)(short)(lp & 65535u), y = (int)(short)(lp >> 16);
     if (closing) {
         if (msg == WM_UP_)
@@ -336,10 +341,11 @@ static int hosted_input(U32 msg, U32 wp, U32 lp)
         return 1;
     }
     return 0;
+#endif
 }
 static int hosted_expanded(void)
 {
-    return 0;
+    return panel;
 }
 static const Chrome hosted_chrome = {PROFILE, hosted_paint, hosted_input,
                                     hosted_expanded, navheight,
