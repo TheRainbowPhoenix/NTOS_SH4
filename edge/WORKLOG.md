@@ -436,3 +436,60 @@ SIP-up = keyboard through the strip. light-tabs now keeps its reference
   position:absolute/fixed, display:table, min/max-*, line-height,
   margin-collapsing, data:URI PNG inflate (the eyes), object fallback.
 - **Forms + engine hardening share the smoke**: MDSmokeTest 0x103F.
+
+## 2026-11-11 — session 3: Windows CI artifact + no hardcoded pages + swap gate
+
+### Windows build artifact (user iteration loop)
+- CI `make package` died at `zip: not found` (exit 127) — the runner image
+  has no zip(1). New edge/ntos_win/mkzip.py: stdlib zipfile packager, same
+  flat layout, deflated, fixed timestamps (reproducible), CRLF-safe bat.
+  The edge-ci workflow already shipped ntos-windows.zip to the edge-ci
+  branch; with packaging green the bundle is downloadable on every push.
+- markdown.dll renamed to **html.dll** everywhere (module name only; the
+  md_* exports and the payload/phone/markdown.c source are unchanged —
+  the loader cross-snaps by symbol). The DLL is the POC's real
+  HTML4/CSS1/Markdown renderer and now says so beside chakra.dll: a
+  plain engine library (fill an MdHost, call md_load/md_layout/md_paint)
+  that any app or test harness can host. Dead code removed: edge/app/
+  mdrender.c (the pre-box-model line renderer) built by nothing.
+
+### No hardcoded pages — everything renders through the engine
+- Deleted paint_wiki() (the static "Exam" token list that mimicked
+  webpage.png) and the hardcoded grey-bar unknown-host page. There is no
+  procedural page painting left in edge_app.c.
+- mock DNS: wikipedia.org serves the real Casio ClassPad 300 article
+  (wiki_cp300.md); the tab title comes from md_title().
+- Unknown hosts: a real HTML error page naming the requested host is
+  generated and engine-rendered ("can't reach this page", #A2A9B1 border
+  asserted pixel-exact in e2e).
+- Fixed: reader view leaked across navigations (wiki-cp300/acid2/form
+  rendered warm-paper after the md-reader toggle). Reader is per-page:
+  web_load() and the file:// path reset it, as real browsers do.
+
+### Render-from-content gate (the "swap the values" acceptance test)
+- tests/assets/swap.html: bg #0000FF, h1 #FF0000 @22px, text #00CC00.
+  The e2e Makefile derives swap2.html by sed-swapping the VALUES (bg
+  #FFFFFF, h1 #0000FF @16px, text #CC0000); both render through the
+  engine; check_edge_shots.py asserts the pixels followed:
+  - new colors_ok probe type: counts pixels within tol of the authored
+    RGB (negative need = forbidden zone)
+  - the 16px heading must have far fewer glyph pixels than the 22px one
+    (320 vs 487 measured) and must not reach the body zone
+- The gate caught two real engine bugs on its first run, both fixed in
+  markdown.c:
+  1. canvas didn't cover the viewport — short pages left stale pixels
+     below the content. md_paint now fills the canvas across the whole
+     viewport before ops paint.
+  2. CSS canvas propagation — a bg-less <html> stopped the canvas scan,
+     so body{background-color:X} painted only its own box. html's bg
+     propagates; without it, body's does.
+  (It also caught a sed bug in the test itself: 'font-size:22px' didn't
+  match 'font-size: 22px' — the render was right, the test value wasn't.
+  Good sign: the gate discriminates.)
+- swap.html + swap2.html ship in the ntos-windows bundle so the same
+  proof runs on the Windows host by hand.
+
+### State
+- MDSmokeTest via html.dll: 0x103F (unchanged). edge e2e: all shots
+  green incl. new wiki content probes, errorpage, swap-a/b. files-app
+  e2e green. ntos_linux sample e2e green. uxaml round-trip green.
