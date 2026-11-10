@@ -31,6 +31,8 @@ static const U32 light_theme[UIX_TH_COUNT] = {
     INK,                    /* UIX_TH_CTRL_INK  */
     RGB_(124, 142, 158),    /* UIX_TH_CTRL_EDGE */
     RGB_(124, 142, 158),    /* UIX_TH_FIELD_EDGE */
+    PANEL,                  /* UIX_TH_NAV_BG    */
+    INK,                    /* UIX_TH_NAV_INK   */
 };
 
 static U32 th(const Render *r, int slot)
@@ -120,21 +122,65 @@ void ctl_checkbox(void *dc, const Render *r, int x, int y, int checked,
         r->text(dc, x + 29, y + 2, label, th(r, UIX_TH_CTRL_INK), 15);
 }
 
-/* W10M toggle switch: 44x20 pill, white knob, accent track when on. */
-void ctl_toggle(void *dc, const Render *r, int x, int y, int on)
+/* W10M toggle switch, geometry per the Edge settings reference captures:
+ * 44x20 pill. ON  = accent fill + white 10px thumb at the right
+ *               (refs: blue x12..55 y145..164, thumb x41..50).
+ * OFF = 1px #8A8A8A pill outline, transparent interior, #B0B0B0 thumb
+ *       parked at the left (refs: DNT row in settings_2_advanced).
+ * dim = the disabled look (50% colours), used by the Sync row which
+ *       needs a Microsoft account. Drawn with fill rows only, so any
+ *       Render vtable can host it. */
+static int chord10(int dy) /* half-chord of a r10 cap at |dy| from centre */
+{
+    int r2 = 100 - dy * dy;
+    int v = 0;
+    while ((v + 1) * (v + 1) <= r2)
+        ++v;
+    return v;
+}
+static void pill_track_rows(void *dc, const Render *r, int x, int y,
+                            U32 color, int outline)
+{
+    for (int dy = -10; dy < 10; ++dy) {
+        int half = chord10(dy < 0 ? -dy : dy);
+        int l = x + 10 - half, rr = x + 34 + half + 1;
+        int yy = y + 10 + dy;
+        if (outline) {
+            r->fill(dc, l, yy, l + 1, yy + 1, color);
+            r->fill(dc, rr - 1, yy, rr, yy + 1, color);
+        } else {
+            r->fill(dc, l, yy, rr, yy + 1, color);
+        }
+    }
+}
+static void thumb_disc_rows(void *dc, const Render *r, int cx, int cy,
+                            U32 color)
+{
+    for (int dy = -5; dy < 5; ++dy) {
+        int r2 = 25 - dy * dy;
+        int half = 0;
+        while ((half + 1) * (half + 1) <= r2)
+            ++half;
+        r->fill(dc, cx - half, cy + dy, cx + half + 1, cy + dy + 1, color);
+    }
+}
+void ctl_toggle_ex(void *dc, const Render *r, int x, int y, int on, int dim)
 {
     if (!r)
         return;
-    U32 track = on ? th(r, UIX_TH_ACCENT) : th(r, UIX_TH_CTRL_EDGE);
-    U32 knob = WHITE;
-    /* track: rectangle + rounded end caps */
-    r->fill(dc, x + 6, y, x + 38, y + 20, track);
-    r->ellipse(dc, x + 6, y + 10, 6, 10, track, 0);
-    r->ellipse(dc, x + 38, y + 10, 6, 10, track, 0);
-    /* knob */
-    int kx = on ? x + 30 : x + 2;
-    r->fill(dc, kx + 2, y + 2, kx + 10, y + 18, knob);
-    r->ellipse(dc, kx + 6, y + 10, 4, 8, knob, 0);
+    if (on && !dim) {
+        pill_track_rows(dc, r, x, y, th(r, UIX_TH_ACCENT), 0);
+        thumb_disc_rows(dc, r, x + 34, y + 10, WHITE);
+    } else {
+        U32 edge = dim ? RGB_(0x4A, 0x4A, 0x4A) : RGB_(0x8A, 0x8A, 0x8A);
+        U32 knob = dim ? RGB_(0x4A, 0x4A, 0x4A) : RGB_(0xB0, 0xB0, 0xB0);
+        pill_track_rows(dc, r, x, y, edge, 1);
+        thumb_disc_rows(dc, r, x + 12, y + 10, knob);
+    }
+}
+void ctl_toggle(void *dc, const Render *r, int x, int y, int on)
+{
+    ctl_toggle_ex(dc, r, x, y, on, 0);
 }
 
 /* Input field: bordered box, hint text grey, live text in ink, blue caret

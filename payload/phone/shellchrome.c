@@ -13,19 +13,28 @@ static const W16 nav_file[] = {'\\', 'f', 'l', 's', '0', '\\', 'n',
                                'a',  'v', '.', 'd', 'a', 't',  0};
 static void load_nav(void);
 int SetIsNavigationBarVisible(int);
+/* Nav-bar colours follow the hosting app: dark hosts (Edge) publish a
+ * theme with black NAV_BG / white NAV_INK, light hosts keep the phone
+ * PANEL/INK pair. Falls back to PANEL/INK when no theme is published. */
+static U32 nav_th(const Render *r, int slot, U32 fallback)
+{
+    return (r && r->theme) ? r->theme[slot] : fallback;
+}
 static void navigation_paint(void *dc, const Render *r)
 {
+    U32 bg = nav_th(r, UIX_TH_NAV_BG, PANEL);
+    U32 ink = nav_th(r, UIX_TH_NAV_INK, INK);
     r->clip(0, 488, 320, 528);
-    r->fill(dc, 0, 488, 320, 528, PANEL);
-    r->line(dc, 55, 508, 75, 508, INK);
-    r->line(dc, 55, 508, 63, 500, INK);
-    r->line(dc, 55, 508, 63, 516, INK);
-    r->fill(dc, 151, 499, 159, 507, INK);
-    r->fill(dc, 161, 499, 169, 507, INK);
-    r->fill(dc, 151, 509, 159, 517, INK);
-    r->fill(dc, 161, 509, 169, 517, INK);
-    r->ellipse(dc, 258, 504, 7, 7, NAV_INK, 1);
-    r->line(dc, 253, 510, 246, 518, INK);
+    r->fill(dc, 0, 488, 320, 528, bg);
+    r->line(dc, 55, 508, 75, 508, ink);
+    r->line(dc, 55, 508, 63, 500, ink);
+    r->line(dc, 55, 508, 63, 516, ink);
+    r->fill(dc, 151, 499, 159, 507, ink);
+    r->fill(dc, 161, 499, 169, 507, ink);
+    r->fill(dc, 151, 509, 159, 517, ink);
+    r->fill(dc, 161, 509, 169, 517, ink);
+    r->ellipse(dc, 258, 504, 7, 7, ink, 1);
+    r->line(dc, 253, 510, 246, 518, ink);
     r->clip(0, 0, 320, 528);
 }
 
@@ -235,6 +244,61 @@ const Chrome *UIXGetSchemaFactory(void)
     load_nav();
     return &chrome;
 }
+/* ---- hosted-app chrome: nav bar only ----
+ * Edge and other hosted apps import UIXChromeFactory instead of the full
+ * shell chrome: no status bar, no notification panel, just the navigation
+ * bar themed through the hosting renderer (one implementation, shared). */
+static void hosted_paint(void *dc)
+{
+    const Render *r = CALL(render_SpGetThreadContext, ());
+    if (nav)
+        navigation_paint(dc, r);
+}
+static int hosted_input(U32 msg, U32 wp, U32 lp)
+{
+    int x = (int)(short)(lp & 65535u), y = (int)(short)(lp >> 16);
+    if (closing) {
+        if (msg == WM_UP_)
+            closing = 0;
+        return 1;
+    }
+    if (nav_touch) {
+        if (msg == WM_MOVE_ &&
+            (x - nav_x > 10 || nav_x - x > 10 || y - nav_y > 10 || nav_y - y > 10))
+            nav_key = -1;
+        if (msg == WM_UP_) {
+            int key = nav_key;
+            if (x - nav_x > 10 || nav_x - x > 10 || y - nav_y > 10 || nav_y - y > 10)
+                key = -1;
+            nav_touch = 0;
+            return key < 0 ? 1 : 4 + key;
+        }
+        return 1;
+    }
+    if (nav && msg == WM_DOWN_ && y >= 488) {
+        nav_touch = 1;
+        nav_x = x;
+        nav_y = y;
+        nav_key = x < 106 ? 0 : x < 213 ? 1 : 2;
+        return 1;
+    }
+    return 0;
+}
+static int hosted_expanded(void)
+{
+    return 0;
+}
+static const Chrome hosted_chrome = {PROFILE, hosted_paint, hosted_input,
+                                    hosted_expanded, navheight,
+                                    SetIsNavigationBarVisible};
+#ifdef NTOS_LINUX_BUILD
+__attribute__((dllexport))
+#endif
+const Chrome *UIXChromeFactory(void)
+{
+    load_nav();
+    return &hosted_chrome;
+}
 void UIXSchemaUnloaded(void)
 {
     panel = tracking = 0;
@@ -302,9 +366,23 @@ int phone_unsupported(void)
 {
     return NOTIMPL;
 }
+#ifdef NTOS_LINUX_BUILD
+/* Host PE DLL: minimal CRT entry + suppress the ELF-style main() so the
+ * freestanding link works (same pattern as fingerkb.dll). */
+int DllMainCRTStartup_impl(void *h, U32 r, void *r2)
+{
+    (void)h;
+    (void)r;
+    (void)r2;
+    return 1;
+}
+__asm__(".globl _DllMainCRTStartup\n_DllMainCRTStartup = DllMainCRTStartup_impl\n");
+__asm__(".globl __main\n__main = DllMainCRTStartup_impl\n");
+#else
 #ifndef PHONE_HOST
 int main(void)
 {
     return 1;
 }
+#endif
 #endif

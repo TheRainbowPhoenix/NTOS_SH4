@@ -183,6 +183,8 @@ static const U32 theme_light[UIX_TH_COUNT] = {
     INK,                  /* UIX_TH_CTRL_INK  */
     RGB_(124, 142, 158),  /* UIX_TH_CTRL_EDGE */
     RGB_(124, 142, 158),  /* UIX_TH_FIELD_EDGE */
+    PANEL,                /* UIX_TH_NAV_BG   */
+    INK,                  /* UIX_TH_NAV_INK   */
 };
 static const Render renderer = {PROFILE, clip, fill, text, line, ellipse,
                                 polygon, surface, theme_light};

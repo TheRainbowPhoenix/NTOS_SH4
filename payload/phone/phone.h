@@ -48,6 +48,8 @@ enum {
     UIX_TH_CTRL_INK,    /* button label */
     UIX_TH_CTRL_EDGE,   /* unchecked checkbox border */
     UIX_TH_FIELD_EDGE,  /* input field border / hint text */
+    UIX_TH_NAV_BG,      /* navigation-bar strip background */
+    UIX_TH_NAV_INK,     /* navigation-bar glyph ink */
     UIX_TH_COUNT
 };
 typedef struct Render {
@@ -81,6 +83,8 @@ void ctl_button(void *dc, const Render *r, int x, int y, int w, int h,
 void ctl_checkbox(void *dc, const Render *r, int x, int y, int checked,
                   const char *label);
 void ctl_toggle(void *dc, const Render *r, int x, int y, int on);
+/* dim=1 renders the disabled look (50% outline/thumb, knob left). */
+void ctl_toggle_ex(void *dc, const Render *r, int x, int y, int on, int dim);
 void ctl_field(void *dc, const Render *r, int x, int y, int w, int h,
                const char *text, const char *hint, int focused);
 typedef struct Chrome {
@@ -106,6 +110,7 @@ typedef struct Keyboard {
     int (*input)(U32, U32, U32);
     int (*page)(void);
     void (*dock)(int);
+    void (*context)(int); /* go-key input scope: 0 arrow, 1 search */
 } Keyboard;
 typedef struct Settings {
     U32 profile;

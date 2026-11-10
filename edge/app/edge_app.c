@@ -48,7 +48,18 @@ typedef struct EdgeKb {
     int (*input)(U32, U32, U32);
     int (*page)(void);
     void (*dock)(int);
+    void (*context)(int); /* go-key input scope: 0 arrow, 1 search */
 } EdgeKb;
+
+/* shell chrome (SHELLCHROME.DLL) mirror of phone.h Chrome: nav bar */
+typedef struct EdgeChrome {
+    U32 profile;
+    void (*paint)(void *);
+    int (*input)(U32, U32, U32);
+    int (*expanded)(void);
+    int (*navheight)(void);
+    int (*navigation)(int);
+} EdgeChrome;
 
 /* shared control painters (payload/phone/uixctl.c, linked into this DLL) */
 void ctl_button(void *dc, const EdgeRender *r, int x, int y, int w, int h,
@@ -70,6 +81,10 @@ NT_DEFINE(render_SpGetThreadContext)
 /* keyboard factory: imported from FINGERKB.DLL via the host loader */
 NT_IMPORT(const EdgeKb *, UIXGetSchemaFactory, (void))
 NT_DEFINE(UIXGetSchemaFactory)
+/* nav-bar chrome: imported from SHELLCHROME.DLL (UIXChromeFactory is the
+ * hosted-app surface: nav bar only, themed through edge_renderer) */
+NT_IMPORT(const EdgeChrome *, UIXChromeFactory, (void))
+NT_DEFINE(UIXChromeFactory)
 
 /* ---- imports (host loader or device COREDLL snap these) ---- */
 typedef int (*WndProcT)(void *, U32, U32, U32);
@@ -385,6 +400,8 @@ static const U32 edge_theme[] = {
     RGB_(0xFF, 0xFF, 0xFF), /* 8 CTRL_INK   button label           */
     RGB_(0xCC, 0xCC, 0xCC), /* 9 CTRL_EDGE  unchecked border       */
     RGB_(0xFF, 0xFF, 0xFF), /* 10 FIELD_EDGE input border/hint     */
+    RGB_(0x00, 0x00, 0x00), /* 11 NAV_BG    nav bar strip (black)  */
+    RGB_(0xFF, 0xFF, 0xFF), /* 12 NAV_INK   nav bar glyphs (white) */
 };
 
 static void r_clip(int l, int t, int r, int b)

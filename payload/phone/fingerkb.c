@@ -2,7 +2,14 @@
 IMP(const Render *, render_SpGetThreadContext, (void))
 IMP(int, svf_SVFDrawTint, (void *, const void *, unsigned, int, int, int, int, U32))
 #include "system_icons.h"
-static int layout, shift, caps, dock_y;
+static int layout, shift, caps, dock_y, go_search;
+/* go-key input scope: 0 = enter arrow (address bar, dialogs),
+ * 1 = search magnifier (find-on-page fields). The host app sets it
+ * before showing the SIP, exactly like W10M InputScope. */
+static void context(int scope)
+{
+    go_search = scope == 1;
+}
 /* Themed key colours: the host renderer publishes a UIX_TH_* table, so the
  * same DLL paints the light Settings SIP and the dark Edge SIP
  * (#1F1F1F backdrop, #333 keys, #4C4C4C modifiers, white go-key). */
@@ -91,11 +98,13 @@ static void paint(void *dc)
     /* The go/enter key takes the accent fill (white in the dark Edge
      * theme, light blue in the light Settings theme). */
     r->fill(dc, 276, 477 - dock_y, 318, 527 - dock_y, kb_th(r, UIX_TH_KEY_GO, CARD));
-    /* The search magnifier is a separate black VEC1 asset. */
+    /* Scope-dependent glyph: search magnifier or plain go arrow
+     * (type.png: black right arrow on the white key). Both are VEC1
+     * assets recoloured through GO_INK. */
     {
         const Render *rc = CALL(render_SpGetThreadContext, ());
         U32 go_ink = kb_th(rc, UIX_TH_GO_INK, INK);
-        const SysIcon *s = &system_icons[SYS_SEARCH_BLACK];
+        const SysIcon *s = &system_icons[go_search ? SYS_SEARCH_BLACK : SYS_GO_ARROW];
         CALL(svf_SVFDrawTint, (dc, s->data, s->length, 289, 491 - dock_y, 18, 18,
                                go_ink));
     }
@@ -172,7 +181,7 @@ static int page(void)
 {
     return layout ? layout : (shift || caps ? 3 : 0);
 }
-static const Keyboard keyboard = {PROFILE, paint, input, page, dock};
+static const Keyboard keyboard = {PROFILE, paint, input, page, dock, context};
 #ifdef NTOS_LINUX_BUILD
 /* Host PE build: export the factory (and unload hook) so the
  * NTOS_SH4_linux loader can snap a host app's __imp_UIXGetSchemaFactory
@@ -189,6 +198,7 @@ __attribute__((dllexport))
 void UIXSchemaUnloaded(void)
 {
     layout = shift = caps = 0;
+    go_search = 0;
 }
 int phone_unsupported(void)
 {

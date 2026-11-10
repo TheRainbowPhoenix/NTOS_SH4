@@ -18,7 +18,7 @@ IMPORTS = ../../payload
 # bring their own DLL entry point or factory.
 PHONE_CFLAGS = -DNTOS_LINUX_BUILD -DNT_IAT_EXTERN_ONLY -DUXCTL_NO_FACTORY
 
-all: edge.dll chakra.dll fingerkb.dll edge.uxaml
+all: edge.dll chakra.dll fingerkb.dll shellchrome.dll edge.uxaml
 
 edge.uxaml: uxaml_gen.py markup/*.xml
 	python3 uxaml_gen.py build markup/ -o edge.uxaml
@@ -37,6 +37,14 @@ fingerkb.dll: $(PHONE)/fingerkb.c $(PHONE)/phone.h $(PHONE)/system_icons.h
 	$(ZIG) cc -target x86_64-windows-gnu -shared -Os -nostdlib \
 	  -Wl,--image-base=0x180200000 -DNTOS_LINUX_BUILD \
 	  -I$(PHONE) -I$(IMPORTS) -o fingerkb.dll $(PHONE)/fingerkb.c
+
+# shared shell-chrome DLL (host build of the phone SHELLCHROME.DLL source).
+# Provides the system nav bar (Back/Home/Search) through UIXChromeFactory;
+# edge.dll imports it like fingerkb instead of re-drawing the bar.
+shellchrome.dll: $(PHONE)/shellchrome.c $(PHONE)/phone.h $(PHONE)/system_icons.h
+	$(ZIG) cc -target x86_64-windows-gnu -shared -Os -nostdlib \
+	  -Wl,--image-base=0x180300000 -DNTOS_LINUX_BUILD \
+	  -I$(PHONE) -I$(IMPORTS) -o shellchrome.dll $(PHONE)/shellchrome.c
 
 # chakra.dll — DEFAULT: pure API-shape stub (160 exports, no engine).
 # The device has no FPU and the POC targets the UI; the real 5.8MB ChakraCore
@@ -63,14 +71,14 @@ chakra-full.dll: chakra_mqjs.c shim/shim.c shim/*.h nt_app.h mqjs_edge_stdlib.h 
 endif
 
 clean:
-	rm -f edge.dll chakra.dll chakra-full.dll fingerkb.dll edge.uxaml edge-*.png
+	rm -f edge.dll chakra.dll chakra-full.dll fingerkb.dll shellchrome.dll edge.uxaml edge-*.png
 
 # e2e: run under NTOS_SH4_linux with the shared keyboard module; markup
 # goes into the fake device root
 test: all
 	rm -rf tests/fs/fls0 && mkdir -p tests/fs/fls0
 	cp edge.uxaml tests/fs/fls0/edge.uxaml
-	../ntos_linux/ntos_linux fingerkb.dll edge.dll --script tests/edge.script \
+	../ntos_linux/ntos_linux fingerkb.dll shellchrome.dll edge.dll --script tests/edge.script \
 	  --shot edge --fs tests/fs
 	python3 tests/check_edge_shots.py edge-*.png
 	../ntos_linux/ntos_linux chakra.dll --entry ChakraSmokeTest
