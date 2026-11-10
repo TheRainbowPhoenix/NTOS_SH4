@@ -7,7 +7,7 @@ HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
 ap=argparse.ArgumentParser();ap.add_argument('--out',default='dist');args=ap.parse_args()
 out=ROOT/args.out
-modules=['STARTHOST.EXE','STARTMENU.DLL','UIXMOBILE.DLL','UIXN.DLL','UIXRENDER.DLL','SHELLCONTROLS.DLL','SHELLCHROME.DLL','FINGERKB.DLL','SVF.DLL','APPCATALOG.DLL','SETTINGSUI.DLL','COREDLL.DLL']
+modules=['STARTHOST.EXE','STARTMENU.DLL','UIXMOBILE.DLL','UIXN.DLL','UIXRENDER.DLL','UXCTL.DLL','SHELLCONTROLS.DLL','SHELLCHROME.DLL','FINGERKB.DLL','SVF.DLL','APPCATALOG.DLL','SETTINGSUI.DLL','COREDLL.DLL']
 images={n:pefile.PE(str(out/n)) for n in modules}
 total=0
 for n,pe in images.items():
