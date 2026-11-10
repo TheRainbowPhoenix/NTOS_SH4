@@ -53,6 +53,40 @@ static void navigation_paint(void *dc, const Render *r)
     r->clip(0, 0, 320, 528);
 }
 
+/* ---- hosted-app status bar: the system title bar, launcher-owned ----
+ * Hosted apps never draw their own top bar: the shared chrome paints it
+ * over their surface (y0..24), themed through the hosting app's table
+ * like the nav bar — white bg + near-black ink on light hosts, black bg
+ * + white ink on dark ones (derived from the published NAV_BG).
+ * Geometry from the W10M device captures (refs/calc-screens): five
+ * ascending signal bars bottom-aligned at y17 (x13..26), and at the
+ * right a battery (box x246..268 y7..16, nub on the top edge) with the
+ * clock right-aligned to x306. */
+static void status_paint(void *dc, const Render *r)
+{
+    U32 navbg = nav_th(r, UIX_TH_NAV_BG, PANEL);
+    int lum = (int)((navbg >> 16 & 0xff) * 30 + (navbg >> 8 & 0xff) * 59 +
+                    (navbg & 0xff) * 11);
+    int light = lum >= 12800; /* 128 * 100 */
+    U32 bg = light ? WHITE : RGB_(0x1f, 0x1f, 0x1f);
+    U32 ink = light ? RGB_(0x18, 0x18, 0x21) : WHITE;
+    r->clip(0, 0, 320, 24);
+    r->fill(dc, 0, 0, 320, 24, bg);
+    /* signal: five 2px bars, heights 3,5,7,9,11, bottoms at y17 */
+    for (int i = 0; i < 5; ++i)
+        r->fill(dc, 13 + 3 * i, 15 - 2 * i, 15 + 3 * i, 17, ink);
+    /* battery: 1px box + charged interior + nub on the top edge */
+    r->line(dc, 246, 7, 268, 7, ink);
+    r->line(dc, 246, 16, 268, 16, ink);
+    r->line(dc, 246, 7, 246, 16, ink);
+    r->line(dc, 268, 7, 268, 16, ink);
+    r->fill(dc, 248, 9, 266, 14, ink);
+    r->fill(dc, 250, 5, 252, 7, ink);
+    /* clock, right-aligned to x306 (12px glyphs y8..16) */
+    r->text(dc, 271, 8, "12:50", ink, 12);
+    r->clip(0, 0, 320, 528);
+}
+
 static int nav = 1, panel, tracking, origin, press_x, press_y, pending = -1;
 static unsigned toggles = (1u << 5) | (1u << 13);
 static char notification[64];
@@ -259,13 +293,16 @@ const Chrome *UIXGetSchemaFactory(void)
     load_nav();
     return &chrome;
 }
-/* ---- hosted-app chrome: nav bar only ----
+/* ---- hosted-app chrome: status bar + nav bar ----
  * Edge and other hosted apps import UIXChromeFactory instead of the full
- * shell chrome: no status bar, no notification panel, just the navigation
- * bar themed through the hosting renderer (one implementation, shared). */
+ * shell chrome: no notification panel, but the two system bars are
+ * launcher-owned and themed through the hosting renderer (one
+ * implementation, shared): the title/status strip on top and the
+ * navigation bar at the bottom. Apps never reimplement them. */
 static void hosted_paint(void *dc)
 {
     const Render *r = CALL(render_SpGetThreadContext, ());
+    status_paint(dc, r);
     if (nav)
         navigation_paint(dc, r);
 }

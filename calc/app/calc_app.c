@@ -2134,9 +2134,16 @@ static void draw_text(void *dc, int x, int y, const char *s, U32 c, int h,
         for (int yy = 0; yy < f->height; ++yy) {
             const unsigned char *row = (const unsigned char *)f->bits +
                                        g->offset + yy * stride;
-            for (int xx = 0; xx < g->width; ++xx) {
-                if (row[xx >> 3] & (0x80u >> (xx & 7)))
-                    fill(dc, x + xx, y + yy, x + xx + 1, y + yy + 1, c);
+            int run = -1;
+            for (int xx = 0; xx <= g->width; ++xx) {
+                int bit = xx < g->width &&
+                          ((row[(unsigned)xx >> 3] >> (xx & 7)) & 1u);
+                if (bit && run < 0)
+                    run = xx;
+                else if (!bit && run >= 0) {
+                    fill(dc, x + run, y + yy, x + xx, y + yy + 1, c);
+                    run = -1;
+                }
             }
         }
         x += g->advance + 1;
