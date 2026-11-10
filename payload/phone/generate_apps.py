@@ -74,6 +74,9 @@ def system():
   elif name in ['SUN','SETTINGS','CAMERA','NOTE']:result.append((name,icon({'SUN':'weather','SETTINGS':'settings','CAMERA':'camera','NOTE':'note'}[name])));continue
   else:v.rect(3,3,29,29)
   result.append((name,v.end()))
+ # Keep the keyboard's Go arrow when device builds regenerate the header.
+ result.append(('GO_ARROW',Vec().color().stroke(6,16,23,16,6)
+                .stroke(14,8,24,16,5).stroke(14,24,24,16,5).end()))
  return result
 def generate_headers():
  items=system();lines=['/* Generated VEC1 icons, same decoder as application assets. */','typedef struct {const unsigned char *data;unsigned length;} SysIcon;']
