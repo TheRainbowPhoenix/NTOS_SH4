@@ -171,7 +171,20 @@ static void polygon(void *dc, const Pt *p, unsigned n, U32 c)
             fill(dc, xs[i], y, xs[i + 1] + 1, y + 1, c);
     }
 }
-static const Render renderer = {PROFILE, clip, fill, text, line, ellipse, polygon, surface};
+static const U32 theme_light[UIX_TH_COUNT] = {
+    SURFACE,              /* UIX_TH_SURFACE   */
+    CARD,                 /* UIX_TH_KEY       */
+    PANEL,                /* UIX_TH_KEY_ALT   */
+    INK,                  /* UIX_TH_INK       */
+    CARD,                 /* UIX_TH_KEY_GO    */
+    INK,                  /* UIX_TH_GO_INK    */
+    BLUE,                 /* UIX_TH_ACCENT    */
+    RGB_(195, 215, 232),  /* UIX_TH_CTRL_BG   */
+    INK,                  /* UIX_TH_CTRL_INK  */
+    RGB_(124, 142, 158),  /* UIX_TH_CTRL_EDGE */
+};
+static const Render renderer = {PROFILE, clip, fill, text, line, ellipse,
+                                polygon, surface, theme_light};
 int SpRenderThreadInit(void)
 {
     return 0;

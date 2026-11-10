@@ -25,10 +25,18 @@
 #include <stdint.h> /* uintptr_t for the import-call cast */
 #include "ntabi.h"
 
+/* Host (NTOS_SH4_linux) PE builds must EXPORT the IAT slots so the host
+ * loader can find and patch them; device builds keep plain symbols. */
+#ifdef NTOS_LINUX_BUILD
+#define NT_IAT_EXPORT __attribute__((dllexport))
+#else
+#define NT_IAT_EXPORT
+#endif
+
 /* Declare an imported function: typedef + call helper. */
 #define NT_IMPORT(ret, name, params)                                                               \
     typedef ret(*__ntx_fn_t_##name) params;                                                        \
-    extern const void *volatile __imp_##name;                                                      \
+    extern const void *volatile __imp_##name NT_IAT_EXPORT;                                        \
     static __inline __ntx_fn_t_##name __ntx_ref_##name(void)                                       \
     {                                                                                              \
         return (__ntx_fn_t_##name)(uintptr_t)__imp_##name;                                         \
@@ -37,7 +45,7 @@
 /* Define the IAT slot for an imported function (in .idata, patched by the
  * NTOS loader). */
 #define NT_DEFINE(name)                                                                            \
-    const void *volatile __imp_##name __attribute__((section(".idata"))) = (const void *)0;
+    const void *volatile __imp_##name __attribute__((section(".idata"))) NT_IAT_EXPORT = (const void *)0;
 
 /* Call an imported function: NT_CALL(coredll_puts, ("hi")); */
 #define NT_CALL(name, args) __ntx_ref_##name() args

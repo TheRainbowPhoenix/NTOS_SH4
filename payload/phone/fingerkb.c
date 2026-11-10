@@ -3,6 +3,13 @@ IMP(const Render *, render_SpGetThreadContext, (void))
 IMP(int, svf_SVFDrawTint, (void *, const void *, unsigned, int, int, int, int, U32))
 #include "system_icons.h"
 static int layout, shift, caps, dock_y;
+/* Themed key colours: the host renderer publishes a UIX_TH_* table, so the
+ * same DLL paints the light Settings SIP and the dark Edge SIP
+ * (#1F1F1F backdrop, #333 keys, #4C4C4C modifiers, white go-key). */
+static U32 kb_th(const Render *r, int slot, U32 fallback)
+{
+    return (r && r->theme) ? r->theme[slot] : fallback;
+}
 static void dock(int y)
 {
     dock_y = clampi(y, 0, 40);
@@ -17,22 +24,26 @@ static unsigned kb_len(const char *s)
 static void key(void *dc, const Render *r, int l, int t, int rr, const char *label, int active)
 {
     t -= dock_y;
-    r->fill(dc, l, t, rr, t + 50, active ? PANEL : CARD);
+    r->fill(dc, l, t, rr, t + 50, active ? kb_th(r, UIX_TH_KEY_ALT, PANEL)
+                                          : kb_th(r, UIX_TH_KEY, CARD));
     int width = 0;
     for (const char *p = label; *p; ++p)
         width += *p == ' ' ? 4 : 9;
-    r->text(dc, l + ((rr - l - width) >> 1), t + 14, label, INK, kb_len(label) > 2 ? 12 : 18);
+    r->text(dc, l + ((rr - l - width) >> 1), t + 14, label,
+            kb_th(r, UIX_TH_INK, INK), kb_len(label) > 2 ? 12 : 18);
 }
 static void symbol(void *dc, unsigned id, int x, int y, int size)
 {
     const SysIcon *s = &system_icons[id];
-    CALL(svf_SVFDrawTint, (dc, s->data, s->length, x, y - dock_y, size, size, INK));
+    const Render *r = CALL(render_SpGetThreadContext, ());
+    CALL(svf_SVFDrawTint, (dc, s->data, s->length, x, y - dock_y, size, size,
+                           kb_th(r, UIX_TH_INK, INK)));
 }
 static void paint(void *dc)
 {
     const Render *r = CALL(render_SpGetThreadContext, ());
     r->clip(0, 271 - dock_y, 320, 528 - dock_y);
-    r->fill(dc, 0, 271 - dock_y, 320, 528 - dock_y, SURFACE);
+    r->fill(dc, 0, 271 - dock_y, 320, 528 - dock_y, kb_th(r, UIX_TH_SURFACE, SURFACE));
     const char *alpha[2] = {"qwertyuiop", "asdfghjkl"};
     const char *num[2] = {"@#$%&*()-\\", "^[]{}<>ELY"};
     for (int row = 0; row < 2; ++row) {
@@ -77,9 +88,17 @@ static void paint(void *dc)
         key(dc, r, 83, 477, 240, "", 0);
     }
     key(dc, r, 244, 477, 272, ".", 0);
-    r->fill(dc, 276, 477 - dock_y, 318, 527 - dock_y, CARD);
+    /* The go/enter key takes the accent fill (white in the dark Edge
+     * theme, light blue in the light Settings theme). */
+    r->fill(dc, 276, 477 - dock_y, 318, 527 - dock_y, kb_th(r, UIX_TH_KEY_GO, CARD));
     /* The search magnifier is a separate black VEC1 asset. */
-    symbol(dc, SYS_SEARCH_BLACK, 289, 491, 18);
+    {
+        const Render *rc = CALL(render_SpGetThreadContext, ());
+        U32 go_ink = kb_th(rc, UIX_TH_GO_INK, INK);
+        const SysIcon *s = &system_icons[SYS_SEARCH_BLACK];
+        CALL(svf_SVFDrawTint, (dc, s->data, s->length, 289, 491 - dock_y, 18, 18,
+                               go_ink));
+    }
     r->clip(0, 0, 320, 528);
 }
 static int input(U32 msg, U32 wp, U32 lp)
@@ -154,10 +173,19 @@ static int page(void)
     return layout ? layout : (shift || caps ? 3 : 0);
 }
 static const Keyboard keyboard = {PROFILE, paint, input, page, dock};
+#ifdef NTOS_LINUX_BUILD
+/* Host PE build: export the factory (and unload hook) so the
+ * NTOS_SH4_linux loader can snap a host app's __imp_UIXGetSchemaFactory
+ * slot straight to this DLL. On device the manifest export handles it. */
+__attribute__((dllexport))
+#endif
 const Keyboard *UIXGetSchemaFactory(void)
 {
     return &keyboard;
 }
+#ifdef NTOS_LINUX_BUILD
+__attribute__((dllexport))
+#endif
 void UIXSchemaUnloaded(void)
 {
     layout = shift = caps = 0;
@@ -166,9 +194,22 @@ int phone_unsupported(void)
 {
     return NOTIMPL;
 }
+#ifdef NTOS_LINUX_BUILD
+/* Host PE DLL: minimal DLL entry + suppress the ELF-style main() so the
+ * link stays freestanding (-nostdlib). */
+int DllMainCRTStartup_impl(void *h, U32 r, void *r2)
+{
+    (void)h;
+    (void)r;
+    (void)r2;
+    return 1;
+}
+__asm__(".globl _DllMainCRTStartup\n_DllMainCRTStartup = DllMainCRTStartup_impl\n");
+#else
 #ifndef PHONE_HOST
 int main(void)
 {
     return 1;
 }
+#endif
 #endif

@@ -31,6 +31,24 @@ typedef struct {
 #define WM_UP_ 0x202u
 #define WM_MOVE_ 0x200u
 #define WM_CHAR_ 0x102u
+/* Shared theme slots. A renderer may publish a table; controls fall back
+ * to the light palette when the host renderer predates theming (NULL).
+ * This mirrors W10M: the shell keyboard/controls pick system-theme
+ * colours, so one implementation serves light (Settings) and dark (Edge)
+ * hosts. */
+enum {
+    UIX_TH_SURFACE = 0, /* keyboard backdrop / field track */
+    UIX_TH_KEY,         /* normal key */
+    UIX_TH_KEY_ALT,     /* shift, &123, modifier keys */
+    UIX_TH_INK,         /* text on keys/controls */
+    UIX_TH_KEY_GO,      /* enter/search accent key fill */
+    UIX_TH_GO_INK,      /* glyph on the accent key */
+    UIX_TH_ACCENT,      /* checked fill, focused caret, links */
+    UIX_TH_CTRL_BG,     /* button/check strip background */
+    UIX_TH_CTRL_INK,    /* button label */
+    UIX_TH_CTRL_EDGE,   /* unchecked border / field border */
+    UIX_TH_COUNT
+};
 typedef struct Render {
     U32 profile;
     void (*clip)(int, int, int, int);
@@ -40,11 +58,23 @@ typedef struct Render {
     void (*ellipse)(void *, int, int, int, int, U32, int);
     void (*polygon)(void *, const Pt *, unsigned, U32);
     void (*surface)(int);
+    const U32 *theme; /* UIX_TH_* table or NULL for light defaults */
 } Render;
 typedef struct Controls {
     U32 profile;
     void (*icon)(void *, int, int, int, int, U32);
 } Controls;
+
+/* Shared control painters (uixctl.c): themed, geometry measured from the
+ * W10M reference captures. Any app (Settings mock, Edge, future ports)
+ * links or imports these instead of re-drawing buttons/checks/toggles. */
+void ctl_button(void *dc, const Render *r, int x, int y, int w, int h,
+                const char *label, int pressed);
+void ctl_checkbox(void *dc, const Render *r, int x, int y, int checked,
+                  const char *label);
+void ctl_toggle(void *dc, const Render *r, int x, int y, int on);
+void ctl_field(void *dc, const Render *r, int x, int y, int w, int h,
+               const char *text, const char *hint, int focused);
 typedef struct Chrome {
     U32 profile;
     void (*paint)(void *);
