@@ -1,0 +1,9 @@
+# search flow repro (light theme)
+tap 158 455
+char 116
+char 101
+char 115
+char 116
+shot sx-typing
+key 13
+shot sx-after-enter

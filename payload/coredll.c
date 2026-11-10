@@ -627,6 +627,26 @@ int FillRect(void *hdc, const NT_RECT *rect, void *brush)
     return 0;
 }
 
+/* DimRect: host-side scrims blend live framebuffer content toward black
+ * (level/255). The device kernel API has no framebuffer read-back slot,
+ * so the SH4 build approximates with a flat grey of the same luminance
+ * the blend produces over a white page (the common case). */
+int DimRect(void *hdc, const NT_RECT *rect, unsigned level)
+{
+    if (!hdc || !rect || level > 255)
+        return 0;
+    u32 v = 255u * (255u - level) / 255u;
+    u32 grey = rgb565((v << 16) | (v << 8) | v);
+    const void **a = ntapi();
+    if (a && a[9] && rect->left >= 0 && rect->top >= 0 && rect->right > rect->left &&
+        rect->bottom > rect->top) {
+        ((void (*)(u32, u32, u32, u32, u32))a[9])((u32)rect->left, (u32)rect->top, (u32)rect->right,
+                                                  (u32)rect->bottom, grey);
+        return 1;
+    }
+    return 0;
+}
+
 static int pen_x, pen_y;
 int MoveToEx(void *hdc, int x, int y, NT_POINT *previous)
 {

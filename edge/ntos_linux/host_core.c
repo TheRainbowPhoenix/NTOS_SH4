@@ -341,6 +341,34 @@ static MSABI int fill_rect(void *hdc, const Rect *r, HostBrush *b)
     return 1;
 }
 
+/* DimRect: blend the existing framebuffer content toward black by
+ * level/255 (menu scrims over live page content). Integer-exact so the
+ * windows/linux hosts stay byte-identical for the parity gate. */
+static MSABI int dim_rect(void *hdc, const Rect *r, unsigned level)
+{
+    (void)hdc;
+    if (!r)
+        return 0;
+    if (level > 255)
+        level = 255;
+    int x0 = r->left < 0 ? 0 : r->left;
+    int y0 = r->top < 0 ? 0 : r->top;
+    int x1 = r->right > NTOS_SCREEN_W ? NTOS_SCREEN_W : r->right;
+    int y1 = r->bottom > NTOS_SCREEN_H ? NTOS_SCREEN_H : r->bottom;
+    for (int y = y0; y < y1; ++y) {
+        U32 *row = &host_fb[y * NTOS_SCREEN_W];
+        for (int x = x0; x < x1; ++x) {
+            U32 c = row[x];
+            U32 rr = (c & 0xFF) * (255 - level) / 255;
+            U32 gg = ((c >> 8) & 0xFF) * (255 - level) / 255;
+            U32 bb = ((c >> 16) & 0xFF) * (255 - level) / 255;
+            row[x] = rr | (gg << 8) | (bb << 16);
+        }
+    }
+    fb_dirty_flag = 1;
+    return 1;
+}
+
 static MSABI int delete_object(void *obj)
 {
     free(obj);
@@ -715,6 +743,7 @@ const BuiltinExport host_builtins[] = {
     B2(DispatchMessageW, dispatch_message_w),
     B2(CreateSolidBrush, create_solid_brush),
     B2(FillRect, fill_rect),
+    B2(DimRect, dim_rect),
     B2(DeleteObject, delete_object),
     B2(BeginPaint, begin_paint),
     B2(EndPaint, end_paint),

@@ -19,7 +19,10 @@ static U32 kb_th(const Render *r, int slot, U32 fallback)
 }
 static void dock(int y)
 {
-    dock_y = clampi(y, 0, 40);
+    /* 48 lets the SIP ride above the light-theme system nav bar
+     * (SHELLCHROME owns y480-528, keyboard 269-480 like the
+     * fixes_1/test123_input.png reference). */
+    dock_y = clampi(y, 0, 64);
 }
 static unsigned kb_len(const char *s)
 {

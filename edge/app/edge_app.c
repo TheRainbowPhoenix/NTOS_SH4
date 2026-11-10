@@ -205,6 +205,8 @@ NT_IMPORT(U32, GetFileSize, (void *, U32 *))
 NT_DEFINE(GetFileSize)
 NT_IMPORT(int, SipShowIM, (U32))
 NT_DEFINE(SipShowIM)
+NT_IMPORT(int, DimRect, (void *, const Rect *, unsigned))
+NT_DEFINE(DimRect)
 NT_IMPORT(int, SipGetInfo, (SipInfo *))
 NT_DEFINE(SipGetInfo)
 NT_IMPORT(const W16 *, GetCommandLineW, (void))
@@ -367,6 +369,27 @@ static void fill(void *dc, int l, int t, int r, int b, U32 c)
 static void ifill(void *dc, int l, int t, int r, int b, unsigned c)
 {
     fill(dc, l, t, r, b, c);
+}
+
+/* Dim the already-painted content toward black (menu/address scrims).
+ * Hosts blend the live framebuffer (content shows through, refs
+ * fixes_1/addressbar_menu.png); older loaders and the SH4 device fall
+ * back to the flat #7F7F7F scrim of the classic captures. */
+static void dim_scrim(void *dc, int l, int t, int r, int b)
+{
+    Rect v;
+    v.left = l > clip_rect.left ? l : clip_rect.left;
+    v.top = t > clip_rect.top ? t : clip_rect.top;
+    v.right = r < clip_rect.right ? r : clip_rect.right;
+    v.bottom = b < clip_rect.bottom ? b : clip_rect.bottom;
+    if (!dc || v.left >= v.right || v.top >= v.bottom)
+        return;
+    if (__imp_DimRect) {
+        Rect rr = {l, t, r, b};
+        NT_CALL(DimRect, (dc, &rr, 128));
+    } else {
+        fill(dc, l, t, r, b, C_SCRIM);
+    }
 }
 
 static int isqrt_(int n)
