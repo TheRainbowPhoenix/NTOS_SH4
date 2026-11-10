@@ -374,3 +374,33 @@ Delivered as edge/ntos_win — the Win32 twin of the Linux host:
   exact CI flow (relocated wine, patched nls/wineserver paths): all 7
   winboot frames byte-identical, interactive session stays alive and
   records.
+
+## Session 7 (cont.) — find repaint fidelity, two-tone URL, tab-card icons
+
+The user's four chrome-nits batch, each verified by eye (vision model)
+against the fresh e2e shots after the fix:
+
+- **find-in-page highlight repaint** (markdown.dll + edge): new export
+  md_find_style(idx,&fh,&flags) returns the metrics of the op that starts
+  each match — the box now grows to the full line box (fh+4) and the text
+  is repainted in its own run: a bold 22px heading repaints as bold 22px,
+  greyed code lines as laid out. MDSmokeTest grew two checks for it
+  (0x103F = all six). VLM verdict on edge-mdfind.png: "renders at same
+  size/weight as page text, not clipped or offset".
+- **find bar typed text** was hardcoded black — theme ink now (white on
+  the dark bar, like the markup's FindText node).
+- **two-tone address URL**: registrable domain = last two labels —
+  "en." grey, "wikipedia.org" bright ink, path+query ("/wiki/Page") grey,
+  bare 2-label hosts stay all-bright. The old code split at the FIRST dot
+  and never painted the path.
+- **tab card headers** (light-tabs): favicon was 21px off the card edge
+  (VLM: icon x33 vs reference x22) — now 11px like the reference, title
+  6px behind the icon, X 4px from the card's right edge.
+
+Bottom-bar audit (navbar_audit.py/stripdump.py over all 44 CI shots +
+references): the per-screen bar variation is reference-true — dark
+browser = edge app bar full-bleed, light browser = toolbar raised 48px
+over the shared SHELLCHROME nav bar (the only bar painter, in edge AND
+settings), tab center = its own toolbar, hub/clear/readlist = empty black,
+SIP-up = keyboard through the strip. light-tabs now keeps its reference
+(tabs_menu.png) shape: raised toolbar + chrome bar below.

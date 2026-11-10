@@ -3483,6 +3483,8 @@ void md_paint(const MdHost *h, int sx, int sy, int vw, int vh)
 #define MD_FIND_MAX 24
 #define MD_FIND_TXT 44
 static char find_txt[MD_FIND_MAX][MD_FIND_TXT];
+static unsigned char find_fh[MD_FIND_MAX];
+static unsigned char find_ff[MD_FIND_MAX];
 static int find_txt_n;
 
 int md_find(const char *query, int *x, int *y, int *w, int cap)
@@ -3551,6 +3553,8 @@ int md_find(const char *query, int *x, int *y, int *w, int cap)
                     for (int k = 0; k < cp; ++k)
                         find_txt[n][k] = linebuf[q + k];
                     find_txt[n][cp] = 0;
+                    find_fh[n] = ops[start].fh;
+                    find_ff[n] = ops[start].f;
                 }
                 ++n;
                 q += ql - 1;
@@ -3569,6 +3573,20 @@ const MD_API char *md_find_text(int idx, int *len)
     if (len)
         *len = xlen(find_txt[idx]);
     return find_txt[idx];
+}
+
+/* the original run metrics of match idx: font height + MDTF_* flags of
+ * the op that starts the match, so the host repaint lands exactly on the
+ * page text (bold 22px headings repaint as bold 22px, not 14px) */
+int MD_API md_find_style(int idx, int *fh, int *flags)
+{
+    if (idx < 0 || idx >= find_txt_n || idx >= MD_FIND_MAX)
+        return 0;
+    if (fh)
+        *fh = find_fh[idx] ? find_fh[idx] : 14;
+    if (flags)
+        *flags = find_ff[idx];
+    return 1;
 }
 
 /* =============== link hit-test =============== */
@@ -3976,6 +3994,18 @@ MD_API int MDSmokeTest(void)
             if (mt && tl == 4 && mt[0] == 'b' && mt[3] == 'd')
                 ok |= 8; /* matched source text for the repaint */
         }
+        /* md_find_style: the md run "bold" sits inside **bold** so the
+         * repaint metrics must report the bold flag and the mapped fh */
+        int sfx[4], sfy[4], sfw[4], sfh = 0, sff = 0;
+        if (md_find("bold", sfx, sfy, sfw, 4) == 1 &&
+            md_find_style(0, &sfh, &sff) && sfh >= 9 && sfh <= 44 &&
+            (sff & MDTF_BOLD))
+            ok |= 0x10; /* run metrics for the highlight repaint */
+        /* and the plain "Some" run must NOT carry the bold flag */
+        int ph2 = 0, pf2 = 0;
+        if (md_find("Some", sfx, sfy, sfw, 4) == 1 &&
+            md_find_style(0, &ph2, &pf2) && !(pf2 & MDTF_BOLD))
+            ok |= 0x20;
     }
-    return 0x1000 | ok; /* 0x100F = all four */
+    return 0x1000 | ok; /* 0x103F = all six */
 }

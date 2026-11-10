@@ -114,6 +114,7 @@ NT_IMPORT(void, md_size, (int *, int *))
 NT_IMPORT(const char *, md_title, (int *))
 NT_IMPORT(int, md_find, (const char *, int *, int *, int *, int))
 NT_IMPORT(const char *, md_find_text, (int, int *))
+NT_IMPORT(int, md_find_style, (int, int *, int *))
 
 NT_IMPORT(int, md_link_at, (int, int, const char **, int *))
 NT_IMPORT(int, md_anchor_scroll, (int))
@@ -127,6 +128,7 @@ NT_DEFINE(md_size)
 NT_DEFINE(md_title)
 NT_DEFINE(md_find)
 NT_DEFINE(md_find_text)
+NT_DEFINE(md_find_style)
 
 NT_DEFINE(md_link_at)
 NT_DEFINE(md_anchor_scroll)
@@ -767,19 +769,24 @@ static void find_run(void)
 static void paint_find_highlights(void *dc, int clip_bottom)
 {
     /* no alpha blending on this display: draw the highlight box, then
-     * repaint the matched text on top (original case from the engine,
-     * falling back to the typed query) so matches stay readable */
+     * repaint the matched text on top in ITS OWN run metrics — the engine
+     * returns the op's font height + style flags per match (md_find_style),
+     * so a bold 22px heading repaints as bold 22px and a code line as it
+     * was laid out; the box grows to the full line box (fh + 4). */
     for (int i = 0; i < find_nmatch; ++i) {
+        int fh = 14, ff = 0;
+        NT_CALL(md_find_style, (i, &fh, &ff));
         int y = fm_y[i] - web_scroll_y;
         int x = fm_x[i] - web_scroll_x;
-        if (y + 14 > clip_bottom || y < 0)
+        if (y + fh + 4 > clip_bottom || y < 0)
             continue;
         U32 c = i == find_active ? RGB_(0xFF, 0x8C, 0x00) : RGB_(0xFF, 0xD7, 0x00);
-        fill(dc, x - 2, y, x + fm_w[i] + 2, y + 15, c);
+        fill(dc, x - 2, y, x + fm_w[i] + 2, y + fh + 4, c);
         const char *mt = NT_CALL(md_find_text, (i, 0));
         if (!mt)
             mt = find_query;
-        draw_text(dc, x, y + 2, mt, RGB_(0x00, 0x00, 0x00), 14, 0, 0);
+        draw_text(dc, x, y + 2, mt, RGB_(0x00, 0x00, 0x00), fh, 0,
+                  (ff & 1) /*MDTF_BOLD*/);
     }
 }
 
@@ -1330,21 +1337,50 @@ static void paint_address_url(void *dc)
         draw_text_clamp(dc, r.x, r.y, t->file, C_INK, 12, 126);
         return;
     }
+    /* Two-tone URL like the reference bar: the registrable domain (last
+     * two labels) is the strong ink; everything else is dimmed — a
+     * leading subdomain ("en." of en.wikipedia.org) AND the path/query
+     * ("/wiki/Page") render in C_MUT. A bare 2-label host stays all-ink.
+     * host = t->host (up to the first '/'); the tail of t->url past it
+     * is the path. */
     const char *h = t->host;
-    const char *dot = h;
-    while (*dot && *dot != '.')
-        ++dot;
-    if (*dot && dot[1]) {
+    int hl = 0;
+    while (h[hl])
+        ++hl;
+    int ld = -1; /* last dot */
+    for (int i = 0; i < hl; ++i)
+        if (h[i] == '.')
+            ld = i;
+    int pd = -1; /* dot before it, if any */
+    for (int i = 0; i < ld; ++i)
+        if (h[i] == '.')
+            pd = i;
+    int sub_len = (ld > 0 && pd >= 0) ? pd + 1 : 0; /* "en." incl. dot */
+    int dom_len = hl - sub_len;
+    int x_limit = r.x + 150; /* address field right edge (markup) */
+    int x = r.x;
+    if (sub_len) {
         char pre[24];
-        int n = (int)(dot - h) + 1; /* include the dot */
-        if (n > 23)
-            n = 23;
+        int n = sub_len > 23 ? 23 : sub_len;
         xcopy(pre, h, n);
         pre[n] = 0;
-        draw_text_clamp(dc, r.x, r.y, pre, C_MUT, 12, 60);
-        draw_text_clamp(dc, r.x + text_w(pre, 12), r.y, dot + 1, C_INK, 12, 130);
-    } else {
-        draw_text_clamp(dc, r.x, r.y, h, C_INK, 12, 126);
+        draw_text_clamp(dc, x, r.y, pre, C_MUT, 12, 40);
+        x += text_w(pre, 12);
+    }
+    {
+        char dom[40];
+        int n = dom_len > 39 ? 39 : dom_len;
+        xcopy(dom, h + sub_len, n);
+        dom[n] = 0;
+        draw_text_clamp(dc, x, r.y, dom, C_INK, 12, 110);
+        x += text_w(dom, 12);
+    }
+    /* path + query: everything in t->url past the host, dimmed like the
+     * subdomain (reference: en.wikipedia.org/some-page greys both the
+     * "en." and the "/some-page", the domain stays bright) */
+    if (t->url[hl] == '/' && x_limit - x > 8) {
+        const char *path = t->url + hl;
+        draw_text_clamp(dc, x, r.y, path, C_MUT, 12, x_limit - x);
     }
 }
 
@@ -1370,14 +1406,16 @@ static void paint_tab_cards(void *dc)
         if (cy > 420)
             break;
         Tab *t = &tabs[i];
-        /* header strip: #1F1F1F, 30px tall */
+        /* header strip: #1F1F1F, 30px tall. Reference tabs.png card0:
+         * favicon starts 12px from the card edge (card x~10, icon 22-34),
+         * title 6px after the icon, X ~4px from the right edge. */
         fill(dc, cx, cy, cx + 142, cy + 30, C_BAR);
         if (t->priv)
-            ic_draw(ifill, dc, cx + 21, cy + 9, 13, C_MUT, IC_INPRIVATE);
+            ic_draw(ifill, dc, cx + 11, cy + 9, 13, C_MUT, IC_INPRIVATE);
         else
-            ic_draw(ifill, dc, cx + 21, cy + 9, 13, C_MUT, IC_TABS);
-        draw_text_clamp(dc, cx + 42, cy + 10, t->title, C_TABTITLE, 11, 92);
-        ic_draw(ifill, dc, cx + 128, cy + 9, 12, C_CROSS, IC_CLOSE);
+            ic_draw(ifill, dc, cx + 11, cy + 9, 13, C_MUT, IC_TABS);
+        draw_text_clamp(dc, cx + 31, cy + 10, t->title, C_TABTITLE, 11, 92);
+        ic_draw(ifill, dc, cx + 124, cy + 9, 12, C_CROSS, IC_CLOSE);
         /* thumbnail: white for loaded pages, black for empty tabs */
         if (t->url[0])
             fill(dc, cx, cy + 30, cx + 142, cy + 146, C_PAGEBG);
@@ -1817,9 +1855,11 @@ static void paint_all(void *dc)
             if ((d = ux_find_doc(&ux, "FindOnPageBar"))) {
                 layout_doc(d, 0, 223 - 480, 320, 528);
                 paint_node(dc, d->root);
-                /* typed query + caret in the field */
+                /* typed query + caret in the field: theme ink (white on
+                 * the dark bar, black on the light one) like the markup's
+                 * FindText node (#FFFFFF -> #000000 in the light build) */
                 if (find_len) {
-                    draw_text(dc, 12, 240, find_query, RGB_(0x00, 0x00, 0x00), 14, 0, 0);
+                    draw_text(dc, 12, 240, find_query, C_INK, 14, 0, 0);
                     int cx = 12 + text_w(find_query, 14);
                     if (cx < 150)
                         fill(dc, cx + 2, 231, cx + 4, 259, C_BLUE);
@@ -1835,7 +1875,7 @@ static void paint_all(void *dc)
                     layout_doc(d, 0, 0, 320, 528);
                     paint_node(dc, d->root);
                     if (find_len)
-                        draw_text(dc, 12, 497, find_query, RGB_(0x00, 0x00, 0x00), 14, 0, 0);
+                        draw_text(dc, 12, 497, find_query, C_INK, 14, 0, 0);
                 }
             }
         }
@@ -1848,9 +1888,12 @@ static void paint_all(void *dc)
     } else if (mode == M_TABS || mode == M_TABSMENU) {
         if ((d = ux_find_doc(&ux, "TabCenterPage"))) {
             layout_doc(d, 0, chrome_yoff(), 320, 528);
-            /* doc first (black page, "Tabs" title, toolbar strip), then the
+            /* doc first (page, "Tabs" title, toolbar strip), then the
              * cards clipped to the content area: a 6th tab's row 2 stops at
-             * the toolbar like on the device (manytabs.png) */
+             * the toolbar like on the device (manytabs.png). Theme split is
+             * reference-true: dark tabs.png = the tab toolbar owns the full
+             * strip; light tabs_menu.png = toolbar raised 48px with the
+             * shared SHELLCHROME nav bar below it. */
             paint_node(dc, d->root);
             clip_set(0, 0, 320, 480 + chrome_yoff());
             paint_tab_cards(dc);
