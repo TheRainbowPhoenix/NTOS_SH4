@@ -1,2 +1,7 @@
+edge.dll
+edge.pdb
+edge.lib
+*.pdb
+*.lib
 edge-*.png
 tests/fs/fls0/
