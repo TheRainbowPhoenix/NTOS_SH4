@@ -145,3 +145,63 @@ _BlankPage, HomeButton toggle, ReadingView fonts/styles, Vault passwords...).
 - mquickjs evaluation for the chakra.dll stub; EdgeContent ord1 stub shape.
 - SH4 device build of the edge app (payload.ld + elf2ntx) once the loader
   side is wired into phone.mk flow.
+
+## 2026-11-10 — session 2: UI direction correction (dark theme, reference chrome)
+
+User feedback on session-1 POC: chakra is secondary (device has no FPU —
+stub only), the UI is the product and must match the real Edge mobile
+reference: dark theme, bottom address bar [tabs] | [reload] [lock+url]
+[reader] | [...], menu with 4 hub icons at the bottom + options list,
+tab center with 2-col grid + right-padded toolbar, Add-to-reading-list and
+Clear-browsing-data screens. Screenshots of session 1 were "all over the
+place" — root cause found and fixed this session (see below).
+
+### CI fixed: chakra.dll is a pure API-shape stub
+- CI broke on sandbox-local mquickjs path. chakra.dll is now GENERATED from
+  the real export table (tools/gen_chakra_stub.py -> 160 exports + smoke
+  test, all E_NOTIMPL except singleton handle plumbing). mquickjs variant
+  moved to chakra_mqjs.c, optional local target chakra-full.dll.
+
+### Ground-truth strings + activation map (edge/analysis/)
+- resources.pri has the en-US display-string blob @0x32c208: exact wording
+  for every menu item, settings row, clear-data checkbox, tabs context menu
+  (pri_display_strings.txt, EDGE_UI_STRINGS.md).
+- WinRT activation map per module (winrt_activation_map.txt): MicrosoftEdge.exe
+  activates 445 SpartanXAML/SpModel classes (pages + view models + converters);
+  eView registers SpModel.ViewModel.* factories; eModel serves SpartanCore.*.
+- AddressBarHighlightedTextBrush vs NonHighlightedTextBrush confirm the
+  two-tone URL rendering.
+
+### UI rebuild (edge/app/markup/ — 11 pages, all dark)
+SmallScreenPage (bottom bar per reference), ActionsMenu (7 options + 4 hub
+icons), TabCenterPage + TabsContextMenu (7 real options), HubPanel (4 pivots),
+AddressEditBoxPage (+dark SIP, suggestions), SettingsPage (sync toggle,
+rows with values/chevrons), ClearBrowsingDataPage (6 checkboxes, Clear,
+cloud/Bing links), AddToReadingList/AddToFavorites dialogs, FindOnPageBar.
+icons.[ch]: 20 MDL2-style outline glyphs, integer-only strokes.
+Mock engine: wikipedia article (title + TOC + link-blue segments), generic
+site page, dark NTP (4x2 top sites + news cards).
+
+### Two hard bugs found (the "all over the place" report)
+1. layout_doc accumulated Stack/List flow offsets in the REVERSE child
+   loop -> every list laid out bottom-up (menu rows inverted, hub/settings
+   scrambled). Fixed: two-pass (assign rects in doc order, then descend).
+2. v1 markup used absolute coords inside Buttons; children are
+   parent-relative (XAML Grid semantics) -> bar/toolbars painted offscreen
+   (y=972). All markup now uses relative child coords; right-aligned Text
+   uses x=0 + w=<right edge> + align=2.
+
+### e2e
+16 scripted frames with per-frame exact pixel expectations
+(tests/check_edge_shots.py): boot/address/wiki/menu/readlist/settings/clear
+(+toggled/toast)/hub x2/tabcenter x3/tabsmenu/final — all pass locally.
+CI runs the same via make -C edge/app clean all test.
+
+### New refs uploaded by user (refs/edge/, not yet analyzed)
+Microsoft.Windows.SystemSettings (3.7MB), FileExplorer (1MB), Cortana
+(27.9MB) — next targets for the uXAML "windows settings" story.
+
+### Next
+- SystemSettings package triage (pages, pri strings) -> uXAML settings app.
+- Compare against the user's reference screenshots when provided.
+- SH4 device build of the edge app; maybe SH4-targeted size audit.
