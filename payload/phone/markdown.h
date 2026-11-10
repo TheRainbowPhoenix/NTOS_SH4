@@ -1,4 +1,7 @@
-/* markdown.h — MARKDOWN.DLL: the shared web-document engine for NTOS.
+/* markdown.h — HTML.DLL: the shared HTML4/CSS1/Markdown document
+ * engine for NTOS (source file payload/phone/markdown.c; the host
+ * PE module builds as html.dll — "like chakra.dll", a plain engine
+ * library any app or test harness can load and drive).
  *
  * A tiny Markdown + HTML4 + CSS1-subset renderer in the Wine spirit:
  * no ported library, integer-only, static arenas, one pass per phase.

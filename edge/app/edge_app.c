@@ -69,7 +69,7 @@ static char find_query[40];
 static int find_len, find_sip, find_active, find_nmatch;
 static int fm_x[24], fm_y[24], fm_w[24];
 
-/* mdrender host hooks: file IO + renderer + svf + the chakra stub */
+/* HTML.DLL (MdHost) hooks: file IO + renderer + svf + the chakra stub */
 int md_read_file(const char *name, unsigned char *buf, int cap);
 U32 md_rgb(int r, int g, int b);
 void md_fill(void *dc, int l, int t, int r, int b, U32 c);
@@ -100,7 +100,7 @@ NT_DEFINE(render_SpGetThreadContext)
 NT_IMPORT(const EdgeKb *, UIXGetSchemaFactory, (void))
 NT_DEFINE(UIXGetSchemaFactory)
 
-/* MARKDOWN.DLL: the shared web-document engine (html4/css1/markdown core,
+/* HTML.DLL: the shared web-document engine (html4/css1/markdown core,
  * box-model layout with floats, find-in-page, reader mode). Edge hosts it
  * through an MdHost callback table; other apps can do the same. */
 #include "markdown.h"
@@ -662,7 +662,7 @@ __attribute__((dllexport)) int svf_SVFDrawTint(void *dc, const void *data,
     return SVFDrawTint(dc, data, length, x, y, w, h, tint);
 }
 
-/* ---- MARKDOWN.DLL host hooks ----
+/* ---- HTML.DLL host hooks ----
  * The engine calls back through this table; every painter funnels into
  * the same primitives the chrome uses (fill / draw_text / SVF / NT APIs). */
 int mdh_read_file(const char *name, unsigned char *buf, int cap)
@@ -750,7 +750,7 @@ static MdHost g_mdhost = {
     mdh_read_file, mdh_chakra,
 };
 
-/* web view state (MARKDOWN.DLL engine pages; kept theme/model-free) */
+/* web view state (HTML.DLL engine pages; kept theme/model-free) */
 static int web_kind;
 static int web_scroll_x, web_scroll_y;
 static int web_reader_on;
@@ -1281,7 +1281,7 @@ static void paint_page(void *dc)
         }
         return;
     }
-    /* engine pages: MARKDOWN.DLL paints the scrolled viewport. File
+    /* engine pages: HTML.DLL paints the scrolled viewport. File
      * activations from File Explorer (file://) route through the same
      * engine as mock-http pages. */
     if (web_kind) {
@@ -1567,7 +1567,7 @@ static void hist_add(const char *host, const char *title)
     ++hist_count;
 }
 
-/* ---- web view: the MARKDOWN.DLL engine serves pages ----
+/* ---- web view: the HTML.DLL engine serves pages ----
  * The POC is offline: the router pretends to be online by serving embedded
  * content for known sites (mock DNS) and reading fls0 files for file://
  * and .md/.html URLs. web_kind: 0 = procedural mock, 1 = engine page. */

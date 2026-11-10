@@ -26,7 +26,7 @@ Other apps
 ----------
 The exe is app-agnostic; any NTOS payload DLL set works, e.g.:
 
-  ntos_windows.exe markdown.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --fs fs
+  ntos_windows.exe html.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --fs fs
 
 Options
 -------
@@ -48,7 +48,7 @@ Where things come from
 ----------------------
   ntos_windows.exe  host (edge/ntos_win in the repo)
   edge.dll          Edge chrome + app (edge/app)
-  markdown.dll      shared web/md document engine (payload/phone/markdown.c)
+  html.dll          shared HTML4/CSS1/Markdown document engine (payload/phone/markdown.c)
   fingerkb.dll      shared soft-input panel (payload/phone/fingerkb.c)
   shellchrome.dll   shared shell nav bar (payload/phone/shellchrome.c)
   chakra.dll        JS API-shape stub (edge/app/chakra_stub.c)

@@ -49,9 +49,9 @@ test: all
 	rm -rf tests/fs/fls0 && mkdir -p tests/fs/fls0
 	cp files.uxaml tests/fs/fls0/files.uxaml
 	python3 tests/make_tree.py tests/fs/fls0
-	$(MAKE) -C $(EDGEAPP) ZIG=$(ZIG) edge.dll markdown.dll chakra.dll fingerkb.dll shellchrome.dll edge.uxaml
+	$(MAKE) -C $(EDGEAPP) ZIG=$(ZIG) edge.dll html.dll chakra.dll fingerkb.dll shellchrome.dll edge.uxaml
 	cp $(EDGEAPP)/edge.uxaml tests/fs/fls0/edge.uxaml
-	../../edge/ntos_linux/ntos_linux $(EDGEAPP)/markdown.dll $(EDGEAPP)/fingerkb.dll $(EDGEAPP)/shellchrome.dll \
+	../../edge/ntos_linux/ntos_linux $(EDGEAPP)/html.dll $(EDGEAPP)/fingerkb.dll $(EDGEAPP)/shellchrome.dll \
 	  $(EDGEAPP)/chakra.dll $(EDGEAPP)/edge.dll files.dll \
 	  --script tests/files.script --shot files --fs tests/fs 2>&1 | tee tests/e2e.log
 	python3 tests/check_files_shots.py files-*.png

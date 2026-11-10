@@ -1,4 +1,6 @@
-/* markdown.c — MARKDOWN.DLL: shared web-document engine for NTOS.
+/* markdown.c — HTML.DLL: the shared web-document engine for NTOS
+ * (source name kept: it renders Markdown just as well as HTML;
+ * the loadable module is built as html.dll — see edge/app/Makefile).
  *
  * A from-scratch "Netscape without JS" core for the 4 MB / no-FPU device:
  *   - HTML4-subset parser (implied closes, attrs, entities, <style>)
@@ -4187,7 +4189,7 @@ int md_anchor_scroll(int y)
 }
 
 /* diag entry: full ACID1 source; returns packed block/op/float counts */
-/* self-test entry (host: ntos_linux markdown.dll --entry MDSmokeTest).
+/* self-test entry (host: ntos_linux html.dll --entry MDSmokeTest).
  * Loads a markdown + an html source, lays out both, and returns a packed
  * pass code so CI catches engine regressions without any UI. */
 static int sm_text_w(const char *s, int len, int h)

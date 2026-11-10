@@ -43,14 +43,14 @@ package: all
 	rm -rf $(PKG) $(PKG_ZIP)
 	mkdir -p $(PKG)/fs/fls0
 	cp ntos_windows.exe $(PKG)/
-	cp $(APP)/markdown.dll $(APP)/fingerkb.dll $(APP)/shellchrome.dll \
+	cp $(APP)/html.dll $(APP)/fingerkb.dll $(APP)/shellchrome.dll \
 	$(APP)/chakra.dll $(APP)/edge.dll $(PKG)/
 	cp $(APP)/tests/assets/article.md $(APP)/tests/assets/logo.svf \
 	$(APP)/tests/assets/demo.md $(APP)/tests/assets/cool.svf $(PKG)/fs/fls0/
 	cp $(APP)/edge.uxaml $(APP)/edgelight.uxaml $(PKG)/fs/fls0/
 	{ printf '@echo off\r\n'; \
 	printf 'cd /d %%~dp0\r\n'; \
-	printf 'ntos_windows.exe markdown.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --fs fs --record session.script\r\n'; \
+	printf 'ntos_windows.exe html.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --fs fs --record session.script\r\n'; \
 	printf 'echo session.script + ntos-win.log + shot-*.png record what you did\r\n'; } > $(PKG)/run-edge.bat
 	cp README.txt $(PKG)/
 	python3 mkzip.py $(PKG_ZIP) $(PKG)
@@ -76,12 +76,12 @@ wine_setup:
 
 test: package wine_setup
 	rm -f lshot-*.png wshot-*.png
-	$(LINUX)/ntos_linux $(PKG)/markdown.dll $(PKG)/fingerkb.dll $(PKG)/shellchrome.dll \
+	$(LINUX)/ntos_linux $(PKG)/html.dll $(PKG)/fingerkb.dll $(PKG)/shellchrome.dll \
 	  $(PKG)/chakra.dll $(PKG)/edge.dll --fs $(PKG)/fs \
 	  --script tests/winboot.script --shot lshot
 	@if command -v wine64 >/dev/null 2>&1; then \
 	  env WINEPREFIX="$(WINEPREFIX_DIR)" wine64 $(CURDIR)/$(PKG)/ntos_windows.exe \
-	    $(CURDIR)/$(PKG)/markdown.dll $(CURDIR)/$(PKG)/fingerkb.dll $(CURDIR)/$(PKG)/shellchrome.dll \
+	    $(CURDIR)/$(PKG)/html.dll $(CURDIR)/$(PKG)/fingerkb.dll $(CURDIR)/$(PKG)/shellchrome.dll \
 	    $(CURDIR)/$(PKG)/chakra.dll $(CURDIR)/$(PKG)/edge.dll --fs $(CURDIR)/$(PKG)/fs \
 	    --script tests/winboot.script --shot wshot || exit 1; \
 	  python3 tests/wpar.py lshot wshot; \
