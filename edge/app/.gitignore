@@ -1,7 +1,8 @@
 edge.dll
 edge.pdb
-edge.lib
 *.pdb
 *.lib
 edge-*.png
+lcd-*.png
+chakra.dll
 tests/fs/fls0/
