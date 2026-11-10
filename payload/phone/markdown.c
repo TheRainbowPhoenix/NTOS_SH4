@@ -68,7 +68,7 @@ static int xisspace(int c)
 #define NBLK 200
 #define NINL 800
 #define NRULE 96
-#define NOPS 1500
+#define NOPS 2300
 #define NFLT 24
 #define NLNK 96
 #define NREF 24
@@ -1072,7 +1072,7 @@ static void ps_pop(HParser *ps)
 }
 static ISt ps_top(const HParser *ps)
 {
-    static const ISt zero;
+    static const ISt zero = {0, 0, 0, -1}; /* flags, color, fdelta, link */
     return ps->nist ? ps->ist[ps->nist - 1] : zero;
 }
 
@@ -3200,6 +3200,8 @@ int layout_inline(int bi, int cx, int cy, int cw)
         if (it->fdelta)
             fh = map_font(r->fs + it->fdelta);
         unsigned col = it->color ? it->color : r->fg;
+        if (it->link >= 0 && !it->color)
+            col = 0xAD4506; /* #0645AD link blue */
         int flags = it->flags;
         if (r->weight)
             flags |= MDTF_BOLD;
@@ -3672,10 +3674,15 @@ void md_layout(int view_w)
     md_debug_dump();
 #endif
 #ifdef MD_DEBUG2
-    for (int i = 0; i < nops && i < 50; ++i)
+    for (int i = 0; i < nops && i < 80; ++i) {
         if (ops[i].k == PO_FILL)
             fprintf(stderr, "[fill] %d,%d %dx%d c=%06x\n", ops[i].x,
                     ops[i].y, ops[i].w, ops[i].h, ops[i].c);
+        else if (ops[i].k == PO_TEXT)
+            fprintf(stderr, "[text] %d,%d fh=%d w=%d f=%d link=%d '%.*s'\n",
+                    ops[i].x, ops[i].y, ops[i].fh, ops[i].w, ops[i].f,
+                    ops[i].link, ops[i].len > 30 ? 30 : ops[i].len, ops[i].s);
+    }
 #endif
 #ifdef MD_DEBUG2
     for (int i = 0; i < ninl && i < 60; ++i) {

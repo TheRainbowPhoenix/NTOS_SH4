@@ -52,6 +52,8 @@ static void h_fill(void *dc, int l, int t, int r, int b, unsigned c)
         for (int x = l; x < r; ++x)
             px(x, y, c);
 }
+/* glyph rasterization copied 1:1 from edge_app.c draw_text1 so the
+ * test host is pixel-equivalent with the device renderer */
 static void h_text(void *dc, int x, int y, const char *s, int len,
                    unsigned c, int h, int flags)
 {
@@ -61,16 +63,25 @@ static void h_text(void *dc, int x, int y, const char *s, int len,
         int cx = x + pass;
         for (int i = 0; i < len; ++i) {
             int ch = (unsigned char)s[i];
-            if (ch < f->first || ch >= f->first + f->count) ch = '?';
+            if (ch < f->first || ch >= f->first + f->count)
+                ch = '?';
             const PhoneGlyph *g = &f->glyphs[ch - f->first];
-            const unsigned char *bits = f->bits + g->offset;
-            for (int row = 0; row < f->height; ++row) {
-                unsigned char b = bits[row * ((g->width + 7) / 8) + 0];
-                if (g->width > 8)
-                    b = bits[row * 2 + (row & 1)]; /* wide fallback */
-                for (int col = 0; col < g->width && col < 8; ++col)
-                    if (b & (0x80 >> col))
-                        px(cx + col, y + row, c);
+            unsigned stride = ((unsigned)g->width + 7u) >> 3;
+            for (int yy = 0; yy < f->height; ++yy) {
+                const unsigned char *row =
+                    &f->bits[g->offset + (unsigned)yy * stride];
+                int run = -1;
+                for (int xx = 0; xx <= g->width; ++xx) {
+                    int bit = xx < g->width &&
+                              ((row[(unsigned)xx >> 3] >> (xx & 7)) & 1u);
+                    if (bit && run < 0)
+                        run = xx;
+                    else if (!bit && run >= 0) {
+                        for (int q = x + run; q < x + xx; ++q)
+                            px(cx + q - x, y + yy, c);
+                        run = -1;
+                    }
+                }
             }
             cx += g->advance + 1;
         }
