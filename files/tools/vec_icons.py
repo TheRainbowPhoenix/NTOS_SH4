@@ -118,18 +118,26 @@ def icon_folder():
 
 
 def icon_file():
-    """Generic file page: white sheet, folded corner, grey rule lines."""
+    """Generic file page: white sheet, folded corner, grey rule lines.
+
+    The page shape is delimited by 1px PAGE_EDGE strokes on the left,
+    right and bottom (plus the top run up to the dog-ear) — on the white
+    list background the border is what makes the sheet read as a sheet.
+    NOTE: v.style(stroke=...) — the STROKE colour drives v.stroke(); a
+    positional v.style(PAGE_EDGE) would set the fill and silently draw
+    nothing (svf.c skips strokes when the style stroke is 0xffff).
+    """
     v = Vec()
     v.style(PAGE)
     v.poly(6, 1, 21, 1, 26, 6, 26, 31, 6, 31)
     v.style(PAGE_FOLD)
     v.poly(21, 1, 26, 6, 21, 6)
-    v.style(PAGE_EDGE)
-    v.stroke(6, 1, 21, 1, 1)
-    v.stroke(26, 6, 26, 31, 1)
-    v.stroke(6, 31, 26, 31, 1)
-    v.stroke(6, 1, 6, 31, 1)
-    v.style(PAGE_EDGE)
+    v.style(stroke=PAGE_EDGE)
+    v.stroke(6, 1, 21, 1, 1)      # top edge up to the fold
+    v.stroke(26, 6, 26, 31, 1)    # right
+    v.stroke(6, 31, 26, 31, 1)    # bottom
+    v.stroke(6, 1, 6, 31, 1)      # left
+    v.style(stroke=PAGE_EDGE)
     v.stroke(10, 12, 22, 12, 1)
     v.stroke(10, 17, 22, 17, 1)
     v.stroke(10, 22, 18, 22, 1)
@@ -143,7 +151,7 @@ def icon_doc():
     v.poly(6, 1, 21, 1, 26, 6, 26, 31, 6, 31)
     v.style(PAGE_FOLD)
     v.poly(21, 1, 26, 6, 21, 6)
-    v.style(PAGE_EDGE)
+    v.style(stroke=PAGE_EDGE)
     v.stroke(6, 1, 21, 1, 1)
     v.stroke(26, 6, 26, 31, 1)
     v.stroke(6, 31, 26, 31, 1)
@@ -172,7 +180,7 @@ def icon_image():
     v.poly(12, 18, 20, 10, 30, 18)
     v.style(GREEN)
     v.rect(2, 18, 30, 28)
-    v.style(PAGE_EDGE)
+    v.style(stroke=PAGE_EDGE)
     v.stroke(1, 4, 31, 4, 1)
     v.stroke(31, 4, 31, 29, 1)
     v.stroke(1, 29, 31, 29, 1)
@@ -204,8 +212,8 @@ def icon_video():
         v.rect(2, y, 5, y + 2)     # left sprockets
         v.rect(27, y, 30, y + 2)   # right sprockets
     v.style(FILM_D)
-    v.stroke(1, 6, 31, 6, 1)
-    v.stroke(1, 26, 31, 26, 1)
+    v.rect(1, 6, 31, 8)
+    v.rect(1, 24, 31, 26)
     return v.end()
 
 
@@ -216,7 +224,7 @@ def icon_html():
     v.poly(6, 1, 21, 1, 26, 6, 26, 31, 6, 31)
     v.style(PAGE_FOLD)
     v.poly(21, 1, 26, 6, 21, 6)
-    v.style(PAGE_EDGE)
+    v.style(stroke=PAGE_EDGE)
     v.stroke(6, 1, 21, 1, 1)
     v.stroke(26, 6, 26, 31, 1)
     v.stroke(6, 31, 26, 31, 1)

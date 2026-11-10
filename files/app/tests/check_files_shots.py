@@ -38,7 +38,7 @@ ACCENT = (0x00, 0x78, 0xD7)
 SEL = (0xCC, 0xE8, 0xFF)
 SCRIM = (0x7F, 0x7F, 0x7F)
 AMBER = (0xF5, 0xC2, 0x42)      # VEC folder front panel (reference tone)
-EDGE_BAR = (0x1F, 0x1F, 0x1F)   # edge address bar
+EDGE_BAR = (0xCE, 0xCF, 0xCE)   # edge light navbar (shellchrome NAV_BG)
 
 # the label strip under the app-bar glyphs (y518..523) must be pure chrome
 # when the bar is collapsed: icons only, labels hidden by default
