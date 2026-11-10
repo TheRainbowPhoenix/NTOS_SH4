@@ -909,7 +909,8 @@ void dec_to_string_buf(Dec a, char *buf, int bufsize)
 /* =====================================================================
  * engine state (standard + scientific)
  * ===================================================================== */
-enum { OP_NONE = 0, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD, OP_POW, OP_YROOT };
+enum { OP_NONE = 0, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD, OP_POW, OP_YROOT,
+       OP_AND, OP_OR, OP_XOR, OP_LSH, OP_RSH };
 
 enum { ANG_DEG = 0, ANG_RAD, ANG_GRAD };
 
@@ -929,6 +930,10 @@ typedef struct {
     int second;         /* 2nd function toggle                   */
     int hyp;            /* HYP hyperbolic toggle                 */
     int fe;             /* F-E fixed-exponent display toggle     */
+    /* programmer */
+    int prog_base;      /* 0 HEX 1 DEC 2 OCT 3 BIN (active)      */
+    int prog_qword;     /* 0 QWORD 1 DWORD 2 WORD 3 BYTE         */
+    int prog_bitview;   /* bit-toggle keyboard instead of keypad */
     /* paren stack */
     struct {
         Dec acc;
@@ -964,6 +969,9 @@ static void engine_init(void)
     calc_clear_all();
     g.angle_mode = ANG_DEG;
     g.second = 0;
+    g.prog_base = 1; /* DEC active by default (capture) */
+    g.prog_qword = 0;
+    g.prog_bitview = 0;
 }
 
 /* ---- entry handling ---- */
@@ -1132,6 +1140,11 @@ static const char *op_token(int op)
     case OP_DIV: return " / ";
     case OP_MOD: return " % ";
     case OP_POW: return " ^ ";
+    case OP_AND: return " And ";
+    case OP_OR: return " Or ";
+    case OP_XOR: return " Xor ";
+    case OP_LSH: return " Lsh ";
+    case OP_RSH: return " Rsh ";
     default: return "";
     }
 }
@@ -1174,6 +1187,21 @@ static Dec apply_op(int op, Dec a, Dec b, int *err)
         ip = dec_trim(ip, DECSIG);
         return dec_add2(a, dec_neg(dec_mul(ip, b)));
     }
+    case OP_AND:
+        return dec_i((a.m & b.m));
+    case OP_OR:
+        return dec_i((a.m | b.m));
+    case OP_XOR:
+        return dec_i((a.m ^ b.m));
+    case OP_LSH: {
+        if (b.m < 0 || b.m > 63)
+            return dec_i(0);
+        return dec_i((long long)((unsigned long long)a.m << b.m));
+    }
+    case OP_RSH:
+        if (b.m < 0 || b.m > 63)
+            return dec_i(0);
+        return dec_i(a.m >> b.m);
     case OP_POW: return dec_pow(a, b);
     case OP_YROOT: {
         if (dec_is_zero(b))
@@ -2292,7 +2320,7 @@ __attribute__((dllexport)) const CalcRender *render_SpGetThreadContext(void)
 }
 
 /* ---- app modes / sheets ---- */
-enum { M_STD = 0, M_SCI, M_CONV, M_ABOUT };
+enum { M_STD = 0, M_SCI, M_PROG, M_CONV, M_ABOUT };
 enum { SH_NONE = 0, SH_NAV, SH_HIST, SH_MEM, SH_UNITS };
 
 static int mode = M_STD;
@@ -2689,9 +2717,10 @@ static void paint_nav(void *dc)
     fi_draw(ifill, dc, 14, 36, 20, C_INK, FI_HAMBURGER);
     draw_text(dc, 60, 36, "CALCULATOR", C_INK, 14, 0, 1);
     y += 32;
-    static const char *calc_modes[] = { "Standard", "Scientific" };
-    for (int i = 0; i < 2; ++i) {
-        int sel = (i == 0 && mode == M_STD) || (i == 1 && mode == M_SCI);
+    static const char *calc_modes[] = { "Standard", "Scientific", "Programmer" };
+    for (int i = 0; i < 3; ++i) {
+        int sel = (i == 0 && mode == M_STD) || (i == 1 && mode == M_SCI) ||
+                  (i == 2 && mode == M_PROG);
         if (sel)
             fill(dc, 0, y, NAV_W, y + 32, C_SEL);
         draw_text(dc, 48, y + 9, calc_modes[i], C_INK, 15, 0, 0);
@@ -2792,11 +2821,280 @@ static void paint_units(void *dc)
     clip_set(0, 0, 320, 528);
 }
 
+
+/* ================= programmer mode ================= */
+static const int prog_widths[4] = {64, 32, 16, 8};
+static const char *prog_wnames[4] = {"QWORD", "DWORD", "WORD", "BYTE"};
+
+static long long prog_mask(void)
+{
+    return prog_widths[g.prog_qword] == 64
+               ? -1LL
+               : (1LL << prog_widths[g.prog_qword]) - 1;
+}
+
+static long long prog_val(void)
+{
+    /* the live entry parsed in the active base, else the display */
+    if (g.entry_active && g.entry[0]) {
+        long long v = 0;
+        int digits = 0;
+        for (const char *q = g.entry; *q; ++q) {
+            char c = *q;
+            int d;
+            if (c >= '0' && c <= '9')
+                d = c - '0';
+            else if (c >= 'A' && c <= 'F')
+                d = 10 + c - 'A';
+            else
+                continue;
+            if (digits < 18) {
+                v = (v << 4) + d;
+                ++digits;
+            }
+        }
+        return v & prog_mask();
+    }
+    return g.display.m & prog_mask();
+}
+
+static void prog_set(long long v)
+{
+    v &= prog_mask();
+    g.entry_active = 0;
+    g.entry[0] = 0;
+    g.err = 0;
+    g.display.m = v;
+    g.display.e = 0;
+}
+
+static int prog_digit_ok(char c)
+{
+    int b = g.prog_base;
+    if (c >= '0' && c <= '9') {
+        int v = c - '0';
+        if (b == 3)
+            return v <= 1;          /* BIN */
+        if (b == 2)
+            return v <= 7;          /* OCT */
+        return 1;
+    }
+    if (c >= 'A' && c <= 'F')
+        return b == 0;              /* letters only in HEX */
+    return 0;
+}
+
+/* format v in the given base; BIN gets 4-bit groups */
+static void prog_fmt(long long v, int base, char *out, int cap)
+{
+    static const char hex[] = "0123456789ABCDEF";
+    if (base == 1) {
+        /* decimal with grouping */
+        unsigned long long u = v < 0 ? -(unsigned long long)v : (unsigned long long)v;
+        char tmp[24];
+        int n = 0;
+        do {
+            tmp[n++] = '0' + (int)(u % 10);
+            u /= 10;
+        } while (u);
+        int o = 0;
+        if (v < 0 && o < cap - 1)
+            out[o++] = '-';
+        for (int i = n - 1; i >= 0; --i) {
+            if (o < cap - 1)
+                out[o++] = tmp[i];
+            if ((i % 3) == 0 && i > 0 && o < cap - 1)
+                out[o++] = ',';
+        }
+        out[o] = 0;
+        return;
+    }
+    unsigned long long u = (unsigned long long)v;
+    int radix = base == 0 ? 16 : base == 2 ? 8 : 2;
+    char tmp[80];
+    int n = 0;
+    do {
+        tmp[n++] = hex[(int)(u % (unsigned)radix)];
+        u /= (unsigned)radix;
+    } while (u);
+    if (base == 3)
+        while (n % 4)
+            tmp[n++] = '0'; /* BIN lines fill whole nibbles */
+    int o = 0;
+    for (int i = n - 1; i >= 0; --i) {
+        if (o < cap - 1)
+            out[o++] = tmp[i];
+        if (base == 3 && (i % 4) == 0 && i > 0 && o < cap - 1)
+            out[o++] = ' ';
+    }
+    out[o] = 0;
+}
+
+/* nibble count that holds v (>=1) — BIN/OCT/HEX trim leading zeros */
+static int prog_nibbles(long long v)
+{
+    unsigned long long u = (unsigned long long)v;
+    int n = 1;
+    while (u >>= 4)
+        ++n;
+    return n;
+}
+
+static void prog_bit_toggle(int bit)
+{
+    long long v = prog_val();
+    v ^= (1LL << bit);
+    prog_set(v);
+}
+
+/* ---- programmer page painting (display, base lines, pivot, keypad) ---- */
+static void prog_paint_base_lines(void *dc)
+{
+    long long v = prog_val();
+    static const char *names[4] = {"HEX", "DEC", "OCT", "BIN"};
+    char buf[80];
+    for (int i = 0; i < 4; ++i) {
+        int y = 129 + 23 * i;
+        U32 col = i == g.prog_base ? C_ACC : C_MUT;
+        draw_text(dc, 13, y, names[i], col, 12, 0, 0);
+        if (i == 1)
+            prog_fmt(v, 1, buf, sizeof(buf));
+        else
+            prog_fmt(v, i, buf, sizeof(buf));
+        draw_text(dc, 44, y, buf, col, 12, 0, 0);
+    }
+}
+
+static void prog_paint_keypad(void *dc)
+{
+    /* R1..R5 live labels (disabled keys drop to #B5B2B5) */
+    int b = g.prog_base;
+    U32 on = C_INK, off = C_DIS;
+    int af = b == 0;   /* A-F: hex only        */
+    int d89 = b == 0 || b == 1;
+    int d27 = b != 3;
+    /* R1 (y300): 2nd Mod CE C back div */
+    fi_draw(ifill, dc, 20, 296, 13, g.second ? C_ACC : C_MUT, FI_UP);
+    draw_text(dc, 80, 300, "Mod", on, 16, 1, 0);
+    draw_text(dc, 133, 300, "CE", on, 16, 1, 0);
+    draw_text(dc, 187, 300, "C", on, 16, 1, 0);
+    ci_draw(ifill, dc, 232, 300, 17, on, CI_BACKSPACE);
+    ci_draw(ifill, dc, 286, 300, 15, on, CI_DIVIDE);
+    /* R2 (y339): A B 7 8 9 x */
+    draw_text(dc, 26, 339, "A", af ? on : off, 16, 1, 0);
+    draw_text(dc, 80, 339, "B", af ? on : off, 16, 1, 0);
+    draw_text(dc, 133, 339, "7", d27 ? on : off, 16, 1, 0);
+    draw_text(dc, 187, 339, "8", d89 ? on : off, 16, 1, 0);
+    draw_text(dc, 240, 339, "9", d89 ? on : off, 16, 1, 0);
+    ci_draw(ifill, dc, 286, 340, 15, on, CI_TIMES);
+    /* R3 (y377): C D 4 5 6 - */
+    draw_text(dc, 26, 377, "C", af ? on : off, 16, 1, 0);
+    draw_text(dc, 80, 377, "D", af ? on : off, 16, 1, 0);
+    draw_text(dc, 133, 377, "4", d27 ? on : off, 16, 1, 0);
+    draw_text(dc, 187, 377, "5", d27 ? on : off, 16, 1, 0);
+    draw_text(dc, 240, 377, "6", d27 ? on : off, 16, 1, 0);
+    ci_draw(ifill, dc, 286, 378, 15, on, CI_MINUS);
+    /* R4 (y416): E F 1 2 3 + */
+    draw_text(dc, 26, 416, "E", af ? on : off, 16, 1, 0);
+    draw_text(dc, 80, 416, "F", af ? on : off, 16, 1, 0);
+    draw_text(dc, 133, 416, "1", on, 16, 1, 0);
+    draw_text(dc, 187, 416, "2", d27 ? on : off, 16, 1, 0);
+    draw_text(dc, 240, 416, "3", d27 ? on : off, 16, 1, 0);
+    ci_draw(ifill, dc, 286, 417, 15, on, CI_PLUS);
+    /* R5 (y453): ( ) neg 0 . = */
+    draw_text(dc, 26, 453, "(", on, 16, 1, 0);
+    draw_text(dc, 80, 453, ")", on, 16, 1, 0);
+    ci_draw(ifill, dc, 132, 454, 15, on, CI_NEGATE);
+    draw_text(dc, 187, 453, "0", on, 16, 1, 0);
+    draw_text(dc, 240, 453, ".", off, 16, 1, 0);
+    ci_draw(ifill, dc, 286, 454, 15, on, CI_EQUAL);
+}
+
+static void prog_paint_bitview(void *dc)
+{
+    /* 16 nibble cells in a 4x4 arrangement, per the bit-toggle capture:
+     * each cell = 4 bit digits (16px) over its lowest-position label */
+    long long v = prog_val();
+    static const int cellx[4] = {15, 92, 169, 246};
+    char lab[8];
+    for (int r = 0; r < 4; ++r) {
+        for (int c = 0; c < 4; ++c) {
+            int n = r * 4 + c;          /* nibble from the top */
+            int low = 60 - 4 * n;       /* its lowest bit       */
+            int y = 272 + 57 * r;
+            for (int d = 0; d < 4; ++d) {
+                int bit = 63 - 4 * n - d;
+                int set = (int)((v >> bit) & 1);
+                char dig[2] = {(char)('0' + set), 0};
+                draw_text(dc, cellx[c] + 4 + 14 * d, y, dig,
+                          set ? C_ACC : C_MUT, 16, 0, 0);
+            }
+            /* position label under the nibble */
+            int o = 0;
+            if (low >= 10)
+                lab[o++] = '0' + low / 10;
+            lab[o++] = '0' + low % 10;
+            lab[o] = 0;
+            draw_text(dc, cellx[c] + 4, 296 + 57 * r, lab, C_MUT, 10, 0, 0);
+        }
+    }
+}
+
+static int prog_bit_hit(int x, int y)
+{
+    static const int cellx[4] = {15, 92, 169, 246};
+    for (int r = 0; r < 4; ++r) {
+        if (y >= 266 + 57 * r && y < 266 + 57 * r + 42) {
+            for (int c = 0; c < 4; ++c) {
+                if (x >= cellx[c] - 4 && x < cellx[c] + 60) {
+                    int d = (x - (cellx[c] - 4)) / 15;
+                    if (d > 3)
+                        d = 3;
+                    prog_bit_toggle(63 - 4 * (r * 4 + c) - d);
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+static void paint_prog(void *dc)
+{
+    const UxDoc *d = ux_find_doc(&ux, "ProgPage");
+    if (!d)
+        return;
+    layout_doc(d, 0, 0, 320, 528);
+    paint_node(dc, d->root);
+    /* big value in the active base (28px right to x306, y90) */
+    char buf[96];
+    prog_fmt(prog_val(), g.prog_base, buf, sizeof(buf));
+    draw_result(dc, 306, 90, 280, 28, buf, C_INK);
+    prog_paint_base_lines(dc);
+    /* pivot row: bit-toggle dots (9), QWORD, MS, M+ */
+    U32 bic = g.prog_bitview ? C_ACC : C_MUT;
+    for (int r = 0; r < 3; ++r)
+        for (int c = 0; c < 3; ++c)
+            fill(dc, 22 + 5 * c, 227 + 5 * r, 24 + 5 * c, 231 + 5 * r, bic);
+    if (g.prog_bitview)
+        fill(dc, 20, 244, 40, 245, C_ACC); /* selected underline */
+    draw_text(dc, 137, 227, prog_wnames[g.prog_qword], C_ACC, 14, 0, 0);
+    int have = mem_count > 0;
+    draw_text(dc, 232, 229, "MS", have ? C_MUT : C_DIS, 12, 0, 0);
+    draw_text(dc, 286, 229, "M+", have ? C_MUT : C_DIS, 12, 0, 0);
+    /* keypad or bit grid */
+    if (g.prog_bitview)
+        prog_paint_bitview(dc);
+    else
+        prog_paint_keypad(dc);
+}
+
 static void paint_all(void *dc)
 {
     switch (mode) {
     case M_SCI: paint_sci(dc); break;
     case M_CONV: paint_conv(dc); break;
+    case M_PROG: paint_prog(dc); break;
     case M_ABOUT: paint_about(dc); break;
     default: paint_std(dc); break;
     }
@@ -2823,6 +3121,20 @@ static void push_history(void)
 
 static void do_digit(char c)
 {
+    if (mode == M_PROG) {
+        if (!prog_digit_ok(c))
+            return;
+        int len = 0;
+        while (g.entry[len] && len < 18)
+            ++len;
+        if (len < 18) {
+            g.entry[len++] = c;
+            g.entry[len] = 0;
+            g.entry_active = 1;
+            g.err = 0;
+        }
+        return;
+    }
     if (mode == M_CONV) {
         int len = 0;
         while (conv_entry[len])
@@ -2863,6 +3175,7 @@ static void conv_backspace(void)
     if (len)
         conv_entry[len - 1] = 0;
 }
+
 
 static void std_command(const char *cmd)
 {
@@ -3002,6 +3315,43 @@ static void std_command(const char *cmd)
         op_dms();
     } else if (xeq(cmd, "fn:deg")) {
         op_deg();
+    } else if (xeq(cmd, "op:lsh")) {
+        binary_op(g.second ? OP_RSH : OP_LSH);
+        if (g.second) { /* 2nd on Lsh = RoL */ }
+    } else if (xeq(cmd, "op:rsh")) {
+        binary_op(g.second ? OP_LSH : OP_RSH);
+    } else if (xeq(cmd, "op:rol")) {
+        binary_op(OP_LSH);
+    } else if (xeq(cmd, "op:ror")) {
+        binary_op(OP_RSH);
+    } else if (xeq(cmd, "op:and")) {
+        binary_op(OP_AND);
+    } else if (xeq(cmd, "op:or")) {
+        binary_op(OP_OR);
+    } else if (xeq(cmd, "op:xor")) {
+        binary_op(OP_XOR);
+    } else if (xeq(cmd, "op:not")) {
+        if (mode == M_PROG)
+            prog_set(~prog_val());
+    } else if (xeq(cmd, "base:hex") || xeq(cmd, "base:dec") ||
+               xeq(cmd, "base:oct") || xeq(cmd, "base:bin")) {
+        if (mode == M_PROG) {
+            g.prog_base = xeq(cmd, "base:hex") ? 0
+                         : xeq(cmd, "base:dec") ? 1
+                         : xeq(cmd, "base:oct") ? 2 : 3;
+        }
+    } else if (xeq(cmd, "prog:qword")) {
+        if (mode == M_PROG) {
+            g.prog_qword = (g.prog_qword + 1) & 3;
+            prog_set(prog_val());
+        }
+    } else if (xeq(cmd, "prog:bits")) {
+        if (mode == M_PROG)
+            g.prog_bitview = !g.prog_bitview;
+    } else if (xeq(cmd, "prog:dot")) {
+        /* the decimal point is always disabled in programmer mode */
+    } else if (cmd[0] == 'h' && cmd[1] == 'x' && cmd[2] == ':') {
+        do_digit(cmd[3]);
     } else if (xeq(cmd, "second")) {
         g.second = !g.second;
     } else if (xeq(cmd, "hyp")) {
@@ -3068,9 +3418,10 @@ static int nav_tap(int x, int y)
         return 1;
     }
     int ly = y + nav_scroll;
-    if (ly >= 56 && ly < 120) { /* Standard / Scientific rows */
-        mode = ly < 88 ? M_STD : M_SCI;
+    if (ly >= 56 && ly < 152) { /* Standard / Scientific / Programmer rows */
+        mode = ly < 88 ? M_STD : ly < 120 ? M_SCI : M_PROG;
         engine_init();
+        g.prog_bitview = 0;
         sheet = SH_NONE;
         return 1;
     }
@@ -3079,8 +3430,8 @@ static int nav_tap(int x, int y)
         sheet = SH_NONE;
         return 1;
     }
-    if (ly >= 120 && ly < 152 + CAT_COUNT * 32 && ly < 440) { /* CONVERTER rows */
-        int i = (ly - 152) / 32;
+    if (ly >= 184 && ly < 184 + CAT_COUNT * 32 && ly < 440) { /* CONVERTER rows */
+        int i = (ly - 184) / 32;
         if (i >= 0 && i < CAT_COUNT) {
             conv_cat = i;
             conv_u1 = 0;
@@ -3215,7 +3566,12 @@ static void process_tap(int x, int y)
 
     const char *doc = mode == M_SCI ? "SciPage"
                      : mode == M_CONV ? "ConvPage"
+                     : mode == M_PROG ? "ProgPage"
                      : mode == M_ABOUT ? "AboutPage" : "StdPage";
+    if (mode == M_PROG && g.prog_bitview && y >= 248) {
+        prog_bit_hit(x, y); /* the bit grid replaces the keypad */
+        return;
+    }
     const UxDoc *d = ux_find_doc(&ux, doc);
     if (!d)
         return;
@@ -3367,8 +3723,8 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
                 if (hist_scroll < 0) hist_scroll = 0;
                 if (mem_scroll < 0) mem_scroll = 0;
                 if (units_scroll < 0) units_scroll = 0;
-                if (nav_scroll > 230)
-                    nav_scroll = 230;
+                if (nav_scroll > 128) /* last category row reaches the About pin */
+                    nav_scroll = 128;
                 drag_y = y;
             }
         }

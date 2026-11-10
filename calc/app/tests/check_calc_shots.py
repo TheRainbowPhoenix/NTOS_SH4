@@ -81,6 +81,7 @@ def check(path):
         "calc-boot.png", "calc-navpane.png")) and not sheet_frame
     sci = name.startswith("calc-sci-")
     conv = name.startswith("calc-conv-")
+    prog = name.startswith("calc-prog-")
 
     if std and name != "calc-navpane.png":
         want(near(px(data, w, 160, 40), WHITE, 8), "display area white")
@@ -159,6 +160,7 @@ def check(path):
              "no scrim: page visible right of pane")
         want(ink_at(data, w, 60, 120, 36, 47, 140) >= 3, "pane title")
         want(ink_at(data, w, 48, 100, 64, 76, 150) >= 3, "Standard row")
+        want(ink_at(data, w, 48, 110, 120, 137, 150) >= 3, "Programmer row")
     elif name == "calc-sci-boot.png":
         want(ink_at(data, w, 285, 308, 91, 112) >= 5, "sci result zero")
     elif name == "calc-sci-sin30.png":
@@ -194,6 +196,58 @@ def check(path):
         want(col_at(data, w, 12, 100, 181, 195, ACC, 40, 4), "Terms link")
         want(near(px(data, w, 60, 275), (181, 178, 181), 24),
              "feedback button fill")
+    if prog and name not in ("calc-prog-bits.png",):
+        want(near(px(data, w, 160, 40), WHITE, 8), "prog display white")
+        want(near(px(data, w, 160, 260), PAGE, 10) or
+             near(px(data, w, 160, 260), WHITE, 8), "prog keypad bands")
+        want(near(px(data, w, 60, 230), WHITE, 8), "pivot row white")
+        def linehit(y0, y1):
+            n = 0
+            for yy in range(y0, y1):
+                for xx in range(12, 42):
+                    c = px(data, w, xx, yy)
+                    if c[0] < 200 and c[1] < 200:
+                        n += 1
+            return n
+        want(linehit(129, 140) >= 3, "HEX line label")
+        want(linehit(152, 163) >= 3, "DEC line label")
+        want(linehit(198, 209) >= 3, "BIN line label")
+        want(ink_at(data, w, 20, 36, 36, 48, 150) >= 4, "PROGRAMMER title")
+    if prog and name not in ("calc-prog-bits.png",):
+        want(ink_at(data, w, 20, 34, 255, 267, 150) >= 3, "Lsh label")
+        want(ink_at(data, w, 280, 300, 255, 267, 150) >= 3, "And label")
+    if name == "calc-prog-boot.png":
+        want(ink_at(data, w, 270, 308, 90, 112) >= 5, "prog result zero")
+        want(col_at(data, w, 12, 70, 147, 158, ACC, 40, 4),
+             "DEC line active (accent)")
+        want(col_at(data, w, 20, 34, 339, 351, (181, 178, 181), 24, 3),
+             "A key disabled outside HEX")
+        want(ink_at(data, w, 180, 196, 339, 351, 120) >= 3, "8 key enabled")
+        want(ink_at(data, w, 130, 150, 380, 392, 150) >= 3, "Mod label")
+    elif name == "calc-prog-42.png":
+        want(ink_at(data, w, 240, 308, 90, 112) >= 8, "prog result 42")
+        want(ink_at(data, w, 42, 80, 129, 140, 150) >= 3, "HEX 2A value")
+        want(ink_at(data, w, 42, 110, 198, 209, 150) >= 6, "BIN grouped value")
+    elif name == "calc-prog-hex.png":
+        want(ink_at(data, w, 250, 308, 90, 112) >= 8, "big value 2A")
+        want(col_at(data, w, 12, 70, 129, 140, ACC, 40, 4),
+             "HEX line active (accent)")
+        want(ink_at(data, w, 20, 34, 339, 351, 150) >= 3, "A key enabled in HEX")
+    elif name == "calc-prog-bits.png":
+        want(col_at(data, w, 20, 40, 225, 245, ACC, 40, 6),
+             "bit dots icon (accent when active)")
+        want(col_at(data, w, 245, 300, 437, 479, ACC, 40, 6),
+             "bit grid: set bits are blue")
+        want(ink_at(data, w, 245, 300, 437, 455, 200) >= 8,
+             "bit grid digits present")
+    elif name == "calc-prog-bitflip.png":
+        want(ink_at(data, w, 250, 308, 90, 112) >= 8, "big value 46")
+        want(col_at(data, w, 42, 80, 129, 140, ACC, 40, 3) or
+             ink_at(data, w, 42, 80, 129, 140, 150) >= 3, "HEX 2E value")
+    elif name == "calc-prog-lsh.png":
+        want(ink_at(data, w, 240, 308, 90, 112) >= 8, "5 Lsh 2 = 20")
+    elif name == "calc-prog-not.png":
+        want(ink_at(data, w, 200, 308, 90, 112) >= 8, "Not 20 = -21")
     elif name == "calc-final.png":
         want(near(px(data, w, 160, 300), WHITE, 8), "final: about page")
         want(ink_at(data, w, 12, 116, 64, 83) >= 6, "final: Calculator title")

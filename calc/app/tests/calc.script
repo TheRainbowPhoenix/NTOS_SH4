@@ -12,8 +12,9 @@
 #   y204-228 (unit buttons open the picker); keypad y280-480, 3 cols
 #   (c69/160/251): [~ CE back] y300, 789 y340, 456 y380, 123 y420,
 #   [~ 0 .] y460. Picker rows from y118 at 36px pitch (scrollable).
-# NavPane: pane x0-256; Standard y72, Scientific y104, Volume y168,
-#   Length y200, Temperature y264; About pinned y464.
+# NavPane (3 calc modes): Standard y72, Scientific y104, Programmer y136;
+#   CONVERTER from ly184: Volume y200, Length y232, Temperature y296;
+#   About pinned y464.
 shot boot
 # ---- standard: 12 + 3 x 4 = 60
 tap 40 408
@@ -110,7 +111,7 @@ tap 32 376
 shot sci-factorial
 # ---- nav -> Converter (Volume): Liters -> Gallons (US), type 2
 tap 24 48
-tap 100 168
+tap 100 200
 shot conv-volume
 # side 1 picker: choose Liters (row 2)
 tap 100 136
@@ -125,7 +126,7 @@ tap 160 420
 shot conv-volume2
 # ---- nav -> Length (Meters -> Feet), type 3
 tap 24 48
-tap 100 200
+tap 100 232
 tap 100 136
 tap 100 280
 tap 100 216
@@ -134,11 +135,43 @@ tap 251 420
 shot conv-length
 # ---- nav -> Temperature (C -> F), type 100 -> 212
 tap 24 48
-tap 100 264
+tap 100 296
 tap 69 420
 tap 160 460
 tap 160 460
 shot conv-temp
+# ---- nav -> Programmer: 42 across bases, bit view, bitwise ops
+# prog keypad: 6 cols c26/80/133/187/240/293; R0 y248-288 (Lsh Rsh Or Xor
+# Not And), R1 y288 (2nd Mod CE C back div), R2 y339 (A B 7 8 9 x),
+# R3 y377 (C D 4 5 6 -), R4 y416 (E F 1 2 3 +), R5 y453 (( ) neg 0 . =).
+# base lines y124-216 (HEX 124, DEC 147, OCT 170, BIN 193); pivot row
+# y222-248 (bit dots x14-50, QWORD x128-194, MS x226, M+ x278).
+tap 24 48
+tap 100 136
+shot prog-boot
+# type 42 =
+tap 133 384
+tap 187 423
+tap 293 462
+shot prog-42
+# switch the active base to HEX
+tap 100 135
+shot prog-hex
+# open the bit-toggle keyboard and flip bit 2: 42 -> 46
+tap 32 235
+shot prog-bits
+tap 264 450
+shot prog-bitflip
+# back to the keypad; 5 Lsh 2 = 20, then Not -> -21
+tap 32 235
+tap 100 158
+tap 187 384
+tap 26 268
+tap 187 423
+tap 293 462
+shot prog-lsh
+tap 240 268
+shot prog-not
 # ---- About (pinned row, no scrolling needed)
 tap 24 48
 tap 100 464

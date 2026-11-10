@@ -1,0 +1,103 @@
+<Page name="ProgPage">
+  <!-- Programmer mode per refs/calc-screens/programmer*.png captures:
+       header 24-72 (hamburger + PROGRAMMER, no history icon); white
+       display 24-216 with the big value (28px, active base, right to
+       x306) and the four base lines HEX/DEC/OCT/BIN at y129/152/175/198
+       (tap to switch the active base); hairline y216; the pivot row
+       222-246 (bit-toggle dots, QWORD cycler, MS, M+); hairline y247;
+       then the 6x6 keypad: R0 (Lsh Rsh Or Xor Not And, 2nd swaps in
+       RoL/RoR) on white 248-288, R1..R5 on the #F7F3F7 shade 288-480
+       (2nd Mod CE C back div / A B 7 8 9 times / C D 4 5 6 minus /
+       E F 1 2 3 plus / ( ) neg 0 . equals), cols x0/53/107/160/213/267.
+       R0/R1 labels are static markup; R2-R5 are painted live by the app
+       (A-F / 8 / 9 / 2-7 / . go disabled outside their base). In the
+       bit-toggle view the keypad is replaced by the 16-nibble bit grid. -->
+  <Canvas>
+    <Canvas x="0" y="24" w="320" h="192">
+      <Rect x="0" y="0" w="320" h="192" bg="#FFFFFF"/>
+      <Button name="NavButton" x="8" y="0" w="48" h="48" command="nav">
+        <Glyph x="6" y="12" w="20" h="10" text="hamburger" color="#636563"/>
+      </Button>
+      <Text name="ModeTitle" x="60" y="12" w="180" text="PROGRAMMER" size="14" bold="1" color="#000000"/>
+      <!-- base lines: tap switches the active base -->
+      <Button name="BaseHex" x="4" y="100" w="200" h="23" command="base:hex"/>
+      <Button name="BaseDec" x="4" y="123" w="200" h="23" command="base:dec"/>
+      <Button name="BaseOct" x="4" y="146" w="200" h="23" command="base:oct"/>
+      <Button name="BaseBin" x="4" y="169" w="200" h="23" command="base:bin"/>
+    </Canvas>
+    <Rect x="0" y="216" w="320" h="1" bg="#E7E7E7"/>
+    <!-- pivot row on white (the display band continues to the keypad) -->
+    <Rect x="0" y="217" w="320" h="30" bg="#FFFFFF"/>
+    <Button name="BitSwitch" x="14" y="222" w="36" h="26" command="prog:bits"/>
+    <Button name="Qword" x="128" y="222" w="66" h="26" command="prog:qword"/>
+    <Button name="PMS" x="226" y="222" w="34" h="26" command="ms"/>
+    <Button name="PMPlus" x="278" y="222" w="34" h="26" command="m+"/>
+    <Rect x="0" y="247" w="320" h="1" bg="#E7E7E7"/>
+    <!-- keypad R0 on white -->
+    <Canvas x="0" y="248" w="320" h="40">
+      <Rect x="0" y="0" w="320" h="40" bg="#FFFFFF"/>
+      <Button name="Lsh" x="0" y="0" w="53" h="40" command="op:lsh">
+        <Text x="0" y="15" w="53" text="Lsh" align="1" size="16" color="#000000"/>
+      </Button>
+      <Button name="Rsh" x="53" y="0" w="54" h="40" command="op:rsh">
+        <Text x="0" y="15" w="54" text="Rsh" align="1" size="16" color="#000000"/>
+      </Button>
+      <Button name="Or" x="107" y="0" w="53" h="40" command="op:or">
+        <Text x="0" y="15" w="53" text="Or" align="1" size="16" color="#000000"/>
+      </Button>
+      <Button name="Xor" x="160" y="0" w="53" h="40" command="op:xor">
+        <Text x="0" y="15" w="53" text="Xor" align="1" size="16" color="#000000"/>
+      </Button>
+      <Button name="Not" x="213" y="0" w="54" h="40" command="op:not">
+        <Text x="0" y="15" w="54" text="Not" align="1" size="16" color="#000000"/>
+      </Button>
+      <Button name="And" x="267" y="0" w="53" h="40" command="op:and">
+        <Text x="0" y="15" w="53" text="And" align="1" size="16" color="#000000"/>
+      </Button>
+    </Canvas>
+    <!-- R1..R5 on the shade; labels painted live -->
+    <Canvas x="0" y="288" w="320" h="192">
+      <Rect x="0" y="0" w="320" h="192" bg="#F7F3F7"/>
+      <Canvas x="0" y="0" w="320" h="38">
+        <Button name="Second" x="0" y="0" w="53" h="38" command="second"/>
+        <Button name="Mod" x="53" y="0" w="54" h="38" command="op:mod"/>
+        <Button name="CE" x="107" y="0" w="53" h="38" command="op:ce"/>
+        <Button name="C" x="160" y="0" w="53" h="38" command="op:c"/>
+        <Button name="Back" x="213" y="0" w="54" h="38" command="op:back"/>
+        <Button name="Div" x="267" y="0" w="53" h="38" command="op:divide"/>
+      </Canvas>
+      <Canvas x="0" y="38" w="320" h="39">
+        <Button name="KA" x="0" y="0" w="53" h="39" command="hx:A"/>
+        <Button name="KB" x="53" y="0" w="54" h="39" command="hx:B"/>
+        <Button name="K7" x="107" y="0" w="53" h="39" command="d:7"/>
+        <Button name="K8" x="160" y="0" w="53" h="39" command="d:8"/>
+        <Button name="K9" x="213" y="0" w="54" h="39" command="d:9"/>
+        <Button name="Mul" x="267" y="0" w="53" h="39" command="op:times"/>
+      </Canvas>
+      <Canvas x="0" y="77" w="320" h="38">
+        <Button name="KC" x="0" y="0" w="53" h="38" command="hx:C"/>
+        <Button name="KD" x="53" y="0" w="54" h="38" command="hx:D"/>
+        <Button name="K4" x="107" y="0" w="53" h="38" command="d:4"/>
+        <Button name="K5" x="160" y="0" w="53" h="38" command="d:5"/>
+        <Button name="K6" x="213" y="0" w="54" h="38" command="d:6"/>
+        <Button name="Sub" x="267" y="0" w="53" h="38" command="op:minus"/>
+      </Canvas>
+      <Canvas x="0" y="115" w="320" h="39">
+        <Button name="KE" x="0" y="0" w="53" h="39" command="hx:E"/>
+        <Button name="KF" x="53" y="0" w="54" h="39" command="hx:F"/>
+        <Button name="K1" x="107" y="0" w="53" h="39" command="d:1"/>
+        <Button name="K2" x="160" y="0" w="53" h="39" command="d:2"/>
+        <Button name="K3" x="213" y="0" w="54" h="39" command="d:3"/>
+        <Button name="Add" x="267" y="0" w="53" h="39" command="op:plus"/>
+      </Canvas>
+      <Canvas x="0" y="154" w="320" h="38">
+        <Button name="KPl" x="0" y="0" w="53" h="38" command="op:pl"/>
+        <Button name="KPr" x="53" y="0" w="54" h="38" command="op:pr"/>
+        <Button name="KNeg" x="107" y="0" w="53" h="38" command="op:negate"/>
+        <Button name="K0" x="160" y="0" w="53" h="38" command="d:0"/>
+        <Button name="KDot" x="213" y="0" w="54" h="38" command="prog:dot"/>
+        <Button name="Eq" x="267" y="0" w="53" h="38" command="op:eq"/>
+      </Canvas>
+    </Canvas>
+  </Canvas>
+</Page>
