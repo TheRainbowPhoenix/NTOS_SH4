@@ -75,49 +75,49 @@
       <!-- browse row with labels -->
       <Button name="XbSelect" x="0" y="0" w="64" h="68" command="select" visible="false">
         <Glyph x="23" y="8" w="18" h="18" text="select" color="#000000"/>
-        <Text x="32" y="40" text="Select" color="#000000" size="11" align="1"/>
+        <Text x="0" y="40" w="64" text="Select" color="#000000" size="11" align="1"/>
       </Button>
       <Button name="XbNewFolder" x="64" y="0" w="64" h="68" command="newfolder" visible="false">
         <Glyph x="23" y="8" w="18" h="18" text="newfolder" color="#000000"/>
-        <Text x="32" y="40" text="New folder" color="#000000" size="11" align="1"/>
+        <Text x="0" y="40" w="64" text="New folder" color="#000000" size="11" align="1"/>
       </Button>
       <Button name="XbView" x="128" y="0" w="64" h="68" command="view" visible="false">
         <Glyph name="XViewGlyph" x="23" y="8" w="18" h="18" text="icons" color="#000000"/>
-        <Text name="XViewLabel" x="32" y="40" text="Icons" color="#000000" size="11" align="1"/>
+        <Text name="XViewLabel" x="0" y="40" w="64" text="Icons" color="#000000" size="11" align="1"/>
       </Button>
       <Button name="XbSearch" x="192" y="0" w="64" h="68" command="search" visible="false">
         <Glyph x="23" y="8" w="18" h="18" text="search" color="#000000"/>
-        <Text x="32" y="40" text="Search" color="#000000" size="11" align="1"/>
+        <Text x="0" y="40" w="64" text="Search" color="#000000" size="11" align="1"/>
       </Button>
       <Button name="XbMore" x="256" y="0" w="64" h="68" command="more" visible="false">
         <Glyph x="23" y="8" w="18" h="18" text="more" color="#000000"/>
-        <Text x="32" y="40" text="More" color="#000000" size="11" align="1"/>
+        <Text x="0" y="40" w="64" text="More" color="#000000" size="11" align="1"/>
       </Button>
       <!-- select row with labels -->
       <Button name="XbDelete" x="0" y="0" w="64" h="68" command="delete" visible="false">
         <Glyph x="23" y="8" w="18" h="18" text="delete" color="#000000"/>
-        <Text x="32" y="40" text="Delete" color="#000000" size="11" align="1"/>
+        <Text x="0" y="40" w="64" text="Delete" color="#000000" size="11" align="1"/>
       </Button>
       <Button name="XbMove" x="64" y="0" w="64" h="68" command="moveto" visible="false">
         <Glyph x="23" y="8" w="18" h="18" text="move" color="#000000"/>
-        <Text x="32" y="40" text="Move to" color="#000000" size="11" align="1"/>
+        <Text x="0" y="40" w="64" text="Move to" color="#000000" size="11" align="1"/>
       </Button>
       <Button name="XbCopy" x="128" y="0" w="64" h="68" command="copyto" visible="false">
         <Glyph x="23" y="8" w="18" h="18" text="copy" color="#000000"/>
-        <Text x="32" y="40" text="Copy to" color="#000000" size="11" align="1"/>
+        <Text x="0" y="40" w="64" text="Copy to" color="#000000" size="11" align="1"/>
       </Button>
       <Button name="XbShare" x="192" y="0" w="64" h="68" command="share" visible="false">
         <Glyph x="23" y="8" w="18" h="18" text="share" color="#000000"/>
-        <Text x="32" y="40" text="Share" color="#000000" size="11" align="1"/>
+        <Text x="0" y="40" w="64" text="Share" color="#000000" size="11" align="1"/>
       </Button>
       <!-- dest picker row with labels -->
       <Button name="XbDone" x="128" y="0" w="64" h="68" command="dest-go" visible="false">
         <Glyph x="23" y="8" w="18" h="18" text="check" color="#0078D7"/>
-        <Text x="32" y="40" text="Done" color="#000000" size="11" align="1"/>
+        <Text x="0" y="40" w="64" text="Done" color="#000000" size="11" align="1"/>
       </Button>
       <Button name="XbCancel" x="192" y="0" w="64" h="68" command="dest-cancel" visible="false">
         <Glyph x="23" y="8" w="18" h="18" text="x" color="#000000"/>
-        <Text x="32" y="40" text="Cancel" color="#000000" size="11" align="1"/>
+        <Text x="0" y="40" w="64" text="Cancel" color="#000000" size="11" align="1"/>
       </Button>
     </Canvas>
   </Canvas>

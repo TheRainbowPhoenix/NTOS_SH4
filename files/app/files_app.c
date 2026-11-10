@@ -1312,7 +1312,10 @@ static void paint_items(void *dc)
             Item *it = &items[i];
             if (it->selected)
                 fill(dc, 0, y, 320, y + ROW_H, C_SEL);
-            int xicon = select_mode ? 38 : 12;
+            /* row metrics off the references: browse icon x20, title x72;
+             * select mode slides both right by the 20px checkbox + gap
+             * (multi_select.png: checkbox x12, icon x52, title x104) */
+            int xicon = select_mode ? 52 : 20;
             vec_icon(dc, it->icon, xicon, y + 10, 36);
             /* line 2: folders show the date, files "size date"
              * (subfolder_downloads_content_icons.png) */
@@ -1328,8 +1331,8 @@ static void paint_items(void *dc)
                 line2[p++] = ' ';
                 xcopy(line2 + p, dt, xstrlen(dt) + 1);
             }
-            draw_text(dc, select_mode ? 64 : 56, y + 10, it->name, C_INK, 18, 0, 0);
-            draw_text(dc, select_mode ? 64 : 56, y + 34, line2, C_MUT, 12, 0, 0);
+            draw_text(dc, select_mode ? 104 : 72, y + 10, it->name, C_INK, 18, 0, 0);
+            draw_text(dc, select_mode ? 104 : 72, y + 34, line2, C_MUT, 12, 0, 0);
             if (select_mode) {
                 /* inline checkbox (Tile CheckMode) */
                 int bx = 10, by = y + (ROW_H - 20) / 2;
@@ -1415,8 +1418,15 @@ static int sort_selected(void)
 }
 static void paint_sort_flyout(void *dc)
 {
-    /* panel + rows painted over the list (z-order above the items) */
+    /* panel + rows painted over the list (z-order above the items).
+     * The dropdown panel carries a 1px outline in the same grey as the
+     * row separators (this_device__sort_by.png) so the white sheet reads
+     * as a raised popup on the white page. */
     fill(dc, 8, 84, 216, 300, C_PAGE);
+    fill(dc, 8, 84, 216, 85, C_SEP);
+    fill(dc, 8, 299, 216, 300, C_SEP);
+    fill(dc, 8, 84, 9, 300, C_SEP);
+    fill(dc, 215, 84, 216, 300, C_SEP);
     for (int i = 0; i < 6; ++i) {
         int y = 84 + i * 36;
         int sel = i == sort_selected();
@@ -1721,15 +1731,15 @@ static void paint_all(void *dc)
                         if (!hit)
                             continue;
                         int y = 84 + shown * ROW_H;
-                        vec_icon(dc, search_rows[i].icon, 12, y + 10, 36);
-                        draw_text(dc, 56, y + 10, n, C_INK, 18, 0, 0);
+                        vec_icon(dc, search_rows[i].icon, 20, y + 10, 36);
+                        draw_text(dc, 72, y + 10, n, C_INK, 18, 0, 0);
                         /* parent folder as the secondary line */
                         const char *pp = search_rows[i].parent;
                         if (pp[0] && !xeq(pp, search_base)) {
                             const char *tail = path_tail(pp);
                             if (!tail[0])
                                 tail = "This device";
-                            draw_text(dc, 56, y + 34, tail, C_MUT, 12, 0, 0);
+                            draw_text(dc, 72, y + 34, tail, C_MUT, 12, 0, 0);
                         }
                         ++shown;
                     }

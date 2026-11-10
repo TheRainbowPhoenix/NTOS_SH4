@@ -51,14 +51,19 @@ def labels_hidden(px):
 
 
 def labels_visible(px):
-    # "New folder" spans ~x64..120 at y500..511; sample the label band
-    hits = 0
-    for x in range(66, 124, 4):
-        for y in range(500, 512, 3):
-            c = pix(px, x, y)
-            if near(c, INK, 60):
-                hits += 1
-    return hits >= 2
+    # labels sit centered under their icons (button centers 32/96/160/224);
+    # every expanded bar shows ink under at least 3 of the 5 glyph columns
+    cols = 0
+    for cx in (32, 96, 160, 224, 288):
+        hits = 0
+        for x in range(cx - 12, cx + 13, 3):
+            for y in range(500, 512, 2):
+                c = pix(px, x, y)
+                if near(c, INK, 60):
+                    hits += 1
+        if hits >= 2:
+            cols += 1
+    return cols >= 3
 
 
 CHECKS = {
