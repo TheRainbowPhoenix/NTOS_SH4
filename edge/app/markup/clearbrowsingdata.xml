@@ -1,0 +1,26 @@
+<Page name="ClearBrowsingDataPage">
+  <Canvas>
+    <Rect x="0" y="0" w="320" h="528" bg="#000000"/>
+    <Button name="ClearBack" x="0" y="0" w="48" h="48" command="clear-back">
+      <Glyph x="14" y="14" w="20" h="20" text="back" color="#FFFFFF"/>
+    </Button>
+    <Text x="160" y="14" w="320" text="Clear browsing data" color="#FFFFFF" size="18" bold="true" align="1"/>
+    <List x="0" y="64" w="320" h="264">
+      <Check x="0" y="0" w="320" h="44" text="Browsing history" checked="true"/>
+      <Check x="0" y="0" w="320" h="44" text="Cookies and saved website data" checked="true"/>
+      <Check x="0" y="0" w="320" h="44" text="Cached data and files" checked="true"/>
+      <Check x="0" y="0" w="320" h="44" text="Download history"/>
+      <Check x="0" y="0" w="320" h="44" text="Form data"/>
+      <Check x="0" y="0" w="320" h="44" text="Passwords"/>
+    </List>
+    <Button x="16" y="340" w="288" h="48" command="doclear" bg="#0078D7" radius="4">
+      <Text x="0" y="17" w="288" text="Clear" color="#FFFFFF" size="14" bold="true" align="1"/>
+    </Button>
+    <Button x="16" y="408" w="288" h="28" command="link-cloud">
+      <Text x="0" y="8" text="Change what Microsoft Edge knows about me in the cloud" color="#0078D7" size="11"/>
+    </Button>
+    <Button x="16" y="440" w="288" h="28" command="link-bing">
+      <Text x="0" y="8" text="Clear Bing search history" color="#0078D7" size="11"/>
+    </Button>
+  </Canvas>
+</Page>

@@ -1,26 +1,42 @@
-# Edge POC e2e: boot (new tab page), open menu, open tab center, type URL
+# Edge POC e2e (dark UI): boot NTP, address+suggestion nav to wikipedia,
+# actions menu, reading list dialog, settings, clear browsing data (+toggle),
+# hub pivots, tab center (2-col grid, duplicate), tabs context menu.
 shot boot
-tap 288 500
-shot menu
-tap 288 200
-shot menu-closed
-tap 30 500
-shot tabcenter
-tap 288 516
-shot tabcenter-closed
-tap 158 500
+tap 158 504
 shot address
-tap 100 136
-tap 124 136
-tap 148 136
-tap 100 180
-tap 276 244
-shot typed
-tap 280 244
-shot navigated
+tap 60 78
+shot wiki
+tap 294 504
+shot menu
+tap 60 294
+shot readlist
+tap 160 338
+tap 294 504
+tap 60 426
+shot settings
+tap 60 272
+shot clear
+tap 30 218
+shot clear-toggled
+tap 160 364
+shot clear-toast
 key 0x1b
-tap 288 500
-tap 100 248
-shot hub-favorites
-tap 180 66
+key 0x1b
+tap 294 504
+tap 200 488
 shot hub-history
+tap 40 78
+shot hub-favorites
+key 0x1b
+tap 23 504
+shot tabcenter
+tap 172 504
+shot tabcenter2
+tap 84 106
+tap 23 504
+tap 284 504
+shot tabsmenu
+tap 160 260
+shot tabcenter3
+key 0x1b
+shot final

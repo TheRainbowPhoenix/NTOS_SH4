@@ -35,11 +35,11 @@ KINDS = {
 ATTRS = {
     'x': 0, 'y': 1, 'w': 2, 'h': 3, 'text': 4, 'color': 5, 'bg': 6, 'size': 7,
     'bold': 8, 'radius': 9, 'name': 10, 'command': 11, 'src': 12, 'value': 13,
-    'max': 14, 'checked': 15, 'visible': 16, 'align': 17,
+    'max': 14, 'checked': 15, 'visible': 16, 'align': 17, 'border': 18,
 }
 INT_ATTRS = {0, 1, 2, 3, 7, 9, 13, 14, 17}
 CLR_ATTRS = {5, 6}
-BOOL_ATTRS = {8, 15, 16}
+BOOL_ATTRS = {8, 15, 16, 18}
 STR_ATTRS = {4, 10, 11, 12}
 
 TYPE_STR, TYPE_INT, TYPE_CLR, TYPE_BOOL = 0, 1, 2, 3
@@ -66,7 +66,7 @@ class Builder:
     def intern(self, s):
         if s in self.sidx:
             return self.sidx[s]
-        if len(self.strings) >= 300:
+        if len(self.strings) >= 360:
             raise SystemExit('too many strings')
         self.sidx[s] = len(self.strings)
         self.strings.append(s)
@@ -83,7 +83,7 @@ class Builder:
         def walk(elem, depth):
             if elem.tag not in KINDS:
                 raise SystemExit(f'{path}: unknown element <{elem.tag}>')
-            if len(nodes) >= 220:
+            if len(nodes) >= 256:
                 raise SystemExit('too many nodes')
             node = {'kind': KINDS[elem.tag], 'attrs': [], 'children': []}
             for k, v in elem.attrib.items():
@@ -210,7 +210,8 @@ def toxml(data):
         if nodes:
             k0, a0, _ = nodes[0]
             assert k0 == 0, 'doc must be rooted in Page'
-            root_attrs = ''.join(f' {attr_names[a]}="{v}"' for a, v in a0)
+            # the doc name lives on the <Page> header; skip its attr here
+            root_attrs = ''.join(f' {attr_names[a]}="{v}"' for a, v in a0 if a != 10)
         lines = [f'<Page name="{heap[nidx]}"{root_attrs}>']
         sp = []      # [element kind, expected children, seen children]
         for kind, attrs, nchild in nodes[1:]:

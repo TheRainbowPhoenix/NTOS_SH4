@@ -77,14 +77,15 @@ enum {
     UXA_CHECKED,
     UXA_VISIBLE,
     UXA_ALIGN,      /* 0 left 1 center 2 right (text) */
+    UXA_BORDER,     /* Rect: 1px outline in Color instead of Bg fill */
     UXA_COUNT
 };
 
 /* ---- parsed node (static arena, no pointers but child indices) ---- */
-#define UX_MAX_NODES 220
-#define UX_MAX_ATTRS 8
-#define UX_MAX_DOCS 12
-#define UX_MAX_STRINGS 300
+#define UX_MAX_NODES 256
+#define UX_MAX_ATTRS 10
+#define UX_MAX_DOCS 16
+#define UX_MAX_STRINGS 360
 #define UX_STR_MAX 96
 
 typedef struct {

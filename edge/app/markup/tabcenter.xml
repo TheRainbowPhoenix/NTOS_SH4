@@ -1,25 +1,22 @@
 <Page name="TabCenterPage">
   <Canvas>
-    <Rect x="0" y="0" w="320" h="528" bg="#0B2540" name="TabCenterBg"/>
-    <Text x="12" y="14" text="Tabs" color="#FFFFFF" size="14" bold="true" name="TabsTitle"/>
-    <Button x="268" y="8" w="44" h="28" name="NewTabButton" command="newtab">
-      <Text x="22" y="4" text="+" color="#FFFFFF" size="14" align="1"/>
+    <Rect x="0" y="0" w="320" h="528" bg="#000000"/>
+    <Button name="TabsBack" x="0" y="0" w="48" h="48" command="tabs-back">
+      <Glyph x="14" y="14" w="20" h="20" text="back" color="#FFFFFF"/>
     </Button>
-    <Button x="222" y="8" w="44" h="28" name="CloseButton" command="close">
-      <Text x="22" y="5" text="X" color="#FFFFFF" size="12" align="1"/>
+    <Text x="160" y="14" w="320" text="Tabs" color="#FFFFFF" size="18" bold="true" align="1"/>
+    <!-- tab cards painted procedurally: 2-column grid (TabsCustomGridView) -->
+    <Rect name="TabGridHost" x="8" y="56" w="304" h="420" bg="#000000"/>
+    <Rect x="0" y="472" w="320" h="1" bg="#464646"/>
+    <!-- bottom toolbar, right-padded: new tab / new InPrivate tab / tabs menu -->
+    <Button name="NewTabButton" x="148" y="480" w="48" h="48" command="newtab">
+      <Glyph x="12" y="12" w="24" h="24" text="plus" color="#FFFFFF"/>
     </Button>
-    <!-- tab cards painted by the app into this host -->
-    <Rect x="8" y="44" w="304" h="480" bg="#12365C" radius="0" name="TabCardsHost"/>
-    <!-- template: one card (app clones positions for N tabs) -->
-    <Canvas x="16" y="52" w="288" h="72" name="TabCardTemplate" visible="false">
-      <Rect x="0" y="0" w="288" h="72" bg="#FFFFFF" radius="4"/>
-      <Rect x="8" y="8" w="56" h="56" bg="#9AB4CC" radius="2" name="TabThumb"/>
-      <Text x="72" y="12" text="New tab" color="#1D2A3A" size="11" name="TabTitle"/>
-      <Text x="72" y="30" text="about:start" color="#65788A" size="9" name="TabUrl"/>
-      <Button x="252" y="8" w="28" h="28" name="TabCloseButton" command="closetab">
-        <Text x="14" y="6" text="X" color="#65788A" size="11" align="1"/>
-      </Button>
-    </Canvas>
-    <Text x="160" y="500" text="0 open tabs" color="#7FA0C4" size="10" align="1" name="TabCountLabel"/>
+    <Button name="NewInPrivateTabButton" x="204" y="480" w="48" h="48" command="newprivate">
+      <Glyph x="12" y="12" w="24" h="24" text="inprivate" color="#FFFFFF"/>
+    </Button>
+    <Button name="TabsMenuButton" x="260" y="480" w="48" h="48" command="tabsmenu">
+      <Glyph x="12" y="12" w="24" h="24" text="more" color="#FFFFFF"/>
+    </Button>
   </Canvas>
 </Page>

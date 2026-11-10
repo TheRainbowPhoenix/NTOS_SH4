@@ -1,23 +1,27 @@
 <Page name="SmallScreenPage">
   <Canvas>
-    <!-- status strip -->
-    <Rect x="0" y="0" w="320" h="24" bg="#0078D7"/>
-    <Text x="8" y="8" text="NTOS" color="#FFFFFF" size="9" bold="true"/>
-    <Text x="252" y="8" text="100% 12:00" color="#FFFFFF" size="9" align="2"/>
-    <!-- page viewport placeholder (app paints content) -->
-    <Rect x="0" y="24" w="320" h="448" bg="#FFFFFF" name="PageHost"/>
-    <!-- bottom chrome: tabs button / address pill / more -->
-    <Rect x="0" y="472" w="320" h="56" bg="#0078D7"/>
-    <Button x="8" y="484" w="44" h="32" name="TabsButton" command="tabs">
-      <Rect x="0" y="0" w="44" h="32" bg="#005A9E" radius="4"/>
-      <Text x="22" y="9" text="0" color="#FFFFFF" size="14" bold="true" align="1" name="TabsCount"/>
+    <!-- content host (mock web engine paints 0..480) -->
+    <Rect name="PageHost" x="0" y="0" w="320" h="480" bg="#000000"/>
+    <!-- bottom address bar: [tabs] | [reload] [url] [reader] | [...] -->
+    <Rect x="0" y="480" w="320" h="48" bg="#000000"/>
+    <Button name="TabsButton" x="0" y="480" w="46" h="48" command="tabs">
+      <Glyph x="11" y="12" w="24" h="24" text="tabs" color="#FFFFFF"/>
     </Button>
-    <Button x="60" y="484" w="196" h="32" name="AddressEditBox" command="address">
-      <Rect x="0" y="0" w="196" h="32" bg="#FFFFFF" radius="4"/>
-      <Text x="98" y="9" text="Search or enter address" color="#50606E" size="11" align="1" name="AddressText"/>
+    <Text name="TabsCount" x="26" y="484" text="1" color="#0078D7" size="9" bold="true"/>
+    <Rect x="46" y="492" w="1" h="24" bg="#464646"/>
+    <Button name="ReloadButton" x="47" y="480" w="36" h="48" command="reload">
+      <Glyph name="ReloadIcon" x="8" y="14" w="20" h="20" text="reload" color="#6E6E6E"/>
     </Button>
-    <Button x="264" y="484" w="48" h="32" name="MoreButton" command="menu">
-      <Text x="24" y="8" text="..." color="#FFFFFF" size="14" bold="true" align="1"/>
+    <Button name="AddressButton" x="83" y="480" w="149" h="48" command="address">
+      <Glyph name="AddressLock" x="5" y="17" w="14" h="14" text="lock" color="#9A9A9A" visible="false"/>
+      <Text name="AddressText" x="23" y="18" text="Search or browse" color="#9A9A9A" size="12"/>
+    </Button>
+    <Button name="ReaderButton" x="232" y="480" w="36" h="48" command="reader">
+      <Glyph x="8" y="14" w="20" h="20" text="reader" color="#6E6E6E"/>
+    </Button>
+    <Rect x="268" y="492" w="1" h="24" bg="#464646"/>
+    <Button name="MoreButton" x="269" y="480" w="51" h="48" command="menu">
+      <Glyph x="13" y="12" w="24" h="24" text="more" color="#FFFFFF"/>
     </Button>
   </Canvas>
 </Page>

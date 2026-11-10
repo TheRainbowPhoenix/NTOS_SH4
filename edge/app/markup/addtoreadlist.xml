@@ -1,0 +1,15 @@
+<Page name="AddToReadingListDialog">
+  <Canvas>
+    <!-- browser + scrim painted behind by the app -->
+    <Rect x="12" y="156" w="296" h="212" bg="#2B2B2B" radius="8"/>
+    <Text x="28" y="172" text="Add to reading list" color="#FFFFFF" size="18" bold="true"/>
+    <Text x="28" y="210" text="Name" color="#9A9A9A" size="9"/>
+    <TextBox name="RLName" x="28" y="224" w="264" h="36" bg="#1F1F1F" radius="2" text="Wikipedia"/>
+    <Button x="12" y="272" w="296" h="44" command="rl-add">
+      <Text x="0" y="15" w="296" text="Add" color="#0078D7" size="14" bold="true" align="1"/>
+    </Button>
+    <Button x="12" y="316" w="296" h="44" command="dialog-cancel">
+      <Text x="0" y="15" w="296" text="Cancel" color="#FFFFFF" size="14" align="1"/>
+    </Button>
+  </Canvas>
+</Page>
