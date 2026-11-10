@@ -226,3 +226,9 @@ dest-documents / move-done / dest-copy / copy-done / scrolled /
 scrolled-top / edge-open + final. checker asserts the navbar strip
 (NAVBG + Back glyph) on every files frame and the markdown.dll module
 is loaded for the edge file:// hand-off (edge's new engine page path).
+
+## 2026-11-11 — native test package
+- edge/ntos_win `package-files` assembles ntos-windows-files.zip (the
+  full files e2e module set incl. the edge file:// hand-off, the
+  make_tree sample tree, run-files.bat). files-ci builds it and runs
+  the wine cross-host parity gate on files.script.

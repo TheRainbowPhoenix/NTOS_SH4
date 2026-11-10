@@ -7,6 +7,11 @@ blind from the package: the 19 XBF pages carved out of `resources.pri`,
 the en-US string table and the TH2 style dictionaries — the port
 doubles as a test of the uXAML component set on unseen markup.
 
+- `refs/calc-screens/` — real-device captures (added after the blind
+  port): the whole layout is now calibrated to them — white display area,
+  #F7F3F7 keypad shade from the CE row, capture label rows, plain `=`
+  (no idle accent), mode names in caps as titles, the nav pane 256px
+  #E7E3E7 with the #9CAEEF selected band.
 - `analysis/` — pri/XBF dumps + `CALCULATOR_UI_REFERENCE.md` (the port
   spec: mode tree, keypad grids, type ramp, palette, unit tables).
 - `app/` — the POC: uXAML markup (`markup/*.xml` -> `calc.uxaml`) +
@@ -28,4 +33,7 @@ doubles as a test of the uXAML component set on unseen markup.
 - `tools/` — session scripts (font baking, XBF/engine surgery, markup
   rect dump, ascii frame reader).
 - CI: `.forgejo/workflows/calc-ci.yml` (log + shots on the `calc-ci`
-  branch).
+  branch) — it also builds a **native test package** the same way edge
+  does: `edge/ntos_win` `package-calc` assembles `ntos-windows-calc.zip`
+  (interactive LCD + session recorder) and the wine gate proves the
+  windows host renders byte-identical PNGs for the same `calc.script`.

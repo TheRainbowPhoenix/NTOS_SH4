@@ -24,7 +24,10 @@ Input mapping
 
 Other apps
 ----------
-The exe is app-agnostic; any NTOS payload DLL set works, e.g.:
+The exe is app-agnostic; any NTOS payload DLL set works. Ready-made
+packages (make package-files / package-cortana / package-calc) mirror
+each app's e2e module list and land as ntos-windows-<app>.zip with a
+run-<app>.bat launcher; e.g.:
 
   ntos_windows.exe html.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --fs fs
 

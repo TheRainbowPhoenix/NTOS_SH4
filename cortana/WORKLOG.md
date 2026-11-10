@@ -66,3 +66,8 @@ mode (the captures show the offline states).
   covered by the e2e (nav-search / nav-home frames).
 - e2e: 6 -> 8 frames, checker asserts the navbar strip + Back glyph on
   every light frame; shellchrome.dll joins the module load list.
+
+## 2026-11-11 — native test package
+- edge/ntos_win `package-cortana` assembles ntos-windows-cortana.zip
+  (fingerkb + shellchrome + cortana, run-cortana.bat). files-ci builds
+  it and runs the wine cross-host parity gate on cortana.script.

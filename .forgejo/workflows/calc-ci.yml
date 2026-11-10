@@ -39,6 +39,8 @@ jobs:
               rm -rf "$OUT"; mkdir -p "$OUT"
               cp "$LOG" "$OUT/calc-ci.log"
               cp calc/app/calc-*.png "$OUT/" 2>/dev/null || true
+              cp edge/ntos_win/ntos-windows-calc.zip "$OUT/" 2>/dev/null || true
+              cp edge/ntos_win/wcalc-*.png "$OUT/" 2>/dev/null || true
               export GIT_INDEX_FILE="$GITHUB_WORKSPACE/ci.index"
               rm -f "$GIT_INDEX_FILE"
               git read-tree --empty
@@ -71,6 +73,10 @@ jobs:
           fi
           git log --oneline -1
 
+          # wine + mingw zlib: run the ntos_windows host under wine and prove
+          # cross-host parity (byte-identical PNGs) for the calculator too.
+          (apt-get update -qq && apt-get install -y -qq wine64 libz-mingw-w64) \
+            || echo "WARNING: wine unavailable; the windows-parity gate is skipped"
           # -- deps: make/gcc/curl via best-effort apt; python is stdlib-only --
           if ! command -v make >/dev/null 2>&1 || ! command -v gcc >/dev/null 2>&1; then
             rm -rf /var/lib/apt/lists/*
@@ -103,6 +109,24 @@ jobs:
 
           # -- WindowsCalculator POC: uXAML markup -> calc.dll -> scripted UI e2e --
           make -C calc/app ZIG=$(command -v zig) clean all test
+
+          # -- Windows host: native package + cross-host parity gate --
+          # (the same calc.script through ntos_windows.exe under wine must
+          # emit byte-identical PNGs; also produces ntos-windows-calc.zip)
+          make -C edge/ntos_win ZIG=$(command -v zig) clean all wine_setup package-calc
+          if command -v wine64 >/dev/null 2>&1; then
+            rm -f edge/ntos_win/wcalc-*.png
+            (cd edge/ntos_win && \
+             env WINEPREFIX="$(pwd)/.wineprefix" wine64 \
+             ntos-windows-calc/ntos_windows.exe \
+             ntos-windows-calc/fingerkb.dll ntos-windows-calc/shellchrome.dll \
+             ntos-windows-calc/calc.dll \
+             --fs ../../../calc/app/tests/fs \
+             --script ../../../calc/app/tests/calc.script --shot wcalc) || exit 1
+            python3 edge/ntos_win/tests/wpar.py calc/app/calc edge/ntos_win/wcalc
+          else
+            echo "WARNING: wine64 missing — parity gate skipped, package only"
+          fi
 
           # -- uXAML round-trip: binary -> XML must reparse --
           python3 edge/app/uxaml_gen.py toxml calc/app/calc.uxaml > /tmp/ux.xml
