@@ -1,0 +1,197 @@
+<Page name="SciPage">
+  <!-- Scientific mode, phone layout per CalculatorScientificOperators.xbf:
+       5 visible columns (x2 xy sin cos tan / x3 y-root inv-trig / sqrt 10x
+       log Exp Mod / 1x e^x ln dms deg / 2nd CE C back divide / pi n! ( )
+       column + numpad 3-wide + operators column).
+       title32 + ham48 + expr14 + result40 + angle30 + memory28 + 9x32 pad. -->
+  <Canvas>
+    <Rect x="0" y="0" w="320" h="32" bg="#F2F2F2"/>
+    <Text name="AppTitle" x="12" y="10" w="180" text="Calculator" color="#000000" size="12"/>
+    <Rect x="0" y="32" w="320" h="48" bg="#F2F2F2"/>
+    <Button name="NavButton" x="0" y="40" w="48" h="32" command="nav">
+      <Glyph x="12" y="6" w="24" h="20" text="hamburger" color="#000000"/>
+    </Button>
+    <Button name="HistoryButton" x="272" y="32" w="48" h="48" command="history">
+      <Glyph x="4" y="4" w="40" h="40" text="history" color="#5D5A5C"/>
+    </Button>
+    <Rect x="0" y="80" w="320" h="54" bg="#F2F2F2"/>
+    <!-- angle mode row: DEG / RAD / GRAD (left) -->
+    <Rect x="0" y="134" w="320" h="30" bg="#F2F2F2"/>
+    <Button name="AngDeg" x="12" y="137" w="52" h="24" command="angle:deg">
+      <Text name="AngDegT" x="0" y="5" w="52" text="DEG" align="1" color="#3965FF" size="12"/>
+    </Button>
+    <Button name="AngRad" x="68" y="137" w="52" h="24" command="angle:rad">
+      <Text name="AngRadT" x="0" y="5" w="52" text="RAD" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="AngGrad" x="124" y="137" w="52" h="24" command="angle:grad">
+      <Text name="AngGradT" x="0" y="5" w="52" text="GRAD" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <!-- memory row (compact 28px) -->
+    <Rect x="0" y="164" w="320" h="28" bg="#F2F2F2"/>
+    <Button name="MC" x="0" y="164" w="53" h="28" command="mc">
+      <Text x="0" y="8" w="53" text="MC" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="MR" x="53" y="164" w="54" h="28" command="mr">
+      <Text x="0" y="8" w="54" text="MR" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="MPlus" x="107" y="164" w="53" h="28" command="m+">
+      <Text x="0" y="8" w="53" text="M+" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="MMinus" x="160" y="164" w="53" h="28" command="m-">
+      <Text x="0" y="8" w="53" text="M-" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="MS" x="213" y="164" w="53" h="28" command="ms">
+      <Text x="0" y="8" w="53" text="MS" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="MemoryButton" x="266" y="164" w="54" h="28" command="memory">
+      <Glyph x="15" y="5" w="22" h="17" text="mem" color="#5D5A5C"/>
+    </Button>
+    <!-- keypad shade -->
+    <Rect x="0" y="192" w="320" h="1" bg="#DEDBDE"/>
+    <Rect x="0" y="193" w="320" h="287" bg="#E6E6E6"/>
+    <!-- r0: x2  x^y  sin  cos  tan -->
+    <Button name="sqr" x="0" y="193" w="64" h="32" command="op:sqr">
+      <Glyph x="22" y="5" w="20" h="22" text="xpow2" color="#000000"/>
+    </Button>
+    <Button name="powy" x="64" y="193" w="64" h="32" command="op:powy">
+      <Glyph x="22" y="5" w="20" h="22" text="xpowy" color="#000000"/>
+    </Button>
+    <Button name="sin" x="128" y="193" w="64" h="32" command="fn:sin">
+      <Text name="sinT" x="0" y="10" w="64" text="sin" align="1" color="#000000" size="12"/>
+    </Button>
+    <Button name="cos" x="192" y="193" w="64" h="32" command="fn:cos">
+      <Text name="cosT" x="0" y="10" w="64" text="cos" align="1" color="#000000" size="12"/>
+    </Button>
+    <Button name="tan" x="256" y="193" w="64" h="32" command="fn:tan">
+      <Text name="tanT" x="0" y="10" w="64" text="tan" align="1" color="#000000" size="12"/>
+    </Button>
+    <!-- r1: x3  yrootx  inv-trig -->
+    <Button name="cube" x="0" y="225" w="64" h="32" command="op:cube">
+      <Glyph x="22" y="5" w="20" h="22" text="xpow3" color="#000000"/>
+    </Button>
+    <Button name="yrootx" x="64" y="225" w="64" h="32" command="op:yrootx">
+      <Glyph x="22" y="5" w="20" h="22" text="yroot" color="#000000"/>
+    </Button>
+    <Button name="asin" x="128" y="225" w="64" h="32" command="fn:asin">
+      <Text name="asinT" x="0" y="10" w="64" text="asin" align="1" color="#000000" size="11"/>
+    </Button>
+    <Button name="acos" x="192" y="225" w="64" h="32" command="fn:acos">
+      <Text name="acosT" x="0" y="10" w="64" text="acos" align="1" color="#000000" size="11"/>
+    </Button>
+    <Button name="atan" x="256" y="225" w="64" h="32" command="fn:atan">
+      <Text name="atanT" x="0" y="10" w="64" text="atan" align="1" color="#000000" size="11"/>
+    </Button>
+    <!-- r2: sqrt  10^x  log  Exp  Mod -->
+    <Button name="sqrt" x="0" y="257" w="64" h="32" command="op:sqrt">
+      <Glyph x="22" y="5" w="20" h="22" text="sqrt" color="#000000"/>
+    </Button>
+    <Button name="tenpow" x="64" y="257" w="64" h="32" command="op:tenpow">
+      <Glyph x="20" y="5" w="24" h="22" text="tenpow" color="#000000"/>
+    </Button>
+    <Button name="log" x="128" y="257" w="64" h="32" command="fn:log">
+      <Text x="0" y="10" w="64" text="log" align="1" color="#000000" size="12"/>
+    </Button>
+    <Button name="exp" x="192" y="257" w="64" h="32" command="fn:exp">
+      <Text x="0" y="10" w="64" text="Exp" align="1" color="#000000" size="12"/>
+    </Button>
+    <Button name="mod" x="256" y="257" w="64" h="32" command="op:mod">
+      <Text x="0" y="10" w="64" text="Mod" align="1" color="#000000" size="12"/>
+    </Button>
+    <!-- r3: 1/x  e^x  ln  dms  deg -->
+    <Button name="invert" x="0" y="289" w="64" h="32" command="op:invert">
+      <Glyph x="22" y="5" w="20" h="22" text="invert" color="#000000"/>
+    </Button>
+    <Button name="epow" x="64" y="289" w="64" h="32" command="op:epow">
+      <Glyph x="20" y="5" w="24" h="22" text="eexp" color="#000000"/>
+    </Button>
+    <Button name="ln" x="128" y="289" w="64" h="32" command="fn:ln">
+      <Text x="0" y="10" w="64" text="ln" align="1" color="#000000" size="12"/>
+    </Button>
+    <Button name="dms" x="192" y="289" w="64" h="32" command="fn:dms">
+      <Text x="0" y="10" w="64" text="dms" align="1" color="#000000" size="12"/>
+    </Button>
+    <Button name="deg" x="256" y="289" w="64" h="32" command="fn:deg">
+      <Text x="0" y="10" w="64" text="deg" align="1" color="#000000" size="12"/>
+    </Button>
+    <!-- r4: 2nd  CE  C  back  divide -->
+    <Button name="second" x="0" y="321" w="64" h="32" command="second">
+      <Text name="secondT" x="0" y="10" w="64" text="2nd" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="ce" x="64" y="321" w="64" h="32" command="op:ce">
+      <Text x="0" y="10" w="64" text="CE" align="1" color="#000000" size="12"/>
+    </Button>
+    <Button name="c" x="128" y="321" w="64" h="32" command="op:c">
+      <Text x="0" y="10" w="64" text="C" align="1" color="#000000" size="12"/>
+    </Button>
+    <Button name="back" x="192" y="321" w="64" h="32" command="op:back">
+      <Glyph x="22" y="6" w="20" h="20" text="backspace" color="#000000"/>
+    </Button>
+    <Button name="divide" x="256" y="321" w="64" h="32" command="op:divide">
+      <Glyph x="23" y="5" w="18" h="22" text="divide" color="#000000"/>
+    </Button>
+    <!-- r5: pi  7 8 9  times -->
+    <Button name="pi" x="0" y="353" w="64" h="32" command="op:pi">
+      <Glyph x="22" y="5" w="20" h="22" text="pi" color="#000000"/>
+    </Button>
+    <Button name="n7" x="64" y="353" w="64" h="32" command="d:7">
+      <Text x="0" y="7" w="64" text="7" align="1" color="#000000" size="18"/>
+    </Button>
+    <Button name="n8" x="128" y="353" w="64" h="32" command="d:8">
+      <Text x="0" y="7" w="64" text="8" align="1" color="#000000" size="18"/>
+    </Button>
+    <Button name="n9" x="192" y="353" w="64" h="32" command="d:9">
+      <Text x="0" y="7" w="64" text="9" align="1" color="#000000" size="18"/>
+    </Button>
+    <Button name="times" x="256" y="353" w="64" h="32" command="op:times">
+      <Glyph x="24" y="6" w="16" h="20" text="times" color="#000000"/>
+    </Button>
+    <!-- r6: n!  4 5 6  minus -->
+    <Button name="fact" x="0" y="385" w="64" h="32" command="fn:fact">
+      <Glyph x="22" y="5" w="20" h="22" text="factorial" color="#000000"/>
+    </Button>
+    <Button name="n4" x="64" y="385" w="64" h="32" command="d:4">
+      <Text x="0" y="7" w="64" text="4" align="1" color="#000000" size="18"/>
+    </Button>
+    <Button name="n5" x="128" y="385" w="64" h="32" command="d:5">
+      <Text x="0" y="7" w="64" text="5" align="1" color="#000000" size="18"/>
+    </Button>
+    <Button name="n6" x="192" y="385" w="64" h="32" command="d:6">
+      <Text x="0" y="7" w="64" text="6" align="1" color="#000000" size="18"/>
+    </Button>
+    <Button name="minus" x="256" y="385" w="64" h="32" command="op:minus">
+      <Glyph x="23" y="8" w="18" h="16" text="minus" color="#000000"/>
+    </Button>
+    <!-- r7: (  1 2 3  plus -->
+    <Button name="parenL" x="0" y="417" w="64" h="32" command="op:pl">
+      <Glyph x="24" y="5" w="16" h="22" text="paren-l" color="#000000"/>
+    </Button>
+    <Button name="n1" x="64" y="417" w="64" h="32" command="d:1">
+      <Text x="0" y="7" w="64" text="1" align="1" color="#000000" size="18"/>
+    </Button>
+    <Button name="n2" x="128" y="417" w="64" h="32" command="d:2">
+      <Text x="0" y="7" w="64" text="2" align="1" color="#000000" size="18"/>
+    </Button>
+    <Button name="n3" x="192" y="417" w="64" h="32" command="d:3">
+      <Text x="0" y="7" w="64" text="3" align="1" color="#000000" size="18"/>
+    </Button>
+    <Button name="plus" x="256" y="417" w="64" h="32" command="op:plus">
+      <Glyph x="23" y="5" w="18" h="22" text="plus" color="#000000"/>
+    </Button>
+    <!-- r8: )  negate 0 .  equal -->
+    <Button name="parenR" x="0" y="449" w="64" h="31" command="op:pr">
+      <Glyph x="24" y="4" w="16" h="22" text="paren-r" color="#000000"/>
+    </Button>
+    <Button name="negate" x="64" y="449" w="64" h="31" command="op:negate">
+      <Glyph x="24" y="4" w="16" h="22" text="negate" color="#000000"/>
+    </Button>
+    <Button name="n0" x="128" y="449" w="64" h="31" command="d:0">
+      <Text x="0" y="6" w="64" text="0" align="1" color="#000000" size="18"/>
+    </Button>
+    <Button name="dot" x="192" y="449" w="64" h="31" command="d:.">
+      <Text x="0" y="4" w="64" text="." align="1" color="#000000" size="18"/>
+    </Button>
+    <Button name="eq" x="256" y="449" w="64" h="31" command="op:eq" bg="#3965FF">
+      <Glyph x="23" y="4" w="18" h="22" text="equal" color="#FFFFFF"/>
+    </Button>
+  </Canvas>
+</Page>

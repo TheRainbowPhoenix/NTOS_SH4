@@ -1,0 +1,122 @@
+<Page name="StdPage">
+  <!-- Standard mode, layout per Calculator.xbf + CalculatorStandardOperators.xbf
+       (CALCULATOR_UI_REFERENCE.md): 32 title + 48 hamburger + 22 expression +
+       70 result + 32 memory + 276 numpad(6 rows x 4 cols of 80x46) = 480,
+       SHELLCHROME strip at 480..528 painted by the shared DLL. -->
+  <Canvas>
+    <!-- title bar -->
+    <Rect x="0" y="0" w="320" h="32" bg="#F2F2F2"/>
+    <Text name="AppTitle" x="12" y="10" w="180" text="Calculator" color="#000000" size="12"/>
+    <!-- hamburger row: hamburger left, history toggle right -->
+    <Rect x="0" y="32" w="320" h="48" bg="#F2F2F2"/>
+    <Button name="NavButton" x="0" y="40" w="48" h="32" command="nav">
+      <Glyph x="12" y="6" w="24" h="20" text="hamburger" color="#000000"/>
+    </Button>
+    <Button name="HistoryButton" x="272" y="32" w="48" h="48" command="history">
+      <Glyph x="4" y="4" w="40" h="40" text="history" color="#5D5A5C"/>
+    </Button>
+    <!-- display zone (expression + result painted procedurally) -->
+    <Rect x="0" y="80" w="320" h="92" bg="#F2F2F2"/>
+    <!-- memory row: MC MR M+ M- MS  M -->
+    <Rect x="0" y="172" w="320" h="32" bg="#F2F2F2"/>
+    <Button name="MC" x="0" y="172" w="53" h="32" command="mc">
+      <Text x="0" y="10" w="53" text="MC" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="MR" x="53" y="172" w="54" h="32" command="mr">
+      <Text x="0" y="10" w="54" text="MR" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="MPlus" x="107" y="172" w="53" h="32" command="m+">
+      <Text x="0" y="10" w="53" text="M+" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="MMinus" x="160" y="172" w="53" h="32" command="m-">
+      <Text x="0" y="10" w="53" text="M-" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="MS" x="213" y="172" w="53" h="32" command="ms">
+      <Text x="0" y="10" w="53" text="MS" align="1" color="#5D5A5C" size="12"/>
+    </Button>
+    <Button name="MemoryButton" x="266" y="172" w="54" h="32" command="memory">
+      <Glyph x="14" y="7" w="24" h="18" text="mem" color="#5D5A5C"/>
+    </Button>
+    <!-- numpad shade + hairline -->
+    <Rect x="0" y="204" w="320" h="1" bg="#DEDBDE"/>
+    <Rect x="0" y="205" w="320" h="275" bg="#E6E6E6"/>
+    <!-- row 0: %  sqrt  x^2  1/x -->
+    <Button name="percent" x="0" y="205" w="80" h="46" command="op:percent">
+      <Glyph x="30" y="11" w="20" h="24" text="percent" color="#000000"/>
+    </Button>
+    <Button name="sqrt" x="80" y="205" w="80" h="46" command="op:sqrt">
+      <Glyph x="30" y="11" w="20" h="24" text="sqrt" color="#000000"/>
+    </Button>
+    <Button name="sqr" x="160" y="205" w="80" h="46" command="op:sqr">
+      <Glyph x="28" y="11" w="24" h="24" text="xpow2" color="#000000"/>
+    </Button>
+    <Button name="invert" x="240" y="205" w="80" h="46" command="op:invert">
+      <Glyph x="28" y="11" w="24" h="24" text="invert" color="#000000"/>
+    </Button>
+    <!-- row 1: CE  C  backspace  divide -->
+    <Button name="ce" x="0" y="251" w="80" h="46" command="op:ce">
+      <Text x="0" y="16" w="80" text="CE" align="1" color="#000000" size="15"/>
+    </Button>
+    <Button name="c" x="80" y="251" w="80" h="46" command="op:c">
+      <Text x="0" y="16" w="80" text="C" align="1" color="#000000" size="15"/>
+    </Button>
+    <Button name="back" x="160" y="251" w="80" h="46" command="op:back">
+      <Glyph x="28" y="12" w="24" h="22" text="backspace" color="#000000"/>
+    </Button>
+    <Button name="divide" x="240" y="251" w="80" h="46" command="op:divide">
+      <Glyph x="30" y="11" w="20" h="24" text="divide" color="#000000"/>
+    </Button>
+    <!-- row 2: 7 8 9 times -->
+    <Button name="n7" x="0" y="297" w="80" h="46" command="d:7">
+      <Text x="0" y="12" w="80" text="7" align="1" color="#000000" size="22"/>
+    </Button>
+    <Button name="n8" x="80" y="297" w="80" h="46" command="d:8">
+      <Text x="0" y="12" w="80" text="8" align="1" color="#000000" size="22"/>
+    </Button>
+    <Button name="n9" x="160" y="297" w="80" h="46" command="d:9">
+      <Text x="0" y="12" w="80" text="9" align="1" color="#000000" size="22"/>
+    </Button>
+    <Button name="times" x="240" y="297" w="80" h="46" command="op:times">
+      <Glyph x="31" y="12" w="18" h="22" text="times" color="#000000"/>
+    </Button>
+    <!-- row 3: 4 5 6 minus -->
+    <Button name="n4" x="0" y="343" w="80" h="46" command="d:4">
+      <Text x="0" y="12" w="80" text="4" align="1" color="#000000" size="22"/>
+    </Button>
+    <Button name="n5" x="80" y="343" w="80" h="46" command="d:5">
+      <Text x="0" y="12" w="80" text="5" align="1" color="#000000" size="22"/>
+    </Button>
+    <Button name="n6" x="160" y="343" w="80" h="46" command="d:6">
+      <Text x="0" y="12" w="80" text="6" align="1" color="#000000" size="22"/>
+    </Button>
+    <Button name="minus" x="240" y="343" w="80" h="46" command="op:minus">
+      <Glyph x="30" y="14" w="20" h="18" text="minus" color="#000000"/>
+    </Button>
+    <!-- row 4: 1 2 3 plus -->
+    <Button name="n1" x="0" y="389" w="80" h="46" command="d:1">
+      <Text x="0" y="12" w="80" text="1" align="1" color="#000000" size="22"/>
+    </Button>
+    <Button name="n2" x="80" y="389" w="80" h="46" command="d:2">
+      <Text x="0" y="12" w="80" text="2" align="1" color="#000000" size="22"/>
+    </Button>
+    <Button name="n3" x="160" y="389" w="80" h="46" command="d:3">
+      <Text x="0" y="12" w="80" text="3" align="1" color="#000000" size="22"/>
+    </Button>
+    <Button name="plus" x="240" y="389" w="80" h="46" command="op:plus">
+      <Glyph x="30" y="11" w="20" h="24" text="plus" color="#000000"/>
+    </Button>
+    <!-- row 5: negate 0 . equal -->
+    <Button name="negate" x="0" y="435" w="80" h="45" command="op:negate">
+      <Glyph x="31" y="11" w="18" h="23" text="negate" color="#000000"/>
+    </Button>
+    <Button name="n0" x="80" y="435" w="80" h="45" command="d:0">
+      <Text x="0" y="12" w="80" text="0" align="1" color="#000000" size="22"/>
+    </Button>
+    <Button name="dot" x="160" y="435" w="80" h="45" command="d:.">
+      <Text x="0" y="10" w="80" text="." align="1" color="#000000" size="22"/>
+    </Button>
+    <Button name="eq" x="240" y="435" w="80" h="45" command="op:eq" bg="#3965FF">
+      <Glyph x="30" y="11" w="20" h="23" text="equal" color="#FFFFFF"/>
+    </Button>
+  </Canvas>
+</Page>

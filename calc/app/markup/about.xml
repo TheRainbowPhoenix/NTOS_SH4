@@ -1,0 +1,23 @@
+<Page name="AboutPage">
+  <!-- AboutFlyout.xbf phone layout: hamburger-slot button, About subtitle,
+       body (name / version / copyright), links, Send feedback button. -->
+  <Canvas>
+    <Rect x="0" y="0" w="320" h="32" bg="#F2F2F2"/>
+    <Text name="AppTitle" x="12" y="10" w="180" text="Calculator" color="#000000" size="12"/>
+    <Rect x="0" y="32" w="320" h="448" bg="#F2F2F2"/>
+    <Button name="NavButton" x="0" y="40" w="48" h="32" command="nav">
+      <Glyph x="12" y="6" w="24" h="20" text="hamburger" color="#000000"/>
+    </Button>
+    <Text x="12" y="104" w="280" text="About" color="#000000" size="20" bold="true"/>
+    <Text x="12" y="140" w="292" text="Calculator" color="#000000" size="14"/>
+    <Text x="12" y="162" w="292" text="Version 10.1605.1582.0" color="#000000" size="14"/>
+    <Text x="12" y="184" w="292" text="Copyright 2016 Microsoft Corporation." color="#000000" size="14"/>
+    <Text x="12" y="206" w="292" text="All rights reserved." color="#000000" size="14"/>
+    <Text x="12" y="258" w="200" text="Terms of Use" color="#3965FF" size="14" underline="true"/>
+    <Text x="12" y="282" w="200" text="Privacy Statement" color="#3965FF" size="14" underline="true"/>
+    <Button name="Feedback" x="12" y="330" w="140" h="30" command="feedback">
+      <Rect x="12" y="330" w="140" h="30" border="1" bg="#3965FF"/>
+      <Text x="12" y="8" w="140" text="Send feedback" align="1" color="#FFFFFF" size="13"/>
+    </Button>
+  </Canvas>
+</Page>
