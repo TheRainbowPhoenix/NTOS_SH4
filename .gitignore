@@ -4,3 +4,15 @@ obj/
 .deps/
 compile_commands.json__pycache__/
 *.pyc
+
+# ntos_win host scratch
+edge/ntos_win/.wineprefix/
+edge/ntos_win/ntos-windows/
+edge/ntos_win/ntos_windows.exe
+edge/ntos_win/ntos-windows.zip
+edge/ntos_win/lshot-*.png
+edge/ntos_win/wshot-*.png
+edge/ntos_win/session.script
+edge/ntos_win/ntos-win.log
+edge/app/lshot-*.png
+edge/ntos_win/*.pdb

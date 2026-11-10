@@ -1,0 +1,22 @@
+# winboot.script — headless smoke for ntos_windows (forgejo runs it under
+# wine+xvfb). Exercises load, paint, input, SIP and scroll-drag; the
+# wshot-final.png must be byte-identical to the Linux host's output of the
+# same sequence (same payload code, same framebuffer).
+# NOTE: never send key 0x1b while mode==M_BROWSER — the POC maps
+# hardware-back-in-browser to PostQuitMessage (app exit).
+key 0x74
+shot boot
+tap 294 504
+shot menu
+tap 120 80
+tap 158 504
+shot address
+key 0x1b
+tap 23 504
+shot tabs
+sip on
+shot sip
+sip off
+drag 200 450 200 98
+shot scrolled
+quit

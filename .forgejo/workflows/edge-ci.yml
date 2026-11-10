@@ -41,6 +41,8 @@ jobs:
               cp "$LOG" "$OUT/edge-ci.log"
               cp edge/ntos_linux/*.png "$OUT/" 2>/dev/null || true
               cp edge/app/edge-*.png "$OUT/" 2>/dev/null || true
+              cp edge/ntos_win/ntos-windows.zip "$OUT/" 2>/dev/null || true
+              cp edge/ntos_win/wshot-*.png "$OUT/" 2>/dev/null || true
               export GIT_INDEX_FILE="$GITHUB_WORKSPACE/ci.index"
               rm -f "$GIT_INDEX_FILE"
               git read-tree --empty
@@ -79,6 +81,11 @@ jobs:
             (apt-get update && apt-get install -y make gcc curl ca-certificates xz-utils) \
               || echo "WARNING: apt failed; hoping the image has toolchains"
           fi
+          # wine + mingw zlib: run the ntos_windows host under wine and prove
+          # cross-host parity (byte-identical PNGs). Debian's wine user32
+          # imports zlib1.dll but no package ships it — libz-mingw-w64 does.
+          (apt-get update -qq && apt-get install -y -qq wine64 libz-mingw-w64) \
+            || echo "WARNING: wine unavailable; the windows-parity gate is skipped"
           python3 -c 'import zlib,struct,xml.etree.ElementTree' && echo "python3 stdlib OK"
 
           # -- zig for PE payload builds (retry: runner DNS is flaky) --
@@ -105,6 +112,16 @@ jobs:
 
           # -- Edge POC: uXAML markup -> edge.dll -> scripted UI e2e --
           make -C edge/app ZIG=$(command -v zig) clean all test
+
+          # -- Windows host: build + package + cross-host parity gate --
+          # (ntos_windows.exe under wine must emit byte-identical PNGs for
+          # the same winboot.script; also produces ntos-windows.zip)
+          if command -v wine64 >/dev/null 2>&1; then
+            make -C edge/ntos_win ZIG=$(command -v zig) clean all test
+          else
+            make -C edge/ntos_win ZIG=$(command -v zig) clean all package
+            echo "WARNING: wine64 missing — parity gate skipped, package only"
+          fi
 
           # -- uXAML round-trip: binary -> XML must reparse --
           python3 edge/app/uxaml_gen.py toxml edge/app/edge.uxaml > /tmp/ux.xml

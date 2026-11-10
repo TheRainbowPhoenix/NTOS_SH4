@@ -10,14 +10,76 @@
  * cross-module function address into them, which is the same "loader snaps
  * the IAT" model without needing an import directory at all.
  */
+#ifndef _WIN32
 #define _GNU_SOURCE /* MAP_ANONYMOUS under -std=c11 */
 #define _GNU_SOURCE /* MAP_ANONYMOUS under -std=c11 */
+#endif
 #include "ntos_linux.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
 #include <sys/mman.h>
+#else
+#include <windows.h>
+#endif
+
+/* Map `size` bytes of RWX memory, preferring `prefer` as the address.
+ * Returns NULL on failure. *got_prefer tells the caller whether the
+ * image can skip base relocations. */
+static uint8_t *map_image(uintptr_t prefer, size_t size, int *got_prefer);
+static void unmap_image(uint8_t *p, size_t size);
+
+/* Map `size` bytes of RWX memory, preferring `prefer` as the address.
+ * Returns NULL on failure. *relocated is set to 1 when the mapping did
+ * NOT land at `prefer` (the caller must then apply base relocations).
+ * Everything stays RWX so the IAT-slot patcher can write into sections
+ * the OS would otherwise map read-only. */
+static uint8_t *map_image(uintptr_t prefer, size_t size, int *relocated)
+{
+    *relocated = 0;
+#ifdef _WIN32
+    uint8_t *p = (uint8_t *)VirtualAlloc((void *)prefer, size,
+                                         MEM_RESERVE | MEM_COMMIT,
+                                         PAGE_EXECUTE_READWRITE);
+    if (p == (uint8_t *)prefer)
+        return p;
+    if (p)
+        VirtualFree(p, 0, MEM_RELEASE);
+    p = (uint8_t *)VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT,
+                                PAGE_EXECUTE_READWRITE);
+    if (!p)
+        return NULL;
+    *relocated = 1;
+    return p;
+#else
+    uint8_t *p = mmap((void *)prefer, size, PROT_READ | PROT_WRITE | PROT_EXEC,
+                      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (p != MAP_FAILED && (uintptr_t)p == prefer)
+        return p;
+    if (p != MAP_FAILED)
+        munmap(p, size);
+    p = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC,
+             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (p == MAP_FAILED)
+        return NULL;
+    *relocated = 1;
+    return p;
+#endif
+}
+
+static void unmap_image(uint8_t *p, size_t size)
+{
+    if (!p)
+        return;
+#ifdef _WIN32
+    (void)size;
+    VirtualFree(p, 0, MEM_RELEASE);
+#else
+    munmap(p, size);
+#endif
+}
 
 typedef struct {
     uint16_t e_magic;
@@ -110,20 +172,11 @@ int pe_load(PeModule *mod, const char *name, const uint8_t *data, size_t size)
     mod->size = oh->SizeOfImage;
 
     /* Map SizeOfImage at the preferred base when free, else anywhere+reloc. */
-    uint8_t *base = mmap((void *)(uintptr_t)oh->ImageBase, mod->size,
-                         PROT_READ | PROT_WRITE | PROT_EXEC,
-                         MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     int need_reloc = 0;
-    if (base == MAP_FAILED || (uintptr_t)base != oh->ImageBase) {
-        if (base != MAP_FAILED)
-            munmap(base, mod->size);
-        base = mmap(NULL, mod->size, PROT_READ | PROT_WRITE | PROT_EXEC,
-                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        if (base == MAP_FAILED) {
-            die("mmap failed");
-            return -1;
-        }
-        need_reloc = 1;
+    uint8_t *base = map_image((uintptr_t)oh->ImageBase, mod->size, &need_reloc);
+    if (!base) {
+        die("map_image failed");
+        return -1;
     }
     mod->base = base;
 
@@ -171,7 +224,7 @@ int pe_load(PeModule *mod, const char *name, const uint8_t *data, size_t size)
             }
         } else {
             die("image needs relocation but has no .reloc");
-            munmap(base, mod->size);
+            unmap_image(base, mod->size);
             return -1;
         }
     }

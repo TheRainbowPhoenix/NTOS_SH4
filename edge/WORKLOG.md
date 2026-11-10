@@ -347,3 +347,30 @@ md pages regressed on margins/lists/images; find highlight hid the text):
 
 States in CI: 44 shots, all reference-matched states >= 94.5% blocks,
 probes green. Local: chakra + markdown smoke entries pass.
+
+## Session 7 — NTOS_SH4_windows: the user's-PC iteration loop
+
+Goal (user): "CI to build a windows version (or a web version) so I can test
+it on my computer, see what's rendered, debug it, provide better icons."
+Delivered as edge/ntos_win — the Win32 twin of the Linux host:
+
+- **Same payload, same bytes.** pe_loader.c gained a portable map_image()
+  (VirtualAlloc vs mmap); win_core.c is a builtin-for-builtin twin of
+  host_core.c (WinCE FIND_DATA layout, \fls0 mapping, SIP rects, launch
+  hook, repatch_shared) so payloads cannot tell the hosts apart.
+- **Interactive mode.** No --script: a desktop window mirrors the 320x528
+  LCD (auto 1x/2x from the workarea), real mouse/keys become
+  WM_DOWN_/MOVE_/UP_/KEY_/CHAR_, F12 saves shot-interactive-NNN.png,
+  Ctrl+Q quits. get_message_w pumps Win32 inside the CE wait, so the
+  payload sees input exactly like a stylus.
+- **Session recorder.** Every tap/drag/key/char is appended to
+  session.script in the ntos_linux e2e format — a manual bug hunt becomes
+  a replayable CI script. LCD parity is bit-exact: wpar.py fails the build
+  if any frame of the same winboot.script differs between hosts.
+- **CI**: edge-ci builds ntos-windows.zip (exe + shared DLLs + fake \fls0 +
+  run-edge.bat + README), runs it under wine64 (Debian's wine user32 needs
+  zlib1.dll from libz-mingw-w64 — nothing ships it otherwise), and pushes
+  the zip + wshot pngs to the edge-ci branch. Local sandbox reproduced the
+  exact CI flow (relocated wine, patched nls/wineserver paths): all 7
+  winboot frames byte-identical, interactive session stays alive and
+  records.
