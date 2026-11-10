@@ -61,6 +61,51 @@ package: all
 	python3 mkzip.py $(PKG_ZIP) $(PKG)
 	@echo "package: $(PKG_ZIP) ready"
 
+# --- other apps: the exe is app-agnostic, assemble per-app bundles -----
+# Prerequisites: the payload DLLs must be built first, i.e.
+#   make -C ../app ... (edge set)  +  make -C ../../<app>/app
+# The launchers mirror each app's e2e module list so a native session
+# behaves exactly like the CI run (files keeps the full edge set for the
+# file:// hand-off).
+
+define STAGE
+rm -rf $(1) $(1).zip
+mkdir -p $(1)/fs/fls0
+cp ntos_windows.exe README.txt $(1)/
+endef
+
+BAT = @printf '@echo off\r\ncd /d %%~dp0\r\nntos_windows.exe $(1) --fs fs --record session.script\r\necho session.script + ntos-win.log + shot-*.png record what you did\r\n' > $(2)
+
+package-files: all
+	$(call STAGE,ntos-windows-files)
+	cp $(APP)/html.dll $(APP)/fingerkb.dll $(APP)/shellchrome.dll 	   $(APP)/chakra.dll $(APP)/edge.dll ../../files/app/files.dll ntos-windows-files/
+	cp $(APP)/edge.uxaml $(APP)/edgelight.uxaml ../../files/app/files.uxaml ntos-windows-files/fs/fls0/
+	cp $(APP)/tests/assets/article.md $(APP)/tests/assets/logo.svf 	   $(APP)/tests/assets/demo.md $(APP)/tests/assets/cool.svf ntos-windows-files/fs/fls0/
+	python3 ../../files/app/tests/make_tree.py ntos-windows-files/fs/fls0
+	$(call BAT,html.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll files.dll,ntos-windows-files/run-files.bat)
+	python3 mkzip.py ntos-windows-files.zip ntos-windows-files
+	@echo "package: ntos-windows-files.zip ready"
+
+package-cortana: all
+	$(call STAGE,ntos-windows-cortana)
+	cp ../../cortana/app/fingerkb.dll $(APP)/shellchrome.dll 	   ../../cortana/app/cortana.dll ntos-windows-cortana/
+	cp ../../cortana/app/cortana.uxaml ntos-windows-cortana/fs/fls0/
+	$(call BAT,fingerkb.dll shellchrome.dll cortana.dll,ntos-windows-cortana/run-cortana.bat)
+	python3 mkzip.py ntos-windows-cortana.zip ntos-windows-cortana
+	@echo "package: ntos-windows-cortana.zip ready"
+
+package-calc: all
+	$(call STAGE,ntos-windows-calc)
+	cp ../../calc/app/fingerkb.dll $(APP)/shellchrome.dll 	   ../../calc/app/calc.dll ntos-windows-calc/
+	cp ../../calc/app/calc.uxaml ntos-windows-calc/fs/fls0/
+	$(call BAT,fingerkb.dll shellchrome.dll calc.dll,ntos-windows-calc/run-calc.bat)
+	python3 mkzip.py ntos-windows-calc.zip ntos-windows-calc
+	@echo "package: ntos-windows-calc.zip ready"
+
+package-all: package package-files package-cortana package-calc
+
+# rename the original edge package for the composite target
+
 # test: run the SAME winboot.script through BOTH hosts ($(PKG)/fs for both)
 # and require every frame to be byte-identical (tests/wpar.py). The wine
 # half needs wine64 + xvfb (+ libz-mingw-w64: wine's user32 imports

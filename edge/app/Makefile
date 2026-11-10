@@ -101,6 +101,12 @@ test: all
 	    tests/assets/swap.html > tests/fs/fls0/swap2.html
 	../ntos_linux/ntos_linux html.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --script tests/edge.script \
 	  --shot edge --fs tests/fs
+	# fixes_1 issue states + address-editor selection states (fresh host
+	# each: the scripts assume the boot tab state)
+	../ntos_linux/ntos_linux html.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --script tests/fixes1.script \
+	  --shot edge --fs tests/fs
+	../ntos_linux/ntos_linux html.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --script tests/ad.script \
+	  --shot edge --fs tests/fs
 	python3 tests/check_edge_shots.py edge-*.png
 	../ntos_linux/ntos_linux chakra.dll --entry ChakraSmokeTest
 

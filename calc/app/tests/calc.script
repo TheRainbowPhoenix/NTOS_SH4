@@ -1,137 +1,178 @@
-# calc e2e — coordinates from calc/app/markup/*.xml:
-# StdPage: memory row y172-204 (MC26 MR80 M+133 M-186 MS240 M293);
-#   keypad rows y205/251/297/343/389/435 (46px), cols x0/80/160/240.
-#   row0: % sqrt x2 1/x  row1: CE C back div  row2: 7 8 9 x
-#   row3: 4 5 6 -  row4: 1 2 3 +  row5: neg 0 . =
-# SciPage: angle y134-164 (DEG38 RAD94 GRAD150 @149); memory y164-192;
-#   9 keypad rows y193+32k, 5 cols x32/96/160/224/288.
-#   r0: x2 xy sin cos tan   r1: x3 yroot asin acos atan
-#   r2: sqrt 10x log Exp Mod  r3: inv e^ ln dms deg
-#   r4: 2nd CE C back div  r5: pi 7 8 9 x  r6: n! 4 5 6 -
-#   r7: ( 1 2 3 +  r8: ) neg 0 . =
-# ConvPage: Units1 tap(160,141) Units2(160,217); CE(200,293) back(280,293);
-#   pad rows y314/355/396/437, cols x53/160/266.
-# NavPane: Standard(100,62) Scientific(100,102); cats Volume(100,172)
-#   Length(100,212) Temperature(100,292); About needs scroll.
+# calc e2e — coordinates from calc/app/markup/*.xml (capture-calibrated):
+# StdPage: header y24-72 (hamburger x8-56, history x264-320);
+#   memory row y152-184 (MC27 MR80 M+133 M-186 MS240 M-list293);
+#   % row y185-240 (cols c40/120/200/280); keypad y240-480 rows 48px:
+#   CE row labels y264, 789 y312, 456 y360, 123 y408, +/-0.= y456.
+# SciPage: angle row y128-156 (DEG16 HYP69 F-E120 @140); memory y157-191;
+#   7 rows x 5 cols (c32/96/160/224/288), label rows
+#   y209/250/292/334/376/417/459 (R1 x2 xy sin cos tan;
+#   R2 sqrt 10x log Exp Mod; R3 2nd CE C back div; R4 pi 7 8 9 x;
+#   R5 n! 4 5 6 -; R6 neg 1 2 3 +; R7 ( ) 0 . =).
+# ConvPage: value1 y82-124, name1 y124-148, value2 y166-204, name2
+#   y204-228 (unit buttons open the picker); keypad y280-480, 3 cols
+#   (c69/160/251): [~ CE back] y300, 789 y340, 456 y380, 123 y420,
+#   [~ 0 .] y460. Picker rows from y118 at 36px pitch (scrollable).
+# NavPane (3 calc modes): Standard y72, Scientific y104, Programmer y136;
+#   CONVERTER from ly184: Volume y200, Length y232, Temperature y296;
+#   About pinned y464.
 shot boot
 # ---- standard: 12 + 3 x 4 = 60
-tap 40 412
-tap 120 412
-tap 280 412
-tap 120 366
-tap 280 320
-tap 40 366
-tap 280 457
+tap 40 408
+tap 120 408
+tap 280 408
+tap 200 408
+tap 280 312
+tap 160 360
+tap 280 456
 shot std-result
 # ---- sqrt(81) = 9
-tap 120 274
-tap 120 320
-tap 40 412
-tap 80 228
-tap 280 457
+tap 120 312
+tap 40 408
+tap 120 212
+tap 280 456
 shot std-sqrt
 # ---- 900 + 50 % = 1350
-tap 120 274
-tap 200 320
-tap 200 320
-tap 200 320
-tap 280 412
-tap 40 412
-tap 40 228
-tap 280 457
+tap 200 312
+tap 120 456
+tap 120 456
+tap 120 456
+tap 280 408
+tap 120 360
+tap 40 212
+tap 280 456
 shot std-percent
 # ---- 8, 1/x, negate
-tap 120 274
-tap 200 366
-tap 280 228
-tap 40 457
+tap 120 312
+tap 280 212
+tap 40 456
 shot std-invert
 # ---- memory: 42 =, MS, 8 =, M+, MR
-tap 120 274
-tap 40 366
-tap 120 412
-tap 280 457
-tap 240 188
-tap 200 320
-tap 280 457
-tap 133 188
-tap 80 188
+tap 160 360
+tap 120 408
+tap 280 456
+tap 240 168
+tap 120 312
+tap 280 456
+tap 133 168
+tap 80 168
 shot std-memory
 # ---- history sheet (2 items), clear, close
-tap 296 56
+tap 292 48
 shot std-history
-tap 280 120
+tap 268 106
 tap 160 60
 # ---- memory sheet
-tap 293 188
+tap 293 168
 shot std-memory-sheet
 tap 160 60
 # ---- nav pane -> Scientific
-tap 24 56
+tap 24 48
 shot navpane
-tap 100 102
+tap 100 104
 shot sci-boot
 # ---- DEG: sin(30) = 0.5
-tap 224 369
-tap 160 464
+tap 224 417
+tap 160 459
 tap 160 209
+tap 288 459
 shot sci-sin30
 # ---- RAD: pi / 4 = then tan -> ~1
-tap 94 149
-tap 32 369
-tap 288 337
-tap 96 401
-tap 288 464
-tap 288 209
+tap 16 140
+tap 32 334
+tap 288 292
+tap 224 417
+tap 288 459
+tap 224 209
 shot sci-rad-tan
-# ---- 2nd + asin(0.5) = 30 deg
-tap 32 337
-tap 224 464
-tap 160 401
+# ---- back to DEG; 2nd + asin(0.5) = 30 deg
+tap 16 140
+tap 16 140
+tap 160 292
+tap 160 459
+tap 224 459
+tap 224 417
+tap 32 292
 tap 160 209
+tap 32 292
 shot sci-asin
 # ---- parens: ( 2 + 3 ) x 4 = 20
-tap 160 337
-tap 32 433
-tap 160 433
-tap 288 433
-tap 224 433
-tap 32 464
-tap 288 369
-tap 96 401
-tap 288 464
+tap 32 459
+tap 160 417
+tap 288 417
+tap 224 417
+tap 96 459
+tap 288 334
+tap 224 417
+tap 288 459
 shot sci-parens
 # ---- 5! = 120
-tap 160 337
-tap 160 401
-tap 32 401
+tap 160 417
+tap 32 376
 shot sci-factorial
-# ---- nav -> Converter (Volume: Liters -> Gallons US), type 2
-tap 24 56
-tap 100 172
+# ---- nav -> Converter (Volume): Liters -> Gallons (US), type 2
+tap 24 48
+tap 100 200
 shot conv-volume
-# unit 2 -> Milliliters (picker row 0)
-tap 160 141
-tap 24 136
+# side 1 picker: choose Liters (row 2)
+tap 100 136
 shot conv-picker
-# back to Liters (picker row 2)
-tap 160 141
-tap 24 208
+tap 100 208
+# side 2 picker: choose Gallons (US) (row 10, needs a scroll)
+tap 100 216
+drag 160 300 160 120
+tap 100 318
+# type 2 -> 2 L = 0.528344 gal (US)
+tap 160 420
+shot conv-volume2
 # ---- nav -> Length (Meters -> Feet), type 3
-tap 24 56
-tap 100 212
-tap 160 334
+tap 24 48
+tap 100 232
+tap 100 136
+tap 100 280
+tap 100 216
+tap 100 388
+tap 251 420
 shot conv-length
 # ---- nav -> Temperature (C -> F), type 100 -> 212
-tap 24 56
-tap 100 292
-tap 200 334
-tap 200 334
-tap 120 334
+tap 24 48
+tap 100 296
+tap 69 420
+tap 160 460
+tap 160 460
 shot conv-temp
-# ---- About (drag the nav pane past the end: clamped = deterministic)
-tap 24 56
-drag 160 460 160 40
-drag 160 460 160 40
-tap 100 450
+# ---- nav -> Programmer: 42 across bases, bit view, bitwise ops
+# prog keypad: 6 cols c26/80/133/187/240/293; R0 y248-288 (Lsh Rsh Or Xor
+# Not And), R1 y288 (2nd Mod CE C back div), R2 y339 (A B 7 8 9 x),
+# R3 y377 (C D 4 5 6 -), R4 y416 (E F 1 2 3 +), R5 y453 (( ) neg 0 . =).
+# base lines y124-216 (HEX 124, DEC 147, OCT 170, BIN 193); pivot row
+# y222-248 (bit dots x14-50, QWORD x128-194, MS x226, M+ x278).
+tap 24 48
+tap 100 136
+shot prog-boot
+# type 42 =
+tap 133 384
+tap 187 423
+tap 293 462
+shot prog-42
+# switch the active base to HEX
+tap 100 135
+shot prog-hex
+# open the bit-toggle keyboard and flip bit 2: 42 -> 46
+tap 32 235
+shot prog-bits
+tap 264 450
+shot prog-bitflip
+# back to the keypad; 5 Lsh 2 = 20, then Not -> -21
+tap 32 235
+tap 100 158
+tap 187 384
+tap 26 268
+tap 187 423
+tap 293 462
+shot prog-lsh
+tap 240 268
+shot prog-not
+# ---- About (pinned row, no scrolling needed)
+tap 24 48
+tap 100 464
 shot about

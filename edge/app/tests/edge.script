@@ -87,6 +87,18 @@ char 114
 char 103
 key 13
 shot wiki
+
+# page-context "..." sheet (dark, wiki page loaded -> MENU_PAGE rows with
+# Go forward/Share disabled) + the drag-only mini scrollbar: the shot is
+# taken mid-gesture (raw down/move/up); the list is 7x44 in a 266px view
+tap 294 504
+down 160 300
+move 160 270
+move 160 240
+shot menu-drag
+up 160 240
+tap 120 80
+
 tap 294 504
 tap 60 310
 shot readlist
@@ -97,6 +109,27 @@ key 0x1b
 shot inpriv
 tap 23 504
 tap 84 110
+# tab 0 (the boot tab) is still an empty home tab — the "..." sheet is
+# context-sensitive now, so navigate THIS tab to the wiki page before
+# asking for Find on page (row 4 of the page sheet)
+tap 158 504
+char 101
+char 110
+char 46
+char 119
+char 105
+char 107
+char 105
+char 112
+char 101
+char 100
+char 105
+char 97
+char 46
+char 111
+char 114
+char 103
+key 13
 tap 294 504
 tap 60 346
 shot findbar
@@ -143,10 +176,33 @@ tap 237 455
 key 0x1b
 shot light-inpriv
 tap 23 455
+# the list with the InPrivate card: #1A5290 plate under the strip icon
+shot light-tabs-inpriv
+tap 163 455
+tap 163 455
+tap 163 455
+tap 163 455
+shot light-tabs
+tap 315 455
+shot light-tabsmenu
+key 0x1b
+# mini close under the card: 27x26 zone flashes #B8B8B8 while pressed
+# (raw down/shot/up), then the release closes tab 0
+down 83 240
+shot light-tabs-close-press
+up 83 240
 tap 84 110
+# light hub screens (light/downloads.png): the panel sits below the
+# launcher status bar, content clips above the system nav bar; pivots
+# live at y24-72 (xml y0-48 + 24)
 tap 294 456
-tap 212 397
-tap 146 20
+tap 60 397
+shot light-hub-favorites
+tap 50 44
+shot light-hub-reading
+tap 100 44
+shot light-hub-history
+tap 146 44
 shot light-downloads
 key 0x1b
 tap 24 455
@@ -189,6 +245,33 @@ key 13
 shot md-demo
 drag 160 400 160 150
 shot md-demo-scrolled
+
+# ---- light find-on-page on the demo page ----------------------------
+# (fixes_1/find_on_page_prompt.png): the bar opens above the page, the
+# field tap raises the docked SIP (48px up, nav bar stays); 2px blue top
+# rule + 3px focus underline; empty field shows the gray prompt, a live
+# query gets the caret, a cur/total counter and prev/next chevrons
+# inside the field
+drag 160 150 160 400
+tap 294 456
+tap 60 285
+shot light-find-bar
+tap 60 456
+shot light-find-kbd
+# "heading": matches live at the top of the demo page (y52-191), so the
+# highlights are in view at scroll 0 and the counter reads them live
+char 104
+char 101
+char 97
+char 100
+char 105
+char 110
+char 103
+shot light-find
+tap 300 193
+shot light-find-next
+tap 160 100
+shot light-find-done
 
 # ---- reader mode ----
 tap 240 455
@@ -257,6 +340,36 @@ char 115
 char 116
 key 13
 shot errorpage
+
+# ---- search flow: a non-URL query (space, or no dot) searches Bing ----
+# the POC is offline, so bing.com/search?q= renders the engine-built
+# "You're not connected" page (fixes_1/search_connect.png)
+tap 158 455
+char 104
+char 111
+char 119
+char 32
+char 116
+char 111
+char 32
+char 102
+char 105
+char 120
+char 32
+char 116
+char 104
+char 105
+char 115
+key 13
+shot search-connect
+# single word without a dot is a query too
+tap 158 455
+char 101
+char 100
+char 103
+char 101
+key 13
+shot search-edge
 
 # ---- render-from-content gate: swap.html vs swap2.html --------------
 # the two files differ ONLY in CSS colour/size values; the renders must

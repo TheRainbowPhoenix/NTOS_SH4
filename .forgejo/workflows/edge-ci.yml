@@ -43,6 +43,11 @@ jobs:
               cp edge/app/edge-*.png "$OUT/" 2>/dev/null || true
               cp edge/ntos_win/ntos-windows.zip "$OUT/" 2>/dev/null || true
               cp edge/ntos_win/wshot-*.png "$OUT/" 2>/dev/null || true
+              # the hand-edit SVF kit: every .svf in the tree + svfkit.py
+              # + the format doc, at repo-relative paths (validates each
+              # asset while packing; a bad icon fails the step)
+              python3 tools/svfkit.py kit "$OUT/svf-kit.zip" \
+                || echo "WARNING: svf kit zip failed" 
               export GIT_INDEX_FILE="$GITHUB_WORKSPACE/ci.index"
               rm -f "$GIT_INDEX_FILE"
               git read-tree --empty

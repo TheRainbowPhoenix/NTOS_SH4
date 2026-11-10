@@ -149,3 +149,66 @@ engine off calc_app.c + host harness) — all green at 16 digits.
   (tests/build, tests/fs) so `git status` stays clean after
   `make test`; `calc/tools/ascii_frame.py` sys.path fixed (tools/ is
   2 levels below root, not 3).
+
+## 2026-11-11 — session 3: capture calibration + native packages
+- refs/calc-screens landed (13 real-device captures). Recalibrated the
+  whole port to them: white display area (not #F2F2F2), #F7F3F7 keypad
+  shade starting at the CE row, capture label rows (std y251/300/350/399/
+  449, sci 7x5 at 41.5px, conv 3 cols from the XBF 0.25*/3*/0.25* grid),
+  plain `=` (the captures show no idle accent — accent only on
+  hover/press per the XBF), mode names in caps as the page titles
+  (STANDARD/SCIENTIFIC/<category>/ABOUT), memory-row disabled greys
+  (#B5B2B5 vs #636563), the nav pane 256px #E7E3E7 with no scrim and the
+  #9CAEEF full-width selected band, About pinned above the nav bar.
+- The launcher now owns the title bar: SHELLCHROME paints a system
+  status bar (y0-24) over every hosted app, themed off the published
+  NAV_BG luminance — white bg + near-black ink on light hosts, black +
+  white on dark. Apps stopped painting their own top strips.
+- Mirrored text fixed (the font table is LSB-first; the calc painter
+  walked it MSB-first — every glyph was mirrored horizontally), 24px +
+  28px fonts baked (conv values / sci result), double-strike bold.
+- Sci keypad restructured to the captured 7x5: the shift(2nd) key is the
+  up-arrow at R3c0; 2nd swaps R1/R2 with the InvRow sets, the new HYP
+  toggle swaps trig<->hyperbolic (dec_exp-based sinh/cosh/tanh), the DEG
+  button cycles units, F-E toggles a d.ddde±exp display format (fe_format),
+  and Exp became the x10^ exponent entry (entry_value parses 'e'). The
+  angle row is DEG/HYP/F-E at y137 per the capture.
+- Converter per volume.png: 24px values left at x13, accent unit names +
+  chevron, the [ - CE back ]/digits/[ - 0 . ] 3-col keypad, unit picker
+  scrolling (15-unit lists), empty entry on category entry (0/0 state).
+- New commands: angle:cycle, hyp, fe, mlist; units picker scroll.
+- The one markup gotcha worth remembering: Button-child coordinates are
+  RELATIVE to the button — the first pass placed them absolute and the
+  keypad labels landed off-slot (only some rows rendered).
+- e2e: 22 frames green (values verified by display reads: 60, 9, 1,350,
+  -0.125, sin30=0.5, tan(pi/4)~1, asin(0.5), (2+3)x4=20, 5!=120,
+  2L=0.528344gal, 3m=9.84ft, 100C=212F).
+- Native testing: edge/ntos_win gained package-files/package-cortana/
+  package-calc (ntos-windows-<app>.zip + run-<app>.bat, mirroring each
+  app's e2e module list); files-ci and calc-ci build them and run the
+  wine cross-host parity gate (same e2e script, byte-identical PNGs).
+- Pending: Programmer mode (programmer*.png captures are in refs;
+  needs the radix keypad + bit panel + base formatting), Date
+  calculation (no capture yet), and the nav pane's Programmer/Date
+  entries once those exist.
+
+### Programmer mode (same session)
+- Implemented from the four programmer*.png captures: the 6x6 radix
+  keypad (Lsh/Rsh/Or/Xor/Not/And over the 2nd Mod CE C back div row and
+  the A-F letter columns), base lines HEX/DEC/OCT/BIN with the active
+  base in accent (tap to switch; DEC default), the big value rendered
+  in the active base (28px), BIN padded to whole nibbles and grouped 4s,
+  QWORD/DWORD/WORD/BYTE cycling with width masking, A-F/8/9/2-7 keys
+  disabled outside their base in #B5B2B5, "." always disabled, and the
+  16-nibble bit-toggle keyboard (gray 0s / accent 1s, tap flips a bit).
+- Engine: int64 bitwise ops on the mantissa (And/Or/Xor/Lsh/Rsh as
+  binary ops + unary Not); 2nd swaps Lsh/Rsh toward RoL/RoR (the tiny
+  sub-chevron marks under the keys per the capture).
+- The nav pane gained the Programmer row (3 calc modes; the converter
+  band shifted +32 — the e2e coordinates had to move with it; the
+  volume-section taps had silently selected the wrong rows, which is
+  how a stray ProgPage BaseBin tap set the active base to BIN and
+  produced a mysteriously BIN-accented prog-boot).
+- Not done: Date calculation (no capture); the nav pane omits that row
+  until the mode exists. The programmer pivot row omits the two
+  function-page chevrons (nothing to page through yet).

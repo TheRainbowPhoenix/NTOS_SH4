@@ -493,3 +493,87 @@ SIP-up = keyboard through the strip. light-tabs now keeps its reference
 - MDSmokeTest via html.dll: 0x103F (unchanged). edge e2e: all shots
   green incl. new wiki content probes, errorpage, swap-a/b. files-app
   e2e green. ntos_linux sample e2e green. uxaml round-trip green.
+
+## 2026-11-11 — status bar + swap gate
+- SHELLCHROME now paints the launcher-owned system status bar (y0-24)
+  over every hosted app; the swap gate's heading/text regions moved
+  below it: swap.html gained a 34px top margin and the COLORS regions
+  were recalibrated (28..62 / 62..110). The md viewport itself still
+  paints from y0 — its top 24px sit under the bar; a viewport-origin
+  fix belongs to the md engine and is noted as backlog.
+
+## 2026-11-11 — session 4: the fixes_1 UX flow pass (address, find, menu, hubs, tabs, search, svf kit)
+
+The user reviewed refs/edge-screens/fixes_1 (SIDEBSIDE_* = reference vs
+implementation) and filed a UX-flow list; every item is now landed, one
+commit each, e2e-gated (82 states, all green; settings suite re-verified).
+
+### Address editor (fd1a12a, prior session in this run)
+- the edit stack rides chrome_yoff() up 48px in light (separator #E7E7E7
+  175-182, white field 182-222, toolbar #DEDFDE 223-269, SIP docked 48 up,
+  nav bar 480-528); placeholder clears on typing, the page stays LIVE
+  behind typed text and dims via DimRect when only the placeholder shows;
+  tapping a loaded page's address bar opens the editor with the URL fully
+  selected; real text selection (char-advance metrics map taps/drags to
+  caret slots) with the blue #3060C0 block and white glyphs.
+
+### Find bar (12f6c17)
+- light bar above the docked SIP: live page 0-175 + highlights, 1px
+  separator, 2px blue top rule, white field 178-208, 3px blue focus
+  underline, C_SEP gap, SIP, nav bar; empty field carries the gray
+  "Enter text to search" prompt; live query gets the caret, a cur/total
+  counter and prev/next chevrons INSIDE the field.
+- fresh find sessions start empty: the query used to leak across
+  sessions (the e2e field read "exammark" after the dark section typed
+  "exam") — findonpage now clears it. Caught by the counter probes.
+
+### "..." actions sheet (12f6c17 + 4a2f4f3)
+- procedural paint_menu replaces markup/actionsmenu.xml: DimRect scrim
+  (from y24 — the launcher status bar stays crisp), context-dependent
+  rows (a web page gets greyed Go forward/Share + Settings; home gets
+  Settings + Send feedback), hub icon row, collapse chevron.
+- dark rows are 44px like the legacy sheet: 6 visible + a peek of
+  Settings so the list really overflows and the drag-only mini
+  scrollbar (track #3A3A3A, thumb #767676, end chevrons) has content
+  to reveal; the raw down/move/up script primitives shoot mid-gesture.
+
+### Hub screens (2bfef64)
+- light hubs sit below the status bar (hub_yoff +24): pivot row at
+  24-72 with the #005AA1 underline at 66-69, content clipped at y480,
+  SHELLCHROME repaints both system bars over the fullscreen panel;
+  no app toolbar (light downloads.png). Dark untouched.
+
+### Tabs list (3f1fb0d)
+- light cards per the user's measurements: #E7E7E7 title strips (28px),
+  1px #E6E6E6 frames, white thumbnails, row pitch 192; the mini close
+  under each card (full-width #E7E7E7 strip, X centred, 27x26 touch
+  zone at cx+57..84, #B8B8B8 flash while pressed — proven by a
+  mid-press shot); InPrivate cards get the #1A5290 plate at the
+  thumbnail's top-left under the strip icon. Light toolbar at 432-480
+  is procedural; dark keeps the legacy tabs.png grid.
+
+### Search flow (2ca0cc8)
+- non-URL text (a space, or no dot) rewrites to bing.com/search?q=…
+  like W10M's "Search or browse"; the offline results page is the
+  engine-rendered "You're not connected" HTML (search_connect.png copy:
+  heading, jab/tips, two bullets, the query echoed, bordered "Go to
+  Wireless Settings" button). The broken-heart art needs border-radius
+  (CSS1 can't) — backlog for an svf-drawn icon.
+
+### SVF editing kit (dd5fa4e)
+- tools/svfkit.py (stdlib only): dump/build/preview/kit. dump->build
+  round-trips all 18 shipped assets byte-identically (incl. the 0x50
+  text op and pigments >0x7FFF whose top bit the 5-bit masks ignore);
+  preview renders with the device rules (32-segment arcs, parallel-
+  offset widths, even-odd polygon fill, fill=none draws rings, tint
+  recolor). tools/svf-format.md is the byte-level spec. CI ships
+  svf-kit.zip (all assets at repo-relative paths + the tool + the doc)
+  to the edge-ci branch — unzip, edit, build, preview, commit.
+
+### e2e (ddcad41)
+- fixes1.script and ad.script (previously orphaned with stale shots)
+  are now gated make-test states; errorpage carries the #A2A9B1 border
+  anchors; 82 states all green, settings suite re-verified.
+- Backlog noted during the pass: the broken-heart icon (needs an svf),
+  the md viewport origin under the status bar (from the status-bar
+  session), ACID2 int32 layout, the 8px seam glitch.
