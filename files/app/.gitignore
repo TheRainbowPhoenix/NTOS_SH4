@@ -1,0 +1,7 @@
+# build artifacts (CI ships the shots to the files-ci branch)
+files.dll
+files.pdb
+files.uxaml
+files-*.png
+*.lib
+tests/fs/fls0/

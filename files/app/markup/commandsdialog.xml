@@ -1,0 +1,10 @@
+<Page name="CommandsDialog">
+  <Canvas>
+    <Rect name="CmdScrim" x="0" y="0" w="320" h="528" bg="#7F7F7F"/>
+    <!-- bottom sheet (ContentDialog FullSizeDesired), rows painted in code -->
+    <Rect x="0" y="176" w="320" h="352" bg="#FFFFFF"/>
+    <Rect x="0" y="176" w="320" h="2" bg="#767676"/>
+    <Text name="CommandsTitle" x="12" y="188" text="This device" color="#000000" size="18"/>
+    <Rect name="CommandsHost" x="0" y="220" w="320" h="308" bg="#FFFFFF"/>
+  </Canvas>
+</Page>

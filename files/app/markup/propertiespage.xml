@@ -1,0 +1,22 @@
+<Page name="PropertiesPage">
+  <Canvas>
+    <!-- NavBar with a Properties title + back -->
+    <Rect x="0" y="0" w="320" h="48" bg="#E6E6E6"/>
+    <Button name="PropsBack" x="0" y="0" w="48" h="48" command="props-back">
+      <Glyph x="12" y="12" w="24" h="24" text="back" color="#000000"/>
+    </Button>
+    <Text x="56" y="16" text="Properties" color="#000000" size="18"/>
+    <Rect x="0" y="48" w="320" h="480" bg="#FFFFFF"/>
+    <!-- header: 96px thumbnail + name (PropertiesHeaderTemplate 0,24) -->
+    <Rect name="PropsThumb" x="12" y="72" w="96" h="96" bg="#FFFFFF"/>
+    <Text name="PropsName" x="120" y="76" text="" color="#000000" size="18"/>
+    <Text name="PropsType" x="120" y="140" text="" color="#767676" size="12"/>
+    <!-- rows painted dynamically (13px label/value, 26px pitch) -->
+    <Rect name="PropsRows" x="0" y="184" w="320" h="240" bg="#FFFFFF"/>
+    <!-- drive space footer (root only): UsedSpace/FreeSpace + 6px bar -->
+    <Text name="UsedSpaceText" x="12" y="424" text="" color="#767676" size="12"/>
+    <Text name="FreeSpaceText" x="308" y="424" text="" color="#767676" size="12" align="2"/>
+    <Progress name="SpaceBar" x="12" y="444" w="296" h="6" value="0" max="100" bg="#E6E6E6"/>
+    <Text name="UsedSpaceLabel" x="12" y="460" text="" color="#767676" size="12"/>
+  </Canvas>
+</Page>

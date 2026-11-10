@@ -1,0 +1,12 @@
+<Page name="NavPane">
+  <Canvas>
+    <!-- light-dismiss scrim over the whole shell -->
+    <Rect name="NavScrim" x="0" y="0" w="320" h="528" bg="#7F7F7F"/>
+    <!-- pane: SmallSplitViewOpenPaneLength 256, PaneBackgroundChromeLow -->
+    <Rect x="0" y="0" w="256" h="528" bg="#F2F2F2"/>
+    <Text x="12" y="16" text="FILE EXPLORER" color="#000000" size="14" bold="true"/>
+    <Rect x="0" y="48" w="256" h="1" bg="#E0E0E0"/>
+    <!-- location rows painted dynamically in NavPaneHost -->
+    <Rect name="NavPaneHost" x="0" y="49" w="256" h="479" bg="#F2F2F2"/>
+  </Canvas>
+</Page>

@@ -1,0 +1,17 @@
+<Page name="SearchPage">
+  <Canvas>
+    <!-- search row replaces the NavBar (SearchEditBox slides from top) -->
+    <Rect x="0" y="0" w="320" h="48" bg="#E6E6E6"/>
+    <Button name="SearchBack" x="0" y="0" w="48" h="48" command="search-back">
+      <Glyph x="12" y="12" w="24" h="24" text="back" color="#000000"/>
+    </Button>
+    <Rect name="SearchField" x="48" y="8" w="264" h="32" bg="#FFFFFF"/>
+    <Button name="SearchClear" x="272" y="0" w="48" h="48" command="search-clear">
+      <Glyph x="14" y="14" w="20" h="20" text="x" color="#767676"/>
+    </Button>
+    <!-- results -->
+    <Rect x="0" y="48" w="320" h="223" bg="#FFFFFF"/>
+    <Text name="SearchHint" x="12" y="61" text="" color="#767676" size="14"/>
+    <Rect name="SearchHost" x="0" y="84" w="320" h="187" bg="#FFFFFF"/>
+  </Canvas>
+</Page>

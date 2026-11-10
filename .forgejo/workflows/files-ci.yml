@@ -1,0 +1,131 @@
+name: files CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  files:
+    runs-on: docker
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Build NTOS_SH4_linux + File Explorer POC e2e (single self-contained step)
+        shell: bash
+        run: |
+          set -ex
+          export DEBIAN_FRONTEND=noninteractive
+          cd "$GITHUB_WORKSPACE"
+
+          LOG="$GITHUB_WORKSPACE/files-ci.log"
+          touch "$LOG"
+          exec > >(tee -a "$LOG") 2>&1
+
+          RURL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          AURL="$RURL"
+          case "${GITHUB_TOKEN:-}" in
+            "") ;;
+            *:*|*@*) AURL="${RURL/https:\/\//https:\/\/${GITHUB_TOKEN}@}" ;;
+            *) AURL="${RURL/https:\/\//https:\/\/x-access-token:${GITHUB_TOKEN}@}" ;;
+          esac
+
+          finish() {
+            rc=$?
+            if [ -d "$GITHUB_WORKSPACE/repo/.git" ]; then
+              set +ex
+              echo "== files CI exit=$rc; shipping log + screenshots to files-ci branch =="
+              cd "$GITHUB_WORKSPACE/repo"
+              OUT="$GITHUB_WORKSPACE/ci-out"
+              rm -rf "$OUT"; mkdir -p "$OUT"
+              cp "$LOG" "$OUT/files-ci.log"
+              cp files/app/files-*.png "$OUT/" 2>/dev/null || true
+              export GIT_INDEX_FILE="$GITHUB_WORKSPACE/ci.index"
+              rm -f "$GIT_INDEX_FILE"
+              git read-tree --empty
+              ( cd "$OUT" && find . -type f ) | while IFS= read -r f; do
+                f="${f#./}"
+                blob=$(git hash-object -w "$OUT/$f")
+                git update-index --add --cacheinfo "100644,$blob,$f"
+              done
+              tree=$(git write-tree)
+              unset GIT_INDEX_FILE
+              commit=$(GIT_AUTHOR_NAME=clemu-ci GIT_AUTHOR_EMAIL=ci@noreply \
+                       GIT_COMMITTER_NAME=clemu-ci GIT_COMMITTER_EMAIL=ci@noreply \
+                       git commit-tree "$tree" -m "files CI: $GITHUB_SHA exit=$rc")
+              git push -qf "$AURL" "$commit:refs/heads/files-ci" \
+                || echo "log push FAILED (token may lack write access)"
+              set -ex
+            fi
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          # -- checkout (runner has no github.com access; plain git clone) --
+          if ! git clone --depth 1 "$RURL" repo; then
+            git clone --depth 1 "$AURL" repo
+          fi
+          cd repo
+          if [ -n "$GITHUB_SHA" ]; then
+            git fetch --depth 1 origin "$GITHUB_SHA" || true
+            git checkout --force "$GITHUB_SHA" || true
+          fi
+          git log --oneline -1
+
+          # -- deps: make/gcc/curl via best-effort apt; python is stdlib-only --
+          if ! command -v make >/dev/null 2>&1 || ! command -v gcc >/dev/null 2>&1; then
+            rm -rf /var/lib/apt/lists/*
+            (apt-get update && apt-get install -y make gcc curl ca-certificates xz-utils) \
+              || echo "WARNING: apt failed; hoping the image has toolchains"
+          fi
+          python3 -c 'import zlib,struct,xml.etree.ElementTree' && echo "python3 stdlib OK"
+
+          # -- zig for PE payload builds (retry: runner DNS is flaky) --
+          if ! command -v zig >/dev/null 2>&1; then
+            for i in 1 2 3 4 5; do
+              curl -sSL --max-time 300 -o /tmp/zig.tar.xz \
+                "https://ziglang.org/download/0.14.0/zig-linux-x86_64-0.14.0.tar.xz" && break
+              echo "WARN: zig download attempt $i failed; retrying in 20s"
+              sleep 20
+            done
+            if [ ! -s /tmp/zig.tar.xz ]; then
+              echo "FATAL: could not download zig after retries"; exit 7
+            fi
+            tar -C /opt -xf /tmp/zig.tar.xz
+            ln -sf /opt/zig-linux-x86_64-0.14.0/zig /usr/local/bin/zig
+          fi
+          zig version
+
+          # -- build the NTOS_SH4_linux env + run the sample smoke e2e --
+          make -C edge/ntos_linux ZIG=$(command -v zig) clean all
+          (cd edge/ntos_linux && ./ntos_linux sample.dll \
+            --script tests/sample.script --shot ci --fs tests/fs && \
+            python3 tests/check_shots.py ci-*.png && rm -f ci-*.png)
+
+          # -- File Explorer POC: uXAML markup -> files.dll -> scripted UI e2e --
+          make -C files/app ZIG=$(command -v zig) clean all test
+
+          # -- uXAML round-trip: binary -> XML must reparse --
+          python3 edge/app/uxaml_gen.py toxml files/app/files.uxaml > /tmp/ux.xml
+          grep -q 'FolderPage' /tmp/ux.xml
+
+          # -- FileExplorer reference tooling self-test (pri decoder) --
+          python3 - <<'PYEOF'
+          import sys, zipfile, tempfile, os, subprocess
+          z = zipfile.ZipFile('refs/edge/Microsoft.Windows.FileExplorer_cw5n1h2txyewy.zip')
+          tmp = tempfile.mkdtemp()
+          z.extractall(tmp)
+          pri = os.path.join(tmp, 'Microsoft.Windows.FileExplorer_cw5n1h2txyewy', 'resources.pri')
+          out = subprocess.run([sys.executable, 'files/tools/pri_decode.py', pri,
+                                '--out', '/tmp/pri_ci'],
+                               capture_output=True, text=True)
+          print(out.stdout, out.stderr)
+          assert 'resources ->' in out.stdout, 'pri decode failed'
+          assert 'en-US values' in out.stdout, 'en-US extraction failed'
+          with open('/tmp/pri_ci/pri_en_us.txt') as f:
+              text = f.read()
+          assert 'New folder' in text and 'This folder is empty.' in text
+          print('pri decoder self-test OK')
+          PYEOF
+
+          echo "== files CI step complete =="

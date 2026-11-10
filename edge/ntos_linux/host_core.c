@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <unistd.h>
 #include <time.h>
 
@@ -437,9 +438,44 @@ typedef struct {
     unsigned attrib;
     unsigned long size;
     char name[260];
-} HostFindData;
+} HostFindData; /* legacy layout, unused (kept for reference) */
 
-static MSABI intptr_t find_first_file_w(const W16 *pattern, HostFindData *out)
+/* WinCE FIND_DATA (payload/phone/phone_io.h + payload/control.c layout):
+ * {u32 attrs; u32 times[6] (creation/access/write FILETIMEs); u32 size_hi,
+ *  size_lo, oid; W16 name[260]} = 560 bytes. The phone payloads and the
+ * device COREDLL share it, so the host must too. */
+typedef struct {
+    unsigned attrs;
+    unsigned times[6];
+    unsigned size_hi, size_lo, oid;
+    unsigned short name[260];
+} WinceFindData;
+
+static void fill_wince_find(WinceFindData *out, const char *base,
+                            const char *name, int is_dir)
+{
+    struct stat st;
+    char full[1100];
+    snprintf(full, sizeof(full), "%s/%s", base, name);
+    memset(out, 0, sizeof(*out));
+    out->attrs = is_dir ? 16u : 0u;
+    if (stat(full, &st) == 0) {
+        out->size_lo = (unsigned)(st.st_size & 0xFFFFFFFFu);
+        out->size_hi = (unsigned)((unsigned long long)st.st_size >> 32);
+        /* FILETIME = 100ns ticks since 1601-01-01 */
+        long long secs = (long long)st.st_mtime;
+        long long ft = (secs + 11644473600LL) * 10000000LL;
+        out->times[4] = (unsigned)(ft & 0xFFFFFFFFu);        /* write lo */
+        out->times[5] = (unsigned)((unsigned long long)ft >> 32); /* write hi */
+        out->times[0] = out->times[4];                       /* creation ~ */
+        out->times[1] = out->times[5];
+    }
+    for (int i = 0; i < 259 && name[i]; ++i)
+        out->name[i] = (unsigned char)name[i];
+    out->name[259] = 0;
+}
+
+static MSABI intptr_t find_first_file_w(const W16 *pattern, WinceFindData *out)
 {
     char path[1100];
     devpath_to_host(pattern, path, sizeof(path));
@@ -451,29 +487,44 @@ static MSABI intptr_t find_first_file_w(const W16 *pattern, HostFindData *out)
     hf->d = opendir(path[0] ? path : ".");
     if (!hf->d) {
         free(hf);
-        return -1;
+        return (intptr_t)(uintptr_t)0xFFFFFFFFu;
     }
     struct dirent *de = readdir(hf->d);
     if (!de) {
         closedir(hf->d);
         free(hf);
-        return -1;
+        return (intptr_t)(uintptr_t)0xFFFFFFFFu;
     }
-    out->attrib = de->d_type == DT_DIR ? 16u : 0u;
-    snprintf(out->name, sizeof(out->name), "%s", de->d_name);
+    do { /* skip the unix dots, WinCE FindFirst never returns them */
+        if (de->d_name[0] == '.' && (!de->d_name[1] ||
+            (de->d_name[1] == '.' && !de->d_name[2]))) {
+            de = readdir(hf->d);
+            continue;
+        }
+        break;
+    } while (de);
+    if (!de) {
+        closedir(hf->d);
+        free(hf);
+        return (intptr_t)(uintptr_t)0xFFFFFFFFu;
+    }
+    fill_wince_find(out, hf->base, de->d_name, de->d_type == DT_DIR);
     return (intptr_t)hf;
 }
 
-static MSABI int find_next_file_w(intptr_t h, HostFindData *out)
+static MSABI int find_next_file_w(intptr_t h, WinceFindData *out)
 {
     HostFile *hf = (HostFile *)h;
     if (!hf || !hf->d)
         return 0;
-    struct dirent *de = readdir(hf->d);
-    if (!de)
-        return 0;
-    out->attrib = de->d_type == DT_DIR ? 16u : 0u;
-    snprintf(out->name, sizeof(out->name), "%s", de->d_name);
+    struct dirent *de;
+    do {
+        de = readdir(hf->d);
+        if (!de)
+            return 0;
+    } while (de->d_name[0] == '.' && (!de->d_name[1] ||
+        (de->d_name[1] == '.' && !de->d_name[2])));
+    fill_wince_find(out, hf->base, de->d_name, de->d_type == DT_DIR);
     return 1;
 }
 
@@ -493,6 +544,74 @@ static MSABI int delete_file_w(const W16 *name)
     char path[1100];
     devpath_to_host(name, path, sizeof(path));
     return unlink(path) == 0;
+}
+
+static MSABI int create_directory_w(const W16 *name, void *sa)
+{
+    (void)sa;
+    char path[1100];
+    devpath_to_host(name, path, sizeof(path));
+    return mkdir(path, 0777) == 0;
+}
+
+static MSABI int remove_directory_w(const W16 *name)
+{
+    char path[1100];
+    devpath_to_host(name, path, sizeof(path));
+    return rmdir(path) == 0;
+}
+
+static MSABI int move_file_w(const W16 *from, const W16 *to)
+{
+    char a[1100], b[1100];
+    devpath_to_host(from, a, sizeof(a));
+    devpath_to_host(to, b, sizeof(b));
+    return rename(a, b) == 0;
+}
+
+static MSABI int copy_file_w(const W16 *from, const W16 *to, int fail_if_exists)
+{
+    char a[1100], b[1100];
+    devpath_to_host(from, a, sizeof(a));
+    devpath_to_host(to, b, sizeof(b));
+    if (fail_if_exists && access(b, F_OK) == 0)
+        return 0;
+    FILE *in = fopen(a, "rb");
+    if (!in)
+        return 0;
+    FILE *out = fopen(b, "wb");
+    if (!out) {
+        fclose(in);
+        return 0;
+    }
+    char buf[4096];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), in)) > 0)
+        if (fwrite(buf, 1, n, out) != n) {
+            fclose(in);
+            fclose(out);
+            return 0;
+        }
+    fclose(in);
+    fclose(out);
+    return 1;
+}
+
+static MSABI int get_disk_free_space_ex_w(const W16 *path, U64 *free_avail,
+                                          U64 *total, U64 *free_total)
+{
+    char p[1100];
+    devpath_to_host(path, p, sizeof(p));
+    struct statvfs vfs;
+    if (statvfs(p[0] ? p : ".", &vfs) != 0)
+        return 0;
+    if (free_avail)
+        *free_avail = (U64)vfs.f_bavail * vfs.f_frsize;
+    if (total)
+        *total = (U64)vfs.f_blocks * vfs.f_frsize;
+    if (free_total)
+        *free_total = (U64)vfs.f_bfree * vfs.f_frsize;
+    return 1;
 }
 
 /* ---------------- misc coredll ---------------- */
@@ -560,6 +679,11 @@ const BuiltinExport host_builtins[] = {
     B2(FindNextFileW, find_next_file_w),
     B2(FindClose, find_close),
     B2(DeleteFileW, delete_file_w),
+    B2(CreateDirectoryW, create_directory_w),
+    B2(RemoveDirectoryW, remove_directory_w),
+    B2(MoveFileW, move_file_w),
+    B2(CopyFileW, copy_file_w),
+    B2(GetDiskFreeSpaceExW, get_disk_free_space_ex_w),
     B(coredll_puts),
     B(coredll_launch),
     B2(Sleep, sleep_ms),

@@ -1,0 +1,15 @@
+<Page name="NewFolderDialog">
+  <Canvas>
+    <Rect name="NfScrim" x="0" y="0" w="320" h="528" bg="#7F7F7F"/>
+    <Rect x="0" y="139" w="320" h="132" bg="#FFFFFF"/>
+    <Text x="12" y="149" text="Create a new folder" color="#000000" size="18"/>
+    <Text x="12" y="175" text="Folder name" color="#000000" size="14"/>
+    <Rect name="NewFolderField" x="12" y="195" w="296" h="32" bg="#FFFFFF"/>
+    <Button name="NewFolderOK" x="0" y="227" w="160" h="44" command="newfolder-ok">
+      <Text x="80" y="240" text="OK" color="#0078D7" size="14" align="1"/>
+    </Button>
+    <Button name="NewFolderCancel" x="160" y="227" w="160" h="44" command="newfolder-cancel">
+      <Text x="80" y="240" text="Cancel" color="#000000" size="14" align="1"/>
+    </Button>
+  </Canvas>
+</Page>

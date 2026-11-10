@@ -1,0 +1,65 @@
+<Page name="FolderPage">
+  <Canvas>
+    <Canvas x="0" y="0" w="320" h="48">
+      <!-- NavBar: hamburger | breadcrumbs | Up (Colors.xaml: ChromeMedium) -->
+      <Rect x="0" y="0" w="320" h="48" bg="#E6E6E6"/>
+      <Button name="HamburgerButton" x="0" y="0" w="48" h="48" command="navpane">
+        <Glyph x="16" y="16" w="16" h="16" text="hamburger" color="#000000"/>
+      </Button>
+      <Button name="CrumbHost" x="48" y="0" w="224" h="48" command="noop"/>
+      <Button name="UpButton" x="272" y="0" w="48" h="48" command="up">
+        <Glyph x="12" y="12" w="24" h="24" text="up" color="#000000"/>
+      </Button>
+    </Canvas>
+    <Canvas x="0" y="48" w="320" h="432">
+      <Rect x="0" y="0" w="320" h="432" bg="#FFFFFF"/>
+      <Text name="SortByText" x="12" y="13" text="Sort by: Name" color="#000000" size="14"/>
+      <Text name="StatusText" x="12" y="13" text="" color="#000000" size="14" visible="false"/>
+      <Text name="EmptyText" x="12" y="13" text="This folder is empty." color="#767676" size="14" visible="false"/>
+      <Rect name="ItemsHost" x="0" y="36" w="320" h="396" bg="#FFFFFF"/>
+    </Canvas>
+    <Canvas x="0" y="480" w="320" h="48">
+      <Rect x="0" y="0" w="320" h="48" bg="#E6E6E6"/>
+      <Button name="AppBarSelect" x="0" y="0" w="80" h="48" command="select">
+        <Glyph x="31" y="7" w="18" h="18" text="select" color="#000000"/>
+        <Text x="40" y="32" text="Select" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="AppBarNewFolder" x="80" y="0" w="80" h="48" command="newfolder">
+        <Glyph x="31" y="7" w="18" h="18" text="newfolder" color="#000000"/>
+        <Text x="40" y="32" text="New folder" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="AppBarSearch" x="160" y="0" w="80" h="48" command="search">
+        <Glyph x="31" y="7" w="18" h="18" text="search" color="#000000"/>
+        <Text x="40" y="32" text="Search" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="AppBarMore" x="240" y="0" w="80" h="48" command="commands">
+        <Glyph x="31" y="7" w="18" h="18" text="more" color="#000000"/>
+        <Text x="40" y="32" text="More" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="AppBarSelectAll" x="0" y="0" w="80" h="48" command="selectall" visible="false">
+        <Glyph x="31" y="7" w="18" h="18" text="selectall" color="#000000"/>
+        <Text x="40" y="32" text="Select all" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="AppBarCopy" x="80" y="0" w="80" h="48" command="copyto" visible="false">
+        <Glyph x="31" y="7" w="18" h="18" text="copy" color="#000000"/>
+        <Text x="40" y="32" text="Copy to" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="AppBarMove" x="160" y="0" w="80" h="48" command="moveto" visible="false">
+        <Glyph x="31" y="7" w="18" h="18" text="move" color="#000000"/>
+        <Text x="40" y="32" text="Move to" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="AppBarDelete" x="240" y="0" w="80" h="48" command="delete" visible="false">
+        <Glyph x="31" y="7" w="18" h="18" text="delete" color="#000000"/>
+        <Text x="40" y="32" text="Delete" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="AppBarDestCancel" x="0" y="0" w="80" h="48" command="dest-cancel" visible="false">
+        <Glyph x="31" y="7" w="18" h="18" text="x" color="#000000"/>
+        <Text x="40" y="32" text="Cancel" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="AppBarDestGo" x="80" y="0" w="240" h="48" command="dest-go" visible="false">
+        <Glyph x="6" y="14" w="20" h="20" text="copy" color="#000000"/>
+        <Text x="34" y="16" name="DestGoText" text="Copy here" color="#000000" size="14"/>
+      </Button>
+    </Canvas>
+  </Canvas>
+</Page>
