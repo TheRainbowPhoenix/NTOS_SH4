@@ -1,0 +1,6 @@
+<ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Assets/Styles.xaml" />
+                <ResourceDictionary>
+                    <local:LocalizedResources x:Key="LocalizedResources" />
+                </ResourceDictionary>
