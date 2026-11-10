@@ -8,7 +8,7 @@ all: edge.dll edge.uxaml
 edge.uxaml: uxaml_gen.py markup/*.xml
 	python3 uxaml_gen.py build markup/ -o edge.uxaml
 
-edge.dll: edge_app.c uxaml.c uxaml.h nt_app.h font_bitmap.h
+edge.dll: edge_app.c uxaml.c uxaml.h nt_app.h
 	$(ZIG) cc -target x86_64-windows-gnu -shared -O2 -nostdlib \
 	  -Wl,--image-base=0x180010000 -DNTOS_LINUX_BUILD \
 	  -I. -I../../payload/phone -o edge.dll edge_app.c uxaml.c
