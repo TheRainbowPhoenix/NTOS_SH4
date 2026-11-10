@@ -2267,6 +2267,14 @@ __attribute__((dllexport)) const CalcRender *render_SpGetThreadContext(void)
     return &calc_renderer;
 }
 
+int SVFDrawTint(void *, const void *, unsigned, int, int, int, int, U32);
+__attribute__((dllexport)) int svf_SVFDrawTint(void *dc, const void *data,
+                                               unsigned length, int x, int y,
+                                               int w, int h, U32 tint)
+{
+    return SVFDrawTint(dc, data, length, x, y, w, h, tint);
+}
+
 /* ---- app modes / sheets ---- */
 enum { M_STD = 0, M_SCI, M_CONV, M_ABOUT };
 enum { SH_NONE = 0, SH_NAV, SH_HIST, SH_MEM, SH_UNITS };
@@ -3221,6 +3229,7 @@ __attribute__((dllexport)) int RunApplication(void)
 {
     if (load_markup())
         return 0x80070002u;
+    __imp_render_SpGetThreadContext = (const void *)(uintptr_t)render_SpGetThreadContext;
     g_chrome = NT_CALL(UIXChromeFactory, ());
     if (!g_chrome || g_chrome->profile != 0x55495831u)
         g_chrome = 0;

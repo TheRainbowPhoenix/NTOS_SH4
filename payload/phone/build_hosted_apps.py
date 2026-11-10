@@ -21,7 +21,7 @@ FLAGS = ['-std=c11', '-Os', '-ffreestanding', '-fno-builtin',
          '-DNTOS_APP_BUILD', '-Iedge/app', '-Ipayload/phone',
          '-Ipayload', '-Ifiles/app', '-Icalc/app']
 APPS = {
-    'calc': ['calc/app/calc_app.c', 'calc/app/calc_icons.c', 'files/app/files_icons.c', 'edge/app/uxaml.c'],
+    'calc': ['calc/app/calc_app.c', 'calc/app/calc_icons.c', 'files/app/files_icons.c', 'edge/app/uxaml.c', 'payload/phone/svf.c'],
     'files': ['files/app/files_app.c', 'files/app/files_icons.c', 'edge/app/uxaml.c', 'payload/phone/uixctl.c', 'payload/phone/svf.c'],
     'cortana': ['cortana/app/cortana_app.c', 'files/app/files_icons.c', 'edge/app/uxaml.c', 'payload/phone/uixctl.c', 'payload/phone/svf.c'],
     'edge': ['edge/app/edge_app.c', 'edge/app/icons.c', 'edge/app/uxaml.c', 'payload/phone/uixctl.c', 'payload/phone/svf.c'],
@@ -91,6 +91,9 @@ def main():
         dest = out / 'Apps' / slug / (slug + '.exe')
         dest.write_bytes(add_icon_resource(image, icon(slug)))
         print('Built hosted app', dest, flush=True)
+
+    for name in ('article.md', 'logo.svf', 'demo.md', 'cool.svf', 'swap.html'):
+        (out / name).write_bytes((ROOT / 'edge/app/tests/assets' / name).read_bytes())
 
 if __name__ == '__main__':
     main()

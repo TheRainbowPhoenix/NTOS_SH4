@@ -27,6 +27,13 @@ alternative ABI profiles, `dist_pager*`, ELF objects, or build maps.
 Build locally with `make -j4 && python3 tools/package_device.py`; copy the
 contents of `install/`, not the unfiltered development `dist/` directory.
 
+The device package includes the full Calculator, Edge, File Explorer and
+Cortana ports at `Apps/<name>/<name>.exe`, compiled for big-endian SH4 without
+an FPU. Their compiled markup is installed at the storage root and shared
+runtime DLLs are installed under `Windows/System32`. Swipe down from the
+status bar for notifications and quick settings; the system navigation bar
+provides Back, Home and Search.
+
 ## Windows Edge demo
 
 The same [Build workflow](https://github.com/TheRainbowPhoenix/NTOS_SH4/actions/workflows/c-cpp.yml)

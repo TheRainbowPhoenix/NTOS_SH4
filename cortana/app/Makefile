@@ -22,7 +22,7 @@ cortana.uxaml: $(EDGEAPP)/uxaml_gen.py markup/*.xml
 	python3 $(EDGEAPP)/uxaml_gen.py build markup/ -o cortana.uxaml
 
 cortana.dll: cortana_app.c cortana_vec.h \
-	     $(EDGEAPP)/uxaml.c $(EDGEAPP)/uxaml.h $(EDGEAPP)/nt_app.h \
+	     $(EDGEAPP)/uxaml.c $(EDGEAPP)/uxaml.h $(EDGEAPP)/nt_app.h $(EDGEAPP)/hosted_shell.h \
 	     $(FILESICONS)/files_icons.c $(FILESICONS)/files_icons.h \
 	     $(PHONE)/uixctl.c $(PHONE)/svf.c $(PHONE)/phone.h
 	$(ZIG) cc -target x86_64-windows-gnu -shared -O2 -nostdlib \

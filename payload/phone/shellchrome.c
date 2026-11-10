@@ -295,10 +295,8 @@ const Chrome *UIXGetSchemaFactory(void)
 }
 /* ---- hosted-app chrome: status bar + nav bar ----
  * Edge and other hosted apps import UIXChromeFactory instead of the full
- * shell chrome: no notification panel, but the two system bars are
- * launcher-owned and themed through the hosting renderer (one
- * implementation, shared): the title/status strip on top and the
- * navigation bar at the bottom. Apps never reimplement them. */
+ * shell chrome: status, navigation, and the shared notification panel.
+ * The status and navigation bars follow the hosting renderer theme. */
 static void hosted_paint(void *dc)
 {
     const Render *r = CALL(render_SpGetThreadContext, ());
@@ -313,35 +311,6 @@ static void hosted_paint(void *dc)
 static int hosted_input(U32 msg, U32 wp, U32 lp)
 {
     return input(msg, wp, lp);
-#if 0
-    int x = (int)(short)(lp & 65535u), y = (int)(short)(lp >> 16);
-    if (closing) {
-        if (msg == WM_UP_)
-            closing = 0;
-        return 1;
-    }
-    if (nav_touch) {
-        if (msg == WM_MOVE_ &&
-            (x - nav_x > 10 || nav_x - x > 10 || y - nav_y > 10 || nav_y - y > 10))
-            nav_key = -1;
-        if (msg == WM_UP_) {
-            int key = nav_key;
-            if (x - nav_x > 10 || nav_x - x > 10 || y - nav_y > 10 || nav_y - y > 10)
-                key = -1;
-            nav_touch = 0;
-            return key < 0 ? 1 : 4 + key;
-        }
-        return 1;
-    }
-    if (nav && msg == WM_DOWN_ && y >= 480) {
-        nav_touch = 1;
-        nav_x = x;
-        nav_y = y;
-        nav_key = x < 106 ? 0 : x < 213 ? 1 : 2;
-        return 1;
-    }
-    return 0;
-#endif
 }
 static int hosted_expanded(void)
 {

@@ -24,7 +24,7 @@ edge.uxaml: uxaml_gen.py markup/*.xml
 	python3 uxaml_gen.py build markup/ -o edge.uxaml
 	python3 uxaml_gen.py build markup/ -o edgelight.uxaml --light
 
-edge.dll: edge_app.c icons.c icons.h uxaml.c uxaml.h nt_app.h mockweb.h \
+edge.dll: edge_app.c icons.c icons.h uxaml.c uxaml.h nt_app.h hosted_shell.h mockweb.h \
           $(PHONE)/uixctl.c $(PHONE)/svf.c $(PHONE)/phone.h
 	$(ZIG) cc -target x86_64-windows-gnu -shared -O2 -nostdlib \
 	  -Wl,--image-base=0x180010000 -DNTOS_LINUX_BUILD \

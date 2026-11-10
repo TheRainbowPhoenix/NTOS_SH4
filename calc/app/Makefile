@@ -27,12 +27,12 @@ calc.uxaml: $(EDGEAPP)/uxaml_gen.py markup/*.xml
 calc.dll: calc_app.c calc_icons.c calc_icons.h \
 	  $(EDGEAPP)/uxaml.c $(EDGEAPP)/uxaml.h $(EDGEAPP)/nt_app.h \
 	  $(FILESICONS)/files_icons.c $(FILESICONS)/files_icons.h \
-	  $(PHONE)/font_bitmap.h
+	  $(PHONE)/font_bitmap.h $(PHONE)/svf.c $(EDGEAPP)/hosted_shell.h
 	$(ZIG) cc -target x86_64-windows-gnu -shared -O2 -nostdlib \
-	  -Wl,--image-base=0x180510000 -DNTOS_LINUX_BUILD \
+	  -Wl,--image-base=0x180510000 -DNTOS_LINUX_BUILD -DNT_IAT_EXTERN_ONLY \
 	  -I. -I$(EDGEAPP) -I$(FILESICONS) -I$(PHONE) -I../../payload -o calc.dll \
 	  calc_app.c calc_icons.c $(FILESICONS)/files_icons.c \
-	  $(EDGEAPP)/uxaml.c
+	  $(EDGEAPP)/uxaml.c $(PHONE)/svf.c
 
 # shared keyboard DLL (host build of the phone FINGERKB.DLL source)
 fingerkb.dll: $(PHONE)/fingerkb.c $(PHONE)/phone.h $(PHONE)/system_icons.h

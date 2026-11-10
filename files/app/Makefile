@@ -24,7 +24,7 @@ files.uxaml: $(EDGEAPP)/uxaml_gen.py markup/*.xml
 	python3 $(EDGEAPP)/uxaml_gen.py build markup/ -o files.uxaml
 
 files.dll: files_app.c files_icons.c files_icons.h \
-	   $(EDGEAPP)/uxaml.c $(EDGEAPP)/uxaml.h $(EDGEAPP)/nt_app.h \
+	   $(EDGEAPP)/uxaml.c $(EDGEAPP)/uxaml.h $(EDGEAPP)/nt_app.h $(EDGEAPP)/hosted_shell.h \
 	   $(PHONE)/uixctl.c $(PHONE)/svf.c $(PHONE)/phone.h
 	$(ZIG) cc -target x86_64-windows-gnu -shared -O2 -nostdlib \
 	  -Wl,--image-base=0x180310000 -DNTOS_LINUX_BUILD \
