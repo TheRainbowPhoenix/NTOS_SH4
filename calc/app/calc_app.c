@@ -148,15 +148,17 @@ static void xcopy(char *d, const char *s, int n) { for (int i = 0; i < n; ++i) d
  * palette: W10M light theme (App.xbf ThemeDictionaries[Light] + the
  * reference-device accent the files/settings ports measured)
  * ===================================================================== */
-#define C_PAGE   RGB_(0xF2, 0xF2, 0xF2) /* AltHigh: page + display    */
-#define C_SHADE  RGB_(0xE6, 0xE6, 0xE6) /* ChromeLow: numpad shade    */
-#define C_SHEET  RGB_(0xDC, 0xDC, 0xDC) /* ChromeMediumLow: sheets    */
-#define C_HAIR   RGB_(0xDE, 0xDB, 0xDE) /* hairline                   */
-#define C_ACC    RGB_(0x39, 0x65, 0xFF) /* accent (reference device)  */
+#define C_PAGE   RGB_(0xF7, 0xF3, 0xF7) /* AltHigh: numpad shade (capture) */
+#define C_SHADE  RGB_(0xF7, 0xF3, 0xF7) /* keypad shade = page tint      */
+#define C_SHEET  RGB_(0xE7, 0xE3, 0xE7) /* nav pane bg (capture)         */
+#define C_HAIR   RGB_(0xE7, 0xE7, 0xE7) /* hairlines (capture)           */
+#define C_ACC    RGB_(0x39, 0x65, 0xFF) /* accent (reference device)     */
 #define C_INK    RGB_(0x00, 0x00, 0x00)
-#define C_MUT    RGB_(0x5D, 0x5A, 0x5C) /* BaseMedium text            */
-#define C_PRESS  RGB_(0xDE, 0xDB, 0xDE) /* ListMedium press tint      */
-#define C_SCRIM  RGB_(0x54, 0x54, 0x54) /* sheet scrim (alpha-ish)    */
+#define C_MUT    RGB_(0x63, 0x65, 0x63) /* BaseMedium text (capture)     */
+#define C_DIS    RGB_(0xB5, 0xB2, 0xB5) /* disabled memory labels        */
+#define C_SEL    RGB_(0x9C, 0xAE, 0xEF) /* nav pane selected band        */
+#define C_PRESS  RGB_(0xDE, 0xDB, 0xDE) /* ListMedium press tint         */
+#define C_SCRIM  RGB_(0xE7, 0xE3, 0xE7) /* flat light scrim (capture)    */
 #define C_WHITE  RGB_(0xFF, 0xFF, 0xFF)
 
 /* geometry */
@@ -925,6 +927,8 @@ typedef struct {
     /* scientific */
     int angle_mode;
     int second;         /* 2nd function toggle                   */
+    int hyp;            /* HYP hyperbolic toggle                 */
+    int fe;             /* F-E fixed-exponent display toggle     */
     /* paren stack */
     struct {
         Dec acc;
@@ -981,19 +985,40 @@ static Dec entry_value(void)
 {
     if (!g.entry_active || !g.entry[0])
         return g.display;
-    /* parse decimal string */
+    /* parse decimal string; an 'e' suffix multiplies by 10^exp */
     long long m = 0;
     int e = 0, neg = 0, seen_dot = 0, digits = 0;
     const char *s = g.entry;
+    const char *ep = 0;
+    for (const char *q = g.entry; *q; ++q)
+        if (*q == 'e' || *q == 'E')
+            ep = q;
+    long long escale = 1;
+    if (ep) {
+        int ee = 0, esign = 1;
+        const char *q = ep + 1;
+        if (*q == '+')
+            ++q;
+        else if (*q == '-')
+            esign = -1, ++q;
+        for (; *q >= '0' && *q <= '9'; ++q)
+            ee = ee * 10 + (*q - '0');
+        e += esign * ee; /* fold into the decimal exponent directly */
+        (void)escale;
+    }
     if (*s == '-') {
         neg = 1;
         ++s;
     }
     for (; *s; ++s) {
+        if (*s == 'e' || *s == 'E')
+            break; /* exponent handled above */
         if (*s == '.') {
             seen_dot = 1;
             continue;
         }
+        if (*s < '0' || *s > '9')
+            continue;
         if (digits < 18) {
             m = m * 10 + (*s - '0');
             if (seen_dot)
@@ -1280,9 +1305,7 @@ static void fn_trig(int which)
             which -= 8;
         }
     }
-    /* 2nd toggles inverse for the plain trig buttons */
-    if (g.second && !hyp)
-        inv = 1;
+    /* callers pass the full which: +8 inverse, +16 hyperbolic */
     Dec v = entry_value();
     Dec r = v;
     const char *name = "?";
@@ -2116,9 +2139,10 @@ static int text_w(const char *s, int h)
 static void draw_text(void *dc, int x, int y, const char *s, U32 c, int h,
                       int align, int bold)
 {
-    (void)bold;
     if (!s || !*s)
         return;
+    if (bold) /* double-strike: a 1-bpp bold from the regular face */
+        draw_text(dc, x + 1, y, s, c, h, align, 0);
     int w = text_w(s, h);
     if (align == 1)
         x -= w / 2;
@@ -2274,7 +2298,7 @@ enum { SH_NONE = 0, SH_NAV, SH_HIST, SH_MEM, SH_UNITS };
 static int mode = M_STD;
 static int sheet = SH_NONE;
 static int units_side = 1;      /* which combo opened the unit picker */
-static int hist_scroll, mem_scroll, nav_scroll;
+static int hist_scroll, mem_scroll, nav_scroll, units_scroll;
 static const CalcChrome *g_chrome;
 
 /* pressed-button feedback (ListMedium tint) */
@@ -2392,25 +2416,42 @@ static const char *err_text(void)
     }
 }
 
-/* the big result line with auto-shrink (CalcResult: 46 -> 12 floor) */
-static void draw_result(void *dc, int x, int y, int w, int h, const char *txt,
-                        U32 col)
+/* the big result line with auto-shrink (CalcResult: 46 -> 12 floor):
+ * right-aligned to `right`, top at y, shrinking from `base` */
+static void draw_result(void *dc, int right, int y, int maxw, int base,
+                         const char *txt, U32 col)
 {
-    int size = 44;
-    while (size > 12 && text_w(txt, size) > w - 24)
+    int size = base;
+    while (size > 12 && text_w(txt, size) > maxw)
         size -= 2;
-    draw_text(dc, x + w, y + (h - size) / 2 + 2, txt, col, size, 2, 0);
+    draw_text(dc, right, y, txt, col, size, 2, 0);
+}
+
+/* memory row labels (shared std/sci), painted live with the enabled/
+ * disabled state: MC MR M+ M- MS are #636563 when memory-independent,
+ * but MC/MR (and the M-list chevron) drop to #B5B2B5 with no memory */
+static void paint_memrow(void *dc, int y)
+{
+    int have = mem_count > 0;
+    draw_text(dc, 27, y, "MC", have ? C_MUT : C_DIS, 12, 1, 0);
+    draw_text(dc, 80, y, "MR", have ? C_MUT : C_DIS, 12, 1, 0);
+    draw_text(dc, 133, y, "M+", C_MUT, 12, 1, 0);
+    draw_text(dc, 186, y, "M-", C_MUT, 12, 1, 0);
+    draw_text(dc, 240, y, "MS", C_MUT, 12, 1, 0);
+    draw_text(dc, 285, y, "M", have ? C_MUT : C_DIS, 12, 1, 0);
+    fi_draw(ifill, dc, 294, y + 3, 7, have ? C_MUT : C_DIS, FI_CHEVDOWN);
 }
 
 static void paint_std_display(void *dc)
 {
-    /* expression line (small, gray, right) */
+    /* expression line (16px, gray, right-aligned to x305, y64) */
     if (g.expr[0])
-        draw_text(dc, 316, 84, g.expr, C_MUT, 14, 2, 0);
-    /* result: live entry while typing, else the display value */
+        draw_text(dc, 305, 64, g.expr, C_MUT, 16, 2, 0);
+    /* result: live entry while typing, else the display value
+     * (44px right-aligned to x305, top y96) */
     char buf[28];
     if (g.err)
-        draw_result(dc, 0, 100, 320, 68, err_text(), RGB_(0xC4, 0x2B, 0x1C));
+        draw_result(dc, 305, 96, 275, 44, err_text(), C_INK);
     else {
         if (g.entry_active && g.entry[0]) {
             char *dst = buf;
@@ -2423,7 +2464,7 @@ static void paint_std_display(void *dc)
         } else {
             dec_to_string_buf(g.display, buf, 26);
         }
-        draw_result(dc, 0, 100, 320, 68, buf, C_INK);
+        draw_result(dc, 305, 96, 275, 44, buf, C_INK);
     }
 }
 
@@ -2435,6 +2476,80 @@ static void paint_std(void *dc)
     layout_doc(d, 0, 0, 320, 528);
     paint_node(dc, d->root);
     paint_std_display(dc);
+    paint_memrow(dc, 163);
+}
+
+/* F-E (fixed-exponent) display: d.dddde±exp from a plain decimal string */
+static void fe_format(const char *in, char *out, int cap)
+{
+    /* collect digits + locate the decimal point */
+    char digits[48];
+    int n = 0, dot_pos = -1, i = 0;
+    for (const char *s = in; *s && n < 47; ++s) {
+        char c = *s;
+        if (c == ',' || c == ' ')
+            continue;
+        if (c == '.') {
+            dot_pos = i;
+            continue;
+        }
+        if (c < '0' || c > '9')
+            continue;
+        digits[n++] = c;
+        ++i;
+    }
+    if (n == 0) {
+        out[0] = '0';
+        out[1] = 0;
+        return;
+    }
+    /* exponent: int part has a significant digit -> (#int digits)-1;
+     * otherwise -(zeros between the dot and the first significant)-1 */
+    int int_digits = dot_pos < 0 ? n : dot_pos;
+    int first_sig = -1, k = 0;
+    for (k = 0; k < n; ++k)
+        if (digits[k] != '0') { first_sig = k; break; }
+    if (first_sig < 0) {
+        out[0] = '0';
+        out[1] = 0;
+        return;
+    }
+    int e;
+    if (first_sig < int_digits)
+        e = int_digits - 1;               /* value >= 1 */
+    else
+        e = -(first_sig - int_digits) - 1; /* 0.00x */
+    /* mantissa: first significant digit . up to 16 more */
+    int m = 0;
+    out[m++] = digits[first_sig];
+    int more = 0;
+    for (k = first_sig + 1; k < n && more < 16; ++k, ++more)
+        out[m++] = digits[k];
+    while (m > 1 && out[m - 1] == '0')
+        --m;
+    if (m > 1) {
+        for (int j = m; j > 1; --j)
+            out[j] = out[j - 1];
+        out[1] = '.';
+        ++m;
+    }
+    out[m++] = 'e';
+    if (e < 0) {
+        out[m++] = '-';
+        e = -e;
+    } else {
+        out[m++] = '+';
+    }
+    char en[8];
+    int en_n = 0;
+    do {
+        en[en_n++] = '0' + e % 10;
+        e /= 10;
+    } while (e && en_n < 7);
+    while (en_n)
+        out[m++] = en[--en_n];
+    out[m] = 0;
+    (void)cap;
 }
 
 static void paint_sci(void *dc)
@@ -2442,27 +2557,43 @@ static void paint_sci(void *dc)
     const UxDoc *d = ux_find_doc(&ux, "SciPage");
     if (!d)
         return;
-    /* angle mode colours */
-    dyn_set_color("AngDegT", g.angle_mode == ANG_DEG ? C_ACC : C_MUT);
-    dyn_set_color("AngRadT", g.angle_mode == ANG_RAD ? C_ACC : C_MUT);
-    dyn_set_color("AngGradT", g.angle_mode == ANG_GRAD ? C_ACC : C_MUT);
-    /* 2nd toggle state */
-    dyn_set_color("secondT", g.second ? C_ACC : C_MUT);
-    /* 2nd swaps the trig row with the inverse row */
-    dyn_set("sinT", g.second ? "asin" : "sin");
-    dyn_set("cosT", g.second ? "acos" : "cos");
-    dyn_set("tanT", g.second ? "atan" : "tan");
-    dyn_set("asinT", g.second ? "sin" : "asin");
-    dyn_set("acosT", g.second ? "cos" : "acos");
-    dyn_set("atanT", g.second ? "tan" : "atan");
     layout_doc(d, 0, 0, 320, 528);
     paint_node(dc, d->root);
-    /* display: expression + result in the compact band */
+    /* angle row (y137, 14px): DEG shows the active unit in accent,
+     * HYP / F-E go accent while toggled on (per the capture) */
+    const char *unit = g.angle_mode == ANG_DEG ? "DEG"
+                      : g.angle_mode == ANG_RAD ? "RAD" : "GRAD";
+    draw_text(dc, 16, 137, unit, C_ACC, 14, 0, 0);
+    draw_text(dc, 69, 137, "HYP", g.hyp ? C_ACC : C_MUT, 14, 0, 0);
+    draw_text(dc, 120, 137, "F-E", g.fe ? C_ACC : C_MUT, 14, 0, 0);
+    /* memory row (labels y172) */
+    paint_memrow(dc, 172);
+    /* keypad rows 1-2, live labels per 2nd + HYP (y205 / y246) */
+    int s = g.second, h = g.hyp;
+    ci_draw(ifill, dc, 24, 203, 16, C_INK, s ? CI_XPOW3 : CI_XPOW2);
+    ci_draw(ifill, dc, 88, 204, 16, C_INK, s ? CI_YROOT : CI_XPOWY);
+    const char *trig[3];
+    for (int i = 0; i < 3; ++i) {
+        static const char *names[2][3] = {
+            {"sin", "cos", "tan"}, {"asin", "acos", "atan"}};
+        static const char *hnames[2][3] = {
+            {"sinh", "cosh", "tanh"}, {"asinh", "acosh", "atanh"}};
+        trig[i] = h ? hnames[s ? 1 : 0][i] : names[s ? 1 : 0][i];
+    }
+    draw_text(dc, 96, 205, trig[0], C_INK, 14, 1, 0);
+    draw_text(dc, 160, 205, trig[1], C_INK, 14, 1, 0);
+    draw_text(dc, 224, 205, trig[2], C_INK, 14, 1, 0);
+    ci_draw(ifill, dc, 24, 244, 16, C_INK, s ? CI_INVERT : CI_SQRT);
+    ci_draw(ifill, dc, 87, 245, 17, C_INK, s ? CI_EEXP : CI_TENPOW);
+    draw_text(dc, 96, 246, s ? "ln" : "log", C_INK, 14, 1, 0);
+    draw_text(dc, 160, 246, s ? "dms" : "Exp", C_INK, 14, 1, 0);
+    draw_text(dc, 224, 246, s ? "deg" : "Mod", C_INK, 14, 1, 0);
+    /* display: expression (y64) + result (28px right to x306, y91) */
     if (g.expr[0])
-        draw_text(dc, 316, 82, g.expr, C_MUT, 12, 2, 0);
-    char buf[28];
+        draw_text(dc, 305, 64, g.expr, C_MUT, 16, 2, 0);
+    char buf[28], fe[40];
     if (g.err) {
-        draw_result(dc, 0, 94, 320, 40, err_text(), RGB_(0xC4, 0x2B, 0x1C));
+        draw_result(dc, 306, 88, 280, 28, err_text(), C_INK);
     } else {
         if (g.entry_active && g.entry[0]) {
             int len = 0;
@@ -2472,7 +2603,12 @@ static void paint_sci(void *dc)
         } else {
             dec_to_string_buf(g.display, buf, 26);
         }
-        draw_result(dc, 0, 94, 320, 40, buf, C_INK);
+        if (g.fe) {
+            fe_format(buf, fe, sizeof(fe));
+            draw_result(dc, 306, 88, 280, 28, fe, C_INK);
+        } else {
+            draw_result(dc, 306, 88, 280, 28, buf, C_INK);
+        }
     }
 }
 
@@ -2481,11 +2617,21 @@ static void paint_conv(void *dc)
     const UxDoc *d = ux_find_doc(&ux, "ConvPage");
     if (!d)
         return;
-    dyn_set("Units1T", CATS[conv_cat].units[conv_u1].name);
-    dyn_set("Units2T", CATS[conv_cat].units[conv_u2].name);
     layout_doc(d, 0, 0, 320, 528);
     paint_node(dc, d->root);
-    /* value 1 (active = bold black, other = gray) */
+    /* mode title = the category name, caps, like the other pages */
+    {
+        char up[24];
+        const char *src = CATS[conv_cat].name;
+        int i = 0;
+        for (; src[i] && i < 23; ++i)
+            up[i] = src[i] >= 'a' && src[i] <= 'z' ? src[i] - 32 : src[i];
+        up[i] = 0;
+        draw_text(dc, 60, 36, up, C_INK, 14, 0, 1);
+    }
+    /* the two unit blocks per the volume capture: value 24px left at
+     * x13 (value1 y93, value2 y173), unit names 14px accent blue with a
+     * chevron (y131 / y211) */
     char b1[26], b2[26];
     Dec v1 = conv_result(1);
     Dec v2 = conv_result(2);
@@ -2505,34 +2651,14 @@ static void paint_conv(void *dc)
     } else {
         dec_to_string_buf(v2, b2, 24);
     }
-    draw_result(dc, 12, 82, 296, 42, b1,
-                conv_active == 1 ? C_INK : C_MUT);
-    draw_result(dc, 12, 158, 296, 42, b2,
-                conv_active == 2 ? C_INK : C_MUT);
-    /* supplementary: "Also equal to" + up to 3 sibling units of the
-     * passive side's value */
-    draw_text(dc, 12, 236, "Also equal to", C_MUT, 12, 0, 0);
-    int passive = conv_active == 1 ? 2 : 1;
-    Dec base = unit_to_base(conv_entry_value(), conv_cat,
-                            conv_active == 1 ? conv_u1 : conv_u2);
-    int x = 12;
-    for (int i = 0; i < 3; ++i) {
-        int ui = CATS[conv_cat].supp[i];
-        if (ui < 0 || ui >= CATS[conv_cat].count)
-            continue;
-        if (conv_cat == 3)
-            continue; /* temperature handled separately below */
-        Dec sv = base_to_unit(base, conv_cat, ui);
-        char sb[24];
-        dec_to_string_buf(dec_trim(sv, 6), sb, 22);
-        draw_text(dc, x, 254, sb, C_INK, 14, 0, 0);
-        x += text_w(sb, 14) + 2;
-        draw_text(dc, x, 256, CATS[conv_cat].units[ui].abbr, C_MUT, 12, 0, 0);
-        x += text_w(CATS[conv_cat].units[ui].abbr, 12) + 12;
-        if (x > 260)
-            break;
-    }
-    (void)passive;
+    draw_text(dc, 13, 93, b1, C_INK, 24, 0, 0);
+    draw_text(dc, 13, 173, b2, C_INK, 24, 0, 0);
+    const char *n1 = CATS[conv_cat].units[conv_u1].name;
+    const char *n2 = CATS[conv_cat].units[conv_u2].name;
+    draw_text(dc, 13, 131, n1, C_ACC, 14, 0, 0);
+    fi_draw(ifill, dc, 15 + text_w(n1, 14), 134, 9, C_ACC, FI_CHEVDOWN);
+    draw_text(dc, 13, 211, n2, C_ACC, 14, 0, 0);
+    fi_draw(ifill, dc, 15 + text_w(n2, 14), 214, 9, C_ACC, FI_CHEVDOWN);
 }
 
 static void paint_about(void *dc)
@@ -2547,7 +2673,7 @@ static void paint_about(void *dc)
 /* =====================================================================
  * sheets (full-surface overlays: nav pane, history, memory, unit picker)
  * ===================================================================== */
-#define NAV_W 296
+#define NAV_W 256
 
 /* nav pane content height: label 12 + group(30+2*40) + label 30 +
  * cats 12*40 + label 30 + About row 40 + padding */
@@ -2555,38 +2681,37 @@ static void paint_about(void *dc)
 
 static void paint_nav(void *dc)
 {
-    /* scrim over the page */
-    fill(dc, 0, 0, 320, CHROME_Y, C_SCRIM);
-    /* pane */
+    /* pane only, no scrim: the page stays visible x256..320 (capture) */
     fill(dc, 0, 0, NAV_W, CHROME_Y, C_SHEET);
-    fill(dc, NAV_W, 0, NAV_W + 1, CHROME_Y, C_HAIR);
     clip_set(0, 0, NAV_W, CHROME_Y);
-    int y = 12 - nav_scroll;
-    /* group: CALCULATOR */
-    draw_text(dc, 12, y, "CALCULATOR", C_INK, 12, 0, 1);
-    y += 30;
+    int y = 24 - nav_scroll;
+    /* header row doubles as the CALCULATOR group header */
+    fi_draw(ifill, dc, 14, 36, 20, C_INK, FI_HAMBURGER);
+    draw_text(dc, 60, 36, "CALCULATOR", C_INK, 14, 0, 1);
+    y += 32;
     static const char *calc_modes[] = { "Standard", "Scientific" };
     for (int i = 0; i < 2; ++i) {
         int sel = (i == 0 && mode == M_STD) || (i == 1 && mode == M_SCI);
         if (sel)
-            fill(dc, 0, y - 8, NAV_W, 40, RGB_(0xC5, 0xE1, 0xF7));
-        draw_text(dc, 48, y, calc_modes[i], sel ? C_INK : C_INK, 15, 0, 0);
-        y += 40;
+            fill(dc, 0, y, NAV_W, y + 32, C_SEL);
+        draw_text(dc, 48, y + 9, calc_modes[i], C_INK, 15, 0, 0);
+        y += 32;
     }
-    draw_text(dc, 12, y, "CONVERTER", C_INK, 12, 0, 1);
-    y += 30;
+    draw_text(dc, 12, y + 9, "CONVERTER", C_INK, 12, 0, 1);
+    y += 32;
     for (int i = 0; i < CAT_COUNT; ++i) {
         int sel = mode == M_CONV && conv_cat == i;
         if (sel)
-            fill(dc, 0, y - 8, NAV_W, 40, RGB_(0xC5, 0xE1, 0xF7));
-        draw_text(dc, 48, y, CATS[i].name, C_INK, 15, 0, 0);
-        y += 40;
+            fill(dc, 0, y, NAV_W, y + 32, C_SEL);
+        draw_text(dc, 48, y + 9, CATS[i].name, C_INK, 15, 0, 0);
+        y += 32;
     }
-    draw_text(dc, 12, y, "ABOUT", C_INK, 12, 0, 1);
-    y += 30;
+    /* About pinned above the nav bar with an info badge */
     if (mode == M_ABOUT)
-        fill(dc, 0, y - 8, NAV_W, 40, RGB_(0xC5, 0xE1, 0xF7));
-    draw_text(dc, 48, y, "About", C_INK, 15, 0, 0);
+        fill(dc, 0, 448, NAV_W, 480, C_SEL);
+    fi_rect(ifill, dc, 10, 458, 13, 13, 1, C_MUT);
+    draw_text(dc, 15, 461, "i", C_MUT, 12, 1, 0);
+    draw_text(dc, 48, 457, "About", C_INK, 15, 0, 0);
     clip_set(0, 0, 320, 528);
 }
 
@@ -2595,7 +2720,7 @@ static void paint_hist(void *dc)
     fill(dc, 0, 0, 320, CHROME_Y, C_SCRIM);
     /* bottom sheet */
     int top = 90;
-    fill(dc, 0, top, 320, CHROME_Y, C_SHEET);
+    fill(dc, 0, top, 320, CHROME_Y, C_WHITE);
     fill(dc, 0, top, 320, top + 1, C_HAIR);
     draw_text(dc, 12, top + 10, "History", C_INK, 15, 0, 1);
     /* trash button bottom-right */
@@ -2618,7 +2743,7 @@ static void paint_mem(void *dc)
 {
     fill(dc, 0, 0, 320, CHROME_Y, C_SCRIM);
     int top = 90;
-    fill(dc, 0, top, 320, CHROME_Y, C_SHEET);
+    fill(dc, 0, top, 320, CHROME_Y, C_WHITE);
     fill(dc, 0, top, 320, top + 1, C_HAIR);
     draw_text(dc, 12, top + 10, "Memory", C_INK, 15, 0, 1);
     draw_text(dc, 268, top + 12, "MC", C_ACC, 14, 1, 0);
@@ -2643,18 +2768,25 @@ static void paint_units(void *dc)
 {
     fill(dc, 0, 0, 320, CHROME_Y, C_SCRIM);
     int top = 70;
-    fill(dc, 0, top, 320, CHROME_Y, C_SHEET);
+    fill(dc, 0, top, 320, CHROME_Y, C_WHITE);
     fill(dc, 0, top, 320, top + 1, C_HAIR);
     draw_text(dc, 160, top + 10, CATS[conv_cat].name, C_INK, 15, 1, 1);
     clip_set(0, top + 40, 320, CHROME_Y);
-    int y = top + 48;
+    int max_scroll = CATS[conv_cat].count * 36 - (CHROME_Y - (top + 48));
+    if (max_scroll < 0)
+        max_scroll = 0;
+    if (units_scroll > max_scroll)
+        units_scroll = max_scroll;
+    int y = top + 48 - units_scroll;
     for (int i = 0; i < CATS[conv_cat].count; ++i) {
-        int sel = (units_side == 1 ? conv_u1 : conv_u2) == i;
-        if (sel)
-            fill(dc, 0, y - 6, 320, 36, RGB_(0xC5, 0xE1, 0xF7));
-        draw_text(dc, 24, y, CATS[conv_cat].units[i].name,
-                  sel ? C_INK : C_INK, 15, 0, 0);
-        draw_text(dc, 296, y + 2, CATS[conv_cat].units[i].abbr, C_MUT, 13, 2, 0);
+        if (y > top + 30 && y < CHROME_Y - 6) {
+            int sel = (units_side == 1 ? conv_u1 : conv_u2) == i;
+            if (sel)
+                fill(dc, 0, y - 6, 320, 36, C_SEL);
+            draw_text(dc, 24, y, CATS[conv_cat].units[i].name,
+                      sel ? C_INK : C_INK, 15, 0, 0);
+            draw_text(dc, 296, y + 2, CATS[conv_cat].units[i].abbr, C_MUT, 13, 2, 0);
+        }
         y += 36;
     }
     clip_set(0, 0, 320, 528);
@@ -2791,17 +2923,29 @@ static void std_command(const char *cmd)
     } else if (xeq(cmd, "op:percent")) {
         op_percent();
     } else if (xeq(cmd, "op:sqrt")) {
-        op_sqrt();
+        if (g.second)
+            op_invert();
+        else
+            op_sqrt();
     } else if (xeq(cmd, "op:sqr")) {
-        op_sqr();
+        if (g.second)
+            op_cube();
+        else
+            op_sqr();
     } else if (xeq(cmd, "op:cube")) {
         op_cube();
     } else if (xeq(cmd, "op:invert")) {
         op_invert();
     } else if (xeq(cmd, "op:mod")) {
-        binary_op(OP_MOD);
+        if (g.second)
+            op_deg();
+        else
+            binary_op(OP_MOD);
     } else if (xeq(cmd, "op:powy")) {
-        binary_op(OP_POW);
+        if (g.second)
+            binary_op(OP_YROOT);
+        else
+            binary_op(OP_POW);
     } else if (xeq(cmd, "op:yrootx")) {
         binary_op(OP_YROOT);
     } else if (xeq(cmd, "op:pi")) {
@@ -2811,33 +2955,63 @@ static void std_command(const char *cmd)
     } else if (xeq(cmd, "op:pr")) {
         paren_close();
     } else if (xeq(cmd, "op:tenpow")) {
-        fn_exp10();
+        if (g.second)
+            fn_expe();
+        else
+            fn_exp10();
     } else if (xeq(cmd, "op:epow")) {
         fn_expe();
     } else if (xeq(cmd, "fn:sin")) {
-        fn_trig(0);
+        fn_trig(0 + 8 * g.second + 16 * g.hyp);
     } else if (xeq(cmd, "fn:cos")) {
-        fn_trig(1);
+        fn_trig(1 + 8 * g.second + 16 * g.hyp);
     } else if (xeq(cmd, "fn:tan")) {
-        fn_trig(2);
+        fn_trig(2 + 8 * g.second + 16 * g.hyp);
     } else if (xeq(cmd, "fn:asin")) {
-        fn_trig(8);
+        fn_trig(g.hyp ? 24 : 8);
     } else if (xeq(cmd, "fn:acos")) {
-        fn_trig(9);
+        fn_trig(g.hyp ? 25 : 9);
     } else if (xeq(cmd, "fn:atan")) {
-        fn_trig(10);
+        fn_trig(g.hyp ? 26 : 10);
     } else if (xeq(cmd, "fn:log")) {
-        fn_log();
+        if (g.second)
+            fn_ln();
+        else
+            fn_log();
     } else if (xeq(cmd, "fn:ln")) {
         fn_ln();
     } else if (xeq(cmd, "fn:fact")) {
         fn_fact();
+    } else if (xeq(cmd, "fn:exp")) {
+        /* x10^ exponent entry: append 'e' to the live entry */
+        if (g.second) {
+            op_dms();
+        } else if (g.entry_active && g.entry[0]) {
+            int n = 0, has_e = 0;
+            while (g.entry[n] && n < 30) {
+                if (g.entry[n] == 'e')
+                    has_e = 1;
+                ++n;
+            }
+            if (!has_e && n > 0 && n < 30) {
+                g.entry[n++] = 'e';
+                g.entry[n] = 0;
+            }
+        }
     } else if (xeq(cmd, "fn:dms")) {
         op_dms();
     } else if (xeq(cmd, "fn:deg")) {
         op_deg();
     } else if (xeq(cmd, "second")) {
         g.second = !g.second;
+    } else if (xeq(cmd, "hyp")) {
+        g.hyp = !g.hyp;
+    } else if (xeq(cmd, "fe")) {
+        g.fe = !g.fe;
+    } else if (xeq(cmd, "angle:cycle")) {
+        g.angle_mode = g.angle_mode == ANG_DEG
+                           ? ANG_RAD
+                           : g.angle_mode == ANG_RAD ? ANG_GRAD : ANG_DEG;
     } else if (xeq(cmd, "angle:deg")) {
         g.angle_mode = ANG_DEG;
     } else if (xeq(cmd, "angle:rad")) {
@@ -2868,7 +3042,7 @@ static void std_command(const char *cmd)
             mem_push(dec_neg(g.display));
         if (mem_count)
             dec_to_string_buf(mem_vals[mem_count - 1], mem_str[mem_count - 1], 20);
-    } else if (xeq(cmd, "memory")) {
+    } else if (xeq(cmd, "memory") || xeq(cmd, "mlist")) {
         sheet = SH_MEM;
     } else if (xeq(cmd, "history")) {
         sheet = SH_HIST;
@@ -2880,40 +3054,41 @@ static void std_command(const char *cmd)
     }
 }
 
-/* nav pane hit: returns 1 when consumed */
+/* nav pane hit: returns 1 when consumed. Rows are 32px: header 24-56,
+ * Standard 56, Scientific 88, CONVERTER 120, 12 categories 152..536,
+ * About pinned 448-480 (scrolling content selects by band). */
 static int nav_tap(int x, int y)
 {
     if (x >= NAV_W) {
         sheet = SH_NONE;
         return 1;
     }
+    if (y < 24) { /* the header row toggles the pane closed */
+        sheet = SH_NONE;
+        return 1;
+    }
     int ly = y + nav_scroll;
-    int row = 12;
-    /* CALCULATOR group */
-    if (ly >= row + 30 && ly < row + 30 + 80) {
-        int i = (ly - row - 30) / 40;
-        mode = i == 0 ? M_STD : M_SCI;
+    if (ly >= 56 && ly < 120) { /* Standard / Scientific rows */
+        mode = ly < 88 ? M_STD : M_SCI;
         engine_init();
         sheet = SH_NONE;
         return 1;
     }
-    row += 30 + 80;
-    if (ly >= row + 30 && ly < row + 30 + CAT_COUNT * 40) {
-        int i = (ly - row - 30) / 40;
-        conv_cat = i;
-        conv_u1 = 0;
-        conv_u2 = CATS[i].count > 1 ? 1 : 0;
-        conv_entry[0] = '1';
-        conv_entry[1] = 0;
-        conv_active = 1;
-        mode = M_CONV;
+    if (y >= 440 && y < 480) { /* About pinned above the nav bar */
+        mode = M_ABOUT;
         sheet = SH_NONE;
         return 1;
     }
-    row += 30 + CAT_COUNT * 40;
-    /* the ABOUT label (30px) and the row (40px) both select About */
-    if (ly >= row && ly < row + 70) {
-        mode = M_ABOUT;
+    if (ly >= 120 && ly < 152 + CAT_COUNT * 32 && ly < 440) { /* CONVERTER rows */
+        int i = (ly - 152) / 32;
+        if (i >= 0 && i < CAT_COUNT) {
+            conv_cat = i;
+            conv_u1 = 0;
+            conv_u2 = CATS[i].count > 1 ? 1 : 0;
+            conv_entry[0] = 0;
+            conv_active = 1;
+            mode = M_CONV;
+        }
         sheet = SH_NONE;
         return 1;
     }
@@ -3003,8 +3178,9 @@ static int units_tap(int x, int y)
         sheet = SH_NONE;
         return 1;
     }
-    int idx = (y - top - 48) / 36;
-    if (idx >= 0 && idx < CATS[conv_cat].count && (y - top - 48) % 36 < 34) {
+    int ly = y + units_scroll;
+    int idx = (ly - top - 48) / 36;
+    if (idx >= 0 && idx < CATS[conv_cat].count && (ly - top - 48) % 36 < 34) {
         if (units_side == 1)
             conv_u1 = idx;
         else
@@ -3185,9 +3361,12 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
                     hist_scroll += dy;
                 else if (sheet == SH_MEM)
                     mem_scroll += dy;
+                else if (sheet == SH_UNITS)
+                    units_scroll += dy;
                 if (nav_scroll < 0) nav_scroll = 0;
                 if (hist_scroll < 0) hist_scroll = 0;
                 if (mem_scroll < 0) mem_scroll = 0;
+                if (units_scroll < 0) units_scroll = 0;
                 if (nav_scroll > 230)
                     nav_scroll = 230;
                 drag_y = y;
