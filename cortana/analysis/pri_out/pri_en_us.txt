@@ -1,0 +1,1246 @@
+\Files\Assets\Fonts\BroMDL2.ttf	Assets\Fonts\BroMDL2.ttf
+\Files\Assets\Fonts\CortMDL2.ttf	Assets\Fonts\CortMDL2.ttf
+\Files\Assets\Fonts\SegoeUISoundlines.ttf	Assets\Fonts\SegoeUISoundlines.ttf
+\Files\Assets\Fonts\StrgMDL2.ttf	Assets\Fonts\StrgMDL2.ttf
+\Files\Assets\Glyph32x32-grey.png	Assets\Glyph32x32-grey.png
+\Files\Assets\Glyph32x32-white.png	Assets\Glyph32x32-white.png
+\Files\Assets\HCBlack_Cortana_TraySearchBox_Glyph_100.png	Assets\HCBlack_Cortana_TraySearchBox_Glyph_100.png
+\Files\Assets\HCWhite_Cortana_TraySearchBox_Glyph_100.png	Assets\HCWhite_Cortana_TraySearchBox_Glyph_100.png
+\Files\Assets\MusicRecoPlaceholder.png	Assets\MusicRecoPlaceholder.png
+\Files\Assets\RemindersSplashScreen.png	Assets\RemindersSplashScreen.png
+\Files\Assets\SmallLogo.png	Assets\SmallLogo.png
+\Files\Assets\SplashScreen.png	Assets\SplashScreen.png
+\Files\Assets\SplashScreen_Xbox.png	Assets\SplashScreen_Xbox.png
+\Files\Assets\StoreLogo.png	Assets\StoreLogo.png
+\Files\Assets\badge.png	Assets\badge.png
+\Files\Assets\call.white.png	Assets\call.white.png
+\Files\Assets\complete.white.png	Assets\complete.white.png
+\Files\Assets\dismiss.white.png	Assets\dismiss.white.png
+\Files\Assets\hey_cortana.gif	Assets\hey_cortana.gif
+\Files\Assets\openlink.white.png	Assets\openlink.white.png
+\Files\Assets\others.gif	Assets\others.gif
+\Files\Assets\package.gif	Assets\package.gif
+\Files\Assets\reminder.gif	Assets\reminder.gif
+\Files\Assets\search.gif	Assets\search.gif
+\Files\Assets\send.white.png	Assets\send.white.png
+\Files\Assets\snooze.white.png	Assets\snooze.white.png
+\Files\Assets\speech.gif	Assets\speech.gif
+\Files\Assets\store.white.png	Assets\store.white.png
+\Files\Assets\voice_training_intro.png	Assets\voice_training_intro.png
+\Files\Assets\xdevice.forward.png	Assets\xdevice.forward.png
+\Files\BingConfiguration\BingConfiguration_common.xml	BingConfiguration\BingConfiguration_common.xml
+\Files\BingConfiguration\BingConfiguration_de-DE.xml	BingConfiguration\BingConfiguration_de-DE.xml
+\Files\BingConfiguration\BingConfiguration_en-AU.xml	BingConfiguration\BingConfiguration_en-AU.xml
+\Files\BingConfiguration\BingConfiguration_en-CA.xml	BingConfiguration\BingConfiguration_en-CA.xml
+\Files\BingConfiguration\BingConfiguration_en-GB.xml	BingConfiguration\BingConfiguration_en-GB.xml
+\Files\BingConfiguration\BingConfiguration_en-IN.xml	BingConfiguration\BingConfiguration_en-IN.xml
+\Files\BingConfiguration\BingConfiguration_en-US.xml	BingConfiguration\BingConfiguration_en-US.xml
+\Files\BingConfiguration\BingConfiguration_es-ES.xml	BingConfiguration\BingConfiguration_es-ES.xml
+\Files\BingConfiguration\BingConfiguration_es-MX.xml	BingConfiguration\BingConfiguration_es-MX.xml
+\Files\BingConfiguration\BingConfiguration_fr-CA.xml	BingConfiguration\BingConfiguration_fr-CA.xml
+\Files\BingConfiguration\BingConfiguration_fr-FR.xml	BingConfiguration\BingConfiguration_fr-FR.xml
+\Files\BingConfiguration\BingConfiguration_it-IT.xml	BingConfiguration\BingConfiguration_it-IT.xml
+\Files\BingConfiguration\BingConfiguration_ja-JP.xml	BingConfiguration\BingConfiguration_ja-JP.xml
+\Files\BingConfiguration\BingConfiguration_pt-BR.xml	BingConfiguration\BingConfiguration_pt-BR.xml
+\Files\BingConfiguration\BingConfiguration_zh-CN.xml	BingConfiguration\BingConfiguration_zh-CN.xml
+\Files\ConstraintIndex\ConstraintIndex.cab	ConstraintIndex\ConstraintIndex.cab
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_de-DE.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_de-DE.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_en-AU.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_en-AU.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_en-CA.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_en-CA.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_en-GB.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_en-GB.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_en-IN.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_en-IN.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_en-US.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_en-US.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_es-ES.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_es-ES.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_es-MX.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_es-MX.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_fr-CA.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_fr-CA.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_fr-FR.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_fr-FR.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_it-IT.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_it-IT.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_ja.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_ja.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_pt-BR.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_pt-BR.json
+\Files\Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_zh-CN.json	Cortana.SpeechHelp\SpeechHelp_AssistantEnabled_zh-CN.json
+\Files\DefaultSettings.xml	DefaultSettings.xml
+\Files\Microsoft.Bing.Client.Graph\Configuration.txt	Microsoft.Bing.Client.Graph\Configuration.txt
+\Files\Rules\BootstrapRules.xml	Rules\BootstrapRules.xml
+\Files\WindowsPhoneReservedAppInfo.xml	WindowsPhoneReservedAppInfo.xml
+\Files\cache\COOBE\AppCacheMetadata.xml	cache\COOBE\AppCacheMetadata.xml
+\Files\cache\COOBE\COOBE.appcache	cache\COOBE\COOBE.appcache
+\Files\cache\COOBE\COOBE.html	cache\COOBE\COOBE.html
+\Files\cache\COOBE\CortanaIcon.png	cache\COOBE\CortanaIcon.png
+\Files\cache\Desktop\1.txt	cache\Desktop\1.txt
+\Files\cache\Desktop\10.txt	cache\Desktop\10.txt
+\Files\cache\Desktop\11.txt	cache\Desktop\11.txt
+\Files\cache\Desktop\12.txt	cache\Desktop\12.txt
+\Files\cache\Desktop\13.txt	cache\Desktop\13.txt
+\Files\cache\Desktop\14.txt	cache\Desktop\14.txt
+\Files\cache\Desktop\15.txt	cache\Desktop\15.txt
+\Files\cache\Desktop\16.txt	cache\Desktop\16.txt
+\Files\cache\Desktop\17.txt	cache\Desktop\17.txt
+\Files\cache\Desktop\18.txt	cache\Desktop\18.txt
+\Files\cache\Desktop\19.txt	cache\Desktop\19.txt
+\Files\cache\Desktop\2.txt	cache\Desktop\2.txt
+\Files\cache\Desktop\20.txt	cache\Desktop\20.txt
+\Files\cache\Desktop\21.txt	cache\Desktop\21.txt
+\Files\cache\Desktop\22.txt	cache\Desktop\22.txt
+\Files\cache\Desktop\3.txt	cache\Desktop\3.txt
+\Files\cache\Desktop\4.txt	cache\Desktop\4.txt
+\Files\cache\Desktop\5.txt	cache\Desktop\5.txt
+\Files\cache\Desktop\6.txt	cache\Desktop\6.txt
+\Files\cache\Desktop\7.txt	cache\Desktop\7.txt
+\Files\cache\Desktop\8.txt	cache\Desktop\8.txt
+\Files\cache\Desktop\9.txt	cache\Desktop\9.txt
+\Files\cache\Desktop\AppCacheMetadata.xml	cache\Desktop\AppCacheMetadata.xml
+\Files\cache\Mobile\1.txt	cache\Mobile\1.txt
+\Files\cache\Mobile\10.txt	cache\Mobile\10.txt
+\Files\cache\Mobile\11.txt	cache\Mobile\11.txt
+\Files\cache\Mobile\12.txt	cache\Mobile\12.txt
+\Files\cache\Mobile\13.txt	cache\Mobile\13.txt
+\Files\cache\Mobile\14.txt	cache\Mobile\14.txt
+\Files\cache\Mobile\15.txt	cache\Mobile\15.txt
+\Files\cache\Mobile\16.txt	cache\Mobile\16.txt
+\Files\cache\Mobile\17.txt	cache\Mobile\17.txt
+\Files\cache\Mobile\18.txt	cache\Mobile\18.txt
+\Files\cache\Mobile\19.txt	cache\Mobile\19.txt
+\Files\cache\Mobile\2.txt	cache\Mobile\2.txt
+\Files\cache\Mobile\20.txt	cache\Mobile\20.txt
+\Files\cache\Mobile\21.txt	cache\Mobile\21.txt
+\Files\cache\Mobile\3.txt	cache\Mobile\3.txt
+\Files\cache\Mobile\4.txt	cache\Mobile\4.txt
+\Files\cache\Mobile\5.txt	cache\Mobile\5.txt
+\Files\cache\Mobile\6.txt	cache\Mobile\6.txt
+\Files\cache\Mobile\7.txt	cache\Mobile\7.txt
+\Files\cache\Mobile\8.txt	cache\Mobile\8.txt
+\Files\cache\Mobile\9.txt	cache\Mobile\9.txt
+\Files\cache\Mobile\AppCacheMetadata.xml	cache\Mobile\AppCacheMetadata.xml
+\Files\dss_service\node_modules\answers\lib\answers.js	dss_service\node_modules\answers\lib\answers.js
+\Files\dss_service\node_modules\answers\package.json	dss_service\node_modules\answers\package.json
+\Files\dss_service\node_modules\async-safe\async-safe.js	dss_service\node_modules\async-safe\async-safe.js
+\Files\dss_service\node_modules\async-safe\package.json	dss_service\node_modules\async-safe\package.json
+\Files\dss_service\node_modules\async\LICENSE	dss_service\node_modules\async\LICENSE
+\Files\dss_service\node_modules\async\component.json	dss_service\node_modules\async\component.json
+\Files\dss_service\node_modules\async\lib\async.js	dss_service\node_modules\async\lib\async.js
+\Files\dss_service\node_modules\async\package.json	dss_service\node_modules\async\package.json
+\Files\dss_service\node_modules\conversion-utils\index.js	dss_service\node_modules\conversion-utils\index.js
+\Files\dss_service\node_modules\conversion-utils\package.json	dss_service\node_modules\conversion-utils\package.json
+\Files\dss_service\node_modules\cortana-platform\cortana_platform_abstraction.js	dss_service\node_modules\cortana-platform\cortana_platform_abstraction.js
+\Files\dss_service\node_modules\cortana-platform\package.json	dss_service\node_modules\cortana-platform\package.json
+\Files\dss_service\node_modules\cortana-platform\win\cortana_platform_impl.js	dss_service\node_modules\cortana-platform\win\cortana_platform_impl.js
+\Files\dss_service\node_modules\debug\.jshintrc	dss_service\node_modules\debug\.jshintrc
+\Files\dss_service\node_modules\debug\Makefile	dss_service\node_modules\debug\Makefile
+\Files\dss_service\node_modules\debug\browser.js	dss_service\node_modules\debug\browser.js
+\Files\dss_service\node_modules\debug\component.json	dss_service\node_modules\debug\component.json
+\Files\dss_service\node_modules\debug\debug.js	dss_service\node_modules\debug\debug.js
+\Files\dss_service\node_modules\debug\node.js	dss_service\node_modules\debug\node.js
+\Files\dss_service\node_modules\debug\package.json	dss_service\node_modules\debug\package.json
+\Files\dss_service\node_modules\dot\LICENSE-DOT	dss_service\node_modules\dot\LICENSE-DOT
+\Files\dss_service\node_modules\dot\lib\doT.js	dss_service\node_modules\dot\lib\doT.js
+\Files\dss_service\node_modules\dot\lib\doT.min.js	dss_service\node_modules\dot\lib\doT.min.js
+\Files\dss_service\node_modules\dot\lib\doU.js	dss_service\node_modules\dot\lib\doU.js
+\Files\dss_service\node_modules\dot\lib\index.js	dss_service\node_modules\dot\lib\index.js
+\Files\dss_service\node_modules\dot\package.json	dss_service\node_modules\dot\package.json
+\Files\dss_service\node_modules\dss-utils\lib\dss-utils.js	dss_service\node_modules\dss-utils\lib\dss-utils.js
+\Files\dss_service\node_modules\dss-utils\lib\memory-stream.js	dss_service\node_modules\dss-utils\lib\memory-stream.js
+\Files\dss_service\node_modules\dss-utils\package.json	dss_service\node_modules\dss-utils\package.json
+\Files\dss_service\node_modules\dss\lib\dss.js	dss_service\node_modules\dss\lib\dss.js
+\Files\dss_service\node_modules\dss\package.json	dss_service\node_modules\dss\package.json
+\Files\dss_service\node_modules\dssmain\dssmain.js	dss_service\node_modules\dssmain\dssmain.js
+\Files\dss_service\node_modules\dssmain\package.json	dss_service\node_modules\dssmain\package.json
+\Files\dss_service\node_modules\ee-first\LICENSE	dss_service\node_modules\ee-first\LICENSE
+\Files\dss_service\node_modules\ee-first\index.js	dss_service\node_modules\ee-first\index.js
+\Files\dss_service\node_modules\ee-first\package.json	dss_service\node_modules\ee-first\package.json
+\Files\dss_service\node_modules\ee-first\test.js	dss_service\node_modules\ee-first\test.js
+\Files\dss_service\node_modules\enticements\lib\enticements.js	dss_service\node_modules\enticements\lib\enticements.js
+\Files\dss_service\node_modules\enticements\package.json	dss_service\node_modules\enticements\package.json
+\Files\dss_service\node_modules\escape-html\component.json	dss_service\node_modules\escape-html\component.json
+\Files\dss_service\node_modules\escape-html\index.js	dss_service\node_modules\escape-html\index.js
+\Files\dss_service\node_modules\escape-html\package.json	dss_service\node_modules\escape-html\package.json
+\Files\dss_service\node_modules\finished\LICENSE	dss_service\node_modules\finished\LICENSE
+\Files\dss_service\node_modules\finished\index.js	dss_service\node_modules\finished\index.js
+\Files\dss_service\node_modules\finished\package.json	dss_service\node_modules\finished\package.json
+\Files\dss_service\node_modules\fresh\index.js	dss_service\node_modules\fresh\index.js
+\Files\dss_service\node_modules\fresh\package.json	dss_service\node_modules\fresh\package.json
+\Files\dss_service\node_modules\greetings\lib\greetings.js	dss_service\node_modules\greetings\lib\greetings.js
+\Files\dss_service\node_modules\greetings\package.json	dss_service\node_modules\greetings\package.json
+\Files\dss_service\node_modules\history-db\package.json	dss_service\node_modules\history-db\package.json
+\Files\dss_service\node_modules\httpserver\lib\httpserver.js	dss_service\node_modules\httpserver\lib\httpserver.js
+\Files\dss_service\node_modules\httpserver\package.json	dss_service\node_modules\httpserver\package.json
+\Files\dss_service\node_modules\live-tiles\lib\legacy-tile-builder.js	dss_service\node_modules\live-tiles\lib\legacy-tile-builder.js
+\Files\dss_service\node_modules\live-tiles\lib\live-tile-updater.js	dss_service\node_modules\live-tiles\lib\live-tile-updater.js
+\Files\dss_service\node_modules\live-tiles\lib\live-tiles.js	dss_service\node_modules\live-tiles\lib\live-tiles.js
+\Files\dss_service\node_modules\live-tiles\package.json	dss_service\node_modules\live-tiles\package.json
+\Files\dss_service\node_modules\milliseconds\index.js	dss_service\node_modules\milliseconds\index.js
+\Files\dss_service\node_modules\milliseconds\package.json	dss_service\node_modules\milliseconds\package.json
+\Files\dss_service\node_modules\mime\LICENSE	dss_service\node_modules\mime\LICENSE
+\Files\dss_service\node_modules\mime\mime.js	dss_service\node_modules\mime\mime.js
+\Files\dss_service\node_modules\mime\package.json	dss_service\node_modules\mime\package.json
+\Files\dss_service\node_modules\mime\test.js	dss_service\node_modules\mime\test.js
+\Files\dss_service\node_modules\mime\types\mime.types	dss_service\node_modules\mime\types\mime.types
+\Files\dss_service\node_modules\mime\types\node.types	dss_service\node_modules\mime\types\node.types
+\Files\dss_service\node_modules\mkdirp\LICENSE	dss_service\node_modules\mkdirp\LICENSE
+\Files\dss_service\node_modules\mkdirp\index.js	dss_service\node_modules\mkdirp\index.js
+\Files\dss_service\node_modules\mkdirp\package.json	dss_service\node_modules\mkdirp\package.json
+\Files\dss_service\node_modules\modules-overwrite\dssModulesTranslation.json	dss_service\node_modules\modules-overwrite\dssModulesTranslation.json
+\Files\dss_service\node_modules\modules-overwrite\modules_overwrite.js	dss_service\node_modules\modules-overwrite\modules_overwrite.js
+\Files\dss_service\node_modules\modules-overwrite\package.json	dss_service\node_modules\modules-overwrite\package.json
+\Files\dss_service\node_modules\node-tmp\LICENSE	dss_service\node_modules\node-tmp\LICENSE
+\Files\dss_service\node_modules\node-tmp\lib\tmp.js	dss_service\node_modules\node-tmp\lib\tmp.js
+\Files\dss_service\node_modules\node-tmp\package.json	dss_service\node_modules\node-tmp\package.json
+\Files\dss_service\node_modules\node-uuid\LICENSE	dss_service\node_modules\node-uuid\LICENSE
+\Files\dss_service\node_modules\node-uuid\package.json	dss_service\node_modules\node-uuid\package.json
+\Files\dss_service\node_modules\node-uuid\uuid.js	dss_service\node_modules\node-uuid\uuid.js
+\Files\dss_service\node_modules\nodert-buffer-utils\package.json	dss_service\node_modules\nodert-buffer-utils\package.json
+\Files\dss_service\node_modules\path-to-regexp\component.json	dss_service\node_modules\path-to-regexp\component.json
+\Files\dss_service\node_modules\path-to-regexp\index.js	dss_service\node_modules\path-to-regexp\index.js
+\Files\dss_service\node_modules\path-to-regexp\package.json	dss_service\node_modules\path-to-regexp\package.json
+\Files\dss_service\node_modules\platform-utils\package.json	dss_service\node_modules\platform-utils\package.json
+\Files\dss_service\node_modules\platform-utils\platform_utils.js	dss_service\node_modules\platform-utils\platform_utils.js
+\Files\dss_service\node_modules\platform\package.json	dss_service\node_modules\platform\package.json
+\Files\dss_service\node_modules\platform\platform_abstraction.js	dss_service\node_modules\platform\platform_abstraction.js
+\Files\dss_service\node_modules\platform\platform_types.js	dss_service\node_modules\platform\platform_types.js
+\Files\dss_service\node_modules\platform\win\platform_impl.js	dss_service\node_modules\platform\win\platform_impl.js
+\Files\dss_service\node_modules\platform\win\telemetry_impl.js	dss_service\node_modules\platform\win\telemetry_impl.js
+\Files\dss_service\node_modules\proactive-rx\lib\proactive-rx.js	dss_service\node_modules\proactive-rx\lib\proactive-rx.js
+\Files\dss_service\node_modules\proactive-rx\package.json	dss_service\node_modules\proactive-rx\package.json
+\Files\dss_service\node_modules\proactive-telemetry\lib\proactive-telemetry-events.js	dss_service\node_modules\proactive-telemetry\lib\proactive-telemetry-events.js
+\Files\dss_service\node_modules\proactive-telemetry\lib\proactive-telemetry.js	dss_service\node_modules\proactive-telemetry\lib\proactive-telemetry.js
+\Files\dss_service\node_modules\proactive-telemetry\package.json	dss_service\node_modules\proactive-telemetry\package.json
+\Files\dss_service\node_modules\proactive\lib\orchestrator.js	dss_service\node_modules\proactive\lib\orchestrator.js
+\Files\dss_service\node_modules\proactive\lib\proactive-experience-manager.js	dss_service\node_modules\proactive\lib\proactive-experience-manager.js
+\Files\dss_service\node_modules\proactive\lib\request-helpers.js	dss_service\node_modules\proactive\lib\request-helpers.js
+\Files\dss_service\node_modules\proactive\lib\server-loader.js	dss_service\node_modules\proactive\lib\server-loader.js
+\Files\dss_service\node_modules\proactive\lib\signal-handler.js	dss_service\node_modules\proactive\lib\signal-handler.js
+\Files\dss_service\node_modules\proactive\package.json	dss_service\node_modules\proactive\package.json
+\Files\dss_service\node_modules\proxy\index.js	dss_service\node_modules\proxy\index.js
+\Files\dss_service\node_modules\range-parser\index.js	dss_service\node_modules\range-parser\index.js
+\Files\dss_service\node_modules\range-parser\package.json	dss_service\node_modules\range-parser\package.json
+\Files\dss_service\node_modules\request-metrics\package.json	dss_service\node_modules\request-metrics\package.json
+\Files\dss_service\node_modules\request-metrics\request-metrics.js	dss_service\node_modules\request-metrics\request-metrics.js
+\Files\dss_service\node_modules\router\package.json	dss_service\node_modules\router\package.json
+\Files\dss_service\node_modules\router\router.js	dss_service\node_modules\router\router.js
+\Files\dss_service\node_modules\rxRulesManager\package.json	dss_service\node_modules\rxRulesManager\package.json
+\Files\dss_service\node_modules\rxRulesManager\rxRulesManager.js	dss_service\node_modules\rxRulesManager\rxRulesManager.js
+\Files\dss_service\node_modules\rx\package.json	dss_service\node_modules\rx\package.json
+\Files\dss_service\node_modules\rx\rx.js	dss_service\node_modules\rx\rx.js
+\Files\dss_service\node_modules\rx\rxDssHandlersRegistry.js	dss_service\node_modules\rx\rxDssHandlersRegistry.js
+\Files\dss_service\node_modules\rx\rxRulesInstantiationHandler.js	dss_service\node_modules\rx\rxRulesInstantiationHandler.js
+\Files\dss_service\node_modules\send\index.js	dss_service\node_modules\send\index.js
+\Files\dss_service\node_modules\send\lib\send.js	dss_service\node_modules\send\lib\send.js
+\Files\dss_service\node_modules\send\lib\utils.js	dss_service\node_modules\send\lib\utils.js
+\Files\dss_service\node_modules\send\package.json	dss_service\node_modules\send\package.json
+\Files\dss_service\node_modules\stream-counter\index.js	dss_service\node_modules\stream-counter\index.js
+\Files\dss_service\node_modules\stream-counter\package.json	dss_service\node_modules\stream-counter\package.json
+\Files\dss_service\node_modules\template-utils\index.js	dss_service\node_modules\template-utils\index.js
+\Files\dss_service\node_modules\template-utils\package.json	dss_service\node_modules\template-utils\package.json
+\Files\dss_service\node_modules\windows.cortana.pal\package.json	dss_service\node_modules\windows.cortana.pal\package.json
+\Files\dss_service\node_modules\windows.cortana\package.json	dss_service\node_modules\windows.cortana\package.json
+\Files\dss_service\node_modules\windows.foundation.diagnostics\package.json	dss_service\node_modules\windows.foundation.diagnostics\package.json
+\Files\dss_service\node_modules\windows.foundation\package.json	dss_service\node_modules\windows.foundation\package.json
+\Files\dss_service\node_modules\windows.networking\package.json	dss_service\node_modules\windows.networking\package.json
+\Files\dss_service\node_modules\windows.security.cryptography.core\package.json	dss_service\node_modules\windows.security.cryptography.core\package.json
+\Files\dss_service\node_modules\windows.security.cryptography\package.json	dss_service\node_modules\windows.security.cryptography\package.json
+\Files\dss_service\node_modules\windows.storage.streams\package.json	dss_service\node_modules\windows.storage.streams\package.json
+\Files\dss_service\node_modules\windows.web.http.filters\package.json	dss_service\node_modules\windows.web.http.filters\package.json
+\Files\dss_service\node_modules\windows.web.http.headers\package.json	dss_service\node_modules\windows.web.http.headers\package.json
+\Files\dss_service\node_modules\windows.web.http\package.json	dss_service\node_modules\windows.web.http\package.json
+\Files\dss_service\node_modules\winrt-crypto\cipher_decipher.js	dss_service\node_modules\winrt-crypto\cipher_decipher.js
+\Files\dss_service\node_modules\winrt-crypto\common.js	dss_service\node_modules\winrt-crypto\common.js
+\Files\dss_service\node_modules\winrt-crypto\hash_hmac_pbkdf2.js	dss_service\node_modules\winrt-crypto\hash_hmac_pbkdf2.js
+\Files\dss_service\node_modules\winrt-crypto\package.json	dss_service\node_modules\winrt-crypto\package.json
+\Files\dss_service\node_modules\winrt-crypto\sign_verify_credentials.js	dss_service\node_modules\winrt-crypto\sign_verify_credentials.js
+\Files\dss_service\node_modules\winrt-crypto\winrt_crypto.js	dss_service\node_modules\winrt-crypto\winrt_crypto.js
+\Files\dss_service\node_modules\winrt-projections\package.json	dss_service\node_modules\winrt-projections\package.json
+\Files\dss_service\node_modules\winrt-projections\winrt_projections.js	dss_service\node_modules\winrt-projections\winrt_projections.js
+\Files\dss_service\node_modules\winrt-request\form_data.js	dss_service\node_modules\winrt-request\form_data.js
+\Files\dss_service\node_modules\winrt-request\package.json	dss_service\node_modules\winrt-request\package.json
+\Files\dss_service\node_modules\winrt-request\request_common.js	dss_service\node_modules\winrt-request\request_common.js
+\Files\dss_service\node_modules\winrt-request\winrt_request.js	dss_service\node_modules\winrt-request\winrt_request.js
+\Files\dss_service\node_modules\winrt-request\winrt_request_wrapper.js	dss_service\node_modules\winrt-request\winrt_request_wrapper.js
+\Files\dss_service\node_modules\winrt-streams\package.json	dss_service\node_modules\winrt-streams\package.json
+\Files\dss_service\node_modules\winrt-streams\winrt_streams.js	dss_service\node_modules\winrt-streams\winrt_streams.js
+\Files\dss_service\node_modules\winrt-utils\main.js	dss_service\node_modules\winrt-utils\main.js
+\Files\dss_service\node_modules\winrt-utils\package.json	dss_service\node_modules\winrt-utils\package.json
+\Files\dss_service\proactive.js	dss_service\proactive.js
+\Files\dss_service\rxHandlers.js	dss_service\rxHandlers.js
+\cortanaapiresources\ContextMenu_ConnectNetworkDrive	Map network drive
+\cortanaapiresources\ContextMenu_Copy	Copy
+\cortanaapiresources\ContextMenu_CopyFile	Copy file
+\cortanaapiresources\ContextMenu_CopyLink	Copy link
+\cortanaapiresources\ContextMenu_DeleteHistoryItem	Remove from History
+\cortanaapiresources\ContextMenu_DisconnectNetworkDrive	Disconnect network drive
+\cortanaapiresources\ContextMenu_ItemProperties	Properties
+\cortanaapiresources\ContextMenu_Manage	Manage
+\cortanaapiresources\ContextMenu_OpenContaining	Open file location
+\cortanaapiresources\ContextMenu_OpenFileLocation	Open file location
+\cortanaapiresources\ContextMenu_OpenNewWindow	Open in new window
+\cortanaapiresources\ContextMenu_RunAs	Run as administrator
+\cortanaapiresources\ContextMenu_RunAsUser	Run as a different user
+\cortanaapiresources\ContextMenu_StartPin	Pin to Start
+\cortanaapiresources\ContextMenu_StartUnpin	Unpin from Start
+\cortanaapiresources\ContextMenu_TabletMode_OpenNewWindow	Open in new window
+\cortanaapiresources\ContextMenu_TaskbarPin	Pin to taskbar
+\cortanaapiresources\ContextMenu_TaskbarUnpin	Unpin from taskbar
+\cortanaapiresources\ContextMenu_Tile_Uninstall	Uninstall
+\cortanaapiresources\ContextMenu_Uninstall	Uninstall
+\cortanaapiresources\FamilyMemberDefaultFirstChildName	Your Child
+\greetingsresources\Fallback_PersonalizedText_1	Hi, <user_name>! How can I help?
+\greetingsresources\Fallback_PersonalizedText_10	Hi, <user_name>! What's up?
+\greetingsresources\Fallback_PersonalizedText_11	Hello there, <user_name>.
+\greetingsresources\Fallback_PersonalizedText_12	What would you like me to do, <user_name>?
+\greetingsresources\Fallback_PersonalizedText_13	<user_name>, hello!
+\greetingsresources\Fallback_PersonalizedText_14	Something I can do for you, <user_name>?
+\greetingsresources\Fallback_PersonalizedText_15	Hey there, <user_name>.
+\greetingsresources\Fallback_PersonalizedText_16	Hi, <user_name>. What's on your mind?
+\greetingsresources\Fallback_PersonalizedText_17	Can I be of assistance, <user_name>?
+\greetingsresources\Fallback_PersonalizedText_18	Hey, <user_name>. What can I do for you?
+\greetingsresources\Fallback_PersonalizedText_19	Need something, <user_name>?
+\greetingsresources\Fallback_PersonalizedText_2	Anything I can do for you, <user_name>?
+\greetingsresources\Fallback_PersonalizedText_20	What can I help you with, <user_name>?
+\greetingsresources\Fallback_PersonalizedText_21	What's up, <user_name>?
+\greetingsresources\Fallback_PersonalizedText_22	Greetings, <user_name>!
+\greetingsresources\Fallback_PersonalizedText_23	Anything I can get started, <user_name>?
+\greetingsresources\Fallback_PersonalizedText_3	Oh hey, <user_name>.
+\greetingsresources\Fallback_PersonalizedText_4	Hello, <user_name>. What can I do for you?
+\greetingsresources\Fallback_PersonalizedText_5	Hi there, <user_name>!
+\greetingsresources\Fallback_PersonalizedText_6	Need anything, <user_name>?
+\greetingsresources\Fallback_PersonalizedText_7	Hi, <user_name>.
+\greetingsresources\Fallback_PersonalizedText_8	How can I help, <user_name>?
+\greetingsresources\Fallback_PersonalizedText_9	What's on your mind, <user_name>?
+\greetingsresources\Fallback_Text_1	Hi! How can I help?
+\greetingsresources\Fallback_Text_10	Hi! What's up?
+\greetingsresources\Fallback_Text_11	Hello there.
+\greetingsresources\Fallback_Text_12	What would you like me to do?
+\greetingsresources\Fallback_Text_13	Hello!
+\greetingsresources\Fallback_Text_14	Something I can do for you?
+\greetingsresources\Fallback_Text_15	Hey there.
+\greetingsresources\Fallback_Text_16	Hi. What's on your mind?
+\greetingsresources\Fallback_Text_17	Can I be of assistance?
+\greetingsresources\Fallback_Text_18	Hey. What can I do for you?
+\greetingsresources\Fallback_Text_19	Need something?
+\greetingsresources\Fallback_Text_2	Anything I can do for you?
+\greetingsresources\Fallback_Text_20	What can I help you with?
+\greetingsresources\Fallback_Text_21	What's up?
+\greetingsresources\Fallback_Text_22	Greetings!
+\greetingsresources\Fallback_Text_23	Anything I can get started?
+\greetingsresources\Fallback_Text_3	Oh hey!
+\greetingsresources\Fallback_Text_4	Hello. What can I do for you?
+\greetingsresources\Fallback_Text_5	Hi there!
+\greetingsresources\Fallback_Text_6	Need anything?
+\greetingsresources\Fallback_Text_7	Hi!
+\greetingsresources\Fallback_Text_8	How can I help?
+\greetingsresources\Fallback_Text_9	What's on your mind?
+\greetingsresources\FirstLaunch_Animation	circle_oobeintro1
+\greetingsresources\FirstLaunch_Greeting_PersonalizedText	Hi! I'm Cortana. I'm here to help.
+\greetingsresources\FirstLaunch_Greeting_Text	Hi! I'm Cortana. I'm here to help.
+\greetingsresources\Restricted_Xbox_ChildUser_PersonalizedText	Personalization is limited for this profile.
+\greetingsresources\Restricted_Xbox_ChildUser_Text	Personalization is limited for this profile.
+\greetingsresources\Restricted_Xbox_NoUser_PersonalizedText	Sign in for personalization.
+\greetingsresources\Restricted_Xbox_NoUser_Text	Sign in for personalization.
+\remindersresources\ContactTrigger\DisplayTextFormat	Next time I talk to %1
+\remindersresources\LocationReminder\ArriveFormat	When I get to %1
+\remindersresources\LocationReminder\DepartFormat	When I leave %1
+\remindersresources\LocationReminder\NearbyFormat	When I am near %1
+\remindersresources\ReminderLocationTrigger\Line3\NameAndAddressFormat	%1, %2
+\remindersresources\ReminderLocationTrigger\Monthly\ArriveFormat	When I get to %1 on day %2 of every month
+\remindersresources\ReminderLocationTrigger\Monthly\DepartFormat	When I leave %1 on day %2 of every month
+\remindersresources\ReminderLocationTrigger\Monthly\NearbyFormat	When I am near %1 on day %2 of every month
+\remindersresources\ReminderLocationTrigger\Weekly\ArriveFormat\Friday	When I get to %1 on Fridays
+\remindersresources\ReminderLocationTrigger\Weekly\ArriveFormat\Monday	When I get to %1 on Mondays
+\remindersresources\ReminderLocationTrigger\Weekly\ArriveFormat\Saturday	When I get to %1 on Saturdays
+\remindersresources\ReminderLocationTrigger\Weekly\ArriveFormat\Sunday	When I get to %1 on Sundays
+\remindersresources\ReminderLocationTrigger\Weekly\ArriveFormat\Thursday	When I get to %1 on Thursdays
+\remindersresources\ReminderLocationTrigger\Weekly\ArriveFormat\Tuesday	When I get to %1 on Tuesdays
+\remindersresources\ReminderLocationTrigger\Weekly\ArriveFormat\Wednesday	When I get to %1 on Wednesdays
+\remindersresources\ReminderLocationTrigger\Weekly\DepartFormat\Friday	When I leave %1 on Fridays
+\remindersresources\ReminderLocationTrigger\Weekly\DepartFormat\Monday	When I leave %1 on Mondays
+\remindersresources\ReminderLocationTrigger\Weekly\DepartFormat\Saturday	When I leave %1 on Saturdays
+\remindersresources\ReminderLocationTrigger\Weekly\DepartFormat\Sunday	When I leave %1 on Sundays
+\remindersresources\ReminderLocationTrigger\Weekly\DepartFormat\Thursday	When I leave %1 on Thursdays
+\remindersresources\ReminderLocationTrigger\Weekly\DepartFormat\Tuesday	When I leave %1 on Tuesdays
+\remindersresources\ReminderLocationTrigger\Weekly\DepartFormat\Wednesday	When I leave %1 on Wednesdays
+\remindersresources\ReminderLocationTrigger\Weekly\NearbyFormat\Friday	When I am near %1 on Fridays
+\remindersresources\ReminderLocationTrigger\Weekly\NearbyFormat\Monday	When I am near %1 on Mondays
+\remindersresources\ReminderLocationTrigger\Weekly\NearbyFormat\Saturday	When I am near %1 on Saturdays
+\remindersresources\ReminderLocationTrigger\Weekly\NearbyFormat\Sunday	When I am near %1 on Sundays
+\remindersresources\ReminderLocationTrigger\Weekly\NearbyFormat\Thursday	When I am near %1 on Thursdays
+\remindersresources\ReminderLocationTrigger\Weekly\NearbyFormat\Tuesday	When I am near %1 on Tuesdays
+\remindersresources\ReminderLocationTrigger\Weekly\NearbyFormat\Wednesday	When I am near %1 on Wednesdays
+\remindersresources\ReminderTimeTrigger\EveryDayFormat	Every day at %1
+\remindersresources\ReminderTimeTrigger\EveryDayWithStartFormat	Every day at %1, starting on %2
+\remindersresources\ReminderTimeTrigger\EveryMonthFormat	On day %1 of every month at %2
+\remindersresources\ReminderTimeTrigger\EveryMonthWithStartFormat	On day %1 of every month at %2, starting on %3
+\remindersresources\ReminderTimeTrigger\EveryNDayFormat	Every %1 days at %2
+\remindersresources\ReminderTimeTrigger\EveryNDayWithStartFormat	Every %1 days at %2, starting on %3
+\remindersresources\ReminderTimeTrigger\EveryNMonthFormat	On day %1 of every %2 months at %3
+\remindersresources\ReminderTimeTrigger\EveryNMonthWithStartFormat	On day %1 of every %2 months at %3, starting on %4
+\remindersresources\ReminderTimeTrigger\EveryWeekFormat\Friday	
+\remindersresources\ReminderTimeTrigger\EveryWeekFormat\Monday	
+\remindersresources\ReminderTimeTrigger\EveryWeekFormat\Saturday	
+\remindersresources\ReminderTimeTrigger\EveryWeekFormat\Sunday	
+\remindersresources\ReminderTimeTrigger\EveryWeekFormat\Thursday	
+\remindersresources\ReminderTimeTrigger\EveryWeekFormat\Tuesday	
+\remindersresources\ReminderTimeTrigger\EveryWeekFormat\Wednesday	
+\remindersresources\ReminderTimeTrigger\EveryWeekWithStartFormat\Friday	
+\remindersresources\ReminderTimeTrigger\EveryWeekWithStartFormat\Monday	
+\remindersresources\ReminderTimeTrigger\EveryWeekWithStartFormat\Saturday	
+\remindersresources\ReminderTimeTrigger\EveryWeekWithStartFormat\Sunday	
+\remindersresources\ReminderTimeTrigger\EveryWeekWithStartFormat\Thursday	
+\remindersresources\ReminderTimeTrigger\EveryWeekWithStartFormat\Tuesday	
+\remindersresources\ReminderTimeTrigger\EveryWeekWithStartFormat\Wednesday	
+\remindersresources\ReminderTimeTrigger\EveryYearFormat	Every %1 at %2
+\remindersresources\ReminderTimeTrigger\EveryYearWithStartFormat	Every %1 at %2, starting on %3
+\remindersresources\ReminderTimeTrigger\OnceFormat	On %1 at %2
+\remindersresources\ReminderTimeTrigger\OnceTodayFormat	Today at %2
+\remindersresources\ReminderTimeTrigger\OnceTomorrowFormat	Tomorrow at %2
+\remindersresources\ReminderTimeTrigger\WeeklyFormat	Every %1 at %2
+\remindersresources\ReminderTimeTrigger\WeeklyWithStartFormat	Every %1 at %2, starting on %3
+\remindersresources\ReminderTimeTrigger\Weekly\FiveDays	%1, %2, %3, %4 and %5
+\remindersresources\ReminderTimeTrigger\Weekly\FourDays	%1, %2, %3 and %4
+\remindersresources\ReminderTimeTrigger\Weekly\Friday	Friday
+\remindersresources\ReminderTimeTrigger\Weekly\Monday	Monday
+\remindersresources\ReminderTimeTrigger\Weekly\Saturday	Saturday
+\remindersresources\ReminderTimeTrigger\Weekly\SixDays	%1, %2, %3, %4, %5 and %6
+\remindersresources\ReminderTimeTrigger\Weekly\Sunday	Sunday
+\remindersresources\ReminderTimeTrigger\Weekly\ThreeDays	%1, %2 and %3
+\remindersresources\ReminderTimeTrigger\Weekly\Thursday	Thursday
+\remindersresources\ReminderTimeTrigger\Weekly\Tuesday	Tuesday
+\remindersresources\ReminderTimeTrigger\Weekly\TwoDays	%1 and %2
+\remindersresources\ReminderTimeTrigger\Weekly\Wednesday	Wednesday
+\remindersresources\ReminderTitle_MissedCallDeepLink	Missed call notification
+\remindersresources\ReminderTitle_SmsDeepLink	Text sent by Cortana
+\remindersresources\ReminderToast\Attribution\TriggerAndContextFormat	%1 (%2)
+\remindersresources\ReminderToast\LinkThumbnail\AltText	Link thumbnail
+\remindersresources\ReminderToast\Photo\AltText	Attached photo
+\remindersresources\ReminderToast\Title\1	Don't forget...
+\remindersresources\ReminderToast\Title\2	Remember to...
+\remindersresources\ReminderToast\Title\3	As you requested...
+\remindersresources\ReminderToast\Title\4	Ping!
+\remindersresources\ReminderToast_BatteryNotificationIgnoreButton	Got it
+\remindersresources\ReminderToast_BatteryNotificationToastBody	You have %1 battery remaining.
+\remindersresources\ReminderToast_BatteryNotificationToastTitle	Your %1 battery is low
+\remindersresources\ReminderToast_CallActionLabel	Call
+\remindersresources\ReminderToast_CompleteVerbLabel	Complete
+\remindersresources\ReminderToast_DismissVerbLabel	Dismiss
+\remindersresources\ReminderToast_FindMyPhoneResultRingItButton	Ring it
+\remindersresources\ReminderToast_FindMyPhoneResultToastBody	I found your phone (%1).
+\remindersresources\ReminderToast_FindMyPhoneResultToastTitle	Find my phone
+\remindersresources\ReminderToast_FindMyPhoneRingItToastTitle	Cortana is ringing your device...
+\remindersresources\ReminderToast_MapHandoffToastTitle	I've got your route.
+\remindersresources\ReminderToast_MapHandoffToastTitle_Hours	I've got your route (%1-hour trip).
+\remindersresources\ReminderToast_MapHandoffToastTitle_Hours_WithName	Your route: %1 (%2-hour trip).
+\remindersresources\ReminderToast_MapHandoffToastTitle_Minutes	I've got your route (%1-minute trip).
+\remindersresources\ReminderToast_MapHandoffToastTitle_Minutes_WithName	Your route: %1 (%2-minute trip).
+\remindersresources\ReminderToast_MapHandoffToastTitle_Seconds	I've got your route (%1-second trip).
+\remindersresources\ReminderToast_MapHandoffToastTitle_Seconds_WithName	Your route: %1 (%2-second trip).
+\remindersresources\ReminderToast_MapHandoffToastTitle_WithName	Your route: %1.
+\remindersresources\ReminderToast_MissedCallIgnoreButton	Ignore
+\remindersresources\ReminderToast_MissedCallTextBackButton	Text reply
+\remindersresources\ReminderToast_MissedCallToastTitle	Missed call
+\remindersresources\ReminderToast_MissedCallWithNumTypeToastTitle	Missed call, %1
+\remindersresources\ReminderToast_MobileNotificationDismissVerbLabel	Dismiss
+\remindersresources\ReminderToast_MobileNotification_ErrorMessage	I'm sorry, but I couldn't get that done on your phone for you. You can still do it next time you're on your phone.
+\remindersresources\ReminderToast_MobileNotification_ErrorMessage_Close	Close
+\remindersresources\ReminderToast_MobileNotifyAppNameandGetApp	Get %1 from the Store
+\remindersresources\ReminderToast_MobileNotifyAppNameandLaunchApp	%1
+\remindersresources\ReminderToast_MobileNotifyLandingPage	I got this from %1 (on %2): %3
+\remindersresources\ReminderToast_MobileNotifyLandingPageNoAppName	I got this from %1: %2
+\remindersresources\ReminderToast_MobileNotifyLaunchAppButton	Open app
+\remindersresources\ReminderToast_MobileNotifyLaunchOrOpenAppButton	Request app
+\remindersresources\ReminderToast_MobileNotifyLaunchStoreToAppButton	Get app
+\remindersresources\ReminderToast_MobileNotifyMuteAppButton	Don't show notifications for this mobile app
+\remindersresources\ReminderToast_MobileNotifyReplyAppButton	Reply
+\remindersresources\ReminderToast_OfficeHandOffConfirmButton	Open
+\remindersresources\ReminderToast_OfficeHandOffIgnoreButton	No thanks
+\remindersresources\ReminderToast_OfficeHandOffToastBody	%1
+\remindersresources\ReminderToast_OfficeHandOffToastTitle	Pick up where you left off?
+\remindersresources\ReminderToast_OpenBrowserActionLabel	Open link
+\remindersresources\ReminderToast_SharePhotoIgnoreButton	Ignore
+\remindersresources\ReminderToast_SharePhotoSaveAsButton	Save as...
+\remindersresources\ReminderToast_SharePhotoToastBody	Tap to see it or save it.
+\remindersresources\ReminderToast_SharePhotoToastTitle	Here's your photo.
+\remindersresources\ReminderToast_SharePhotosSignInConsent	Cortana can let you know on your PC when you miss something on your phone, and vice versa. Would you like to sign in and let Cortana help out across your devices?
+\remindersresources\ReminderToast_SharePhotosSignInConsent_NoThanks	No thanks
+\remindersresources\ReminderToast_SharePhotosSignInConsent_SignIn	Sign in
+\remindersresources\ReminderToast_SmsSent	I sent your text to %1
+\remindersresources\ReminderToast_SnoozePicker10Minutes	10 minutes
+\remindersresources\ReminderToast_SnoozePicker1Day	1 day
+\remindersresources\ReminderToast_SnoozePicker1Hour	1 hour
+\remindersresources\ReminderToast_SnoozePicker4Hours	4 hours
+\remindersresources\ReminderToast_SnoozePicker5Minutes	5 minutes
+\remindersresources\ReminderToast_SnoozePickerLabel	Snooze for
+\remindersresources\ReminderToast_SnoozePickerNextTime	next time
+\remindersresources\ReminderToast_SnoozeVerbLabel	Snooze
+\remindersresources\ReminderUntitledLabel	Reminder
+\remindersresources\Reminder_FindMyPhoneResultMapTitle	Windows Phone
+\remindersresources\Reminder_FindMyPhoneSettingName	Find a missing phone
+\remindersresources\Reminder_FindMyPhoneToastTitle	Cortana is looking for this phone...
+\remindersresources\Reminder_LowBatterySettingName	Low battery warnings
+\remindersresources\Reminder_MapHandoffSettingName	Routes and directions
+\remindersresources\Reminder_MissedCallSettingName	Missed calls
+\remindersresources\Reminder_MissedCallSmsCompose	I'll get back to you soon...
+\remindersresources\Reminder_MissedCallUnknownCaller	Unknown
+\remindersresources\Reminder_MobileNotifyReplyCompose	Reply...
+\remindersresources\Reminder_PhoneTypeBusinessFax	Work fax
+\remindersresources\Reminder_PhoneTypeCompany	Company
+\remindersresources\Reminder_PhoneTypeHome	Home
+\remindersresources\Reminder_PhoneTypeHomeFax	Home fax
+\remindersresources\Reminder_PhoneTypeMobile	Mobile
+\remindersresources\Reminder_PhoneTypePager	Pager
+\remindersresources\Reminder_PhoneTypeWork	Work
+\remindersresources\RemindersCalendarName	Reminders
+\remindersuiresources\AppBar\ReminderItem\Complete\Label	Complete
+\remindersuiresources\AppBar\ReminderItem\Delete\Label	Delete
+\remindersuiresources\AppBar\ReminderItem\Save\Label	Save
+\remindersuiresources\ContactReminder_Error_ContactHandleNotResolved	The contact for your reminder is missing on this device. If accounts are still syncing, wait a few minutes and check again. If the contact just doesn’t exist, you’ll need to create the reminder again.
+\remindersuiresources\ContactReminder_Error_ContactNotFound	This reminder won’t work on this device until you add an account that includes the contact from the reminder.
+\remindersuiresources\ContactReminder_Error_RulesError	You'll need to create this reminder again
+\remindersuiresources\DisambigLocations\AnyLocationFormat	Any %1
+\remindersuiresources\DisambigLocations\AnyLocationSubtext	Whichever one you encounter first
+\remindersuiresources\InkNotesItemPage_DefaultPrompt\Text	Write with your pen
+\remindersuiresources\InkNotesItemPage_Error	I couldn’t get this into a reminder. Tap the arrow and I’ll try again.
+\remindersuiresources\InkNotesItemPage_ExistingReminderEditingDefaultGreetings	Change whatever suits your fancy.
+\remindersuiresources\InkNotesItemPage_NewNoteGreetings	What do you want to be reminded about?
+\remindersuiresources\InkNotesItemPage_NoTriggerGreetings	Whenever you're ready, Tap Next. We'll refine the details.
+\remindersuiresources\InkNotesItemPage_ReminderTitle	A reminder you wrote.
+\remindersuiresources\InkNotesItemPage_TimeTriggerGreetingsFormat1	I'm seeing %1 in there.
+\remindersuiresources\InkNotesItemPage_TimeTriggerGreetingsFormat2	I'm seeing %1 in there.
+\remindersuiresources\InkNotesItemPage_TimeTriggerGreetingsFormat3	I'm seeing %1 in there.
+\remindersuiresources\InkNotesItemPage_TimeTriggerGreetingsLine2	 Tap Next and we'll refine the details.
+\remindersuiresources\LocationAutoSuggest_UseCurrentLocation_Title	Current location
+\remindersuiresources\LocationReminder_Error_RulesError	You'll need to create this reminder again
+\remindersuiresources\LocationTriggerEditor_Cancel\Content	Cancel
+\remindersuiresources\LocationTriggerEditor_Direction_Arrive\Content	
+\remindersuiresources\LocationTriggerEditor_Direction_Combo_Arrive	Arrive
+\remindersuiresources\LocationTriggerEditor_Direction_Combo_Depart	Leave
+\remindersuiresources\LocationTriggerEditor_Direction_Depart\Content	
+\remindersuiresources\LocationTriggerEditor_Direction_Header\Text	Remind me when I
+\remindersuiresources\LocationTriggerEditor_Direction_Nearby\Content	Am nearby
+\remindersuiresources\LocationTriggerEditor_Disambiguation_Title\Text	Which one?
+\remindersuiresources\LocationTriggerEditor_Done\Content	Done
+\remindersuiresources\LocationTriggerEditor_Error_FailedToGetAccurateLocation	We think we're really close, but we can't quite get a lock on your exact location. You can try again, or just type the address or place.
+\remindersuiresources\LocationTriggerEditor_Error_FailedToGetLocation	We can't find your location at the moment. You can try again, or just type the address or place.
+\remindersuiresources\LocationTriggerEditor_Error_NoLocalSearchResult	We couldn't find that exact location. Try typing a different location, or pick a suggestion from the list.
+\remindersuiresources\LocationTriggerEditor_Instruction1\Text	
+\remindersuiresources\LocationTriggerEditor_Instruction2\Text	Type an address, place, kind of place, or favorite.
+\remindersuiresources\LocationTriggerEditor_LocationBox\PlaceholderText	
+\remindersuiresources\LocationTriggerEditor_LocationBox\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Current location
+\remindersuiresources\LocationTriggerEditor_NameCurrentLocation_Cancel\Content	Cancel
+\remindersuiresources\LocationTriggerEditor_NameCurrentLocation_Done\Content	Done
+\remindersuiresources\LocationTriggerEditor_NameCurrentLocation_Instruction1	Name your current location
+\remindersuiresources\LocationTriggerEditor_NameCurrentLocation_Instruction2	We'll save this place in your Maps favorites.
+\remindersuiresources\LocationTriggerEditor_TitleAddressFormat	%1, %2
+\remindersuiresources\LocationTriggerEditor_Title\Text	
+\remindersuiresources\MainPageCompletedRemindersHeader\Text	Completed Reminders
+\remindersuiresources\MainPageCreateHeader\Text	Create
+\remindersuiresources\MainPageRemindersHeader\Text	Reminders
+\remindersuiresources\MainPageTitle\Text	Remind Me
+\remindersuiresources\ReminderAttachment_InkCanvasButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Ink Attachment
+\remindersuiresources\ReminderContextMenu_Complete\Text	Complete
+\remindersuiresources\ReminderContextMenu_Delete\Text	Delete
+\remindersuiresources\ReminderEditor_ContactTrigger_PromptText\Text	When you talk to
+\remindersuiresources\ReminderEditor_Error_EmptyTitle	Add a subject, too.
+\remindersuiresources\ReminderEditor_LocationTrigger_ArriveFormat	When I get to %1
+\remindersuiresources\ReminderEditor_LocationTrigger_DepartFormat	When I leave %1
+\remindersuiresources\ReminderEditor_LocationTrigger_NearbyFormat	When I am near %1
+\remindersuiresources\ReminderEditor_MarkCompleteCheckBox\Content	Complete and move to History
+\remindersuiresources\ReminderEditor_PhotoFailure_TooLarge	That photo is too big to attach.
+\remindersuiresources\ReminderEditor_Recurrence_Daily	Daily
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_Fridays	Every Friday
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_Mondays	Every Monday
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_OnFridays	On Fridays
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_OnMondays	On Mondays
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_OnSaturdays	On Saturdays
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_OnSundays	On Sundays
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_OnThursdays	On Thursdays
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_OnTuesdays	On Tuesdays
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_OnWednesdays	On Wednesdays
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_Saturdays	Every Saturday
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_Sundays	Every Sunday
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_Thursdays	Every Thursday
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_Tuesdays	Every Tuesday
+\remindersuiresources\ReminderEditor_Recurrence_DayOfWeek_Wednesdays	Every Wednesday
+\remindersuiresources\ReminderEditor_Recurrence_EveryDay	Every day
+\remindersuiresources\ReminderEditor_Recurrence_Monthly	Monthly
+\remindersuiresources\ReminderEditor_Recurrence_NextTime	Next time
+\remindersuiresources\ReminderEditor_Recurrence_Once	Once
+\remindersuiresources\ReminderEditor_Recurrence_OnlyOnce	Only once
+\remindersuiresources\ReminderEditor_Recurrence_Weekly	Weekly
+\remindersuiresources\ReminderEditor_Recurrence_Yearly	Yearly
+\remindersuiresources\ReminderEditor_ReminderList_Shopping	Shopping
+\remindersuiresources\ReminderEditor_ReminderList_ToDo	To Do
+\remindersuiresources\ReminderEditor_RepeatFridayCheckBox\Content	Friday
+\remindersuiresources\ReminderEditor_RepeatMondayCheckBox\Content	Monday
+\remindersuiresources\ReminderEditor_RepeatSaturdayCheckBox\Content	Saturday
+\remindersuiresources\ReminderEditor_RepeatSundayCheckBox\Content	Sunday
+\remindersuiresources\ReminderEditor_RepeatThursdayCheckBox\Content	Thursday
+\remindersuiresources\ReminderEditor_RepeatTuesdayCheckBox\Content	Tuesday
+\remindersuiresources\ReminderEditor_RepeatWednesdayCheckBox\Content	Wednesday
+\remindersuiresources\ReminderEditor_SaveFailure_GeneralError	We couldn’t save your reminder. Try again in a little while.
+\remindersuiresources\ReminderEditor_SaveFailure_LocationNotFound	Sorry, I couldn't locate that on the map. You can choose another place.
+\remindersuiresources\ReminderEditor_SaveFailure_TooManyReminders	So many reminders! You’ll need to delete some before you can add a new one.
+\remindersuiresources\ReminderEditor_TimeTrigger_Error_DateInPast	I’m afraid I can’t time travel, so please pick a date in the future.
+\remindersuiresources\ReminderEditor_TimeTrigger_Today	Today
+\remindersuiresources\ReminderEditor_TimeTrigger_Tomorrow	Tomorrow
+\remindersuiresources\ReminderItemPage_AppBar_Picture\Label	Add photo
+\remindersuiresources\ReminderItemPage_AppBar_Picture_Camera\Text	Camera
+\remindersuiresources\ReminderItemPage_AppBar_Picture_Library\Text	Library
+\remindersuiresources\ReminderItemPage_AppBar_Picture_MenuFlyout\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Add photo options
+\remindersuiresources\ReminderItemPage_CustomTime\Text	Another time...
+\remindersuiresources\ReminderItemPage_In1Hour\Text	In 1 hour
+\remindersuiresources\ReminderItemPage_In30Minutes\Text	In 30 minutes
+\remindersuiresources\ReminderItemPage_Tomorrow\Text	Tomorrow
+\remindersuiresources\ReminderListItem_PhotoAttachment_Image\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Attached photo
+\remindersuiresources\ReminderPageTitle\PlaceholderText	Title
+\remindersuiresources\ReminderPage\DisambigLocationHeader\Text	Which location did you mean?
+\remindersuiresources\ReminderPage_AddressTextBox\Header	Address
+\remindersuiresources\ReminderPage_EnteredGeofenceRadioButton\Content	arrive
+\remindersuiresources\ReminderPage_ExitedGeofenceRadioButton\Content	leave
+\remindersuiresources\ReminderPage_GeofenceStateHeader\Text	Remind me when I
+\remindersuiresources\ReminderPage_LatitudeTextBox\Header	Latitude
+\remindersuiresources\ReminderPage_LocationButton\Content	Location
+\remindersuiresources\ReminderPage_LongitudeTextBox\Header	Longitude
+\remindersuiresources\ReminderPage_PersonButton\Content	Person
+\remindersuiresources\ReminderPage_TimeButton\Content	Time
+\remindersuiresources\RemindersHistory_DisplayCompletionTimeFormat	Completed on %1
+\remindersuiresources\RemindersHistory_EmptyListText\Text	You don't have any completed reminders.
+\remindersuiresources\RemindersHistory_Title\Text	History
+\remindersuiresources\RemindersHome_AppBar_AddInk\Label	Write
+\remindersuiresources\RemindersHome_AppBar_AddInk\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Write
+\remindersuiresources\RemindersHome_AppBar_Add\Label	Add
+\remindersuiresources\RemindersHome_AppBar_Add\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Add
+\remindersuiresources\RemindersHome_AppBar_ClearSelection\Label	Cancel
+\remindersuiresources\RemindersHome_AppBar_ClearSelection\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Cancel
+\remindersuiresources\RemindersHome_AppBar_Complete\Label	Complete
+\remindersuiresources\RemindersHome_AppBar_Complete\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Complete
+\remindersuiresources\RemindersHome_AppBar_Delete\Label	Delete
+\remindersuiresources\RemindersHome_AppBar_Delete\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Delete
+\remindersuiresources\RemindersHome_AppBar_History\Label	History
+\remindersuiresources\RemindersHome_AppBar_History\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	History
+\remindersuiresources\RemindersHome_AppBar_Save\Label	Save
+\remindersuiresources\RemindersHome_AppBar_Save\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Save
+\remindersuiresources\RemindersHome_AppBar_Select\Label	Select
+\remindersuiresources\RemindersHome_AppBar_Select\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Select
+\remindersuiresources\RemindersHome_Coming\Text	Coming up
+\remindersuiresources\RemindersHome_EmptyListText	Select + to add a new reminder
+\remindersuiresources\RemindersHome_Error_AttentionRequired\Text	Attention required: 
+\remindersuiresources\RemindersHome_HomePivot\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Reminders Home Pivot
+\remindersuiresources\RemindersHome_NavBar\Content	Reminders
+\remindersuiresources\RemindersHome_Pivot_All\Header	All
+\remindersuiresources\RemindersHome_Pivot_All\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	All
+\remindersuiresources\RemindersHome_Pivot_Person\Header	Person
+\remindersuiresources\RemindersHome_Pivot_Person\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Person
+\remindersuiresources\RemindersHome_Pivot_Place\Header	Place
+\remindersuiresources\RemindersHome_Pivot_Place\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Place
+\remindersuiresources\RemindersHome_Pivot_Time\Header	Time
+\remindersuiresources\RemindersHome_Pivot_Time\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Time
+\remindersuiresources\RemindersHome_ShowList\Text	"Show me my list"
+\remindersuiresources\RemindersHome_ShowList_Query	Show me my list
+\remindersuiresources\RemindersHome_Someday\Text	Whenever
+\remindersuiresources\RemindersHome_Today\Text	Today
+\remindersuiresources\RemindersItem_AppContentAttachment_Image\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Attached thumbnail
+\remindersuiresources\RemindersItem_At\Text	at
+\remindersuiresources\RemindersItem_NullTrigger_Button_Person\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Person
+\remindersuiresources\RemindersItem_NullTrigger_Button_Place\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Place
+\remindersuiresources\RemindersItem_NullTrigger_Button_Time\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Time
+\remindersuiresources\RemindersItem_NullTrigger_Option_Person\Text	Person
+\remindersuiresources\RemindersItem_NullTrigger_Option_Place\Text	Place
+\remindersuiresources\RemindersItem_NullTrigger_Option_Time\Text	Time
+\remindersuiresources\RemindersItem_NullTrigger_Text_Or\Text	or
+\remindersuiresources\RemindersItem_PhotoAttachment_Image\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Attached photo
+\remindersuiresources\RemindersItem_Recurring\Text	Recurring
+\remindersuiresources\RemindersItem_TitleTextBox\PlaceholderText	Remember to...
+\remindersuiresources\RemindersItem_Title\Text	Remind me to
+\remindersuiresources\RemindersItem_When\Text	When
+\remindersuiresources\RemindersShareTargetApp_AppDescription	Cortana Reminders
+\remindersuiresources\RemindersShareTargetApp_AppTileDisplayName	Cortana Reminders
+\remindersuiresources\RemindersShareTargetApp_MainPage_CancelButton\Content	Cancel
+\remindersuiresources\RemindersShareTargetApp_MainPage_LinkAttachmentDescription\Text	Adding attachment...
+\remindersuiresources\RemindersShareTargetApp_MainPage_Title\Text	Opening Cortana Reminders
+\remindersuiresources\RemindersShareTargetApp_ShareErrorMessage	Cannot create a reminder. Please try again in a bit.
+\remindersuiresources\SaveReminder\CantFindLocation\Content	We couldn't find that exact location. Try typing a different location, or pick a suggestion from the list.
+\remindersuiresources\SaveReminder\CantFindLocation\Title	Can't find that place
+\remindersuiresources\SaveReminder\GenericErrorWLANAlternative\Content	We weren't able to save your reminder. Make sure you have a cellular data or WLAN connection. If you do, it may help to wait a while, then try again.
+\remindersuiresources\SaveReminder\GenericErrorWLANAlternative\Title	Can't save reminder
+\remindersuiresources\SaveReminder\GenericError\Content	We weren't able to save your reminder. Make sure you have a cellular data or Wi-Fi connection. If you do, it may help to wait a while, then try again.
+\remindersuiresources\SaveReminder\GenericError\Title	Can't save reminder
+\remindersuiresources\TimeReminder_Error_MonthlyOrYearlyRecurrenceNotSupported	
+\resources\AboutMe_ChangeMyNameButton\Content	Change my name
+\resources\AboutMe_ChangeMyNameCaption\Text	Change the name Cortana uses for you, or how Cortana pronounces it.
+\resources\AboutMe_FamilyButton\Content	Locate family
+\resources\AboutMe_FamilyCaption\Text	Add a place and Cortana will let you know when your child arrives or leaves.
+\resources\AboutMe_FamilyTitle\Text	Family finder
+\resources\AboutMe_ManageYourFamily\Text	Manage your family
+\resources\AboutMe_PlacesButton\Content	Edit favorites
+\resources\AboutMe_PlacesCaption\Text	Home, work, and other saved favorite locations
+\resources\AboutMe_PlacesTitle\Text	Favorite places
+\resources\AboutMe_TitleWithName	About %1
+\resources\AboutMe_TitleWithoutName	About me
+\resources\AddFavoritePage_ErrorMessage	No results found. Try a different spelling or search term.
+\resources\AddFavoritePage_Header\Text	Add a favorite
+\resources\AddFavoritePage_SearchQueryBox\PlaceholderText	Search
+\resources\AddFavoritePage_SearchQueryBox\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Places search box
+\resources\AddFavoritePage_SearchResultsListView\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Search results
+\resources\AddFavoritePage_UpdateDialog_Content	You’ll need to update to the latest and greatest version of Cortana before you can do that.
+\resources\AddFavoritePage_UpdateDialog_LeftCommand	Close
+\resources\AddFavoritePage_UpdateDialog_RightCommand	Update
+\resources\AddFavoritePage_UpdateDialog_Title	Update Cortana
+\resources\AppBarButton_Add\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Add
+\resources\AppBarButton_Delete\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Delete
+\resources\AppBarButton_Save\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Save
+\resources\AutosuggestList\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Search suggestions
+\resources\BreakThroughListPage_AddAppBarButton\Label	Add
+\resources\BreakThroughListPage_HeaderDescription\Text	There are folks you want to hear from even when you're busy. Add them to your break through list so they can always reach you.
+\resources\BreakThroughListPage_Header\Text	Breakthrough list
+\resources\BreakThroughListPage_RemoveMenuFlyoutItem\Text	Remove
+\resources\Button_Allow	Allow
+\resources\Button_Close	Close
+\resources\Button_Dismiss	Dismiss
+\resources\Button_Done	Done
+\resources\Button_Enable	Enable
+\resources\Button_Enter	Enter
+\resources\Button_GoBack	Go back
+\resources\Button_GotIt	Got it
+\resources\Button_IAgree	I agree
+\resources\Button_IAmIn	I'm in!
+\resources\Button_IAmSure	I'm sure
+\resources\Button_LearnMore	Learn more
+\resources\Button_MaybeLater	Maybe Later
+\resources\Button_NeverMind	Never mind
+\resources\Button_Next	Next
+\resources\Button_NoThanks	No thanks
+\resources\Button_NotInterested	Not interested
+\resources\Button_NotNow	Not now
+\resources\Button_Personalize	Personalize
+\resources\Button_Settings	Settings
+\resources\Button_SignIn	Sign in
+\resources\Button_Skip	Skip
+\resources\Button_Snooze	Snooze
+\resources\Button_SoundsGood	Sounds good
+\resources\Button_Sure	Sure
+\resources\Button_ThisOne	This one
+\resources\Button_TryAgain	Try again
+\resources\Button_UseCortana	Use Cortana
+\resources\Button_WrongPronunciation	That's wrong
+\resources\Button_Yes	Yes
+\resources\Button_YesPlease	Yes please
+\resources\COOBE_BackgroundExecutionRetry	To help out, I need to be able to show your reminders. You can give me permission to do that in Settings.
+\resources\COOBE_BackgroundExecutionTitle	To help out, I need to be able to show your reminders. Do you want to allow me to do that?
+\resources\COOBE_CalendarTitle	To help out, I need to be able to see your calendar. Would you like to turn on the ability for apps to see your calendar in Settings?
+\resources\COOBE_ConsentConfirmation	I'm sorry, but I'll need your permission before I can help.
+\resources\COOBE_ConsentDetails	To let Cortana do her best work, Microsoft collects and uses information including your location and location history, contacts, voice input, searching history, calendar details, content and communication history from messages and apps, and other information on your device. In Microsoft Edge, Cortana collects and uses your browsing history. You can always tinker with what Cortana remembers in the Notebook or disable Cortana in Microsoft Edge.
+\resources\COOBE_ConsentTitle	Before we get started, I'll need some info.
+\resources\COOBE_ContactsTitle	To help out, I need to be able to see your contacts. Would you like to turn on the ability for apps to see your contacts in Settings?
+\resources\COOBE_FinishAnimationText	You're all set! Now, let's see what I can get started for you.
+\resources\COOBE_HeyCortanaText\Text	Hey Cortana
+\resources\COOBE_InputNameTextBox\PlaceholderText	Name or nickname
+\resources\COOBE_InputNameTextBox\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	What would you like me to call you edit box
+\resources\COOBE_IntroductionCardTitle1	I can remind you to do something at a particular time, place, or both.
+\resources\COOBE_IntroductionCardTitle2	You can use your voice to give me tasks, dictate messages, or chat.
+\resources\COOBE_IntroductionCardTitle3	I'll help you find stuff on your device, the web, or OneDrive. I'm a good searcher.
+\resources\COOBE_IntroductionCardTitle4	I'll keep you posted on the status of your packages and flights.
+\resources\COOBE_IntroductionCardTitle5	I can offer personalized ideas, news, scores, tidbits, events, traffic, weather, jokes...
+\resources\COOBE_IntroductionConfirmation	Are you sure you don't want me to help out? You can always change your mind later.
+\resources\COOBE_IntroductionExplainLinkTitle\Text	Still curious about what I can do?
+\resources\COOBE_IntroductionExplainLink\Text	Happy to explain
+\resources\COOBE_IntroductionTitle1	Here are some of the things I can do for you.
+\resources\COOBE_IntroductionTitle2	I put the "personal" in "personal assistant". Also the "assistant."
+\resources\COOBE_IntroductionTitle3	I'm here to assist, aid, cooperate, boost, and help out.
+\resources\COOBE_IntroductionTitle4	Hi again! Still curious? I've got lots to show you.
+\resources\COOBE_IntroductionTitle5	Want to see some of the things I can do? Just scroll down...
+\resources\COOBE_LocationConfirmation	To help out, I need to use your location. You can give me permission to do that in Settings.
+\resources\COOBE_LocationTitle	To help out, I need to use your location. Do you want to let me do that?
+\resources\COOBE_LongTermServicingSKUTitle	I’m sorry, but I can’t help on this particular version of Windows.
+\resources\COOBE_MSAAnimationTitle1	Great, %1% it is. One last thing: I'll need you to sign in with a Microsoft account.
+\resources\COOBE_MSAAnimationTitle2	That way, I can keep track of what you want me to know.
+\resources\COOBE_MSAAnimationTitle3	Before we get started, I'll need you to sign in with a Microsoft account.
+\resources\COOBE_MSAConfirmation	I can only help if you sign in with a Microsoft account. Do you want to go back and sign in?
+\resources\COOBE_MSATitle	First things first: I'll need you to sign in with a Microsoft account.
+\resources\COOBE_MarketTitle	I'm afraid I'm not available to help in your region.
+\resources\COOBE_MessagingTitle	To help out, I need to be able to see your text messages. Would you like to turn on the ability for apps to see your text messages in Settings?
+\resources\COOBE_NameTitle	Great! Now what would you like me to call you?
+\resources\COOBE_OEMOptInTitle	If you sign in to your REACHit app, I can use it to make your search results even better. Do you want me to take you to the app to sign in?
+\resources\COOBE_OEMOptInTitle_Parametrized	If you sign in to your %1 app, I can use it to make your search results even better. Do you want me to take you to the app to sign in?
+\resources\COOBE_PersonalizationTitle	To help out, I need speech, inking, and typing personalization to be on. Can I turn it on now?
+\resources\COOBE_PolicyTitle	Sorry, but your company policy prevents me from working.
+\resources\COOBE_PrivacyLink\Text	Privacy Statement
+\resources\COOBE_SmileAnimationTitle1	Hi there. I’m here to help you get stuff done.
+\resources\COOBE_SmileAnimationTitle2	With your permission, I can do my best work.
+\resources\COOBE_SpeechLink\Text	What languages can Cortana use?
+\resources\COOBE_SpeechSettingsLink\Text	Go to Settings
+\resources\COOBE_SpeechTitle	Before I can help, you’ll need to go to Settings and change your speech language to one I speak.
+\resources\COOBE_VoiceActivationDetails	If you'd like, Cortana can listen when you say "Hey Cortana." No typing or clicking required. Want to turn that on?
+\resources\COOBE_VoiceActivationTitle1	Ok, %1%. Next, here's how we can talk.
+\resources\COOBE_VoiceActivationTitle2	Ok, got it. Next, here's how we can talk.
+\resources\COOBE_WelcomeBackAnimationTitle	Welcome back! Let's pick up where you left off.
+\resources\CapabilitiesPrompt_ErrorText_Generic	I'm sorry, something went wrong. Try again in a little bit
+\resources\CapabilitiesPrompt_GreetingText_Calendar	I'd be happy to help out with your calendar. %s
+\resources\CapabilitiesPrompt_GreetingText_Communication	I'd be glad to help you reach out. %s
+\resources\CapabilitiesPrompt_GreetingText_Edge	In Microsoft Edge, I can help you pick up where you left off on websites and offer more info on some of the sites you visit. %s
+\resources\CapabilitiesPrompt_GreetingText_Generic	I'd be happy to help out with that. %s
+\resources\CapabilitiesPrompt_GreetingText_LocalEntityRetrieval	I'd be glad to help you find that place. %s
+\resources\CapabilitiesPrompt_GreetingText_Microphone	I can learn to understand you much better if I can get familiar with the way you talk. %s
+\resources\CapabilitiesPrompt_GreetingText_Notebook	The Notebook is where I keep track of what you want me to remember. %s
+\resources\CapabilitiesPrompt_GreetingText_OnDevice_Open_Application	If you let me know which apps you have, I can open them when you ask. %s
+\resources\CapabilitiesPrompt_GreetingText_OnDevice_Play_Music	If you ask me to, I can play your music for you. I’ll just need permission to see what’s in your collection. %s
+\resources\CapabilitiesPrompt_GreetingText_Reminders	Sure, let's get your reminder going. %s
+\resources\CapabilitiesPrompt_GreetingText_Settings	I'm happy to change that setting for you. %s
+\resources\CapabilitiesPrompt_GreetingText_Tracking	I'd be glad to help you track this. %s
+\resources\CapabilitiesPrompt_GreetingText_TrafficAnswer	Yes, I can get you directions or traffic. %s
+\resources\CapabilitiesPrompt_GreetingText_WeatherAnswer	I'm happy to try and find that out for you. %s
+\resources\CapabilitiesPrompt_GreetingText_Welcome	To help keep you on time, remember what's important, and much more, I need some info. %s
+\resources\CapabilitiesPrompt_InputPersonalizationSettingsLink\Text	Speech, inking, & typing privacy settings
+\resources\CapabilitiesPrompt_LegalText_AllComms	Let Cortana collect and use information like your contacts, calendar details, email, and content and communication history from messages and apps.
+\resources\CapabilitiesPrompt_LegalText_AllLocation	Let Cortana collect and use your location and location history.
+\resources\CapabilitiesPrompt_LegalText_AllSpeech	Let Cortana use your microphone and collect your speech patterns, typing history, and handwriting patterns.
+\resources\CapabilitiesPrompt_LegalText_BrowsingHistory	Let Cortana collect and use your browsing history.
+\resources\CapabilitiesPrompt_LegalText_CombinedConsent	Let Cortana collect and use information including your:\n\nLocation and location history\n\nContacts, calendar details, and content and communication history from messages and apps\n\nBrowsing history in Microsoft Edge\n\nSearch history and other info on your device to make your experience more personal
+\resources\CapabilitiesPrompt_LegalText_Personalization	Let Cortana collect and use things like search history and other info on your device to make your experience more personal.
+\resources\CapabilitiesPrompt_MultiPartFirstText	I'll just need a few things. %s
+\resources\CapabilitiesPrompt_MultiPartLastText	Great, thanks! Just one last thing. %s
+\resources\CapabilitiesPrompt_MultiPartMiddleText	Thanks! Now on to the next one. %s
+\resources\CapabilitiesPrompt_PolicyDisabledText_AllLocation	I’d help if I could, but your company policy prevents me from using your location.
+\resources\CapabilitiesPrompt_PolicyDisabledText_Generic	I’d help if I could, but your company policy prevents me from doing that.
+\resources\CapabilitiesPrompt_PrivacyLink\Text	Privacy statement
+\resources\CapabilitiesPrompt_PromptText_AllComms	With your permission, I can do things like manage your calendar, track packages, and help you send texts.
+\resources\CapabilitiesPrompt_PromptText_AllLocation	I need your location to help.
+\resources\CapabilitiesPrompt_PromptText_AllSpeech	I need your permission to help.
+\resources\CapabilitiesPrompt_PromptText_BrowsingHistory	I need your permission to help.
+\resources\CapabilitiesPrompt_PromptText_Denied	I'm afraid I can't help out without that permission. I'll be happy to do anything else that doesn't require that, though.
+\resources\CapabilitiesPrompt_PromptText_Granted	Great! It might take me a few moments to get everything finished. You might want to come back in a little bit.
+\resources\CapabilitiesPrompt_PromptText_Personalization	As soon as you sign in, I can get started.
+\resources\CapabilitiesPrompt_PromptText_PersonalizationWithDefaultMSA	Can I use your account to personalize your experience?
+\resources\CapabilitiesPrompt_PromptText_SpeechLanguage	Some speech packages need to finish installing before I can help out. It might take a little while, but you can check the progress in Settings if you'd like.
+\resources\CapabilitiesPrompt_PromptText_SpeechLanguageMeteredInternet	I'm still having trouble downloading the speech language package I need to be able to talk to you. Would you like me to try again using cellular data?
+\resources\CapabilitiesPrompt_PromptText_SpeechLanguageRetry	I'm sorry, but I haven't been able to get the speech language pack. Do you want me to try again?
+\resources\CapabilitiesPrompt_SpeakAloud_Generic	I need your permission to help.
+\resources\CapabilitiesPrompt_SpeakAloud_SpeechLanguage	The speech packages haven't finished installing yet. Check back in a little bit.
+\resources\Chrome_Action1Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Action1
+\resources\Chrome_Action2Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Action2
+\resources\Chrome_AttractButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Start listening
+\resources\Chrome_BackButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Back
+\resources\Chrome_DismissButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Close
+\resources\Chrome_MusicRecoButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Start music recognition
+\resources\ContactPickerAutomation_AccessibleName	Choose a contact
+\resources\DatepickerAutomation_AccessibleName	Choose a date
+\resources\DatepickerFormat_Today	Today
+\resources\DatepickerFormat_Tomorrow	Tomorrow
+\resources\DefaultAppBarButton_Add\Label	Add
+\resources\DefaultAppBarButton_Delete\Label	Delete
+\resources\DefaultAppBarButton_Save\Label	Save
+\resources\Description	Search the web and Windows
+\resources\DirectionsButton\Text	Directions
+\resources\DisplayName	Search
+\resources\DummyTextToGetLocalizationWorkingForThisResourceFile	en-US
+\resources\Enticement_Text_0	I'm Cortana, your new personal assistant!
+\resources\Enticement_Text_1	I'm Cortana! I can help with your day.
+\resources\Enticement_Text_2	I'm Cortana. I help with search and more.
+\resources\ErrorPage_GenericErrorMessage	I'm sorry, something went wrong. Try again in a little bit.
+\resources\ErrorPage_MicrophoneErrorMessage_NoMic	Rats, I can’t hear you. It might be a mic problem.
+\resources\ErrorPage_MicrophoneErrorMessage_Silence	Sorry about that, I didn’t hear anything.
+\resources\ErrorPage_MicrophoneWizLink\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Tap here to make sure Cortana can hear you
+\resources\ErrorPage_MicrophoneWizName\Text	Tap here
+\resources\ErrorPage_MicrophoneWizPrompt\Text	to make sure Cortana can hear you.
+\resources\ErrorPage_MicrophoneWizPrompt_TextAfterWizName\Text	 to make sure Cortana can hear you.
+\resources\ErrorPage_MicrophoneWizPrompt_TextBeforeWizName\Text	
+\resources\FamilyMemberPage_AppBar_Add\Label	Add
+\resources\FamilyMemberPage_AppBar_ClearSelection\Label	Clear
+\resources\FamilyMemberPage_AppBar_Delete\Label	Delete
+\resources\FamilyMemberPage_AppBar_Select\Label	Select
+\resources\FamilyMemberPage_ChildAccountNotEnabled	Your child hasn't accepted your invitation. Once it's accepted, you can start creating notifications.
+\resources\FamilyMemberPage_DeleteCommand\Text	Delete
+\resources\FamilyMemberPage_EditCommand\Text	Edit
+\resources\FamilyMemberPage_EmptyNotificationText	Select + to add a place.
+\resources\FamilyMemberPage_GetListErrorMessage	I can't seem to get your list of places at the moment. Try again in a little bit.
+\resources\FamilyMemberPage_NotificationListLabel\Text	Here are the places you’ve added.
+\resources\FamilyMemberPage_NotificationList\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Place notifications
+\resources\FamilyMemberPage_NotificationTitleFormat	Notifications for %1
+\resources\FamilyNotificationCreationPage_100mLabel\Text	330 feet
+\resources\FamilyNotificationCreationPage_1kmLabel\Text	0.6 miles
+\resources\FamilyNotificationCreationPage_200mLabel\Text	660 feet
+\resources\FamilyNotificationCreationPage_500mLabel\Text	0.3 miles
+\resources\FamilyNotificationCreationPage_CancelButton\Content	Cancel
+\resources\FamilyNotificationCreationPage_DoneButton\Content	Done
+\resources\FamilyNotificationCreationPage_ErrorToGetCurrentLocation	We can't find your location at the moment. You can try again, or just type the address or place.
+\resources\FamilyNotificationCreationPage_ErrorToSaveNotification	Can't save changes right now.
+\resources\FamilyNotificationCreationPage_NicknameLabel\Text	Nickname (optional)
+\resources\FamilyNotificationCreationPage_NoLocalSearchResult	No results found. Try a different spelling or search term.
+\resources\FamilyNotificationCreationPage_NotifyMeWithinLabel\Text	Notify me within
+\resources\FamilyNotificationCreationPage_PlaceEditboxDescription\Text	Type an address, place, kind of place, or favorite.
+\resources\FamilyNotificationCreationPage_PlaceEditboxLabel\Text	Where?
+\resources\FamilyNotificationCreationPage_TitleAddressFormat	%1, %2
+\resources\FamilyNotificationCreationPage_Title\Text	Add or edit a place
+\resources\FamilyPage_AdultLabel\Text	These are the adults set up to do this.
+\resources\FamilyPage_AdultListView\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Participating adults
+\resources\FamilyPage_ChildListView\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Children
+\resources\FamilyPage_ChildrenLabel\Text	Who do you want to track?
+\resources\FamilyPage_ChromeHeaderTitle	Family finder
+\resources\FamilyPage_CurrentLocationLabel\Text	Find their phone now
+\resources\FamilyPage_ExplanationLabelForChild\Text	Parents can add places and have Cortana let them know when you get there or leave.
+\resources\FamilyPage_ExplanationLabel\Text	Once the Family Finder app is installed on your child’s phone, select a child to set up a notification.
+\resources\FamilyPage_GeneralErrorMessage	Family Safety service is not available for some reasons
+\resources\FamilyPage_GetStarted\Text	Add a child
+\resources\FamilyPage_Introduction\Text	Add a child and install the app on their device. Then use this page to set up notifications. Cortana can let you know when they leave or get to school, home or any other place you add.\n
+\resources\FamilyPage_LocatorAppPromotionLinkText\Text	Get the app now
+\resources\FamilyPage_LocatorAppPromotionLink\Text	Get the app now
+\resources\FamilyPage_LocatorAppPromotionLink\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Get the app now
+\resources\FamilyPage_LocatorAppPromotionText	Not installed the app on your child’s phone yet?
+\resources\FamilyPage_LocatorGetTheAppLink\Text	Get the app now
+\resources\FamilyPage_ManageNotificationsLabel\Text	Manage notifications
+\resources\FamilyPage_RosterErrorMessage	Your family info isn't available at the moment. Please try again in a little bit.
+\resources\FavoritesAddEditForm_HomeLabel\Text	Set as home
+\resources\FavoritesAddEditForm_HomeWarningLabelResourceString	This will change your home address from %1
+\resources\FavoritesAddEditForm_NicknameLabel\Text	Nickname
+\resources\FavoritesAddEditForm_OptionalFieldLabel\Text	(optional)
+\resources\FavoritesAddEditForm_WorkLabel\Text	Set as work
+\resources\FavoritesAddEditForm_WorkWarningLabelResourceString	This will change your work address from %1
+\resources\FavoritesListView\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Favorites
+\resources\FeedbackControl_AcessibleNameBlock\Text	Feedback content
+\resources\Feedback_ErrorTextBlock\Text	I can't connect at the moment.\n\nMake sure you are currently connected to the internet.
+\resources\GenericControl_AcessibleNameBlock\Text	Cortana content
+\resources\Generic_ErrorTextBlock\Text	I can't connect at the moment.\n\nMake sure you are currently connected to the internet.
+\resources\HelpPage_AcessibleNameBlock\Text	Help main page
+\resources\HomeburgerIcon\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Navigation menu
+\resources\HomeburgerTopItem_AccessibleName	Toggle navigation menu
+\resources\HomeburgerTopItem_Cortana	CORTANA
+\resources\HomeburgerTopItem_Search	SEARCH
+\resources\Homeburger_Entry_Cortana	Cortana
+\resources\Homeburger_Entry_Family	Family Location
+\resources\Homeburger_Entry_Feedback	Feedback
+\resources\Homeburger_Entry_Help	Help
+\resources\Homeburger_Entry_Home	Home
+\resources\Homeburger_Entry_MusicReco	Music search
+\resources\Homeburger_Entry_Notebook	Notebook
+\resources\Homeburger_Entry_Reminders	Reminders
+\resources\Homeburger_Entry_Settings	Settings
+\resources\Homeburger_Entry_TryCortana	Try Cortana
+\resources\JpnNamePronunciation_CallMeWithSanCheckBox\Content	Include San when you say my name.
+\resources\JpnNamePronunciation_CallMeWithSanCheckBox\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Call me with the san suffix toggle switch
+\resources\JpnNamePronunciation_CallMeWithSanSwitch\Content	Include San when you say my name.
+\resources\JpnNamePronunciation_CallMeWithSanSwitch\Header	Call me with "San"
+\resources\JpnNamePronunciation_CallMeWithSanSwitch\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Call me with the san suffix toggle switch
+\resources\JpnNamePronunciation_HiraganaEntry	Ok, could you do me a favor and type your name in Hiragana?
+\resources\JpnNamePronunciation_HiraganaTryAgain	It'll help me if you type in Hiragana.
+\resources\LocationPickerAutomation_AccessibleName	Choose a location
+\resources\LockScreen_UnlockGenericErrorMessage	I'm sorry, you need to unlock the screen to perform this action.
+\resources\MinimalHome_ToolTipText	try "What can I say?"
+\resources\MusicRecoHistoryPage_MusicSearches\Text	Music searches
+\resources\MusicRecoPage_ByArtistKey\Text	by
+\resources\MusicRecoPage_Cancel	Cancel
+\resources\MusicRecoPage_FindAnotherSong	Find another song
+\resources\MusicRecoPage_Music\Text	Music
+\resources\MusicRecoPage_OnAlbumKey\Text	on
+\resources\MusicRecoPage_RecognitionStatusAbortedByUser	I cancelled that.
+\resources\MusicRecoPage_RecognitionStatusError	It looks like something went wrong. Try again when you're ready.
+\resources\MusicRecoPage_RecognitionStatusInProgress	Listening for music...
+\resources\MusicRecoPage_RecognitionStatusMatch	I found the song.
+\resources\MusicRecoPage_RecognitionStatusNetworkError	I can't find songs right now. Make sure you're connected to the Internet and try again.
+\resources\MusicRecoPage_RecognitionStatusNoMatch	I'm sorry, I don't recognize this song.
+\resources\MusicRecoPage_TryAgain	Try again
+\resources\MyStuffControl_AcessibleNameBlock\Text	Search content
+\resources\MyStuffControl_ErrorTextBlock\Text	We can't connect to web search right now.\n\nMake sure airplane mode is turned off, and check your cellular data or Wi-Fi connection.
+\resources\MyStuffControl_ErrorTextBlock_WLANAlternative\Text	We can't connect to web search right now.\n\nMake sure airplane mode is turned off, and check your cellular data or WLAN connection.
+\resources\NamePronunciationControl_InputTextBox\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	What would you like me to call you edit box
+\resources\NamePronunciation_Completed	Great, thanks %1%! Now that I've got your name, you can see what I've got to show you at Home.
+\resources\NamePronunciation_FailedToPronounce	I'm awfully sorry I'm not saying it right. If you go to the Notebook > About me, you can teach me to pronounce it correctly.
+\resources\NamePronunciation_InitialPronunciationConfirmation	Is this right?
+\resources\NamePronunciation_MicrophoneTip	Tap here to talk
+\resources\NamePronunciation_PronunciationAttempt1	 Here's a pronunciation
+\resources\NamePronunciation_PronunciationAttempt2	 Or, try this one
+\resources\NamePronunciation_PronunciationAttempt3	 Third time's a charm
+\resources\NamePronunciation_PronunciationAttemptOnly	 Hear how I'll say it
+\resources\NamePronunciation_SpokenNameRequest	Tap the microphone, then just say %1 the way you'd like me to pronounce it.
+\resources\NamePronunciation_TypedNameRequest	Hmm. Could you do me a favor and type "%1" the way it'd be spelled phonetically in English?
+\resources\NamePronunciation_WrittenNameRequest	What would you like me to call you?
+\resources\NotebookControl_AcessibleNameBlock\Text	Notebook content
+\resources\NotebookControl_ErrorTextBlock\Text	We can’t get to your Notebook info at the moment. Make sure you’re connected to the Internet before trying again.
+\resources\NotebookOfflinePage_AboutMe	About me
+\resources\NotebookOfflinePage_ConnectedAccounts	Connected accounts
+\resources\NotebookOfflinePage_EnablePersonalizationLink\Text	Enable personalization to configure your interests
+\resources\NotebookOfflinePage_NoInternetMessage	Cannot retrieve interests because you are offline
+\resources\NotebookOfflinePage_Privacy	Permissions
+\resources\NotebookOfflinePage_QuietHours	Quiet hours
+\resources\NotebookOfflinePage_Settings	Settings
+\resources\NotebookPage_Title	Notebook
+\resources\PackageDisplayName	Cortana
+\resources\PlacesCarTitle	Car
+\resources\PlacesHomeTitle	Home
+\resources\PlacesNavigationBar\Title	Places
+\resources\PlacesPage_DeleteCommand\Text	Delete
+\resources\PlacesPage_DeleteConfirmationBody\Text	You can always add it back later.
+\resources\PlacesPage_DeleteConfirmationCancelButton\Content	Cancel
+\resources\PlacesPage_DeleteConfirmationDeleteButton\Content	Delete
+\resources\PlacesPage_DeleteConfirmationEditButton\Content	Edit
+\resources\PlacesPage_DeleteConfirmationTitle\Text	Delete this favorite?
+\resources\PlacesPage_EditCommand\Text	Edit
+\resources\PlacesPage_FavoritesAddButton\Content	Add
+\resources\PlacesPage_FavoritesHeader\Text	Favorites
+\resources\PlacesPage_NoFavoritesText\Text	Get there faster by adding those places to favorites.
+\resources\PlacesPage_NoFavoritesTitle\Text	You’re going places!
+\resources\PlacesPage_SearchBox_AutomationName	Search box
+\resources\PlacesPage_SearchButton_AutomationName	Search button
+\resources\PlacesPage_SearchResultsListItem_AutomationName	%1, %2
+\resources\PlacesPage_SearchResultsListItem_AutomationName2	%1, %2, %3
+\resources\PlacesParkingSpotTitle	Parking spot
+\resources\PlacesWorkTitle	Work
+\resources\PrivacySettingsPage_AllCommsLabel\Text	Contacts, email, calendar, & communication history
+\resources\PrivacySettingsPage_AllCommsToggle\Header	Cortana can help keep you on time and prepared for meetings, suggest reminders to help you follow up on your commitments, help track your packages and flights, and more when you let Cortana collect and use information like your contacts, calendar details, and content and communication history from messages and apps.
+\resources\PrivacySettingsPage_AllLocationLabel\Text	Location
+\resources\PrivacySettingsPage_AllLocationToggle\Header	When you let Cortana collect and use your location and location history, Cortana can remind you at places you choose, help you find directions, and keep you posted on what's up nearby.
+\resources\PrivacySettingsPage_BrowsingHistoryLabel\Text	Browsing history
+\resources\PrivacySettingsPage_BrowsingHistoryToggle\Header	If you let Cortana collect and use your browsing history, Cortana can offer personalized suggestions and help you pick up where you left off on Microsoft Edge websites.
+\resources\PrivacySettingsPage_DescriptionLabel\Text	Manage what Cortana can see and use.
+\resources\PrivacySettingsPage_LegalString\Text	When you turn off any option, Cortana stops collecting and using that data. To delete what Cortana's already learned, go to Cortana's Notebook > About me, and sign out.
+\resources\PrivacySettingsPage_Title	Permissions
+\resources\ProactiveControl_AcessibleNameBlock\Text	Home content
+\resources\ProactiveControl_CortanaErrorTextBlock\Text	Go ahead and tell me to do something. Interests aren't available at the moment.
+\resources\ProactiveControl_NonCortanaBingDisabledErrorTextBlock\Text	Start typing to search for apps, files, and settings.
+\resources\ProactiveControl_NonCortanaDesktopErrorTextBlock\Text	We can't connect to web search right now but you can still search your stuff.\n\nMake sure you are currently connected to the internet.
+\resources\ProactiveControl_NonCortanaMobileErrorTextBlock\Text	We can't connect to web search right now but you can still search your stuff.\n\nMake sure airplane mode is turned off, and check your cellular data or Wi-Fi connection.
+\resources\ProactiveControl_NonCortanaMobileErrorTextBlock_WLANAlternative\Text	We can't connect to web search right now but you can still search your stuff.\n\nMake sure airplane mode is turned off, and check your cellular data or WLAN connection.
+\resources\ProductDescription	Search the web and Windows
+\resources\PublisherDisplayName	Microsoft Corporation
+\resources\QFControl_AcessibleNameBlock\Text	Search content
+\resources\QuickTimePickerAutomation_AccessibleName	Choose date and time
+\resources\QuietHoursPage_AutomaticRulesDescription\Text	Cortana will turn quiet hours on at the times you set here.
+\resources\QuietHoursPage_AutomaticRules\Header	Automatic rules
+\resources\QuietHoursPage_BreakthroughRulesHeader\Text	Breakthrough rules
+\resources\QuietHoursPage_CallBreakthroughCheckBox\Content	People on the list ring through
+\resources\QuietHoursPage_CallMultiTryCheckBox\Content	Anyone rings through if they call twice in 3 minutes
+\resources\QuietHoursPage_CallsGroupHeader\Text	Calls
+\resources\QuietHoursPage_ChromeHeaderTitle	Quiet hours
+\resources\QuietHoursPage_DNDScheduleCheckBox\Content	Turn on during these times
+\resources\QuietHoursPage_EditBreakthroughListButton\Content	Edit breakthrough list
+\resources\QuietHoursPage_EndTimePicker\Header	End
+\resources\QuietHoursPage_MeetingCheckBox\Content	Turn on when I have a calendar event marked Busy
+\resources\QuietHoursPage_RepeatFridayCheckBox\Content	Friday
+\resources\QuietHoursPage_RepeatMondayCheckBox\Content	Monday
+\resources\QuietHoursPage_RepeatSaturdayCheckBox\Content	Saturday
+\resources\QuietHoursPage_RepeatSundayCheckBox\Content	Sunday
+\resources\QuietHoursPage_RepeatThursdayCheckBox\Content	Thursday
+\resources\QuietHoursPage_RepeatTuesdayCheckBox\Content	Tuesday
+\resources\QuietHoursPage_RepeatWednesdayCheckBox\Content	Wednesday
+\resources\QuietHoursPage_RepeatsButtonContent\EveryDay	Every day
+\resources\QuietHoursPage_RepeatsButtonContent\Friday	Fri
+\resources\QuietHoursPage_RepeatsButtonContent\Monday	Mon
+\resources\QuietHoursPage_RepeatsButtonContent\Once	Only once
+\resources\QuietHoursPage_RepeatsButtonContent\Saturday	Sat
+\resources\QuietHoursPage_RepeatsButtonContent\Sunday	Sun
+\resources\QuietHoursPage_RepeatsButtonContent\Thursday	Thu
+\resources\QuietHoursPage_RepeatsButtonContent\Tuesday	Tue
+\resources\QuietHoursPage_RepeatsButtonContent\Wednesday	Wed
+\resources\QuietHoursPage_RepeatsButtonContent\Weekdays	Weekdays
+\resources\QuietHoursPage_RepeatsButtonContent\Weekends	Weekends
+\resources\QuietHoursPage_RepeatsButtonHeader\Text	Repeats
+\resources\QuietHoursPage_RightNowDescription\Text	During quiet hours, Cortana handles your calls and texts and turns off other notifications.
+\resources\QuietHoursPage_RightNowWithAutomaticRulesDescription\Text	Quiet hours will turn on automatically at the times you've set, but you can still turn it on manually.
+\resources\QuietHoursPage_RightNow\Header	Right now
+\resources\QuietHoursPage_SelectCalendarsButtonContent	%1 calendars
+\resources\QuietHoursPage_SelectCalendarsButtonContentNone	None
+\resources\QuietHoursPage_SelectCalendarsButtonHeader\Text	Select calendars
+\resources\QuietHoursPage_StartTimePicker\Header	Start
+\resources\QuietHoursPage_TextAutoReplyAsk	But if it's urgent, just text back "%1" and your message will break through.
+\resources\QuietHoursPage_TextAutoReplyAskNoName	But if it's urgent, just text back "%s" and your message will break through.
+\resources\QuietHoursPage_TextAutoReplyBreakthrough	Knock knock
+\resources\QuietHoursPage_TextAutoReplyCheckBox\Content	Send a text to contacts who aren't allowed through saying that I'm busy right now
+\resources\QuietHoursPage_TextAutoReplyConfirm	OK, your message went through.
+\resources\QuietHoursPage_TextAutoReplyConfirmNoName	OK, your message went through.
+\resources\QuietHoursPage_TextAutoReplyDefault	Hi, %1 is busy and may not respond right away.
+\resources\QuietHoursPage_TextAutoReplyDefaultNoName	Hi, the person you're trying to reach is busy and may not respond right away.
+\resources\QuietHoursPage_TextAutoReplyHeader\Text	Cortana's reply
+\resources\QuietHoursPage_TextAutoReplySignature	\n  - Windows 10 auto-reply.
+\resources\QuietHoursPage_TextBreakthroughNoOneRadioButton\Content	No one can break through
+\resources\QuietHoursPage_TextBreakthroughPromptRadioButton\Content	Ask people on the list: Break through?
+\resources\QuietHoursPage_TextBreakthroughRadioButton\Content	Texts from people on the list get through
+\resources\QuietHoursPage_TextsGroupHeader\Text	Texts
+\resources\ReactiveCat1Control_DaysOfWeekPickerAutomation_AccessibleName	Day of week button
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Everyday	Every day
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Friday	Fri
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Monday	Mon
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Once	Only once
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Saturday	Sat
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Separator	,
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Sunday	Sun
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Thursday	Thu
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Tuesday	Tue
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Wednesday	Wed
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Weekdays	Weekdays
+\resources\ReactiveCat1Control_DaysOfWeekPickerContent_Weekends	Weekends
+\resources\ReactiveCat1Control_DaysOfWeekPickerFlyoutCheckBox_Friday\Content	Every Friday
+\resources\ReactiveCat1Control_DaysOfWeekPickerFlyoutCheckBox_Monday\Content	Every Monday
+\resources\ReactiveCat1Control_DaysOfWeekPickerFlyoutCheckBox_Saturday\Content	Every Saturday
+\resources\ReactiveCat1Control_DaysOfWeekPickerFlyoutCheckBox_Sunday\Content	Every Sunday
+\resources\ReactiveCat1Control_DaysOfWeekPickerFlyoutCheckBox_Thursday\Content	Every Thursday
+\resources\ReactiveCat1Control_DaysOfWeekPickerFlyoutCheckBox_Tuesday\Content	Every Tuesday
+\resources\ReactiveCat1Control_DaysOfWeekPickerFlyoutCheckBox_Wednesday\Content	Every Wednesday
+\resources\ReactiveControl_AcessibleNameBlock\Text	Cortana content
+\resources\ReminderAttachmentImage\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Attached thumbnail
+\resources\ReminderBodyAddTime_CustomTime\Text	Another time...
+\resources\ReminderBodyAddTime_In1Hour\Text	In 1 hour
+\resources\ReminderBodyAddTime_In30Minutes\Text	In 30 minutes
+\resources\ReminderBodyAddTime_TimePlaceHolder\Text	Time
+\resources\ReminderBodyAddTime_Tomorrow\Text	Tomorrow
+\resources\ReminderBodyEditBox_PicturePicker\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Add photo
+\resources\ReminderBodyEditBox_PicturePicker_Camera\Text	Camera
+\resources\ReminderBodyEditBox_PicturePicker_Library\Text	Library
+\resources\ReminderPhoto_Image\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Attached photo
+\resources\RemindersHostPage_ReminderItemTitle	Reminder
+\resources\RemindersHostPage_RemindersHistoryTitle	Reminders
+\resources\RemindersHostPage_RemindersHomeTitle	Reminders
+\resources\RemindersHostPage_SetReminderTriggerString	Set a reminder
+\resources\SearchBoxControl_SearchTextBox\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Search box
+\resources\SearchBoxControl_SearchTextBox_Cortana_PlaceholderText	Ask me anything
+\resources\SearchBoxControl_SearchTextBox_NoBing_PlaceholderText	Search Windows
+\resources\SearchBoxControl_SearchTextBox_Pending_PlaceholderText	I'm Cortana. Ask me anything.
+\resources\SearchBoxControl_SearchTextBox_PlaceholderText	Search the web and Windows
+\resources\SettingsPage_AboveLockAccessCheckBox\Content	Let Cortana access my calendar, email, messages, and Power BI data when my device is locked.
+\resources\SettingsPage_AboveLockAccessLabel\Text	Above lock access
+\resources\SettingsPage_AboveLockAccess\Header	Let Cortana access my calendar, email, messages, and Power BI data when my device is locked.
+\resources\SettingsPage_AboveLockLabel\Text	Lock screen
+\resources\SettingsPage_AboveLockVoiceActivationOptInDisclaimerMessage	So that Cortana can always respond to you, we have configured your machine to never sleep when plugged in. You can adjust using power & sleep settings.
+\resources\SettingsPage_AboveLockVoiceActivationOptOutDisclaimerMessage	Your machine is currently set to never go to sleep when you are plugged in, you can adjust it using power & sleep settings if desired
+\resources\SettingsPage_AnnounceSMSOff	Off
+\resources\SettingsPage_AnnounceSMSOnAlways	Always on
+\resources\SettingsPage_AnnounceSMSOnBluetoothOnly	Bluetooth only
+\resources\SettingsPage_AnnounceSMSOnBluetoothOrWired	Bluetooth and wired headsets
+\resources\SettingsPage_AnnounceSMSOnWiredOnly	Wired headset only
+\resources\SettingsPage_AnnounceSMS\Header	Read incoming text messages aloud
+\resources\SettingsPage_ChromeHeaderTitle	Settings
+\resources\SettingsPage_CortanaAboveLockDescriptionDesktop	Use Cortana even when my device is locked.
+\resources\SettingsPage_CortanaAboveLockDescriptionMobile	Even when my device is locked, open Cortana when I press and hold the Search button.
+\resources\SettingsPage_CortanaAboveLock\Header	Even when my device is locked, open Cortana when I press and hold the Search button.
+\resources\SettingsPage_CortanaCallNotificationsLabel\Text	Send notifications between devices
+\resources\SettingsPage_CortanaCallNotifications\Header	If you've allowed it on your phone, Cortana can tell you on this device when your battery is low and when you miss a phone call, text, or app notification.
+\resources\SettingsPage_CortanaDescription	Cortana can give you suggestions, ideas, reminders, alerts and more.
+\resources\SettingsPage_CortanaLanguageClearButtonDescription\Text	Use the language that works best for the region on your device.
+\resources\SettingsPage_CortanaLanguageClearButtonLabel\Text	Default language
+\resources\SettingsPage_CortanaLanguageLabel\Text	Cortana language
+\resources\SettingsPage_CortanaLanguageMarketMismatchText	There’s no language that matches the market for your device. You can use a language that might be similar, though some features may not be available.
+\resources\SettingsPage_CortanaLanguageText	Cortana works best when the language you choose here matches the region on your device.
+\resources\SettingsPage_CortanaMissedCallNotificationsLabel\Text	Send notifications between devices
+\resources\SettingsPage_CortanaMissedCallNotifications\Header	Let Cortana tell you on your other devices when your battery is low and when you miss a phone call, text, or app notification.
+\resources\SettingsPage_CortanaOffITPolicy	Cortana is disabled by company policy.
+\resources\SettingsPage_CortanaOffLongTermServicing	Cortana is not available for this version of Windows.
+\resources\SettingsPage_CortanaOffMarket	Cortana isn’t supported in the region and language you’ve selected.
+\resources\SettingsPage_CortanaOffMarketLink\Text	Why?
+\resources\SettingsPage_CortanaOnOffSubtext\Text	Turning Cortana off clears what Cortana knows on this device, but won't delete anything from the Notebook. After Cortana is off, you can decide what you'd like to do with anything still stored in the cloud.
+\resources\SettingsPage_CrossDeviceActionsButtonTextBlock\Text	Cross-device actions
+\resources\SettingsPage_CurrentCortanaLanguageText	Right now, Cortana is using %1%.
+\resources\SettingsPage_DeviceListTitleTextBlock\Text	My devices
+\resources\SettingsPage_DeviceSearchHistoryClearButtonLabel\Text	Clear my device history
+\resources\SettingsPage_DeviceSearchHistoryClearButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Clear my device history
+\resources\SettingsPage_DeviceSearchHistoryClearError_Local	We couldn't clear your device search history. Try again in a little while.
+\resources\SettingsPage_DeviceSearchHistoryClearError_SignedIn	We couldn't clear your device history. Check your connection, and try again shortly.
+\resources\SettingsPage_DeviceSearchHistoryLabel\Text	My device history
+\resources\SettingsPage_DeviceSearchHistoryToggle_Local	Improve search results for on-device content using my device search history.
+\resources\SettingsPage_DeviceSearchHistoryToggle_SignedIn	Improve on-device searches using app, settings and other history from my signed-in devices.
+\resources\SettingsPage_GetCortanaAppForPhoneLink\Text	Get Cortana mobile app for my phone
+\resources\SettingsPage_HeyCortanaDescriptionLabel\Text	Cortana uses more battery when this is on.
+\resources\SettingsPage_HeyCortanaDisableSleepCheckBoxUncheckedDisclaimerMessage	Your device is set to stay awake when it's plugged in. You can change this any time in Power & sleep settings.
+\resources\SettingsPage_HeyCortanaDisableSleepCheckBox\Content	Keep my device from sleeping when it's plugged in so I can always say "Hey Cortana" (unless I turn it off myself)
+\resources\SettingsPage_HeyCortanaGrayedOut_DescriptionLabel	"Hey Cortana" is turned off while you're using a Bluetooth microphone.
+\resources\SettingsPage_HeyCortanaLabel\Text	Hey Cortana
+\resources\SettingsPage_HeyCortanaVisible_DescriptionLabel	Cortana uses more battery when this is on.
+\resources\SettingsPage_HistoryViewLabel\Text	History view
+\resources\SettingsPage_HistoryViewToggle_Apps	Show my apps, settings, web, search and other history in Cortana home.
+\resources\SettingsPage_HistoryViewToggle_NoApps	Show my web, search and other history in Cortana home.
+\resources\SettingsPage_IntentExtraction\Header	Detect tracking info, such as flights, in messages on my device.
+\resources\SettingsPage_LearnMoreLink\Text	Learn more about Cortana & Search
+\resources\SettingsPage_ManageNotebookLink\Text	Change what Cortana knows about me in the cloud
+\resources\SettingsPage_ManagedByITPolicy\Text	This setting is managed by your system administrator.
+\resources\SettingsPage_MicWizDescription\Text	Make sure Cortana can hear me.
+\resources\SettingsPage_MicWizLabel\Text	Microphone
+\resources\SettingsPage_MicWizLaunchLink\Text	Get started
+\resources\SettingsPage_MobileAppNotificationsButtonTextBlock\Text	Mobile app notifications
+\resources\SettingsPage_OemLink\Text	Connect Cortana to REACHit
+\resources\SettingsPage_OemSettingsLinkSubtext\Text	Use my REACHit account to find even more of my stuff.
+\resources\SettingsPage_OemSettingsLinkSubtext_Parametrized	Use my %1 account to find even more of my stuff.
+\resources\SettingsPage_OemSettingsLinkText_Parametrized	Connect Cortana to %1
+\resources\SettingsPage_OtherCortanaSettingsLabel\Text	Other Cortana settings
+\resources\SettingsPage_OtherPrivacySettingsLinkSubtext\Text	See the Privacy Statement, or manage other personal information settings.
+\resources\SettingsPage_OtherPrivacySettingsLink\Text	Other privacy settings
+\resources\SettingsPage_PersonaSelection\Text	Choose how Cortana appears
+\resources\SettingsPage_PersonaSelectorLabel\Text	Cortana icon
+\resources\SettingsPage_RegionLooseningDialogContent	Since your region and language don't match, there are some things Cortana won't be able to do for you. Do you still want to go with this language?
+\resources\SettingsPage_RegionLooseningDialogTitle	Just making sure...
+\resources\SettingsPage_RegionLooseningDropdownDefault	Choose one...
+\resources\SettingsPage_SafeSearchLabel\Text	SafeSearch
+\resources\SettingsPage_SafeSearchLinkSubtext\Text	Change how Bing filters adult content from your search results.
+\resources\SettingsPage_SafeSearchLink\Text	Bing SafeSearch settings
+\resources\SettingsPage_SafeSearchModerate\Text	Moderate - Filter adult images and videos but not text from my web results
+\resources\SettingsPage_SafeSearchOff\Text	Off - Don't filter adult content from my web results
+\resources\SettingsPage_SafeSearchStrict\Text	Strict - Filter out adult text, images, and videos from my web results
+\resources\SettingsPage_SafeSearch_DisabledByFamilySafety	This setting is restricted by family safety.
+\resources\SettingsPage_SafeSearch_DisabledByRegion	This setting is restricted by your region.
+\resources\SettingsPage_SearchBingDescription_Disabled	Search will not provide web results, or use my location or online search history.
+\resources\SettingsPage_SearchBingDescription_Enabled	Use my previous Bing searches, and location (if available) to improve search suggestions and provide more relevant web results.
+\resources\SettingsPage_SearchBingHeader_DisabledByLongTermServicing	Online Search is not available for this version of Windows.
+\resources\SettingsPage_SearchBingHeader_DisabledByPolicy	Online Search is disabled by company policy.
+\resources\SettingsPage_SearchBingHeader_Enabled	Search online and include web results
+\resources\SettingsPage_SearchBingHeader_UnsupportedMarket	Online Search isn’t supported in the region and language you’ve selected.
+\resources\SettingsPage_SystemLockScreenSettingsLinkLabel\Text	Lock screen settings
+\resources\SettingsPage_SystemLockScreenSettingsLinkPrefix\Text	To get Cortana tips on the lock screen, choose Picture or Slideshow as your background in 
+\resources\SettingsPage_SystemLockScreenSettingsLinkSuffix\Text	.
+\resources\SettingsPage_SystemLockScreenSettingsLink\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Lock screen settings
+\resources\SettingsPage_TaskbarTidbitsLabel\Text	Taskbar tidbits
+\resources\SettingsPage_TaskbarTidbits\Header	Let Cortana pipe up from time to time with thoughts, greetings, and notifications in the Search box.
+\resources\SettingsPage_TrackingLabel\Text	Find flights and more
+\resources\SettingsPage_VoiceActivationRespondToAnyone\Text	To anyone
+\resources\SettingsPage_VoiceActivationRespondToAnyone_NoHeader\Text	Respond when anyone says "Hey Cortana"
+\resources\SettingsPage_VoiceActivationRespondToOnlyMe\Text	To me
+\resources\SettingsPage_VoiceActivationRespondToOnlyMe_NoHeader\Text	Try to respond only to me
+\resources\SettingsPage_VoiceActivationRespondTo\Text	Respond best:
+\resources\SettingsPage_VoiceActivationRetrainingButton	Relearn my voice
+\resources\SettingsPage_VoiceActivationTrainingButton	Learn my voice
+\resources\SettingsPage_VoiceActivationTrainingDescriptionLabel\Text	Cortana needs to learn your voice to respond best to you.
+\resources\SettingsPage_VoiceActivationTrainingLink\Text	Learn how I say "Hey Cortana"
+\resources\SettingsPage_VoiceActivation\Header	Let Cortana respond to "Hey Cortana"
+\resources\SettingsPage_WebSearchHistoryLabel\Text	My search history
+\resources\SettingsPage_WebSearchHistoryLinkSubtext\Text	See or clear my search history from my signed-in devices.
+\resources\SettingsPage_WebSearchHistoryLink\Text	Search history settings
+\resources\SettingsPage_WebSearchHistoryRetrievalErrorSubtext\Text	We can't check your settings right now. Connect to the Internet and try again.
+\resources\SettingsPage_WebSearchHistoryRetrievalSubtext\Text	Checking your settings...
+\resources\SettingsPage_WebSearchHistoryStateChangeErrorSubtext\Text	We can't change this setting right now. Try again in a little while.
+\resources\SettingsPage_WebSearchHistoryStateChangeSubtext\Text	Changing your settings...
+\resources\SettingsPage_WebSearchHistoryToggle\Header	Improve on-device searches using my search history from my signed-in devices.
+\resources\SettingsPage_XDeviceFindMyPhoneAppName	Find a missing phone
+\resources\SettingsPage_XDeviceLocalDeviceName	Get notifications from this PC on my phone
+\resources\SettingsPage_XDeviceLowBatteryAppName	Low battery warnings
+\resources\SettingsPage_XDeviceManageNotificationsTextBlock\Text	Edit sync settings
+\resources\SettingsPage_XDeviceMissedCallsAppName	Missed calls
+\resources\SettingsPage_XDeviceNotificationsLabel\Text	Cortana across devices
+\resources\SettingsPage_XDeviceSyncWithMobileToggle\Header	Sync notifications with mobile device
+\resources\SettingsPage_XDeviceSyncWithPCToggle\Header	Sync notifications with PC
+\resources\ShortItemName	Search
+\resources\ShortProductName	Search
+\resources\Spa_ErrorText_Generic	I'm sorry, something went wrong. Try again in a little bit
+\resources\SpeechHelpPage_HereAreSomeIdeas\Text	Here are some ideas
+\resources\SpeechHelpPage_HowCanIHelpLabel\Text	Here are some things I can help you do.
+\resources\SpeechHelpPage_ListItem_AutomationNameFomat	%1, %2
+\resources\SpeechHelpPage_NoAppLabel\Text	You can install apps that work great with Cortana from the "Better with Cortana" collection in the Store.
+\resources\SpeechTextInputControl_SpeechButton\Text	Microphone
+\resources\SpeechTextInputControl_SpeechButton_Cancel\Text	Cancel
+\resources\SpeechTextInputControl_SpeechButton_Execute\Text	Execute now
+\resources\SpeechTextInput_Listening	Listening...
+\resources\SpeechTextInput_Thinking	Thinking...
+\resources\Speech_GenericMicrophoneErrorMessageBodyTemplateResourceString	Make sure your mic is working, or wait a little while and try again. Error code: 0x%1!X!
+\resources\Speech_GenericMicrophoneErrorMessageTitleResourceString	Sorry, I can't hear anything. Check your microphone and try again.
+\resources\Stic_SpeechButtonText\Text	Push to talk
+\resources\TaskbarTidbits_GoodEvening	Good evening.
+\resources\TaskbarTidbits_GoodEvening_Personalized	Good evening, %1%.
+\resources\TaskbarTidbits_GoodMorning	Good morning!
+\resources\TaskbarTidbits_GoodMorning_Personalized	Good morning, %1%!
+\resources\TileDescription	Search the web and Windows
+\resources\TileDisplayName	Cortana
+\resources\TileShortcutName	Cortana
+\resources\TimepickerAutomation_AccessibleName	Choose a time
+\resources\Toast_Traffic_EditInNotebook	Edit in Notebook
+\resources\Toast_Traffic_ViewInMaps	View in Maps
+\resources\ToggleSwitch_Off	Off
+\resources\ToggleSwitch_On	On
+\resources\VendorName	CN=Microsoft Windows, O=Microsoft Corporation, L=Redmond, S=Washington, C=US
+\resources\VoiceIntroduction_ButtonText	May I speak to introduce myself?
+\resources\XDeviceSettingsDetailPage_ChromeHeaderTitle	Notifications
+\resources\XDeviceSettingsDetailPage_DeviceMasterToggleDescriptionTextBlockThisDevice\Text	See on your phone when something happens on your PC.
+\resources\XDeviceSettingsDetailPage_DeviceMasterToggleDescriptionTextBlock\Text	Let this device get notifications from other devices
+\resources\XDeviceSettingsMasterPage_DeviceName_PC	PC
+\resources\XDeviceSettingsMasterPage_DeviceName_ThisPC\Text	Upload notifications from this PC to the cloud
+\resources\XDeviceSettingsMasterPage_ToggleHeaderFormat	Sync notifications with %1
+\resources\XDeviceSettingsNotificationForwardingPage_MasterToggleDescriptionTextBlock\Text	This helps prevent you from getting the same notification twice.

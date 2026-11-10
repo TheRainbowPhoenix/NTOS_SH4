@@ -42,6 +42,7 @@ enum {
     FI_BACK,        /* back arrow (E72B)            */
     FI_DEVICE,      /* phone/this device (E770? -> PDA shape) */
     FI_SDCARD,      /* SD card (a solid MDL2 has none; custom) */
+    FI_MIC,         /* microphone (Cortana search bar) */
     FI_COUNT
 };
 

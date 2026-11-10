@@ -1,0 +1,18 @@
+<Page name="ThinkingPage">
+  <Canvas>
+    <Rect x="0" y="0" w="320" h="528" bg="#F7F3F7"/>
+    <Button name="HamburgerButton" x="0" y="0" w="48" h="48" command="noop">
+      <Glyph x="16" y="16" w="16" h="16" text="hamburger" color="#333333"/>
+    </Button>
+    <Button name="MusicButton" x="272" y="0" w="48" h="48" command="music">
+      <Glyph x="12" y="12" w="24" h="24" text="audio" color="#5A5A5A"/>
+    </Button>
+    <!-- thinking orb paints procedurally (VEC variant) at (160,48) -->
+    <!-- "Thinking..." strip with the X cancel (SpeechTextInput_Thinking) -->
+    <Rect x="0" y="432" w="320" h="48" bg="#DEDBDE"/>
+    <Text x="16" y="445" text="Thinking..." color="#000000" size="14"/>
+    <Button name="CancelButton" x="272" y="436" w="40" h="40" command="cancel">
+      <Glyph x="10" y="10" w="20" h="20" text="x" color="#5A5A5A"/>
+    </Button>
+  </Canvas>
+</Page>

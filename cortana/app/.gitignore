@@ -1,0 +1,7 @@
+# build artifacts (CI ships the shots to the files-ci branch)
+cortana.dll
+cortana.uxaml
+cortana-*.png
+fingerkb.dll
+*.lib
+tests/fs/fls0/

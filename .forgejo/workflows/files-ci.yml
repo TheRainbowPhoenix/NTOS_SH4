@@ -40,6 +40,7 @@ jobs:
               rm -rf "$OUT"; mkdir -p "$OUT"
               cp "$LOG" "$OUT/files-ci.log"
               cp files/app/files-*.png "$OUT/" 2>/dev/null || true
+              cp cortana/app/cortana-*.png "$OUT/" 2>/dev/null || true
               export GIT_INDEX_FILE="$GITHUB_WORKSPACE/ci.index"
               rm -f "$GIT_INDEX_FILE"
               git read-tree --empty
@@ -104,6 +105,9 @@ jobs:
 
           # -- File Explorer POC: uXAML markup -> files.dll -> scripted UI e2e --
           make -C files/app ZIG=$(command -v zig) clean all test
+
+          # -- Cortana demo app: orb + SIP query flow + offline error --
+          make -C cortana/app ZIG=$(command -v zig) clean all test
 
           # -- uXAML round-trip: binary -> XML must reparse --
           python3 edge/app/uxaml_gen.py toxml files/app/files.uxaml > /tmp/ux.xml

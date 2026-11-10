@@ -1,0 +1,23 @@
+# Cortana demo e2e: home orb -> type a query on the shared SIP ->
+# Thinking... -> offline error -> back home.
+# Keyboard key centres: row0 y342 (q17 w49 e81 r113 t145 y177 u209 i241
+# o273 p305), row1 y395 (a33 s65 d97 f129 g161 h193 j225 k257 l289),
+# row2 y448 (shift24 z65 x97 c129 v161 b193 n225 m257 bksp297),
+# row3 y502 (space177 period258 enter297).
+shot boot
+tap 100 456
+shot input
+tap 49 342
+tap 81 342
+tap 33 395
+tap 145 342
+tap 193 342
+tap 81 342
+tap 113 342
+tap 297 502
+shot thinking
+tap 160 240
+shot error
+key 0x1b
+shot home-again
+quit

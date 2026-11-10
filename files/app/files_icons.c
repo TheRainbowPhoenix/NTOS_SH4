@@ -331,6 +331,17 @@ static void g_sdcard(PC *p)
     for (int i = 0; i < 3; ++i)
         B(p, 32 + i * 14, 4, 8, 18);
 }
+static void g_mic(PC *p)
+{
+    /* classic microphone: capsule, cradle arc, stem, base */
+    B(p, 40, 6, 20, 34);          /* capsule */
+    L(p, 24, 40, 76, 40, 5);      /* cradle top */
+    L(p, 24, 52, 76, 52, 5);      /* cradle bottom */
+    L(p, 24, 40, 24, 52, 5);
+    L(p, 76, 40, 76, 52, 5);
+    L(p, 50, 52, 50, 70, 5);      /* stem */
+    L(p, 32, 74, 68, 74, 5);      /* base */
+}
 
 static const struct {
     const char *name;
@@ -368,6 +379,7 @@ static const struct {
     {"back", FI_BACK, g_back},
     {"device", FI_DEVICE, g_device},
     {"sdcard", FI_SDCARD, g_sdcard},
+    {"mic", FI_MIC, g_mic},
 };
 
 static int str_eq_(const char *a, const char *b)

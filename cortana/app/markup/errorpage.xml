@@ -1,0 +1,30 @@
+<Page name="ErrorPage">
+  <Canvas>
+    <Rect x="0" y="0" w="320" h="528" bg="#F7F3F7"/>
+    <Button name="HamburgerButton" x="0" y="0" w="48" h="48" command="noop">
+      <Glyph x="16" y="16" w="16" h="16" text="hamburger" color="#333333"/>
+    </Button>
+    <Button name="MusicButton" x="272" y="0" w="48" h="48" command="music">
+      <Glyph x="12" y="12" w="24" h="24" text="audio" color="#5A5A5A"/>
+    </Button>
+    <!-- home orb (VEC) back at the top -->
+    <Text name="GreetingText" x="0" y="84" w="320" text="How can I help?" color="#3E6BE0"
+          size="15" align="1"/>
+    <!-- Generic_ErrorTextBlock (pri ground truth, cortana_light_failed.png):
+         centered black on the light page -->
+    <Text x="0" y="180" w="320" text="I can't connect at the moment." color="#000000"
+          size="15" align="1"/>
+    <Text x="0" y="216" w="320" text="Make sure you are currently connected" color="#000000"
+          size="15" align="1"/>
+    <Text x="0" y="236" w="320" text="to the internet." color="#000000" size="15" align="1"/>
+    <!-- search bar band -->
+    <Rect x="0" y="432" w="320" h="48" bg="#DEDBDE"/>
+    <Button name="SearchBar" x="0" y="432" w="268" h="48" command="search">
+      <Text name="SearchHint" x="12" y="13" text="Type here to search" color="#000000" size="14"/>
+    </Button>
+    <Button name="MicButton" x="268" y="434" w="44" h="44" command="search">
+      <Rect x="0" y="0" w="44" h="44" bg="#0078D7"/>
+      <Glyph x="12" y="12" w="20" h="20" text="mic" color="#FFFFFF"/>
+    </Button>
+  </Canvas>
+</Page>
