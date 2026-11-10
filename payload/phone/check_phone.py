@@ -53,7 +53,9 @@ for path in stubs:
  data=app.DIRECTORY_ENTRY_RESOURCE.entries[0].directory.entries[0].directory.entries[0].data.struct
  assert app.get_data(data.OffsetToData,data.Size).startswith((b'VEC1',b'VEC2'))
  for dep in app.DIRECTORY_ENTRY_IMPORT:
-  names={e.name for e in images[dep.dll.decode().upper()].DIRECTORY_ENTRY_EXPORT.symbols if e.name}
+  dll=dep.dll.decode().upper()
+  target=images.get(dll) or pefile.PE(str(out/dll))
+  names={e.name for e in target.DIRECTORY_ENTRY_EXPORT.symbols if e.name}
   assert all(i.name in names for i in dep.imports)
  meta=path.with_name(path.name+'.manifest').read_bytes();assert meta[:4]==b'PAM1'
  assert len(meta)==16+meta[12]+int.from_bytes(meta[14:16],'big')
