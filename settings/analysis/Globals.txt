@@ -1,0 +1,6 @@
+ResourceDictionary
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:v = 'using:SystemSettings.View'
+  using:SystemSettings.View:SearchViewManager [Key=SearchViewManager]
+  using:SystemSettings.View:PagePinManager [Key=PagePinManager]

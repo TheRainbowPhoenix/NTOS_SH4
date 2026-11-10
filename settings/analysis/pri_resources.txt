@@ -1,0 +1,302 @@
+\Files\VMInstance\AccessoriesPageViewModel.xbf		[EmbeddedData 2166b] 58424600ba070000b0000000020000000100000078000000
+\Files\VMInstance\AccountsEmailAppPageViewModel.xbf		[EmbeddedData 1902b] 58424600b2060000b0000000020000000100000078000000
+\Files\VMInstance\AccountsEnthusiastPageViewModel.xbf		[EmbeddedData 1311b] 58424600ba04000059000000020000000100000078000000
+\Files\VMInstance\AccountsPicturePageViewModel.xbf		[EmbeddedData 1895b] 58424600b4060000a7000000020000000100000078000000
+\Files\VMInstance\AccountsSyncPageViewModel.xbf		[EmbeddedData 2609b] 5842460040090000e5000000020000000100000078000000
+\Files\VMInstance\AddProvisioningPackagePageViewModel.xbf		[EmbeddedData 2226b] 5842460004080000a2000000020000000100000078000000
+\Files\VMInstance\AppsForWebsitesPageViewModel.xbf		[EmbeddedData 1576b] 58424600ac05000070000000020000000100000078000000
+\Files\VMInstance\AppsNotificationsAdvancedPageViewModel.xbf		[EmbeddedData 3235b] 584246005408000043040000020000000100000078000000
+\Files\VMInstance\AppsNotificationsPageViewModel.xbf		[EmbeddedData 2441b] 58424600aa080000d3000000020000000100000078000000
+\Files\VMInstance\AppsSizesAdvancedPageViewModel.xbf		[EmbeddedData 1949b] 58424600ec060000a5000000020000000100000078000000
+\Files\VMInstance\AppsSizesPageViewModel.xbf		[EmbeddedData 1633b] 58424600da0500007b000000020000000100000078000000
+\Files\VMInstance\BatterySaverPageViewModel.xbf		[EmbeddedData 4385b] 58424600a80f00006d010000020000000100000078000000
+\Files\VMInstance\BatterySaverUsagePageViewModel.xbf		[EmbeddedData 1934b] 58424600e80600009a000000020000000100000078000000
+\Files\VMInstance\BluetoothSettingsPageViewModel.xbf		[EmbeddedData 1608b] 58424600ae0500008e000000020000000100000078000000
+\Files\VMInstance\CallsAudioRoutingPageViewModel.xbf		[EmbeddedData 1502b] 58424600640500006e000000020000000100000078000000
+\Files\VMInstance\CallsDefaultAppsPageViewModel.xbf		[EmbeddedData 1839b] 5842460080060000a3000000020000000100000078000000
+\Files\VMInstance\CallsPageViewModel.xbf		[EmbeddedData 9632b] 584246000220000092050000020000000100000078000000
+\Files\VMInstance\CallsSim1AdvancedPageViewModel.xbf		[EmbeddedData 1696b] 584246002406000070000000020000000100000078000000
+\Files\VMInstance\CallsSim1PageViewModel.xbf		[EmbeddedData 7102b] 58424600bc170000f6030000020000000100000078000000
+\Files\VMInstance\CallsSim2AdvancedPageViewModel.xbf		[EmbeddedData 1696b] 584246002406000070000000020000000100000078000000
+\Files\VMInstance\CallsSim2PageViewModel.xbf		[EmbeddedData 7102b] 58424600bc170000f6030000020000000100000078000000
+\Files\VMInstance\CallsTextReplyPageViewModel.xbf		[EmbeddedData 1387b] 58424600040500005b000000020000000100000078000000
+\Files\VMInstance\CameraPhotosPageViewModel.xbf		[EmbeddedData 2088b] 5842460058070000c4000000020000000100000078000000
+\Files\VMInstance\DataSenseOverviewPageViewModel.xbf		[EmbeddedData 3512b] 584246007a0c000032010000020000000100000078000000
+\Files\VMInstance\DataSenseSettingsPageViewModel.xbf		[EmbeddedData 3290b] 58424600880b000046010000020000000100000078000000
+\Files\VMInstance\DataSenseUsagePageViewModel.xbf		[EmbeddedData 1301b] 58424600b004000059000000020000000100000078000000
+\Files\VMInstance\DeveloperOptionsPageViewModel.xbf		[EmbeddedData 3638b] 58424600e40c000046010000020000000100000078000000
+\Files\VMInstance\DeviceEncryptionPageViewModel.xbf		[EmbeddedData 1233b] 584246007404000051000000020000000100000078000000
+\Files\VMInstance\EaseOfAccessCaptioningPageViewModel.xbf		[EmbeddedData 3140b] 58424600f60a000042010000020000000100000078000000
+\Files\VMInstance\EaseOfAccessHighContrastPageViewModel.xbf		[EmbeddedData 1790b] 584246006006000092000000020000000100000078000000
+\Files\VMInstance\EaseOfAccessMagnifierPageViewModel.xbf		[EmbeddedData 1300b] 58424600a204000066000000020000000100000078000000
+\Files\VMInstance\EaseOfAccessMorePageViewModel.xbf		[EmbeddedData 1734b] 584246002a06000090000000020000000100000078000000
+\Files\VMInstance\EaseOfAccessNarratorPageViewModel.xbf		[EmbeddedData 3161b] 58424600000b00004d010000020000000100000078000000
+\Files\VMInstance\ExamplesPageViewModel.xbf		[EmbeddedData 1700b] 584246002e0600006a000000020000000100000078000000
+\Files\VMInstance\ExtensibilityPageViewModel.xbf		[EmbeddedData 1407b] 58424600180500005b000000020000000100000078000000
+\Files\VMInstance\FindMyDevicePageViewModel.xbf		[EmbeddedData 4307b] 58424600fc0e0000cb010000020000000100000078000000
+\Files\VMInstance\FlightsPageViewModel.xbf		[EmbeddedData 3622b] 58424600cc0c00004e010000020000000100000078000000
+\Files\VMInstance\MapsPageViewmodel.xbf		[EmbeddedData 4747b] 58424600ac100000d3010000020000000100000078000000
+\Files\VMInstance\MessagingEmergencyAlertsPageViewModel.xbf		[EmbeddedData 1998b] 58424600ea060000d8000000020000000100000078000000
+\Files\VMInstance\MessagingPageViewModel.xbf		[EmbeddedData 4574b] 58424600b40f00001e020000020000000100000078000000
+\Files\VMInstance\MessagingSim1PageViewModel.xbf		[EmbeddedData 3463b] 58424600140c000067010000020000000100000078000000
+\Files\VMInstance\MessagingSim2PageViewModel.xbf		[EmbeddedData 2592b] 5842460024090000f0000000020000000100000078000000
+\Files\VMInstance\MobileHotspotPageViewModel.xbf		[EmbeddedData 4840b] 584246003a100000a2020000020000000100000078000000
+\Files\VMInstance\MusRestartOptionsPageViewModel.xbf		[EmbeddedData 1211b] 584246005c04000053000000020000000100000078000000
+\Files\VMInstance\MusUpdateAdvancedPageViewModel.xbf		[EmbeddedData 1403b] 584246001605000059000000020000000100000078000000
+\Files\VMInstance\NetworkConnectionsMBBAPNPageViewModel.xbf		[EmbeddedData 1719b] 58424600400600006b000000020000000100000078000000
+\Files\VMInstance\NetworkConnectionsMBBPLMNPageViewModel.xbf		[EmbeddedData 1707b] 58424600340600006b000000020000000100000078000000
+\Files\VMInstance\NetworkConnectionsMBBPageViewModel.xbf		[EmbeddedData 9660b] 584246008c1f000024060000020000000100000078000000
+\Files\VMInstance\NetworkConnectionsVPNPageViewModel.xbf		[EmbeddedData 2719b] 58424600aa090000e9000000020000000100000078000000
+\Files\VMInstance\NetworkMBBPageViewModel.xbf		[EmbeddedData 1889b] 58424600c60600008f000000020000000100000078000000
+\Files\VMInstance\NetworkVPNPageViewModel.xbf		[EmbeddedData 2257b] 584246001a080000ab000000020000000100000078000000
+\Files\VMInstance\OneBackupPageViewModel.xbf		[EmbeddedData 1495b] 584246006605000065000000020000000100000078000000
+\Files\VMInstance\OneBackupProviderAdvancedSettingsPageViewModel.xbf		[EmbeddedData 3713b] 58424600fe09000077040000020000000100000078000000
+\Files\VMInstance\PCSystemMouseTouchpadPageViewModel.xbf		[EmbeddedData 1355b] 58424600e20400005d000000020000000100000078000000
+\Files\VMInstance\PersonalizeBackgroundPageViewModel.xbf		[EmbeddedData 3723b] 58424600200d00005f010000020000000100000078000000
+\Files\VMInstance\PersonalizeColorsPageViewModel.xbf		[EmbeddedData 2526b] 58424600f4080000de000000020000000100000078000000
+\Files\VMInstance\PersonalizeGlancePageViewModel.xbf		[EmbeddedData 2395b] 584246005e080000f1000000020000000100000078000000
+\Files\VMInstance\PersonalizeLockScreenPageViewModel.xbf		[EmbeddedData 3805b] 58424600ec0c0000e5010000020000000100000078000000
+\Files\VMInstance\PersonalizeNavigationBarPageViewModel.xbf		[EmbeddedData 1844b] 58424600aa0600007e000000020000000100000078000000
+\Files\VMInstance\PersonalizeSoundsPageViewModel.xbf		[EmbeddedData 3039b] 58424600a00a000033010000020000000100000078000000
+\Files\VMInstance\PhoneAboutPageViewModel.xbf		[EmbeddedData 4889b] 58424600c21000004b020000020000000100000078000000
+\Files\VMInstance\PrivacyAccountInfoPageViewModel.xbf		[EmbeddedData 2375b] 5842460078080000c3000000020000000100000078000000
+\Files\VMInstance\PrivacyAdvertisingIdPageViewModel.xbf		[EmbeddedData 2032b] 584246003e070000a6000000020000000100000078000000
+\Files\VMInstance\PrivacyBackgroundAppsPageViewModel.xbf		[EmbeddedData 1971b] 584246000c0700009b000000020000000100000078000000
+\Files\VMInstance\PrivacyCDPPageViewModel.xbf		[EmbeddedData 1360b] 58424600d80400006c000000020000000100000078000000
+\Files\VMInstance\PrivacyCalendarPageViewModel.xbf		[EmbeddedData 2462b] 58424600b4080000de000000020000000100000078000000
+\Files\VMInstance\PrivacyCallHistoryPageViewModel.xbf		[EmbeddedData 2510b] 58424600e4080000de000000020000000100000078000000
+\Files\VMInstance\PrivacyContactsPageViewModel.xbf		[EmbeddedData 2458b] 58424600b0080000de000000020000000100000078000000
+\Files\VMInstance\PrivacyCustomPeripheralsPageViewModel.xbf		[EmbeddedData 2589b] 5842460046090000cb000000020000000100000078000000
+\Files\VMInstance\PrivacyEmailPageViewModel.xbf		[EmbeddedData 2414b] 5842460084080000de000000020000000100000078000000
+\Files\VMInstance\PrivacyLocationPageViewModel.xbf		[EmbeddedData 3921b] 58424600a00d0000a5010000020000000100000078000000
+\Files\VMInstance\PrivacyMessagingPageViewModel.xbf		[EmbeddedData 2343b] 584246005c080000bf000000020000000100000078000000
+\Files\VMInstance\PrivacyMicrophonePageViewModel.xbf		[EmbeddedData 2357b] 584246006a080000bf000000020000000100000078000000
+\Files\VMInstance\PrivacyMotionDataPageViewModel.xbf		[EmbeddedData 2392b] 584246007a080000d2000000020000000100000078000000
+\Files\VMInstance\PrivacyNotificationsPageViewModel.xbf		[EmbeddedData 1833b] 58424600900600008d000000020000000100000078000000
+\Files\VMInstance\PrivacyOpenDevicesAdvancedPageViewModel.xbf		[EmbeddedData 1827b] 584246009006000087000000020000000100000078000000
+\Files\VMInstance\PrivacyPersonalizationPageViewModel.xbf		[EmbeddedData 2610b] 58424600b80800006e010000020000000100000078000000
+\Files\VMInstance\PrivacyPhoneCallPageViewModel.xbf		[EmbeddedData 2478b] 58424600c4080000de000000020000000100000078000000
+\Files\VMInstance\PrivacyRadiosPageViewModel.xbf		[EmbeddedData 2209b] 58424600d8070000bd000000020000000100000078000000
+\Files\VMInstance\PrivacyWebcamPageViewModel.xbf		[EmbeddedData 2512b] 58424600e6080000de000000020000000100000078000000
+\Files\VMInstance\ProvisioningPackageInfoPageViewModel.xbf		[EmbeddedData 2308b] 584246002a080000ce000000020000000100000078000000
+\Files\VMInstance\ProvisioningPageViewModel.xbf		[EmbeddedData 1655b] 58424600ee0500007d000000020000000100000078000000
+\Files\VMInstance\QuickActionsListPageViewModel.xbf		[EmbeddedData 1405b] 584246000e05000063000000020000000100000078000000
+\Files\VMInstance\RestoreMusUpdatePageViewModel.xbf		[EmbeddedData 4907b] 5842460064110000bb010000020000000100000078000000
+\Files\VMInstance\RestoreUpdatePageViewModel.xbf		[EmbeddedData 2622b] 5842460050090000e2000000020000000100000078000000
+\Files\VMInstance\SIUFSettingsPageViewModel.xbf		[EmbeddedData 3360b] 58424600a80a00006c020000020000000100000078000000
+\Files\VMInstance\SamplesDynamicAdvancedPageViewmodel.xbf		[EmbeddedData 1523b] 584246006c0500007b000000020000000100000078000000
+\Files\VMInstance\SpeechPageViewModel.xbf		[EmbeddedData 2431b] 5842460096080000dd000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownDocumentsPageViewModel.xbf		[EmbeddedData 1347b] 58424600de04000059000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownEmailsPageViewModel.xbf		[EmbeddedData 1496b] 58424600620500006a000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownMainPageViewModel.xbf		[EmbeddedData 1940b] 58424600e4060000a4000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownMapsPageViewModel.xbf		[EmbeddedData 1345b] 58424600dc04000059000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownMusicPageViewModel.xbf		[EmbeddedData 1331b] 58424600ce04000059000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownOneDrivePageViewModel.xbf		[EmbeddedData 1343b] 58424600da04000059000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownOtherFilesPageViewModel.xbf		[EmbeddedData 1331b] 58424600ce04000059000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownOtherUsersPageViewModel.xbf		[EmbeddedData 1383b] 584246000205000059000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownPicturesPageViewModel.xbf		[EmbeddedData 1343b] 58424600da04000059000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownPodcastsPageViewModel.xbf		[EmbeddedData 1343b] 58424600da04000059000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownSystemPageViewModel.xbf		[EmbeddedData 1565b] 58424600940500007d000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownTemporaryFilesPageViewModel.xbf		[EmbeddedData 2097b] 5842460072070000b3000000020000000100000078000000
+\Files\VMInstance\StorageSenseBreakdownVideosPageViewModel.xbf		[EmbeddedData 1335b] 58424600d204000059000000020000000100000078000000
+\Files\VMInstance\StorageSenseStorageOverviewPageViewModel.xbf		[EmbeddedData 2888b] 58424600380a000004010000020000000100000078000000
+\Files\VMInstance\SystemDisplayAdvancedPageViewModel.xbf		[EmbeddedData 2003b] 584246003c0700008b000000020000000100000078000000
+\Files\VMInstance\SystemDisplayPageViewModel.xbf		[EmbeddedData 4929b] 584246001411000021020000020000000100000078000000
+\Files\VMInstance\SystemUsbPageViewModel.xbf		[EmbeddedData 1653b] 58424600c0050000a9000000020000000100000078000000
+\Files\VMInstance\TimeRegionDateTimePageViewModel.xbf		[EmbeddedData 2304b] 5842460040080000b4000000020000000100000078000000
+\Files\VMInstance\UsersPageViewModel.xbf		[EmbeddedData 3263b] 58424600740b00003f010000020000000100000078000000
+\Files\VMInstance\ViewModel.xbf		[EmbeddedData 17943b] 584246005a3b0000b10a0000020000000100000078000000
+\Files\VMInstance\WUChangeSettingsPageViewModel.xbf		[EmbeddedData 2753b] 58424600e8080000cd010000020000000100000078000000
+\Files\VMInstance\WUUpdateDetailsPageViewModel.xbf		[EmbeddedData 2046b] 584246000e070000e4000000020000000100000078000000
+\Files\VMInstance\WUUpdateHistoryPageViewModel.xbf		[EmbeddedData 1199b] 584246005004000053000000020000000100000078000000
+\Files\VMInstance\WorkAccessPageViewModel.xbf		[EmbeddedData 2653b] 5842460072090000df000000020000000100000078000000
+\Files\View\AccessibilityPageTemplates.xbf		[EmbeddedData 1344b] 5842460038040000fc000000020000000100000078000000
+\Files\View\AccountsEnthusiastTemplates.xbf		[EmbeddedData 4885b] 58424600fc0b00000d070000020000000100000078000000
+\Files\View\AccountsPageTemplates.xbf		[EmbeddedData 18820b] 58424600ce280000aa200000020000000100000078000000
+\Files\View\AccountsSyncPageTemplates.xbf		[EmbeddedData 1258b] 584246000a040000d4000000020000000100000078000000
+\Files\View\AppSizesPageTemplates.xbf		[EmbeddedData 15232b] 58424600b8250000bc150000020000000100000078000000
+\Files\View\AppsForWebsitesPageTemplates.xbf		[EmbeddedData 2559b] 584246006e07000085020000020000000100000078000000
+\Files\View\AppsNotificationsPageTemplates.xbf		[EmbeddedData 17719b] 584246006a2a0000c11a0000020000000100000078000000
+\Files\View\BatterySaverDynamicResolutionSelection.xbf		[EmbeddedData 1669b] 58424600e204000097010000020000000100000078000000
+\Files\View\BatterySaverPageTemplates.xbf		[EmbeddedData 13038b] 584246000c210000d6110000020000000100000078000000
+\Files\View\BluetoothSettingsPageTemplates.xbf		[EmbeddedData 7920b] 584246009c140000480a0000020000000100000078000000
+\Files\View\CFEEAPMSChapv2Identity.xbf		[EmbeddedData 2212b] 58424600f4060000a4010000020000000100000078000000
+\Files\View\CFEPasswordExpired.xbf		[EmbeddedData 2296b] 584246007407000078010000020000000100000078000000
+\Files\View\CallsLTEVideoToggle.xbf		[EmbeddedData 2337b] 584246004c070000c9010000020000000100000078000000
+\Files\View\CallsPageTemplates.xbf		[EmbeddedData 6999b] 584246006e110000dd090000020000000100000078000000
+\Files\View\CallsTextBox.xbf		[EmbeddedData 1385b] 58424600320400002b010000020000000100000078000000
+\Files\View\ClosedCaptioningPageTemplates.xbf		[EmbeddedData 3309b] 58424600a809000039030000020000000100000078000000
+\Files\View\Colors.xbf		[EmbeddedData 7539b] 58424600d013000097090000020000000100000078000000
+\Files\View\DataSenseTemplates.xbf		[EmbeddedData 17995b] 58424600a42900009b1c0000020000000100000078000000
+\Files\View\DeepDiveL2Page.xbf		[EmbeddedData 3471b] 58424600c4090000bf030000020000000100000078000000
+\Files\View\DeveloperOptionsPageTemplates.xbf		[EmbeddedData 9867b] 584246000a190000750d0000020000000100000078000000
+\Files\View\DiagnosticsConsole.xbf		[EmbeddedData 2043b] 58424600820300006d040000020000000100000078000000
+\Files\View\DialogFlowPage.xbf		[EmbeddedData 1549b] 5842460012040000ef010000020000000100000078000000
+\Files\View\DisplayDialogControl.xbf		[EmbeddedData 2451b] 584246006207000025020000020000000100000078000000
+\Files\View\DisplayDialogLauncher.xbf		[EmbeddedData 976b] 5842460014030000b0000000020000000100000078000000
+\Files\View\ExamplesPageTemplates.xbf		[EmbeddedData 1350b] 584246005e040000dc000000020000000100000078000000
+\Files\View\FindMyDevicePageTemplates.xbf		[EmbeddedData 1618b] 5842460098040000ae010000020000000100000078000000
+\Files\View\FlightsPageTemplates.xbf		[EmbeddedData 29598b] 58424600984c0000fa260000020000000100000078000000
+\Files\View\FullScreenPage.xbf		[EmbeddedData 1899b] 584246003605000029020000020000000100000078000000
+\Files\View\FullSearchPage.xbf		[EmbeddedData 3056b] 584246009a0800004a030000020000000100000078000000
+\Files\View\Globals.xbf		[EmbeddedData 705b] 584246006a0200004b000000020000000100000078000000
+\Files\View\InboxImagePickerControl.xbf		[EmbeddedData 1618b] 584246000604000040020000020000000100000078000000
+\Files\View\L1Page.xbf		[EmbeddedData 8864b] 584246004c140000480e0000020000000100000078000000
+\Files\View\L2Page.xbf		[EmbeddedData 4797b] 58424600b80b0000f9060000020000000100000078000000
+\Files\View\LockScreenQuickStatusControl.xbf		[EmbeddedData 1311b] 58424600c60300004d010000020000000100000078000000
+\Files\View\LockScreenQuickStatusItemControl.xbf		[EmbeddedData 2131b] 58424600280600001f020000020000000100000078000000
+\Files\View\MapsAvailablePackagePageListHost.xbf		[EmbeddedData 3103b] 58424600ae07000065040000020000000100000078000000
+\Files\View\MapsPagesTemplates.xbf		[EmbeddedData 14338b] 5842460032220000c4150000020000000100000078000000
+\Files\View\MessagingPageTemplates.xbf		[EmbeddedData 2698b] 58424600e40700009a020000020000000100000078000000
+\Files\View\MobileBroadbandDialogButton.xbf		[EmbeddedData 875b] 58424600a0020000bf000000020000000100000078000000
+\Files\View\MobileBroadbandPasswordBox.xbf		[EmbeddedData 826b] 5842460076020000b8000000020000000100000078000000
+\Files\View\MobileBroadbandRoamingSelection.xbf		[EmbeddedData 1881b] 5842460086050000c7010000020000000100000078000000
+\Files\View\MouseTouchpadPageTemplates.xbf		[EmbeddedData 1652b] 584246001e0500004a010000020000000100000078000000
+\Files\View\MusUpdatePagesTemplates.xbf		[EmbeddedData 18892b] 584246008e2a0000321f0000020000000100000078000000
+\Files\View\NavigationBarHapticToggle.xbf		[EmbeddedData 1197b] 584246006803000039010000020000000100000078000000
+\Files\View\NetworkConnectionsPageTemplates.xbf		[EmbeddedData 82210b] 5842460080b20000968e0000020000000100000078000000
+\Files\View\OneBackupPageTemplates.xbf		[EmbeddedData 17609b] 584246003c290000811b0000020000000100000078000000
+\Files\View\PersonalizationPageTemplates.xbf		[EmbeddedData 30864b] 584246001036000074420000020000000100000078000000
+\Files\View\PersonalizationSoundsPageTemplates.xbf		[EmbeddedData 2352b] 5842460046070000de010000020000000100000078000000
+\Files\View\PhoneAboutPageTemplates.xbf		[EmbeddedData 7343b] 58424600b2120000f1090000020000000100000078000000
+\Files\View\PieChart.xbf		[EmbeddedData 1369b] 58424600220300002b020000020000000100000078000000
+\Files\View\PrivacyCDPPageTemplates.xbf		[EmbeddedData 1324b] 5842460048040000d8000000020000000100000078000000
+\Files\View\PrivacyCustomPeripheralsPageTemplates.xbf		[EmbeddedData 3809b] 58424600380800009d060000020000000100000078000000
+\Files\View\PrivacyPageTemplates.xbf		[EmbeddedData 2827b] 584246001e080000e1020000020000000100000078000000
+\Files\View\PrivacyPersonalizationPageTemplates.xbf		[EmbeddedData 3239b] 58424600b4090000e7020000020000000100000078000000
+\Files\View\ProvisioningPageTemplates.xbf		[EmbeddedData 7093b] 584246004814000061070000020000000100000078000000
+\Files\View\RootPage.xbf		[EmbeddedData 1370b] 58424600f803000056010000020000000100000078000000
+\Files\View\SIUFTemplates.xbf		[EmbeddedData 2550b] 584246007407000076020000020000000100000078000000
+\Files\View\SearchProgressBar.xbf		[EmbeddedData 1532b] 5842460028040000c8010000020000000100000078000000
+\Files\View\SearchResultsStatusControl.xbf		[EmbeddedData 2039b] 5842460036060000b5010000020000000100000078000000
+\Files\View\SettingsAutoSuggestSearchBox.xbf		[EmbeddedData 5087b] 584246007e0d000055060000020000000100000078000000
+\Files\View\SettingsFlyout.xbf		[EmbeddedData 1339b] 58424600040400002b010000020000000100000078000000
+\Files\View\SettingsSearchBox.xbf		[EmbeddedData 1189b] 58424600b4030000e5000000020000000100000078000000
+\Files\View\SoundItemControl.xbf		[EmbeddedData 4759b] 584246004a0a000041080000020000000100000078000000
+\Files\View\SpeechPageTemplates.xbf		[EmbeddedData 5889b] 5842460054110000a1050000020000000100000078000000
+\Files\View\StorageSenseBreakdownPagesTemplates.xbf		[EmbeddedData 14255b] 58424600242000007f170000020000000100000078000000
+\Files\View\StorageSenseStorageOverviewPageTemplates.xbf		[EmbeddedData 5848b] 58424600a60f000026070000020000000100000078000000
+\Files\View\Styles.xbf		[EmbeddedData 44974b] 58424600b6590000ec550000020000000100000078000000
+\Files\View\SystemDisplayPageTemplates.xbf		[EmbeddedData 5744b] 58424600460e00001e080000020000000100000078000000
+\Files\View\Templates.xbf		[EmbeddedData 22698b] 584246006631000038270000020000000100000078000000
+\Files\View\TimeRegionDateTimePageTemplates.xbf		[EmbeddedData 1667b] 58424600c4040000b3010000020000000100000078000000
+\Files\View\VPNPreCFE.xbf		[EmbeddedData 2600b] 58424600120800000a020000020000000100000078000000
+\Files\View\WindowsUpdatePagesTemplates.xbf		[EmbeddedData 12304b] 58424600701b000094140000020000000100000078000000
+\Files\View\WorkAccessPageTemplates.xbf		[EmbeddedData 9180b] 58424600cc180000040b0000020000000100000078000000
+\Files\WindowsPhoneReservedAppInfo.xml		WindowsPhoneReservedAppInfo.xml
+\Files\app.xbf		[EmbeddedData 410b] 584246006e01000020000000020000000100000078000000
+\Files\assets\Contact.png		assets\Contact.png
+\Files\assets\DefaultPinTile.png		assets\DefaultPinTile.png
+\Files\assets\Devices.png		assets\Devices.png
+\Files\assets\EaseOfAccess.png		assets\EaseOfAccess.png
+\Files\assets\Extras.png		assets\Extras.png
+\Files\assets\Globe.png		assets\Globe.png
+\Files\assets\LocalHardDrive.png	Scale=180	assets\LocalHardDrive.scale-180.png
+\Files\assets\LocalHardDrive.png	Scale=140	assets\LocalHardDrive.scale-140.png
+\Files\assets\LocalHardDrive.png	Scale=100	assets\LocalHardDrive.scale-100.png
+\Files\assets\Lock.png		assets\Lock.png
+\Files\assets\MBB0Bar.png	Contrast=WHITE+Scale=400	assets\MBB0Bar.contrast-white_scale-400.png
+\Files\assets\MBB0Bar.png	Contrast=WHITE+Scale=300	assets\MBB0Bar.contrast-white_scale-300.png
+\Files\assets\MBB0Bar.png	Contrast=WHITE+Scale=250	assets\MBB0Bar.contrast-white_scale-250.png
+\Files\assets\MBB0Bar.png	Contrast=WHITE+Scale=200	assets\MBB0Bar.contrast-white_scale-200.png
+\Files\assets\MBB0Bar.png	Contrast=WHITE+Scale=150	assets\MBB0Bar.contrast-white_scale-150.png
+\Files\assets\MBB0Bar.png	Contrast=WHITE+Scale=125	assets\MBB0Bar.contrast-white_scale-125.png
+\Files\assets\MBB0Bar.png	Contrast=WHITE	assets\MBB0Bar.contrast-white.png
+\Files\assets\MBB0Bar.png	Scale=400	assets\MBB0Bar.scale-400.png
+\Files\assets\MBB0Bar.png	Scale=300	assets\MBB0Bar.scale-300.png
+\Files\assets\MBB0Bar.png	Scale=250	assets\MBB0Bar.scale-250.png
+\Files\assets\MBB0Bar.png	Scale=200	assets\MBB0Bar.scale-200.png
+\Files\assets\MBB0Bar.png	Scale=150	assets\MBB0Bar.scale-150.png
+\Files\assets\MBB0Bar.png	Scale=125	assets\MBB0Bar.scale-125.png
+\Files\assets\MBB0Bar.png		assets\MBB0Bar.png
+\Files\assets\MBB1Bar.png	Contrast=WHITE+Scale=400	assets\MBB1Bar.contrast-white_scale-400.png
+\Files\assets\MBB1Bar.png	Contrast=WHITE+Scale=300	assets\MBB1Bar.contrast-white_scale-300.png
+\Files\assets\MBB1Bar.png	Contrast=WHITE+Scale=250	assets\MBB1Bar.contrast-white_scale-250.png
+\Files\assets\MBB1Bar.png	Contrast=WHITE+Scale=200	assets\MBB1Bar.contrast-white_scale-200.png
+\Files\assets\MBB1Bar.png	Contrast=WHITE+Scale=150	assets\MBB1Bar.contrast-white_scale-150.png
+\Files\assets\MBB1Bar.png	Contrast=WHITE+Scale=125	assets\MBB1Bar.contrast-white_scale-125.png
+\Files\assets\MBB1Bar.png	Contrast=WHITE	assets\MBB1Bar.contrast-white.png
+\Files\assets\MBB1Bar.png	Scale=400	assets\MBB1Bar.scale-400.png
+\Files\assets\MBB1Bar.png	Scale=300	assets\MBB1Bar.scale-300.png
+\Files\assets\MBB1Bar.png	Scale=250	assets\MBB1Bar.scale-250.png
+\Files\assets\MBB1Bar.png	Scale=200	assets\MBB1Bar.scale-200.png
+\Files\assets\MBB1Bar.png	Scale=150	assets\MBB1Bar.scale-150.png
+\Files\assets\MBB1Bar.png	Scale=125	assets\MBB1Bar.scale-125.png
+\Files\assets\MBB1Bar.png		assets\MBB1Bar.png
+\Files\assets\MBB2Bar.png	Contrast=WHITE+Scale=400	assets\MBB2Bar.contrast-white_scale-400.png
+\Files\assets\MBB2Bar.png	Contrast=WHITE+Scale=300	assets\MBB2Bar.contrast-white_scale-300.png
+\Files\assets\MBB2Bar.png	Contrast=WHITE+Scale=250	assets\MBB2Bar.contrast-white_scale-250.png
+\Files\assets\MBB2Bar.png	Contrast=WHITE+Scale=200	assets\MBB2Bar.contrast-white_scale-200.png
+\Files\assets\MBB2Bar.png	Contrast=WHITE+Scale=150	assets\MBB2Bar.contrast-white_scale-150.png
+\Files\assets\MBB2Bar.png	Contrast=WHITE+Scale=125	assets\MBB2Bar.contrast-white_scale-125.png
+\Files\assets\MBB2Bar.png	Contrast=WHITE	assets\MBB2Bar.contrast-white.png
+\Files\assets\MBB2Bar.png	Scale=400	assets\MBB2Bar.scale-400.png
+\Files\assets\MBB2Bar.png	Scale=300	assets\MBB2Bar.scale-300.png
+\Files\assets\MBB2Bar.png	Scale=250	assets\MBB2Bar.scale-250.png
+\Files\assets\MBB2Bar.png	Scale=200	assets\MBB2Bar.scale-200.png
+\Files\assets\MBB2Bar.png	Scale=150	assets\MBB2Bar.scale-150.png
+\Files\assets\MBB2Bar.png	Scale=125	assets\MBB2Bar.scale-125.png
+\Files\assets\MBB2Bar.png		assets\MBB2Bar.png
+\Files\assets\MBB3Bar.png	Contrast=WHITE+Scale=400	assets\MBB3Bar.contrast-white_scale-400.png
+\Files\assets\MBB3Bar.png	Contrast=WHITE+Scale=300	assets\MBB3Bar.contrast-white_scale-300.png
+\Files\assets\MBB3Bar.png	Contrast=WHITE+Scale=250	assets\MBB3Bar.contrast-white_scale-250.png
+\Files\assets\MBB3Bar.png	Contrast=WHITE+Scale=200	assets\MBB3Bar.contrast-white_scale-200.png
+\Files\assets\MBB3Bar.png	Contrast=WHITE+Scale=150	assets\MBB3Bar.contrast-white_scale-150.png
+\Files\assets\MBB3Bar.png	Contrast=WHITE+Scale=125	assets\MBB3Bar.contrast-white_scale-125.png
+\Files\assets\MBB3Bar.png	Contrast=WHITE	assets\MBB3Bar.contrast-white.png
+\Files\assets\MBB3Bar.png	Scale=400	assets\MBB3Bar.scale-400.png
+\Files\assets\MBB3Bar.png	Scale=300	assets\MBB3Bar.scale-300.png
+\Files\assets\MBB3Bar.png	Scale=250	assets\MBB3Bar.scale-250.png
+\Files\assets\MBB3Bar.png	Scale=200	assets\MBB3Bar.scale-200.png
+\Files\assets\MBB3Bar.png	Scale=150	assets\MBB3Bar.scale-150.png
+\Files\assets\MBB3Bar.png	Scale=125	assets\MBB3Bar.scale-125.png
+\Files\assets\MBB3Bar.png		assets\MBB3Bar.png
+\Files\assets\MBB4Bar.png	Contrast=WHITE+Scale=400	assets\MBB4Bar.contrast-white_scale-400.png
+\Files\assets\MBB4Bar.png	Contrast=WHITE+Scale=300	assets\MBB4Bar.contrast-white_scale-300.png
+\Files\assets\MBB4Bar.png	Contrast=WHITE+Scale=250	assets\MBB4Bar.contrast-white_scale-250.png
+\Files\assets\MBB4Bar.png	Contrast=WHITE+Scale=200	assets\MBB4Bar.contrast-white_scale-200.png
+\Files\assets\MBB4Bar.png	Contrast=WHITE+Scale=150	assets\MBB4Bar.contrast-white_scale-150.png
+\Files\assets\MBB4Bar.png	Contrast=WHITE+Scale=125	assets\MBB4Bar.contrast-white_scale-125.png
+\Files\assets\MBB4Bar.png	Contrast=WHITE	assets\MBB4Bar.contrast-white.png
+\Files\assets\MBB4Bar.png	Scale=400	assets\MBB4Bar.scale-400.png
+\Files\assets\MBB4Bar.png	Scale=300	assets\MBB4Bar.scale-300.png
+\Files\assets\MBB4Bar.png	Scale=250	assets\MBB4Bar.scale-250.png
+\Files\assets\MBB4Bar.png	Scale=200	assets\MBB4Bar.scale-200.png
+\Files\assets\MBB4Bar.png	Scale=150	assets\MBB4Bar.scale-150.png
+\Files\assets\MBB4Bar.png	Scale=125	assets\MBB4Bar.scale-125.png
+\Files\assets\MBB4Bar.png		assets\MBB4Bar.png
+\Files\assets\MBB5Bar.png	Contrast=WHITE+Scale=400	assets\MBB5Bar.contrast-white_scale-400.png
+\Files\assets\MBB5Bar.png	Contrast=WHITE+Scale=300	assets\MBB5Bar.contrast-white_scale-300.png
+\Files\assets\MBB5Bar.png	Contrast=WHITE+Scale=250	assets\MBB5Bar.contrast-white_scale-250.png
+\Files\assets\MBB5Bar.png	Contrast=WHITE+Scale=200	assets\MBB5Bar.contrast-white_scale-200.png
+\Files\assets\MBB5Bar.png	Contrast=WHITE+Scale=150	assets\MBB5Bar.contrast-white_scale-150.png
+\Files\assets\MBB5Bar.png	Contrast=WHITE+Scale=125	assets\MBB5Bar.contrast-white_scale-125.png
+\Files\assets\MBB5Bar.png	Contrast=WHITE	assets\MBB5Bar.contrast-white.png
+\Files\assets\MBB5Bar.png	Scale=400	assets\MBB5Bar.scale-400.png
+\Files\assets\MBB5Bar.png	Scale=300	assets\MBB5Bar.scale-300.png
+\Files\assets\MBB5Bar.png	Scale=250	assets\MBB5Bar.scale-250.png
+\Files\assets\MBB5Bar.png	Scale=200	assets\MBB5Bar.scale-200.png
+\Files\assets\MBB5Bar.png	Scale=150	assets\MBB5Bar.scale-150.png
+\Files\assets\MBB5Bar.png	Scale=125	assets\MBB5Bar.scale-125.png
+\Files\assets\MBB5Bar.png		assets\MBB5Bar.png
+\Files\assets\MBBRoaming0Bar.png	Contrast=WHITE+Scale=400	assets\MBBRoaming0Bar.contrast-white_scale-400.png
+\Files\assets\MBBRoaming0Bar.png	Contrast=WHITE+Scale=300	assets\MBBRoaming0Bar.contrast-white_scale-300.png
+\Files\assets\MBBRoaming0Bar.png	Contrast=WHITE+Scale=250	assets\MBBRoaming0Bar.contrast-white_scale-250.png
+\Files\assets\MBBRoaming0Bar.png	Contrast=WHITE+Scale=200	assets\MBBRoaming0Bar.contrast-white_scale-200.png
+\Files\assets\MBBRoaming0Bar.png	Contrast=WHITE+Scale=150	assets\MBBRoaming0Bar.contrast-white_scale-150.png
+\Files\assets\MBBRoaming0Bar.png	Contrast=WHITE+Scale=125	assets\MBBRoaming0Bar.contrast-white_scale-125.png
+\Files\assets\MBBRoaming0Bar.png	Contrast=WHITE	assets\MBBRoaming0Bar.contrast-white.png
+\Files\assets\MBBRoaming0Bar.png	Scale=400	assets\MBBRoaming0Bar.scale-400.png
+\Files\assets\MBBRoaming0Bar.png	Scale=300	assets\MBBRoaming0Bar.scale-300.png
+\Files\assets\MBBRoaming0Bar.png	Scale=250	assets\MBBRoaming0Bar.scale-250.png
+\Files\assets\MBBRoaming0Bar.png	Scale=200	assets\MBBRoaming0Bar.scale-200.png
+\Files\assets\MBBRoaming0Bar.png	Scale=150	assets\MBBRoaming0Bar.scale-150.png
+\Files\assets\MBBRoaming0Bar.png	Scale=125	assets\MBBRoaming0Bar.scale-125.png
+\Files\assets\MBBRoaming0Bar.png		assets\MBBRoaming0Bar.png
+\Files\assets\MBBRoaming1Bar.png	Contrast=WHITE+Scale=400	assets\MBBRoaming1Bar.contrast-white_scale-400.png
+\Files\assets\MBBRoaming1Bar.png	Contrast=WHITE+Scale=300	assets\MBBRoaming1Bar.contrast-white_scale-300.png
+\Files\assets\MBBRoaming1Bar.png	Contrast=WHITE+Scale=250	assets\MBBRoaming1Bar.contrast-white_scale-250.png
+\Files\assets\MBBRoaming1Bar.png	Contrast=WHITE+Scale=200	assets\MBBRoaming1Bar.contrast-white_scale-200.png
+\Files\assets\MBBRoaming1Bar.png	Contrast=WHITE+Scale=150	assets\MBBRoaming1Bar.contrast-white_scale-150.png
+... (trimmed: 2359 resources across 82 dataitem sections; full dump is
+regenerable with files/tools/pri_decode.py on refs/edge/Microsoft.Windows.SystemSettings_cw5n1h2txyewy.zip)

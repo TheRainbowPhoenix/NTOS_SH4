@@ -1,0 +1,22 @@
+<Page name="EditNamePage">
+  <!-- edit_device_name_popup.png: a FLOW page (not a shard dialog) —
+       title, 2px-accent field with caret, Save/Cancel, docked SIP -->
+  <Canvas>
+    <Canvas x="0" y="0" w="320" h="48">
+      <Rect x="0" y="0" w="320" h="48" bg="#F7F3F7"/>
+      <Glyph name="HeaderGear" x="8" y="8" w="32" h="32" text="gear" color="#3965FF"/>
+      <Text name="HeaderTitle" x="48" y="14" w="240" text="Settings" color="#000000" size="20" bold="true"/>
+    </Canvas>
+    <Text x="24" y="26" w="260" text="Edit device name" color="#000000" size="20" bold="true"/>
+    <Button name="NameField" x="24" y="60" w="272" h="32" command="noop"/>
+    <Button name="NameClear" x="258" y="60" w="38" h="32" command="name-clear">
+      <Glyph x="11" y="8" w="16" h="16" text="x" color="#767676"/>
+    </Button>
+    <Button name="NameSave" x="24" y="130" w="136" h="32" command="name-save" bg="#CECFCE">
+      <Text x="0" y="9" w="136" text="Save" color="#000000" size="14" align="1"/>
+    </Button>
+    <Button name="NameCancel" x="164" y="130" w="132" h="32" command="name-cancel" bg="#CECFCE">
+      <Text x="0" y="9" w="132" text="Cancel" color="#000000" size="14" align="1"/>
+    </Button>
+  </Canvas>
+</Page>

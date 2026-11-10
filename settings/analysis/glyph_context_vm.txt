@@ -1,0 +1,2 @@
+302 glyph-string offsets
+0 glyphs referenced from .text

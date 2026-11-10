@@ -1,0 +1,17 @@
+<Page name="CategoryPage">
+  <!-- personalization.png: same header+search chrome, gray category
+       heading, subcategory rows (icon + label) painted procedurally -->
+  <Canvas>
+    <Canvas x="0" y="0" w="320" h="48">
+      <Rect x="0" y="0" w="320" h="48" bg="#F7F3F7"/>
+      <Glyph name="HeaderGear" x="8" y="8" w="32" h="32" text="gear" color="#3965FF"/>
+      <Text name="HeaderTitle" x="48" y="14" w="240" text="Settings" color="#000000" size="20" bold="true"/>
+    </Canvas>
+    <Rect x="0" y="56" w="320" h="2" bg="#3965FF"/>
+    <Button name="SearchField" x="16" y="62" w="288" h="26" command="search">
+      <Glyph x="276" y="6" w="14" h="14" text="search" color="#767676"/>
+    </Button>
+    <Text name="CategoryTitle" x="12" y="100" w="280" text="Personalization" color="#636163" size="15"/>
+    <Rect x="0" y="124" w="320" h="364" bg="#F7F3F7"/>
+  </Canvas>
+</Page>

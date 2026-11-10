@@ -1,0 +1,1762 @@
+ResourceDictionary
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:vm = 'using:SystemSettings.ViewModel'
+  .xmlns:v = 'using:SystemSettings.View'
+  .xmlns:local = 'using:SystemSettings'
+  using:SystemSettings.View:StrongToWeakReferenceConverter [Key=StrongToWeakReferenceConverter]
+  using:SystemSettings.View:AppIconBackgroundColorConverter [Key=AppIconBackgroundColorConverter]
+  DataTemplate [Key=LabeledStringSettingTemplate]
+    .Template:
+      Grid
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .ColumnDefinitions: [
+          ColumnDefinition
+            .Width = 'Auto'
+          ColumnDefinition
+            .Width = '*'
+        ]
+        .Children: [
+          using:SystemSettings.View:SharedWidthContentControl
+            .Column = 0
+            .Content:
+              TextBlock
+                .AutomationId:
+                  Binding
+                    .Path = 'AutomationId'
+                    .ConverterParameter = 'DescriptionTextBlock'
+                    .Converter = '{StaticResource AutomationIdConverter}'
+                .Text:
+                  Binding
+                    .Path = 'Description'
+                    .Mode = 'OneWay'
+                .Style = '{StaticResource LabeledStringTextBlockStyle}'
+          TextBlock
+            .Column = 1
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ValueTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'Value'
+            .Style = '{StaticResource LabeledStringTextBlockStyle}'
+        ]
+  DataTemplate [Key=SettingGroupTemplateWithNoHeader]
+    .Template:
+      ItemsControl
+        .Padding = '{StaticResource SettingGroupMargin}'
+        .MaxWidth = '{StaticResource PageTemplateWidthCap}'
+        .AutomationId:
+          Binding
+            .Path = 'Id'
+            .ConverterParameter = 'ItemsControl'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .ItemsSource:
+          Binding
+            .Path = 'DisplayedSettingEntries'
+        .ItemTemplateSelector = '{StaticResource SettingEntryTemplateSelector}'
+  using:SystemSettings.View:DefaultWhenNullConverter [Key=DefaultWhenNullConverter]
+  DataTemplate [Key=NavigateToPageSettingTemplate]
+    .Template:
+      HyperlinkButton
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'HyperlinkButton'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Command = '{StaticResource NavigateToPageCommand}'
+        .CommandParameter:
+          Binding
+            .Path = 'Tag'
+        .ParentSetting:
+          Binding
+            .Mode = 'OneTime'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .IsEnabled:
+          Binding
+            .Path = 'IsEnabled'
+        .Style = '{StaticResource HyperlinkButtonStyle}'
+        .IsDefaultFocus = True
+        .Content:
+          TextBlock
+            .TextWrapping = 'Wrap'
+            .IsHitTestVisible = False
+            .Text:
+              Binding
+                .Path = 'Description'
+                .Mode = 'OneWay'
+  using:SystemSettings.View:AutomationIdConverter [Key=AutomationIdConverter]
+  DataTemplate [Key=TwoColumnsEnabledSettingGroupTemplate]
+    .Template:
+      ContentControl
+        .Template = '{StaticResource SettingGroupControlTemplate}'
+        .IsSharedWidthScope = True
+  DataTemplate [Key=ProgressBarTemplate]
+    .Template:
+      ProgressBar
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'ProgressBar'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Visibility:
+          Binding
+            .Path = 'ActivityProgress'
+            .Converter = '{StaticResource ProgressToVisibilityConverter}'
+        .Style = '{StaticResource InlineProgressBarStyle}'
+        .Value:
+          Binding
+            .Path = 'ActivityProgress'
+  DataTemplate [Key=ExecuteActionOrLaunchFlyoutCommandFlyoutTemplate]
+    .Template:
+      StackPanel
+        .Width = '{StaticResource DefaultFlyoutWidth}'
+        .Children: [
+          TextBox
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ExecutionBlockedFlyoutReason'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Style = '{StaticResource InlineTextBoxStyle}'
+            .IsReadOnly = True
+            .TextWrapping = 'Wrap'
+            .BorderBrush = '#00FFFFFF'
+            .Text:
+              Binding
+                .Path = 'ExecutionBlockedReason'
+                .Mode = 'OneWay'
+        ]
+  using:SystemSettings.View:SettingGroupEntryVisibilityConverter [Key=SettingGroupEntryVisibilityConverter]
+  DataTemplate [Key=BooleanSettingTemplate]
+    .Template:
+      ToggleSwitch
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'ToggleSwitch'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Name:
+          Binding
+            .Path = 'Description'
+        .Header:
+          Binding
+            .Path = 'Description'
+            .Mode = 'OneWay'
+        .IsOn:
+          Binding
+            .Path = 'Value'
+            .Mode = 'TwoWay'
+        .IsEnabled:
+          Binding
+            .Path = 'IsEnabled'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Style = '{StaticResource ToggleSwitchStyle}'
+        .IsDefaultFocus = True
+  DataTemplate [Key=DisplayCanvasSettingGroupTemplate]
+    .Template:
+      ContentControl
+        .Template = '{StaticResource SettingGroupControlTemplate}'
+  using:SystemSettings.View:BooleanToPinGlyphConverter [Key=BooleanToPinGlyphConverter]
+  DataTemplate [Key=MinWidth280ListSettingComboBoxTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'DescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .AccessibilityView = 'Raw'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          ComboBox
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ComboBox'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Name:
+              Binding
+                .Path = 'Description'
+            .ItemsSource:
+              Binding
+                .Path = 'PossibleValues'
+            .SelectedValue:
+              Binding
+                .Path = 'Value'
+                .Mode = 'TwoWay'
+            .IsEnabled:
+              Binding
+                .Path = 'IsEnabled'
+            .HorizontalAlignment = 'Left'
+            .Style = '{StaticResource MinWidth280ComboBoxStyle}'
+            .IsDefaultFocus = True
+        ]
+  using:SystemSettings.ViewModel:SettingsGroupTemplateSelector [Key=SettingsGroupTemplateSelector]
+    .DefaultTemplateKey = 'DefaultSettingGroupTemplate'
+  DataTemplate [Key=LaunchAsFlyoutSettingTemplate]
+    .Template:
+      Button
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'Button'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Content:
+          Binding
+            .Path = 'Description'
+        .Command = '{StaticResource LaunchFlyoutCommand}'
+        .Style = '{StaticResource ButtonStyle}'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .IsDefaultFocus = True
+        .CommandParameter:
+          Binding
+            .RelativeSource:
+              RelativeSource
+                .Mode = 'Self'
+            .Converter = '{StaticResource StrongToWeakReferenceConverter}'
+        .Tag:
+          using:SystemSettings.View:FlyoutInfo
+            .ParentSettingEntry:
+              Binding
+            .FlyoutTemplate:
+              Binding
+                .Path = 'CustomTemplateKey'
+            .FlyoutTitle:
+              Binding
+                .Path = 'DisplayName'
+  DataTemplate [Key=UriLinkSettingTemplate]
+    .Template:
+      HyperlinkButton
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'HyperlinkButton'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .IsEnabled:
+          Binding
+            .Path = 'IsEnabled'
+        .NavigateUri:
+          Binding
+            .Path = 'Tag'
+            .Mode = 'OneTime'
+        .ParentSetting:
+          Binding
+            .Mode = 'OneTime'
+        .Style = '{StaticResource HyperlinkButtonStyle}'
+        .IsDefaultFocus = True
+        .Content:
+          TextBlock
+            .TextWrapping = 'Wrap'
+            .IsHitTestVisible = False
+            .Text:
+              Binding
+                .Path = 'Description'
+                .Mode = 'OneWay'
+  using:SystemSettings.View:ResourceToBitmapImageConverter [Key=ResourceToBitmapImageConverter]
+  DataTemplate [Key=StaticSettingPageTemplate]
+    .Template:
+      Grid
+        .IsSharedWidthScope = True
+        .HorizontalAlignment = 'Stretch'
+        .ColumnDefinitions: [
+          ColumnDefinition
+            .Width = '*'
+        ]
+        .Children: [
+          ItemsControl
+            .ItemsSource:
+              Binding
+                .Path = 'DisplayedGroups'
+            .ItemTemplateSelector = '{StaticResource SettingsGroupTemplateSelector}'
+            .ItemContainerStyle:
+              Style
+                .TargetType = 'ContentPresenter'
+                Setter
+                  .Property = 'HorizontalAlignment'
+                  .Value = 'Stretch'
+          using:SystemSettings.View:SettingsPageLoadMarker
+        ]
+  DataTemplate [Key=DefaultSettingGroupTemplate]
+    .Template:
+      ContentControl
+        .HorizontalAlignment = 'Stretch'
+        .MaxWidth = '{StaticResource PageTemplateWidthCap}'
+        .Template = '{StaticResource SettingGroupControlTemplate}'
+  using:SystemSettings.ViewModel:SettingsPageTemplateSelector [Key=SettingsPageTemplateSelector]
+    .DefaultTemplateKey = 'DefaultSettingPageTemplate'
+  using:SystemSettings.ViewModel:SettingsPageTemplateSelector [Key=FullScreenPageTemplateSelector]
+    .DefaultTemplateKey = 'DefaultFullScreenPageTemplate'
+  using:SystemSettings.ViewModel:SettingEntryTemplateSelector [Key=SettingEntryTemplateSelector]
+    .LaunchAsFlowTemplateKey = 'LaunchAsFlowSettingTemplate'
+    .TypedTemplates: [
+      using:SystemSettings.ViewModel:TypedTemplate
+        .Type = 'Boolean'
+        .TemplateKey = 'BooleanSettingTemplate'
+      using:SystemSettings.ViewModel:TypedTemplate
+        .Type = 'Action'
+        .TemplateKey = 'ActionSettingTemplate'
+      using:SystemSettings.ViewModel:TypedTemplate
+        .Type = 'List'
+        .TemplateKey = 'ListSettingComboBoxTemplate'
+      using:SystemSettings.ViewModel:TypedTemplate
+        .Type = 'DisplayString'
+        .TemplateKey = 'DisplayStringSettingTemplate'
+      using:SystemSettings.ViewModel:TypedTemplate
+        .Type = 'LabeledString'
+        .TemplateKey = 'LabeledStringSettingTemplate'
+    ]
+  DataTemplate [Key=ActionLinkSettingTemplate]
+    .Template:
+      HyperlinkButton
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'HyperlinkButton'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .IsEnabled:
+          Binding
+            .Path = 'IsEnabled'
+        .CommandParameter:
+          Binding
+            .RelativeSource:
+              RelativeSource
+                .Mode = 'Self'
+            .Converter = '{StaticResource StrongToWeakReferenceConverter}'
+        .Command:
+          Binding
+            .Path = 'Action'
+        .Style = '{StaticResource HyperlinkButtonStyle}'
+        .IsDefaultFocus = True
+        .Content:
+          TextBlock
+            .TextWrapping = 'Wrap'
+            .IsHitTestVisible = False
+            .Text:
+              Binding
+                .Path = 'Description'
+                .Mode = 'OneWay'
+  ControlTemplate [Key=SettingGroupControlTemplate]
+    .TargetType = 'ContentControl'
+    .Template:
+      Grid
+        .Padding = '{StaticResource SettingGroupMargin}'
+        .HorizontalAlignment = 'Stretch'
+        .RowDefinitions: [
+          RowDefinition
+          RowDefinition
+        ]
+        .ColumnDefinitions: [
+          ColumnDefinition
+            .Width = '*'
+        ]
+        .Children: [
+          TextBlock
+            .Row = 0
+            .AutomationId:
+              Binding
+                .Path = 'Id'
+                .ConverterParameter = 'GroupTitleTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'DisplayName'
+            .Style = '{StaticResource GroupTitleTextBlockStyle}'
+          using:SystemSettings.View:ExpandItemsControl
+            .Row = 1
+            .AutomationId:
+              Binding
+                .Path = 'Id'
+                .ConverterParameter = 'ItemsControl'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .ItemsSource:
+              Binding
+                .Path = 'DisplayedSettingEntries'
+            .ItemTemplateSelector = '{StaticResource SettingEntryTemplateSelector}'
+            .HorizontalContentAlignment = 'Stretch'
+        ]
+  DataTemplate [Key=ActionSettingWithProgressRingTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ActionDescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'ActionDescription'
+            .Visibility:
+              Binding
+                .Path = 'ActionDescription'
+                .Converter = '{StaticResource CollapsedWhenNullOrEmptyConverter}'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ErrorDescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'ErrorDescription'
+            .Visibility:
+              Binding
+                .Path = 'IsActionInErrorState'
+                .Converter = '{StaticResource BooleanToVisibilityConverter}'
+            .Style = '{StaticResource ErrorTextBlockStyle}'
+          StackPanel
+            .Orientation = 'Horizontal'
+            .Children: [
+              Button
+                .AutomationId:
+                  Binding
+                    .Path = 'AutomationId'
+                    .ConverterParameter = 'Button'
+                    .Converter = '{StaticResource AutomationIdConverter}'
+                .Content:
+                  Binding
+                    .Path = 'Description'
+                    .Mode = 'OneWay'
+                .CommandParameter:
+                  Binding
+                    .RelativeSource:
+                      RelativeSource
+                        .Mode = 'Self'
+                    .Converter = '{StaticResource StrongToWeakReferenceConverter}'
+                .Command:
+                  Binding
+                    .Path = 'Action'
+                .Style = '{StaticResource ButtonStyle}'
+                .IsDefaultFocus = True
+                .VerticalAlignment = 'Bottom'
+                .HorizontalAlignment = 'Left'
+                .IsEnabled:
+                  Binding
+                    .Path = 'IsEnabled'
+              ProgressRing
+                .AutomationId:
+                  Binding
+                    .Path = 'AutomationId'
+                    .ConverterParameter = 'ProgressRing'
+                    .Converter = '{StaticResource AutomationIdConverter}'
+                .IsActive:
+                  Binding
+                    .Path = 'IsUpdating'
+                .Visibility:
+                  Binding
+                    .Path = 'IsUpdating'
+                    .Converter = '{StaticResource BooleanToVisibilityConverter}'
+                .Style = '{StaticResource ActionProgressRingStyle}'
+                .VerticalAlignment = 'Bottom'
+                .HorizontalAlignment = 'Left'
+              TextBlock
+                .AutomationId:
+                  Binding
+                    .Path = 'AutomationId'
+                    .ConverterParameter = 'CheckMark'
+                    .Converter = '{StaticResource AutomationIdConverter}'
+                .Name:
+                  Binding
+                    .Path = 'CompletedDescription'
+                    .TargetNullValue = 'CheckMarkTextBlockDefaultAutomationName'
+                    .Converter = '{StaticResource ResourceLoaderConverter}'
+                .LiveSetting = 'Polite'
+                .BecameVisible:
+                  Binding
+                    .Path = 'Visibility'
+                    .RelativeSource:
+                      RelativeSource
+                        .Mode = 'Self'
+                .VerticalAlignment = 'Top'
+                .HorizontalAlignment = 'Left'
+                .Style = '{StaticResource ActionCheckMarkTextBlockStyle}'
+                .Visibility:
+                  Binding
+                    .Path = 'AsyncInvokeSucceeded'
+                    .Converter = '{StaticResource BooleanToVisibilityConverter}'
+            ]
+        ]
+  DataTemplate [Key=GenuineSettingGroupTemplate]
+    .Template:
+      ContentControl
+        .MaxWidth = '{StaticResource PageTemplateWidthCap}'
+        .IsEnabled:
+          Binding
+            .Path = 'IsWindowsGenuine'
+        .Template = '{StaticResource SettingGroupControlTemplate}'
+  DataTemplate [Key=AppIconTemplate]
+    .Template:
+      Grid
+        .Width = '{StaticResource TileIconOuterDimension}'
+        .Height = '{StaticResource TileIconOuterDimension}'
+        .Background:
+          Binding
+            .Path = 'LogoBackground'
+            .Converter = '{StaticResource AppIconBackgroundColorConverter}'
+            .FallbackValue = '{ThemeResource AccentTextBrush}'
+        .BorderBrush = '{ThemeResource AppTileHighContrastBorderBrush}'
+        .BorderThickness = '{ThemeResource AppTileHighContrastBorderThickness}'
+        .Children: [
+          Rectangle
+            .Fill = '{ThemeResource AppTileHighContrastBackgroundBrush}'
+          Rectangle
+            .FlowDirection = 'LeftToRight'
+            .Fill:
+              ImageBrush
+                .ImageSource:
+                  Binding
+                    .Path = 'LogoPath'
+                .Stretch = 'UniformToFill'
+        ]
+  DataTemplate [Key=BooleanSettingWithProgressTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'EnabledToggleSwitchHeader'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource ToggleSwitchHeaderTextBlockStyle}'
+            .Foreground = '{ThemeResource ToggleSwitchHeaderForegroundThemeBrush}'
+            .Visibility:
+              Binding
+                .Path = 'IsEnabled'
+                .Converter = '{StaticResource BooleanToVisibilityConverter}'
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'DisabledToggleSwitchHeader'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource ToggleSwitchHeaderTextBlockStyle}'
+            .Foreground = '{ThemeResource ToggleSwitchHeaderDisabledForegroundThemeBrush}'
+            .Visibility:
+              Binding
+                .Path = 'IsEnabled'
+                .Converter = '{StaticResource NegatedBooleanToVisibilityConverter}'
+          StackPanel
+            .Orientation = 'Horizontal'
+            .Children: [
+              ToggleSwitch
+                .AutomationId:
+                  Binding
+                    .Path = 'AutomationId'
+                    .ConverterParameter = 'ToggleSwitch'
+                    .Converter = '{StaticResource AutomationIdConverter}'
+                .Name:
+                  Binding
+                    .Path = 'Description'
+                .IsOn:
+                  Binding
+                    .Path = 'Value'
+                    .Mode = 'TwoWay'
+                .IsEnabled:
+                  Binding
+                    .Path = 'IsEnabled'
+                .Style = '{StaticResource ToggleSwitchStyle}'
+                .IsDefaultFocus = True
+                .HeaderTemplate:
+                  DataTemplate
+              ProgressRing
+                .AutomationId:
+                  Binding
+                    .Path = 'AutomationId'
+                    .ConverterParameter = 'ProgressRing'
+                    .Converter = '{StaticResource AutomationIdConverter}'
+                .IsActive:
+                  Binding
+                    .Path = 'IsUpdating'
+                .Style = '{StaticResource ToggleSwitchProgressRingStyle}'
+            ]
+        ]
+  ControlTemplate [Key=SettingGroupNoHeaderControlTemplate]
+    .TargetType = 'ContentControl'
+    .Template:
+      StackPanel
+        .Padding = '{StaticResource SettingGroupMargin}'
+        .Children: [
+          using:SystemSettings.View:ExpandItemsControl
+            .AutomationId:
+              Binding
+                .Path = 'Id'
+                .ConverterParameter = 'ItemsControl'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .ItemsSource:
+              Binding
+                .Path = 'DisplayedSettingEntries'
+            .ItemTemplateSelector = '{StaticResource SettingEntryTemplateSelector}'
+        ]
+  DataTemplate [Key=AsyncCollapseOnAllSettingsNoHeaderGroupTemplate]
+    .Template:
+      using:SystemSettings.View:CollapsibleSettingContentControl
+        .HorizontalAlignment = 'Stretch'
+        .MaxWidth = '{StaticResource PageTemplateWidthCap}'
+        .Template = '{StaticResource SettingGroupNoHeaderControlTemplate}'
+        .CollectionToListenTo:
+          Binding
+            .Path = 'DisplayedSettingEntries'
+  DataTemplate [Key=ResourceLoaderConverterComboBoxTextItemTemplate]
+    .Template:
+      TextBlock
+        .AccessibilityView = 'Raw'
+        .Text:
+          Binding
+            .Converter = '{StaticResource ResourceLoaderConverter}'
+  DataTemplate [Key=DefaultSettingPageTemplate]
+    .Template:
+      Grid
+        .IsSharedWidthScope = True
+        .HorizontalAlignment = 'Stretch'
+        .ColumnDefinitions: [
+          ColumnDefinition
+            .Width = '*'
+        ]
+        .Children: [
+          ItemsControl
+            .ItemsSource:
+              Binding
+                .Path = 'DisplayedGroups'
+            .ItemTemplateSelector = '{StaticResource SettingsGroupTemplateSelector}'
+            .ItemContainerTransitions:
+              TransitionCollection
+                RepositionThemeTransition
+            .ItemContainerStyle:
+              Style
+                .TargetType = 'ContentPresenter'
+                Setter
+                  .Property = 'HorizontalAlignment'
+                  .Value = 'Stretch'
+          using:SystemSettings.View:SettingsPageLoadMarker
+        ]
+  DataTemplate [Key=DefaultFullScreenPageTemplate]
+    .Template:
+      Grid
+        .IsSharedWidthScope = True
+        .HorizontalAlignment = 'Stretch'
+        .ColumnDefinitions: [
+          ColumnDefinition
+            .Width = '*'
+        ]
+        .Children: [
+          ItemsControl
+            .ItemsSource:
+              Binding
+                .Path = 'DisplayedGroups'
+            .ItemTemplateSelector = '{StaticResource SettingsGroupTemplateSelector}'
+            .ItemContainerStyle:
+              Style
+                .TargetType = 'ContentPresenter'
+                Setter
+                  .Property = 'HorizontalAlignment'
+                  .Value = 'Stretch'
+            .ItemContainerTransitions:
+              TransitionCollection
+                RepositionThemeTransition
+          using:SystemSettings.View:SettingsPageLoadMarker
+        ]
+  using:SystemSettings.View:BooleanToVisibilityConverter [Key=BooleanToVisibilityConverter]
+  using:SystemSettings.View:NegatedBooleanToVisibilityConverter [Key=NegatedBooleanToVisibilityConverter]
+  DataTemplate [Key=LaunchAsFlowSettingTemplate]
+    .Template:
+      Button
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'Button'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Content:
+          Binding
+            .Path = 'Description'
+        .Command = '{StaticResource AddAdvancedPageCommand}'
+        .Style = '{StaticResource ButtonStyle}'
+        .IsEnabled:
+          Binding
+            .Path = 'IsEnabled'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .IsDefaultFocus = True
+        .CommandParameter:
+          using:SystemSettings.ViewModel:AdvancedPageInfo
+            .ParentSettingEntry:
+              Binding
+            .PageSource:
+              Binding
+                .Path = 'AdvancedPageSource'
+  DataTemplate [Key=ProgressRingSettingTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Orientation = 'Horizontal'
+        .Children: [
+          ProgressRing
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ProgressRing'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .IsActive = True
+            .Style = '{StaticResource ProgressRingStyle}'
+            .Margin = '{StaticResource InlineElementMargin}'
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'DescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource InlineLabelTextBlockStyle}'
+        ]
+  DataTemplate [Key=MinWidth80ListSettingComboBoxTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'DescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .AccessibilityView = 'Raw'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          ComboBox
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ComboBox'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Name:
+              Binding
+                .Path = 'Description'
+            .ItemsSource:
+              Binding
+                .Path = 'PossibleValues'
+            .SelectedValue:
+              Binding
+                .Path = 'Value'
+                .Mode = 'TwoWay'
+            .IsEnabled:
+              Binding
+                .Path = 'IsEnabled'
+            .HorizontalAlignment = 'Left'
+            .Style = '{StaticResource MinWidth80ComboBoxStyle}'
+            .IsDefaultFocus = True
+        ]
+  DataTemplate [Key=ProgressRingSettingWithSeparationTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Orientation = 'Horizontal'
+        .Margin = '0,0,0,17'
+        .Children: [
+          ProgressRing
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ProgressRing'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .IsActive = True
+            .Style = '{StaticResource ProgressRingStyle}'
+            .Margin = '{StaticResource InlineElementMargin}'
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'DescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource InlineLabelTextBlockStyle}'
+        ]
+  DataTemplate [Key=CollapseOnAllSettingsGroupTemplate]
+    .Template:
+      ContentControl
+        .HorizontalAlignment = 'Left'
+        .MaxWidth = '{StaticResource PageTemplateWidthCap}'
+        .Template = '{StaticResource SettingGroupControlTemplate}'
+        .Visibility:
+          Binding
+            .Path = 'DisplayedSettingEntries'
+            .Converter = '{StaticResource SettingGroupEntryVisibilityConverter}'
+  DataTemplate [Key=BooleanSettingCheckBoxTemplate]
+    .Template:
+      CheckBox
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'CheckBox'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .IsChecked:
+          Binding
+            .Path = 'Value'
+            .Mode = 'TwoWay'
+        .IsEnabled:
+          Binding
+            .Path = 'IsEnabled'
+        .Content:
+          Binding
+            .Path = 'Description'
+            .Mode = 'OneWay'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Style = '{StaticResource CheckBoxStyle}'
+        .IsDefaultFocus = True
+  DataTemplate [Key=ActionSettingTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ActionDescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'ActionDescription'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          Button
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'Button'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Content:
+              Binding
+                .Path = 'Description'
+                .Mode = 'OneWay'
+            .CommandParameter:
+              Binding
+                .RelativeSource:
+                  RelativeSource
+                    .Mode = 'Self'
+                .Converter = '{StaticResource StrongToWeakReferenceConverter}'
+            .Command:
+              Binding
+                .Path = 'Action'
+            .Style = '{StaticResource ButtonStyle}'
+            .IsDefaultFocus = True
+        ]
+  DataTemplate [Key=SettingsListWithCopyTemplate]
+    .Template:
+      StackPanel
+        .Children: [
+          ItemsControl
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ItemsControl'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .ItemsSource:
+              Binding
+                .Path = 'Value.View'
+            .ItemTemplate = '{StaticResource LabeledStringSettingTemplate}'
+          Button [x:Uid=SettingsListWithCopyTemplateButton]
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'CopyButton'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Command = '{StaticResource CopySettingListToClipboardCommand}'
+            .CommandParameter:
+              Binding
+            .Visibility:
+              Binding
+                .Path = 'IsApplicable'
+                .Converter = '{StaticResource BooleanToVisibilityConverter}'
+            .Style = '{StaticResource ButtonStyle}'
+            .IsDefaultFocus = True
+        ]
+  DataTemplate [Key=ActionCommandLinkSettingTemplate]
+    .Template:
+      HyperlinkButton
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'HyperlinkButton'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .IsEnabled:
+          Binding
+            .Path = 'IsEnabled'
+        .NavigateUri:
+          Binding
+            .Path = 'HyperlinkUri'
+        .ParentSetting:
+          Binding
+            .Mode = 'OneTime'
+        .Style = '{StaticResource HyperlinkButtonStyle}'
+        .IsDefaultFocus = True
+        .Content:
+          TextBlock
+            .TextWrapping = 'Wrap'
+            .IsHitTestVisible = False
+            .Text:
+              Binding
+                .Path = 'Description'
+                .Mode = 'OneWay'
+  DataTemplate [Key=ActionSettingConfirmationFlyoutTemplate]
+    .Template:
+      StackPanel
+        .Width = '{StaticResource DefaultFlyoutWidth}'
+        .Children: [
+          TextBlock [x:Name=actionSettingConfirmationFlyoutTextBlock]
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ConfirmTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'ConfirmationFlyoutText'
+            .Style = '{StaticResource FlyoutLabelTextBlockStyle}'
+          Button
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ConfirmButton'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Content:
+              Binding
+                .Path = 'ConfirmationFlyoutButtonText'
+            .Command = '{StaticResource CompleteFlyoutCommand}'
+            .CommandParameter:
+              Binding
+            .Style = '{StaticResource FlyoutDefaultButtonStyle}'
+        ]
+  DataTemplate [Key=ActionDescriptionLinkSettingTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .Converter = '{StaticResource AutomationIdConverter}'
+                .ConverterParameter = 'ActionDescriptionTextBlock'
+            .Text:
+              Binding
+                .Path = 'ActionDescription'
+            .Visibility:
+              Binding
+                .Path = 'ActionDescription'
+                .Converter = '{StaticResource CollapsedWhenNullOrEmptyConverter}'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          ContentControl
+            .Content:
+              Binding
+            .ContentTemplate = '{StaticResource ActionLinkSettingTemplate}'
+        ]
+  DataTemplate [Key=ActionSettingWithProgressRingAndConfirmationFlyoutTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ActionDescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'ActionDescription'
+            .Visibility:
+              Binding
+                .Path = 'ActionDescription'
+                .Converter = '{StaticResource CollapsedWhenNullOrEmptyConverter}'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ErrorDescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'ErrorDescription'
+            .Visibility:
+              Binding
+                .Path = 'IsActionInErrorState'
+                .Converter = '{StaticResource BooleanToVisibilityConverter}'
+            .Style = '{StaticResource ErrorTextBlockStyle}'
+          StackPanel
+            .Orientation = 'Horizontal'
+            .Children: [
+              Button [x:Name=btnAction]
+                .AutomationId:
+                  Binding
+                    .Path = 'AutomationId'
+                    .ConverterParameter = 'Button'
+                    .Converter = '{StaticResource AutomationIdConverter}'
+                .Content:
+                  Binding
+                    .Path = 'Description'
+                    .Mode = 'OneWay'
+                .Command = '{StaticResource LaunchFlyoutCommand}'
+                .IsEnabled:
+                  Binding
+                    .Path = 'IsEnabled'
+                .Style = '{StaticResource ButtonStyle}'
+                .IsDefaultFocus = True
+                .VerticalAlignment = 'Bottom'
+                .HorizontalAlignment = 'Left'
+                .CommandParameter:
+                  using:SystemSettings.View:FlyoutInfo
+                    .ParentSettingEntry:
+                      Binding
+                    .FlyoutTemplate = 'ActionSettingConfirmationFlyoutTemplate'
+                    .PlacementTarget:
+                      Binding
+                        .ElementName = 'btnAction'
+                        .Converter = '{StaticResource StrongToWeakReferenceConverter}'
+              ProgressRing
+                .AutomationId:
+                  Binding
+                    .Path = 'AutomationId'
+                    .ConverterParameter = 'ProgressRing'
+                    .Converter = '{StaticResource AutomationIdConverter}'
+                .IsActive:
+                  Binding
+                    .Path = 'IsUpdating'
+                .Visibility:
+                  Binding
+                    .Path = 'IsUpdating'
+                    .Converter = '{StaticResource BooleanToVisibilityConverter}'
+                .Style = '{StaticResource ActionProgressRingStyle}'
+                .VerticalAlignment = 'Bottom'
+                .HorizontalAlignment = 'Left'
+              TextBlock
+                .AutomationId:
+                  Binding
+                    .Path = 'AutomationId'
+                    .ConverterParameter = 'CheckMark'
+                    .Converter = '{StaticResource AutomationIdConverter}'
+                .Name:
+                  Binding
+                    .Path = 'CompletedDescription'
+                    .TargetNullValue = 'CheckMarkTextBlockDefaultAutomationName'
+                    .Converter = '{StaticResource ResourceLoaderConverter}'
+                .LiveSetting = 'Assertive'
+                .BecameVisible:
+                  Binding
+                    .Path = 'Visibility'
+                    .RelativeSource:
+                      RelativeSource
+                        .Mode = 'Self'
+                .VerticalAlignment = 'Top'
+                .HorizontalAlignment = 'Left'
+                .Style = '{StaticResource ActionCheckMarkTextBlockStyle}'
+                .Visibility:
+                  Binding
+                    .Path = 'AsyncInvokeSucceeded'
+                    .Converter = '{StaticResource BooleanToVisibilityConverter}'
+            ]
+        ]
+  DataTemplate [Key=ActionSettingNoDescriptionTemplate]
+    .Template:
+      Button
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'Button'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Content:
+          Binding
+            .Path = 'Description'
+            .Mode = 'OneWay'
+        .CommandParameter:
+          Binding
+            .RelativeSource:
+              RelativeSource
+                .Mode = 'Self'
+            .Converter = '{StaticResource StrongToWeakReferenceConverter}'
+        .Command:
+          Binding
+            .Path = 'Action'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Style = '{StaticResource ButtonStyle}'
+        .IsDefaultFocus = True
+  DataTemplate [Key=MultiActionSettingNoDescriptionTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          ItemsControl
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ItemsControl'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .ItemsSource:
+              Binding
+                .Path = 'Value.View'
+            .DefaultFocusMode = 'ItemsControlFirstChild'
+            .ItemTemplate:
+              DataTemplate
+                .Template:
+                  Button
+                    .AutomationId:
+                      Binding
+                        .Path = 'AutomationId'
+                        .ConverterParameter = 'Button'
+                        .Converter = '{StaticResource AutomationIdConverter}'
+                    .Content:
+                      Binding
+                        .Path = 'Description'
+                        .Mode = 'OneWay'
+                    .CommandParameter:
+                      Binding
+                        .RelativeSource:
+                          RelativeSource
+                            .Mode = 'Self'
+                        .Converter = '{StaticResource StrongToWeakReferenceConverter}'
+                    .Command:
+                      Binding
+                        .Path = 'Action'
+                    .Visibility:
+                      Binding
+                        .Path = 'IsApplicable'
+                        .Converter = '{StaticResource BooleanToVisibilityConverter}'
+                    .Style = '{StaticResource InlineButtonStyle}'
+                    .Margin = '{StaticResource InlineElementMargin}'
+                    .IsDefaultFocus = True
+            .ItemsPanel:
+              ItemsPanelTemplate
+                .Template:
+                  StackPanel
+                    .Orientation = 'Horizontal'
+                    .Margin = '{StaticResource DefaultSettingMargin}'
+        ]
+  DataTemplate [Key=MultiActionSettingTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'TextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          ItemsControl
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ItemsControl'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .ItemsSource:
+              Binding
+                .Path = 'Value.View'
+            .DefaultFocusMode = 'ItemsControlFirstChild'
+            .ItemTemplate:
+              DataTemplate
+                .Template:
+                  Button
+                    .AutomationId:
+                      Binding
+                        .Path = 'AutomationId'
+                        .ConverterParameter = 'Button'
+                        .Converter = '{StaticResource AutomationIdConverter}'
+                    .Content:
+                      Binding
+                        .Path = 'Description'
+                        .Mode = 'OneWay'
+                    .CommandParameter:
+                      Binding
+                        .RelativeSource:
+                          RelativeSource
+                            .Mode = 'Self'
+                        .Converter = '{StaticResource StrongToWeakReferenceConverter}'
+                    .Command:
+                      Binding
+                        .Path = 'Action'
+                    .Visibility:
+                      Binding
+                        .Path = 'IsApplicable'
+                        .Converter = '{StaticResource BooleanToVisibilityConverter}'
+                    .Style = '{StaticResource InlineButtonStyle}'
+                    .Margin = '{StaticResource InlineElementMargin}'
+                    .IsDefaultFocus = True
+            .ItemsPanel:
+              ItemsPanelTemplate
+                .Template:
+                  StackPanel
+                    .Orientation = 'Horizontal'
+                    .Margin = '{StaticResource DefaultButtonMargin}'
+        ]
+  DataTemplate [Key=TextBoxSettingTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'DescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          TextBox
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ValueTextBox'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'Value'
+                .Mode = 'TwoWay'
+            .Style = '{StaticResource TextBoxStyle}'
+            .IsDefaultFocus = True
+        ]
+  DataTemplate [Key=ErrorTextblockSettingTemplate]
+    .Template:
+      TextBlock
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'ErrorTextblock'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .LiveSetting = 'Polite'
+        .BecameVisible:
+          Binding
+            .Path = 'Visibility'
+            .RelativeSource:
+              RelativeSource
+                .Mode = 'Self'
+        .Text:
+          Binding
+            .Path = 'Description'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Style = '{StaticResource ErrorTextBlockStyle}'
+  DataTemplate [Key=AppItemToggleTemplate]
+    .Template:
+      Grid
+        .Margin = '{StaticResource AppItemMargin}'
+        .HorizontalAlignment = 'Stretch'
+        .ColumnDefinitions: [
+          ColumnDefinition
+            .Width = 'Auto'
+          ColumnDefinition
+            .Width = '*'
+          ColumnDefinition
+            .Width = 'Auto'
+        ]
+        .Children: [
+          ContentControl
+            .ContentTemplate = '{StaticResource AppIconTemplate}'
+            .Column = 0
+          TextBlock
+            .Column = 1
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'DescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .AccessibilityView = 'Raw'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource AppItemTextBlockStyle}'
+          ToggleSwitch
+            .Column = 2
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ToggleSwitch'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Name:
+              Binding
+                .Path = 'Description'
+            .IsOn:
+              Binding
+                .Path = 'Value'
+                .Mode = 'TwoWay'
+            .IsEnabled:
+              Binding
+                .Path = 'IsEnabled'
+            .Visibility:
+              Binding
+                .Path = 'IsApplicable'
+                .Converter = '{StaticResource BooleanToVisibilityConverter}'
+            .Style = '{StaticResource InlineToggleSwitchStyle}'
+            .IsDefaultFocus = True
+        ]
+  using:SystemSettings.View:DwordToSolidColorBrushConverter [Key=DwordToSolidColorBrushConverter]
+  DataTemplate [Key=DisplayStringSettingTemplate]
+    .Template:
+      TextBlock
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'DescriptionTextBlock'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Text:
+          Binding
+            .Path = 'Description'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Style = '{StaticResource ParagraphTextBlockStyle}'
+  DataTemplate [Key=HyperLinkLaunchAsFlowSettingTemplate]
+    .Template:
+      HyperlinkButton
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'HyperlinkButton'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Command = '{StaticResource AddAdvancedPageCommand}'
+        .Style = '{StaticResource HyperlinkButtonStyle}'
+        .IsEnabled:
+          Binding
+            .Path = 'IsEnabled'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .IsDefaultFocus = True
+        .Content:
+          TextBlock
+            .TextWrapping = 'Wrap'
+            .IsHitTestVisible = False
+            .Text:
+              Binding
+                .Path = 'Description'
+                .Mode = 'OneWay'
+        .CommandParameter:
+          using:SystemSettings.ViewModel:AdvancedPageInfo
+            .ParentSettingEntry:
+              Binding
+            .PageSource:
+              Binding
+                .Path = 'AdvancedPageSource'
+  DataTemplate [Key=ListSettingExpandContentComboBoxTemplate]
+    .Template:
+      ContentControl
+        .Content:
+          Binding
+        .Style = '{StaticResource ExpandContentControlStyle}'
+        .ContentTemplate = '{StaticResource ListSettingComboBoxTemplate}'
+  DataTemplate [Key=ListSettingComboBoxTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'DescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .AccessibilityView = 'Raw'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          ComboBox
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ComboBox'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Name:
+              Binding
+                .Path = 'Description'
+            .ItemsSource:
+              Binding
+                .Path = 'PossibleValues'
+            .SelectedValue:
+              Binding
+                .Path = 'Value'
+                .Mode = 'TwoWay'
+            .IsEnabled:
+              Binding
+                .Path = 'IsEnabled'
+            .HorizontalAlignment = 'Left'
+            .Style = '{StaticResource ComboBoxStyle}'
+            .IsDefaultFocus = True
+        ]
+  DataTemplate [Key=MinWidth180ListSettingComboBoxTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'DescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .AccessibilityView = 'Raw'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          ComboBox
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ComboBox'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Name:
+              Binding
+                .Path = 'Description'
+            .ItemsSource:
+              Binding
+                .Path = 'PossibleValues'
+            .SelectedValue:
+              Binding
+                .Path = 'Value'
+                .Mode = 'TwoWay'
+            .IsEnabled:
+              Binding
+                .Path = 'IsEnabled'
+            .HorizontalAlignment = 'Left'
+            .Style = '{StaticResource MinWidth180ComboBoxStyle}'
+            .IsDefaultFocus = True
+        ]
+  DataTemplate [Key=MinWidth340ListSettingComboBoxTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'DescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .AccessibilityView = 'Raw'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          ComboBox
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ComboBox'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Name:
+              Binding
+                .Path = 'Description'
+            .ItemsSource:
+              Binding
+                .Path = 'PossibleValues'
+            .SelectedValue:
+              Binding
+                .Path = 'Value'
+                .Mode = 'TwoWay'
+            .IsEnabled:
+              Binding
+                .Path = 'IsEnabled'
+            .HorizontalAlignment = 'Left'
+            .Style = '{StaticResource MinWidth340ComboBoxStyle}'
+            .IsDefaultFocus = True
+        ]
+  DataTemplate [Key=MinWidth450ListSettingComboBoxTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'DescriptionTextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .AccessibilityView = 'Raw'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource LabelTextBlockStyle}'
+          ComboBox
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'ComboBox'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Name:
+              Binding
+                .Path = 'Description'
+            .ItemsSource:
+              Binding
+                .Path = 'PossibleValues'
+            .SelectedValue:
+              Binding
+                .Path = 'Value'
+                .Mode = 'TwoWay'
+            .IsEnabled:
+              Binding
+                .Path = 'IsEnabled'
+            .HorizontalAlignment = 'Left'
+            .Style = '{StaticResource MinWidth450ComboBoxStyle}'
+            .IsDefaultFocus = True
+        ]
+  DataTemplate [Key=AppItemToggleListTemplate]
+    .Template:
+      using:SystemSettings.View:ControlWithProgressRing
+        .IsUpdating:
+          Binding
+            .Path = 'IsUpdating'
+        .Content:
+          StackPanel
+            .Children: [
+              TextBlock
+                .AutomationId:
+                  Binding
+                    .Path = 'AutomationId'
+                    .ConverterParameter = 'TextBlock'
+                    .Converter = '{StaticResource AutomationIdConverter}'
+                .Text:
+                  Binding
+                    .Path = 'Description'
+                .Visibility:
+                  Binding
+                    .Path = 'IsEmpty'
+                    .Converter = '{StaticResource BooleanToVisibilityConverter}'
+                .Style = '{StaticResource ParagraphTextBlockStyle}'
+              ItemsControl
+                .AutomationId:
+                  Binding
+                    .Path = 'AutomationId'
+                    .ConverterParameter = 'ItemsControl'
+                    .Converter = '{StaticResource AutomationIdConverter}'
+                .ItemsSource:
+                  Binding
+                    .Path = 'Value.View'
+                .ItemTemplate = '{StaticResource AppItemToggleTemplate}'
+                .DefaultFocusMode = 'ItemsControlFirstChild'
+                .Style = '{StaticResource ToggleListItemsControlStyle}'
+            ]
+  DataTemplate [Key=CollapseOnFirstSettingGroupTemplate]
+    .Template:
+      ContentControl
+        .HorizontalAlignment = 'Left'
+        .MaxWidth = '{StaticResource PageTemplateWidthCap}'
+        .Template = '{StaticResource SettingGroupControlTemplate}'
+        .Visibility:
+          Binding
+            .Path = 'DisplayedSettingEntries[0].IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+  DataTemplate [Key=AsyncCollapseOnAllSettingsGroupTemplate]
+    .Template:
+      using:SystemSettings.View:CollapsibleSettingContentControl
+        .HorizontalAlignment = 'Left'
+        .Template = '{StaticResource SettingGroupControlTemplate}'
+        .CollectionToListenTo:
+          Binding
+            .Path = 'DisplayedSettingEntries'
+  DataTemplate [Key=CollapseOnGroupEnabledFlagSettingGroupTemplate]
+    .Template:
+      ContentControl
+        .HorizontalAlignment = 'Left'
+        .Template = '{StaticResource SettingGroupControlTemplate}'
+        .Visibility:
+          Binding
+            .Path = 'DisplayedSettingEntries[0].IsSettingsGroupApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+  DataTemplate [Key=SliderTemplate]
+    .Template:
+      StackPanel
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .Children: [
+          TextBlock
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'TextBlock'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Text:
+              Binding
+                .Path = 'Description'
+            .Style = '{StaticResource SliderHeaderTextBlockStyle}'
+          using:SystemSettings.View:Slider
+            .AutomationId:
+              Binding
+                .Path = 'AutomationId'
+                .ConverterParameter = 'Slider'
+                .Converter = '{StaticResource AutomationIdConverter}'
+            .Name:
+              Binding
+                .Path = 'Description'
+            .Maximum:
+              Binding
+                .Path = 'MaxValue'
+            .Minimum:
+              Binding
+                .Path = 'MinValue'
+            .Value:
+              Binding
+                .Path = 'Value'
+                .Mode = 'TwoWay'
+            .Style = '{StaticResource SliderStyle}'
+            .IsEnabled:
+              Binding
+                .Path = 'IsEnabled'
+            .IsDefaultFocus = True
+        ]
+  DataTemplate [Key=SettingsCollectionWithActionLinkTemplate]
+    .Template:
+      ItemsControl
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'ItemsControl'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .ItemsSource:
+          Binding
+            .Path = 'Value.View'
+        .ItemTemplate = '{StaticResource ActionLinkSettingTemplate}'
+  DataTemplate [Key=ActionCommandLaunchUriTemplate]
+    .Template:
+      HyperlinkButton
+        .AutomationId:
+          Binding
+            .Path = 'AutomationId'
+            .ConverterParameter = 'HyperlinkButton'
+            .Converter = '{StaticResource AutomationIdConverter}'
+        .Visibility:
+          Binding
+            .Path = 'IsApplicable'
+            .Converter = '{StaticResource BooleanToVisibilityConverter}'
+        .IsEnabled:
+          Binding
+            .Path = 'IsEnabled'
+        .CommandParameter:
+          Binding
+            .Path = 'Tag'
+            .Mode = 'OneTime'
+        .Command = '{StaticResource LaunchUriCommand}'
+        .Style = '{StaticResource HyperlinkButtonStyle}'
+        .IsDefaultFocus = True
+        .Content:
+          TextBlock
+            .TextWrapping = 'Wrap'
+            .IsHitTestVisible = False
+            .Text:
+              Binding
+                .Path = 'Description'
+                .Mode = 'OneWay'

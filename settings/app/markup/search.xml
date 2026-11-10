@@ -1,0 +1,18 @@
+<Page name="SearchPage">
+  <!-- settings_search.png: focused field with query + X, suggestion
+       strip, result rows (procedural), shared SIP docked above navbar -->
+  <Canvas>
+    <Canvas x="0" y="0" w="320" h="48">
+      <Rect x="0" y="0" w="320" h="48" bg="#F7F3F7"/>
+      <Glyph name="HeaderGear" x="8" y="8" w="32" h="32" text="gear" color="#3965FF"/>
+      <Text name="HeaderTitle" x="48" y="14" w="240" text="Settings" color="#000000" size="20" bold="true"/>
+    </Canvas>
+    <Rect x="0" y="56" w="320" h="2" bg="#3965FF"/>
+    <Rect name="QueryField" x="16" y="62" w="288" h="26" bg="#FFFFFF"/>
+    <Button name="QueryClear" x="272" y="62" w="32" h="26" command="search-clear">
+      <Glyph x="8" y="5" w="16" h="16" text="x" color="#767676"/>
+    </Button>
+    <Rect name="SuggestStrip" x="0" y="96" w="320" h="28" bg="#E5E1E5"/>
+    <Rect x="0" y="124" w="320" h="364" bg="#FFFFFF"/>
+  </Canvas>
+</Page>

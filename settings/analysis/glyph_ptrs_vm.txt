@@ -1,0 +1,23 @@
+1 data pointers to glyph strings
+
+--- .rdata @0x502a8 -> glyph '\ue7e9ﱀ诿\ue84d跩ﳖ诿\u2454贈ూ䪋㏜\ue8c8\ue9be\uffff䪋㏼\ue8c8\ue9b4\uffff梸Ԝ\ue910敖\uffff痿\ue8ec䛏￼ￃ\ue875웨ﱆ쏿咋ࠤ䊍謌\ue44a젳蟨￩诿ﱊ젳編￩룿\u1cbcစ姩\ufffa\uffff\uec75飨ﱆ쏿䶋\ue9e0䏦￼咋ࠤ䊍謌졊젳凨￩诿ﱊ젳䟨￩룿ᳰစ⏩\ufffa\uffff푵拨ﱆ쏿痿\ue8cc䙙￼ￃ\ue875僨ﱆ쏿痿\ue8d4䙇￼ￃ푵㻨ﱆ쏿痿\ue8d8䘵￼ￃ\ud875⳨ﱆ쏿痿\ue8c8䘣￼ￃ\ud875\u1ae8ﱆ쏿痿\ue8c4䘑￼ￃ큵ࣨﱆ쏿痿\ue8dc䗿￼ￃ\udc75\uf6e8ﱅ쏿痿\ue8d0䗭￼ￃ큵\ue4e8ﱅ쏿痿\ue8d0䗛￼ￃ쑵틨ﱅ쏿咋ࠤ䊍謌遊젳鏨￨诿\uf84a젳觨￨룿ᴨစ早\ufff9\uffff\uec75ꓨﱅ쏿痿\ue8f0䖛￼诃\ue445ヿ部ﱅ쏿咋ࠤ䊍謌\ue04a젳凨￨룿Ḉစⷩ\ufff9诿\ue84d솃\ue914藐�䶋菨ᣁ軩ﶅ\uffff\uec75囨ﱅ쏿痿\ue8e4䕍￼诃\u2454贈ూ䪋㏠\ue8c8\ue80e\uffff䪋㏼\ue8c8\ue804\uffff䒸Ԟ\ue910\uf8e0\uffff䶋茈ᣁ早ﶆ诿\u2454贈ూ䪋㏼\ue8c8\ue7de\uffff袸Ԟ\ue910\uf8ba\uffff䶍\ue9e8䉈￼䖋菤Ǡ萏\x0c' (va 0x1003df74)
+  0x50288: 0x00000001
+  0x5028c: 0xffffffff
+  0x50290: 0x1003df53
+  0x50294: 0x00000000
+  0x50298: 0x1003df5e
+  0x5029c: 0x00000001
+  0x502a0: 0x1003df69
+  0x502a4: 0x00000002
+  0x502a8: 0x1003df74 -> glyph '\ue7e9ﱀ诿\ue84d跩ﳖ诿\u2454贈ూ䪋㏜\ue8c8\ue9be\uffff䪋㏼\ue8c8\ue9b4\uffff梸Ԝ\ue910敖\uffff痿\ue8ec䛏￼ￃ\ue875웨ﱆ쏿咋ࠤ䊍謌\ue44a젳蟨￩诿ﱊ젳編￩룿\u1cbcစ姩\ufffa\uffff\uec75飨ﱆ쏿䶋\ue9e0䏦￼咋ࠤ䊍謌졊젳凨￩诿ﱊ젳䟨￩룿ᳰစ⏩\ufffa\uffff푵拨ﱆ쏿痿\ue8cc䙙￼ￃ\ue875僨ﱆ쏿痿\ue8d4䙇￼ￃ푵㻨ﱆ쏿痿\ue8d8䘵￼ￃ\ud875⳨ﱆ쏿痿\ue8c8䘣￼ￃ\ud875\u1ae8ﱆ쏿痿\ue8c4䘑￼ￃ큵ࣨﱆ쏿痿\ue8dc䗿￼ￃ\udc75\uf6e8ﱅ쏿痿\ue8d0䗭￼ￃ큵\ue4e8ﱅ쏿痿\ue8d0䗛￼ￃ쑵틨ﱅ쏿咋ࠤ䊍謌遊젳鏨￨诿\uf84a젳觨￨룿ᴨစ早\ufff9\uffff\uec75ꓨﱅ쏿痿\ue8f0䖛￼诃\ue445ヿ部ﱅ쏿咋ࠤ䊍謌\ue04a젳凨￨룿Ḉစⷩ\ufff9诿\ue84d솃\ue914藐�䶋菨ᣁ軩ﶅ\uffff\uec75囨ﱅ쏿痿\ue8e4䕍￼诃\u2454贈ూ䪋㏠\ue8c8\ue80e\uffff䪋㏼\ue8c8\ue804\uffff䒸Ԟ\ue910\uf8e0\uffff䶋茈ᣁ早ﶆ诿\u2454贈ూ䪋㏼\ue8c8\ue7de\uffff袸Ԟ\ue910\uf8ba\uffff䶍\ue9e8䉈￼䖋菤Ǡ萏\x0c'
+  0x502ac: 0x00000003
+  0x502b0: 0x1003df79
+  0x502b4: 0x00000002
+  0x502b8: 0x1003df79
+  0x502bc: 0x19930522
+  0x502c0: 0x00000002
+  0x502c4: 0x10051ce0
+  0x502c8: 0x00000000
+  0x502cc: 0x00000000
+  0x502d0: 0x00000000
+  0x502d4: 0x00000000

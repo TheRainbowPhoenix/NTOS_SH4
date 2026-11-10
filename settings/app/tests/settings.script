@@ -1,0 +1,113 @@
+# settings e2e: the full reference-backed flow — L1 home (+scroll),
+# Personalization L2, Colors (radio + swatch), Sounds (toggle + checkbox),
+# Start (preview + flyout shard), System L2, Display (slider + toggle),
+# About (value rows + Edit name flow with the shared SIP), USB toggles,
+# Update & security L2, Active hours (+ hour picker), and the search flow.
+# Keyboard key centres (docked 40px up): row0 y302 (q17 w49 e81 r113 t145
+# y177 u209 i241 o273 p305), row1 y355 (a33 s65 d97 f129 g161 h193 j225 k257
+# l289), row2 y408 (shift24 z65 x97 c129 v161 b193 n225 m257 bksp297),
+# row3 y462 (space177 period258 enter297).
+# Home rows (top 104, pitch 64): System116 Devices180 Network244
+# Personalization308 Accounts372 Time436. L2 rows (top 128, pitch 48):
+# row0 128 row1 176 row2 224 row3 272 row4 320.
+# Navbar (SHELLCHROME): back32 home160 search288 @ y508.
+shot boot
+# scroll the category list all the way down (clamped = deterministic),
+# then back up
+drag 160 460 160 60
+shot home-scrolled
+drag 160 100 160 460
+# Personalization L2 (row 4)
+tap 160 308
+shot personalization
+# Colors (L2 row 1 at 176): Light radio + pick a swatch in row 2
+tap 160 200
+tap 60 140
+tap 152 254
+shot colors
+# back to the category, Sounds (L2 row 2): Vibrate off, checkbox off
+key 0x1b
+tap 160 248
+shot sounds
+tap 30 204
+tap 160 304
+shot sounds-set
+# back, Start (L2 row 0): tile preview + background flyout
+key 0x1b
+tap 160 150
+shot start
+tap 160 336
+shot start-flyout
+tap 160 354
+shot start-picked
+# System L2 (home row 1) -> Display (row 0)
+key 0x1b
+key 0x1b
+tap 160 116
+shot system
+tap 160 150
+shot display
+# brightness slider to ~75%, auto-brightness toggle off
+tap 230 106
+tap 30 214
+shot display-set
+# back, About (row 4): value rows + Edit name
+key 0x1b
+tap 160 344
+shot about
+tap 60 136
+shot editname
+# backspace x12 to clear, then type "My": shift, m, y
+tap 297 408
+tap 297 408
+tap 297 408
+tap 297 408
+tap 297 408
+tap 297 408
+tap 297 408
+tap 297 408
+tap 297 408
+tap 297 408
+tap 297 408
+tap 297 408
+tap 24 408
+tap 257 408
+tap 177 302
+shot editname-typed
+tap 90 146
+shot about-renamed
+# back out, Devices -> USB (row 1): both toggles on
+key 0x1b
+key 0x1b
+tap 160 180
+tap 160 176
+shot usb
+tap 30 226
+tap 30 334
+shot usb-on
+# Update & security (row 8 renders at ~304 at max scroll) -> Active hours
+key 0x1b
+key 0x1b
+drag 160 460 160 60
+tap 160 304
+shot update
+tap 160 176
+shot activehours
+# start-time hour cell (box ~251..285, hour column x<116)
+tap 60 262
+shot picker
+tap 80 438
+shot activehours-set
+# search flow: home, search box, type "te", accept the "test" suggestion
+key 0x1b
+key 0x1b
+tap 160 75
+shot search
+tap 145 302
+tap 81 302
+shot search-te
+tap 160 150
+shot search-accepted
+# back home via the navbar Home key
+tap 160 508
+shot home-final

@@ -1,0 +1,12 @@
+<Page name="DeepPage">
+  <!-- deep-dive chrome (display.png/usb.png): gear + page title header,
+       white content below; rows/controls painted procedurally -->
+  <Canvas>
+    <Canvas x="0" y="0" w="320" h="48">
+      <Rect x="0" y="0" w="320" h="48" bg="#F7F3F7"/>
+      <Glyph name="HeaderGear" x="8" y="8" w="32" h="32" text="gear" color="#3965FF"/>
+      <Text name="HeaderTitle" x="48" y="14" w="240" text="Display" color="#000000" size="20" bold="true"/>
+    </Canvas>
+    <Rect name="DeepContent" x="0" y="48" w="320" h="440" bg="#FFFFFF"/>
+  </Canvas>
+</Page>
