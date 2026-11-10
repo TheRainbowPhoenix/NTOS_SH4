@@ -205,3 +205,61 @@ Microsoft.Windows.SystemSettings (3.7MB), FileExplorer (1MB), Cortana
 - SystemSettings package triage (pages, pri strings) -> uXAML settings app.
 - Compare against the user's reference screenshots when provided.
 - SH4 device build of the edge app; maybe SH4-targeted size audit.
+
+## Session 4 (2026-11-10) — reference screenshots + uXAML v2 + shared DLLs
+
+### Reference captures (refs/edge-screens, 15 shots @320x528)
+Pixel-measured every screen (edge/analysis/EDGE_UI_REFERENCE.md; probe
+tools in edge/tools/): palette (#1F1F1F bars/keyboard, #2B2B2B sheets,
+black hub/settings pages, #333 keys/buttons, #767676 separators,
+#0078D7 accent, #7F7F7F scrim), exact rows/icons/checkbox geometry.
+
+### UI rebuilt to the measurements
+Boot = white page (home.png), menu sheet 157..419 + icon bar 420..476,
+tab cards 142px at x12/x166 pitch 148 (24px #1F1F1F header, black
+thumbnail), hub pivots (icons 22/66/110/154 centers, 3px blue underline
+y42, HISTORY + "Clear all history"), clear-data page (6x44 checkbox
+rows, 20px accent boxes, Clear x12-177 y394-425, blue links), dialogs
+(READING LIST, #333 hero y78-257, bordered field, Add/Cancel
+x12-157/x162-307), InPrivate page (#1F1F1F, heading/body/#009BE4 link),
+find bar (input + chevrons + ...), two-tone URL with lock.
+
+### Component reuse landed (the user's shared-DLL model)
+- Render vtable gains a UIX_TH_* theme table: uixrender publishes the
+  light table, edge publishes dark. fingerkb + uixctl read it, so ONE
+  keyboard/control implementation serves Settings (light) and Edge.
+- FINGERKB.DLL now builds as a host PE module: ntos_linux loads it
+  beside edge.dll, the loader snaps its render/svf imports to edge's
+  exports and edge's __imp_UIXGetSchemaFactory to the keyboard factory.
+  The address editor shows the real shared SIP (99.2% vs type.png).
+- payload/phone/uixctl.c: shared button/checkbox/toggle/field painters
+  (reference geometry); settingsui.dll imports them via ctl_ prefix
+  (UXCTL.DLL in the device manifest); edge links them statically.
+- ntimport.h: IAT slots dllexport under NTOS_LINUX_BUILD (host loader
+  can patch them); NT_IAT_EXTERN_ONLY for multi-object host DLLs.
+
+### Host loader bugs found (both latent)
+- OptHeader64.Win32VerValue was declared uint16_t -> SizeOfImage and
+  everything after it shifted 2 bytes; the bogus ~1.7GB reservations
+  only collided once multiple DLLs loaded at 0x18xxxxxxx bases.
+- main.c passed `(PeModule**)mods` — punning the struct array as a
+  pointer array; others[0] read the module NAME as a pointer. Only
+  crashed the first time an import missed the builtin table
+  (UIXGetSchemaFactory), which never happened before cross-DLL reuse.
+
+### e2e v2 (tests/edge.script, 16 frames)
+12 frames map 1:1 to reference captures; check_edge_shots.py scores
+block similarity (16x16, tol 48, >=80%) + colour anchors + NEW
+glyph-presence guards (caught a full "text missing but colours match"
+regression that block-averaging alone had hidden — markup children were
+absolute, not parent-relative). Scores: boot 99.8, menu 99.5, address
+99.2, wiki 95.5, readlist 99.8, tabs 99.8, manytabs 99.7, clear 100,
+clear-toggled state, hub-history 99.2, hub-downloads 100, inpriv 99.8,
+findbar 100. 'key s' is the POC shortcut into Settings.
+
+### Next
+- Push the phone SH4 build through build_phone.py (UXCTL.DLL manifest
+  is wired; needs the device toolchain run).
+- More hub panes polish (favorites rows vs real capture), settings
+  page reference capture if the user provides one.
+- SystemSettings/FileExplorer ports on top of uixctl + uXAML.
