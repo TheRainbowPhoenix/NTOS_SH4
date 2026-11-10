@@ -1,17 +1,17 @@
 <Page name="AddressEditBoxPage">
   <Canvas>
-    <!-- per type.png: dimmed page (#7F7F7F), dark strip, white address
-         field x5..314 y230..269, toolbar row with the tabs icon, then the
-         shared fingerkb.dll keyboard paints from y317. -->
-    <Rect name="Scrim" x="0" y="0" w="320" h="223" bg="#7F7F7F"/>
+    <!-- Address edit stack, authored at DARK geometry (type.png):
+         separator strip y223-230, white field x5-314 y230-269, then the
+         toolbar row + shared fingerkb SIP from y270. The light theme
+         shifts the whole doc up 48px (fixes_1/test123_input.png:
+         strip y175-182 #E7E7E7, field y182-222, toolbar y223-269
+         #DEDFDE, SIP 269-478, SHELLCHROME nav bar 480-528) and the app
+         paints the page area above it: live while text is present,
+         dimmed through DimRect when the field is empty. -->
     <Rect x="0" y="223" w="320" h="7" bg="#1F1F1F"/>
     <Rect x="5" y="230" w="310" h="40" bg="#FFFFFF"/>
     <Button name="AddressInput" x="5" y="230" w="310" h="40" command="noop">
-      <Text name="AddrEditHint" x="18" y="14" text="Search or browse" color="#767676" size="12"/>
-    </Button>
-    <Rect x="0" y="270" w="320" h="47" bg="#1F1F1F"/>
-    <Button name="TabsButton" x="0" y="270" w="48" h="47" command="addr-tabs">
-      <Glyph x="14" y="14" w="20" h="20" text="tabs" color="#FFFFFF"/>
+      <Text name="AddrEditHint" x="13" y="14" text="Search or browse" color="#767676" size="12"/>
     </Button>
   </Canvas>
 </Page>

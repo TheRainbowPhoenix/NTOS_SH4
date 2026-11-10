@@ -245,7 +245,7 @@ def toxml(data):
 LIGHT_BG = {
     '#1F1F1F': '#E7E7E7', '#2B2B2B': '#E7E7E7', '#2E2E2E': '#F7F3F7',
     '#333333': '#DEDEDE', '#313131': '#DEDEDE', '#000000': '#F7F3F7',
-    '#767676': '#CECFCE', '#333': '#DEDEDE',
+    '#767676': '#CECFCE', '#333': '#DEDEDE', '#1E1E1E': '#DEDFDE',
 }
 LIGHT_COLOR = {
     '#FFFFFF': '#000000', '#9A9A9A': '#7B7D7B', '#767676': '#5A5D5A',

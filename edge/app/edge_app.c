@@ -529,6 +529,39 @@ static void draw_text_clamp(void *dc, int x, int y, const char *s, U32 c, int h,
     draw_text(dc, x + w, y, "...", c, h, 0, 0);
 }
 
+/* ---- address-field text metrics (selection/caret hit mapping) ----
+ * draw_text1() advances the pen by glyph.advance+1; these helpers use the
+ * same increments so painted highlight boxes and hit-tested caret slots
+ * always agree with the rendered string. */
+static int char_adv(int ch, int h)
+{
+    const PhoneFont *f = pick_font(h);
+    if (ch < f->first || ch >= f->first + f->count)
+        ch = '?';
+    return f->glyphs[ch - f->first].advance + 1;
+}
+
+/* x position of caret slot i within a string drawn at tx (size h) */
+static int text_x_of(const char *s, int i, int tx, int h)
+{
+    for (int k = 0; k < i && s[k]; ++k)
+        tx += char_adv((unsigned char)s[k], h);
+    return tx;
+}
+
+/* inverse: caret slot closest to pixel x */
+static int text_slot_at(const char *s, int x, int tx, int h)
+{
+    int cx = tx;
+    for (int i = 0; s[i]; ++i) {
+        int w = char_adv((unsigned char)s[i], h);
+        if (x < cx + (w >> 1))
+            return i;
+        cx += w;
+    }
+    return xstrlen(s);
+}
+
 /* ---- shared-component render context ----
  * Serves uixctl.c (controls), svf.c (icons) and fingerkb.dll (keyboard):
  * the same vtable model as uixrender.dll. The UIX_TH table follows the
@@ -893,6 +926,10 @@ enum {
 static int hub_pivot; /* 0 favorites 1 reading 2 history 3 downloads */
 static char addr_buf[MAX_URL];
 static int addr_len;
+/* address-field editing: caret + selection anchor (char indices into
+ * addr_buf). Tapping the bar of a loaded page selects the whole URL
+ * (edit_url.png); drag inside the field extends the selection. */
+static int addr_anchor, addr_caret, addr_sel_drag;
 static char toast_text[80];
 static void *g_wnd;
 static const EdgeKb *g_kb;
@@ -957,6 +994,70 @@ static void flag_named(const char *name, int bit, int on)
         nstate[i] |= (unsigned char)bit;
     else
         nstate[i] &= (unsigned char)~bit;
+}
+
+/* ---- address field editing (M_ADDRESS) ----
+ * The edit stack is authored at dark geometry in AddressEditBoxPage
+ * (separator y223-230, white field x5-314 y230-269, toolbar y270-316)
+ * and rides chrome_yoff() up 48px in the light theme
+ * (fixes_1/test123_input.png: strip y175-182, field y182-222, toolbar
+ * y223-269, SIP 269-478, SHELLCHROME nav bar 480-528). */
+static void nav_url(const char *url);
+#define ADDR_FIELD_TOP 230
+#define ADDR_FIELD_BOT 270
+#define ADDR_TOOL_TOP  270
+#define ADDR_TOOL_BOT  317
+#define ADDR_KB_TOP    317
+#define ADDR_PAGE_BOT  223
+
+static void addr_del_sel(void)
+{
+    int s = addr_anchor < addr_caret ? addr_anchor : addr_caret;
+    int e = addr_anchor < addr_caret ? addr_caret : addr_anchor;
+    if (s >= e)
+        return;
+    for (int i = e; i <= addr_len; ++i) /* moves the NUL too */
+        addr_buf[i - (e - s)] = addr_buf[i];
+    addr_len -= e - s;
+    addr_anchor = addr_caret = s;
+}
+
+/* one keystroke into the field: printable inserts (replacing an active
+ * selection), backspace deletes the selection or the char left of the
+ * caret, enter navigates the buffer */
+static void addr_input(int c)
+{
+    if (c == 8) {
+        if (addr_anchor != addr_caret) {
+            addr_del_sel();
+        } else if (addr_caret > 0) {
+            for (int i = addr_caret; i <= addr_len; ++i)
+                addr_buf[i - 1] = addr_buf[i];
+            --addr_len;
+            addr_anchor = --addr_caret;
+        }
+    } else if (c == 13) {
+        if (addr_len)
+            nav_url(addr_buf);
+        mode = M_BROWSER;
+    } else if (c >= 32 && c < 127 && addr_len < MAX_URL - 2) {
+        if (addr_anchor != addr_caret)
+            addr_del_sel();
+        for (int i = addr_len; i > addr_caret; --i)
+            addr_buf[i] = addr_buf[i - 1];
+        addr_buf[addr_caret++] = (char)c;
+        addr_buf[++addr_len] = 0;
+        addr_anchor = addr_caret;
+    }
+}
+
+/* caret slot for a tap/drag at screen x (uses the laid-out field box) */
+static int addr_slot_at(int x)
+{
+    int fi = find_node("AddressInput");
+    if (fi < 0)
+        return addr_len;
+    return text_slot_at(addr_buf, x, nrect[fi].x + 13, 12);
 }
 
 /* ---- dynamic bindings (the XAML {Binding} substitute) ---- */
@@ -1180,15 +1281,19 @@ static int chrome_yoff(void)
     return g_light ? -48 : 0;
 }
 
-static void paint_page(void *dc)
+/* paints the current page (home / engine / InPrivate) with the viewport
+ * height the caller needs: full 480+chrome in browser mode, the shortened
+ * area above the edit stack in M_ADDRESS / find mode */
+static void paint_page_vh(void *dc, int vh)
 {
     Tab *t = &tabs[tab_cur];
+    clip_set(0, 0, 320, vh);
     if (!t->url[0]) {
         if (t->priv) {
             if (g_light) {
                 /* light InPrivate (light/inprivate.png): grey surfaces,
                  * dark copy, blue link */
-                fill(dc, 0, 0, 320, 480, C_PAGEBG);
+                fill(dc, 0, 0, 320, vh, C_PAGEBG);
                 draw_text(dc, 36, 130, "Browsing InPrivate", C_INK, 22, 0, 1);
                 static const char *const PL[] = {
                     "When you use InPrivate tabs, your",
@@ -1214,16 +1319,15 @@ static void paint_page(void *dc)
             }
         } else {
             /* home state per home.png / home_empty light: plain page */
-            fill(dc, 0, 0, 320, 480, C_PAGEBG);
+            fill(dc, 0, 0, 320, vh, C_PAGEBG);
         }
+        clip_set(0, 0, 320, 528);
         return;
     }
     /* engine pages: HTML.DLL paints the scrolled viewport. File
      * activations from File Explorer (file://) route through the same
      * engine as mock-http pages. */
     if (web_kind) {
-        int vh = 480 + chrome_yoff();
-        clip_set(0, 0, 320, vh);
         g_mdhost.dc = dc;
         NT_CALL(md_paint, (&g_mdhost, web_scroll_x, web_scroll_y, 320, vh));
         clip_set(0, 0, 320, 528);
@@ -1232,7 +1336,13 @@ static void paint_page(void *dc)
     /* every navigated URL is an engine page now — mock DNS, fls0 file,
      * or the generated offline error page. The only non-engine case left
      * is the engine itself failing to load: a plain blank surface. */
-    fill(dc, 0, 0, 320, 480, C_PAGEBG);
+    fill(dc, 0, 0, 320, vh, C_PAGEBG);
+    clip_set(0, 0, 320, 528);
+}
+
+static void paint_page(void *dc)
+{
+    paint_page_vh(dc, 480 + chrome_yoff());
 }
 
 /* two-tone URL: subdomain grey, domain white (webpage.png).
@@ -1900,23 +2010,54 @@ static void paint_all(void *dc)
             paint_hub_content(dc);
         }
     } else if (mode == M_ADDRESS) {
+        /* Address edit stack (type.png dark / test123_input.png light):
+         * page area, separator strip, white field, toolbar row with the
+         * tabs icon, then the shared SIP. The page stays LIVE while the
+         * field holds text (test123_input.png) and is dimmed through
+         * DimRect while only the placeholder shows (type.png). */
         if ((d = ux_find_doc(&ux, "AddressEditBoxPage"))) {
-            layout_doc(d, 0, 0, 320, 528);
+            int yo = chrome_yoff();
+            paint_page_vh(dc, ADDR_PAGE_BOT + yo);
+            if (!addr_len)
+                dim_scrim(dc, 0, 0, 320, ADDR_PAGE_BOT + yo);
+            flag_named("AddrEditHint", NS_HIDDEN, addr_len > 0);
+            layout_doc(d, 0, yo, 320, 528);
             paint_node(dc, d->root);
-            /* shared fingerkb.dll paints the SIP (from y271 backdrop) */
+            /* shared fingerkb SIP: light docks 48px up so the SHELLCHROME
+             * nav bar keeps the y480-528 strip */
             if (g_kb)
                 g_kb->paint(dc);
-            /* toolbar row over the SIP backdrop (tabs icon, type.png) */
-            fill(dc, 0, 270, 320, 317, C_BAR);
-            ic_draw(ifill, dc, 14, 284, 20, C_INK, IC_TABS);
-            /* typed text + caret in the white field */
-            if (addr_len) {
-                draw_text_clamp(dc, 11, 244, addr_buf, RGB_(0x00, 0x00, 0x00),
-                                12, 280);
-                int cx = 11 + text_w(addr_buf, 12);
-                if (cx < 306)
-                    fill(dc, cx + 2, 236, cx + 4, 266, C_BLUE);
+            /* toolbar row between field and SIP (tabs icon, type.png) */
+            U32 tool = g_light ? RGB_(0xDE, 0xDF, 0xDE) : C_BAR;
+            fill(dc, 0, ADDR_TOOL_TOP + yo, 320, ADDR_TOOL_BOT + yo, tool);
+            ic_draw(ifill, dc, 14, 284 + yo, 20, C_INK, IC_TABS);
+            /* typed text with selection highlight + caret */
+            int fi = find_node("AddressInput");
+            if (fi >= 0) {
+                NRect r = nrect[fi];
+                int tx = r.x + 13;
+                int s = addr_anchor < addr_caret ? addr_anchor : addr_caret;
+                int e = addr_anchor < addr_caret ? addr_caret : addr_anchor;
+                if (s < e) { /* selection: blue block, white glyphs */
+                    fill(dc, text_x_of(addr_buf, s, tx, 12), r.y + 5,
+                         text_x_of(addr_buf, e, tx, 12), r.y + 35,
+                         RGB_(0x30, 0x60, 0xC0));
+                }
+                for (int i = 0; i < addr_len; ++i) {
+                    char one[2] = {addr_buf[i], 0};
+                    U32 c = (i >= s && i < e) ? RGB_(0xFF, 0xFF, 0xFF)
+                                               : RGB_(0x00, 0x00, 0x00);
+                    draw_text(dc, text_x_of(addr_buf, i, tx, 12), r.y + 14,
+                              one, c, 12, 0, 0);
+                }
+                if (s == e) { /* caret */
+                    int cx = text_x_of(addr_buf, addr_caret, tx, 12);
+                    if (cx < r.x + r.w - 4)
+                        fill(dc, cx + 1, r.y + 7, cx + 3, r.y + 33, C_BLUE);
+                }
             }
+            if (g_light && g_chrome)
+                g_chrome->paint(dc);
         }
     } else if (mode == M_SETTINGS || mode == M_ADVANCED || mode == M_FEEDBACK) {
         paint_settings_page(dc);
@@ -1986,10 +2127,27 @@ static void do_command(const char *cmd)
         mode = M_MENU;
     else if (xeq(cmd, "address")) {
         mode = M_ADDRESS;
-        addr_len = 0;
-        addr_buf[0] = 0;
+        /* editing starts from the current page's URL, fully selected
+         * (edit_url.png): typing replaces it, drag re-selects, tap places
+         * the caret. A new tab starts with an empty field. */
+        Tab *t = &tabs[tab_cur];
+        if (t->url[0]) {
+            int n = xstrlen(t->url);
+            if (n > MAX_URL - 1)
+                n = MAX_URL - 1;
+            xcopy(addr_buf, t->url, n);
+            addr_buf[n] = 0;
+            addr_len = n;
+        } else {
+            addr_len = 0;
+            addr_buf[0] = 0;
+        }
+        addr_anchor = 0;
+        addr_caret = addr_len;
+        addr_sel_drag = 0;
         if (g_kb) {
-            g_kb->dock(0);
+            /* light chrome: the SIP rides 48px above the nav bar */
+            g_kb->dock(g_light ? 48 : 0);
             g_kb->context(0); /* go key: arrow (address entry) */
         }
     } else if (xeq(cmd, "reload"))
@@ -2155,30 +2313,17 @@ static void process_tap(int x, int y)
     const UxDoc *d;
     const UxNode *b;
     if (mode == M_ADDRESS) {
-        if (y >= 317 && g_kb) {
-            /* shared SIP: fingerkb.dll owns the keyboard hit zones */
-            U32 lp = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
-            int c = g_kb->input(WM_DOWN_, 1, lp);
-            if (c == 13) { /* enter */
-                if (addr_len)
-                    nav_url(addr_buf);
-                mode = M_BROWSER;
-            } else if (c == 8) {
-                if (addr_len)
-                    addr_buf[--addr_len] = 0;
-            } else if (c >= 32 && c < 127 && addr_len < MAX_URL - 2) {
-                addr_buf[addr_len++] = (char)c;
-                addr_buf[addr_len] = 0;
-            }
-            return;
-        }
-        if (y < 223) { /* scrim: dismiss */
+        int yo = chrome_yoff();
+        if (y < ADDR_PAGE_BOT + yo) { /* page/scrim: dismiss */
             mode = M_BROWSER;
             return;
         }
-        if ((d = ux_find_doc(&ux, "AddressEditBoxPage")) &&
-            (b = hit_test(d, x, y)))
-            do_command(ux_str(&ux, b, UXA_COMMAND, ""));
+        if (x < 48 && y >= ADDR_TOOL_TOP + yo && y < ADDR_TOOL_BOT + yo) {
+            mode = M_TABS; /* tabs icon on the toolbar row */
+            return;
+        }
+        /* taps on the field itself (caret placement) and the SIP keys are
+         * handled in wndproc, which owns the drag-selection state */
         return;
     }
     if (mode == M_TABS) {
@@ -2375,20 +2520,7 @@ static void process_tap(int x, int y)
 
 static void addr_key(unsigned wp)
 {
-    if (wp == 8) {
-        if (addr_len)
-            addr_buf[--addr_len] = 0;
-    } else if (wp == 13) {
-        if (addr_len)
-            nav_url(addr_buf);
-        mode = M_BROWSER;
-    } else if (addr_len < MAX_URL - 2 &&
-               ((wp >= 'a' && wp <= 'z') || (wp >= 'A' && wp <= 'Z') ||
-                (wp >= '0' && wp <= '9') || wp == '.' || wp == '/' ||
-                wp == '-' || wp == ' ')) {
-        addr_buf[addr_len++] = (char)wp;
-        addr_buf[addr_len] = 0;
-    }
+    addr_input((int)wp);
 }
 
 static void nav_bar_action(int key)
@@ -2444,6 +2576,8 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
         } else if (msg == WM_KEY_ && wp == 0x74) { /* 't' key: theme toggle */
             g_light = !g_light;
             theme_update();
+            if (mode == M_ADDRESS && g_kb)
+                g_kb->dock(g_light ? 48 : 0); /* SIP follows the chrome */
             NT_CALL(InvalidateRect, (hwnd, 0, 0));
             NT_CALL(UpdateWindow, (hwnd));
         } else if (mode == M_ADDRESS) {
@@ -2473,6 +2607,34 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
         int y = (int)(short)(lp >> 16);
         if (msg == WM_DOWN_)
             toast_text[0] = 0; /* any input dismisses the toast */
+        if (mode == M_ADDRESS) {
+            /* edit stack owns the whole screen: SIP keys at the bottom,
+             * drag inside the white field selects text, everything above
+             * the separator dismisses back to the page */
+            int yo = chrome_yoff();
+            if (msg == WM_DOWN_) {
+                if (y >= ADDR_KB_TOP + yo && g_kb) {
+                    /* fingerkb.dll owns the key zones (dock-relative) */
+                    int c = g_kb->input(WM_DOWN_, 1, lp);
+                    if (c)
+                        addr_input(c);
+                } else if (y >= ADDR_FIELD_TOP + yo &&
+                           y < ADDR_FIELD_BOT + yo) {
+                    /* tap places the caret; drag extends the selection */
+                    addr_sel_drag = 1;
+                    addr_anchor = addr_caret = addr_slot_at(x);
+                } else {
+                    process_tap(x, y);
+                }
+            } else if (msg == WM_MOVE_ && addr_sel_drag) {
+                addr_caret = addr_slot_at(x);
+            } else if (msg == WM_UP_) {
+                addr_sel_drag = 0;
+            }
+            NT_CALL(InvalidateRect, (hwnd, 0, 0));
+            NT_CALL(UpdateWindow, (hwnd));
+            return 0;
+        }
         if (settings_mode()) {
             /* nav bar owns the y488..528 strip; content drags scroll */
             int r = g_chrome ? g_chrome->input(msg, wp, lp) : 0;

@@ -177,6 +177,35 @@ ANCHORS = {
     'edge-feedback': [
         (160, 505, (0x00, 0x00, 0x00)),
     ],
+    # light address edit (fixes_1 refs): the stack rides 48px above the
+    # SHELLCHROME nav bar; empty field dims the page, typed text keeps it
+    # live (test123_input.png)
+    'edge-light-address': [
+        (160, 100, (0x7F, 0x7F, 0x7F)),  # dimmed page (empty field)
+        (160, 190, (0xFF, 0xFF, 0xFF)),  # white field
+        (160, 240, (0xDE, 0xDF, 0xDE)),  # toolbar row
+        (160, 500, (0xCE, 0xCF, 0xCE)),  # nav bar below the SIP
+    ],
+    'edge-light-address-typed': [
+        (160, 100, (0xFF, 0xFF, 0xFF)),  # LIVE page behind typed text
+        (160, 190, (0xFF, 0xFF, 0xFF)),  # white field
+        (160, 240, (0xDE, 0xDF, 0xDE)),  # toolbar row
+        (160, 500, (0xCE, 0xCF, 0xCE)),  # nav bar below the SIP
+    ],
+    'edge-light-address-del': [
+        (160, 100, (0xFF, 0xFF, 0xFF)),  # live page
+        (160, 500, (0xCE, 0xCF, 0xCE)),  # nav bar
+    ],
+    # tap-to-edit of a loaded page: the URL renders fully selected
+    # (edit_url.png) — blue block #3060C0 with white glyphs
+    'edge-swap-edit': [
+        (30, 203, (0x30, 0x60, 0xC0)),   # selection block over "swap.html"
+        (160, 190, (0xFF, 0xFF, 0xFF)),  # field tail stays white
+        (160, 100, (0xFF, 0xFF, 0xFF)),  # live page
+    ],
+    'edge-swap-edit-sel': [
+        (30, 203, (0x30, 0x60, 0xC0)),   # drag-selected head of the URL
+    ],
 }
 
 ATOL = 8  # anchor tolerance per channel
@@ -203,6 +232,26 @@ PRESENCE = {
         (14, 282, 36, 306, 15, 100, 0),    # tabs icon on the toolbar row
         (289, 489, 307, 509, 100, 100, 0), # white go key
         (291, 494, 305, 506, 5, -100, 0),  # black go-arrow glyph
+    ],
+    'light-address': [
+        (15, 186, 130, 218, 30, -100, 0),  # "Search or browse" hint
+        (14, 278, 36, 302, 12, -100, 0),   # tabs icon on the toolbar row
+        (60, 494, 268, 518, 20, -150, 0),  # nav bar glyphs below the SIP
+    ],
+    'light-address-typed': [
+        (15, 186, 46, 218, 25, -100, 0),   # "test" glyphs in the field
+        (46, 188, 52, 218, 6, 150, 2),     # blue caret after the text
+        (60, 494, 268, 518, 20, -150, 0),  # nav bar glyphs below the SIP
+    ],
+    'light-address-del': [
+        (15, 186, 34, 218, 20, -100, 0),   # "tes" after 3 backspaces
+    ],
+    'swap-edit': [
+        (16, 190, 80, 216, 40, 170, 2),    # selection block (blue fill)
+        (20, 192, 76, 214, 25, 240, 0),    # white glyphs ON the block
+    ],
+    'swap-edit-sel': [
+        (16, 190, 52, 216, 25, 170, 2),    # partial selection block
     ],
     'clear': [
         (13, 16, 150, 32, 50, 150, 0),     # title

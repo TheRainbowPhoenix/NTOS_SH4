@@ -273,6 +273,15 @@ char 109
 char 108
 key 13
 shot swap-a
+# address-bar edit of a LOADED page: tap selects the whole URL
+# (fixes_1/edit_url.png), drag re-selects a range, and typing over the
+# selection replaces it (the swap2 flow below types over the selected
+# swap.html)
+tap 158 455
+shot swap-edit
+drag 25 200 60 200
+shot swap-edit-sel
+key 27
 tap 158 455
 char 115
 char 119
@@ -286,3 +295,23 @@ char 109
 char 108
 key 13
 shot swap-b
+
+# ---- light address edit states (fixes_1 refs) ----------------------
+# empty field: placeholder + dimmed page + nav bar below the SIP
+# (SIDEBSIDE_search_or_browse); typed text: placeholder cleared, live
+# page, caret, tabs-icon toolbar row (test123_input.png)
+tap 158 455
+shot light-address
+char 116
+char 101
+char 115
+char 116
+char 49
+char 50
+char 51
+shot light-address-typed
+char 8
+char 8
+char 8
+shot light-address-del
+key 27
