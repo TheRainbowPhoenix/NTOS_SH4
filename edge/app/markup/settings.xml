@@ -4,36 +4,33 @@
     <Button name="SettingsBack" x="0" y="0" w="48" h="48" command="set-back">
       <Glyph x="14" y="14" w="20" h="20" text="back" color="#FFFFFF"/>
     </Button>
-    <Text x="160" y="14" w="320" text="Settings" color="#FFFFFF" size="18" bold="true" align="1"/>
-    <Rect x="0" y="52" w="320" h="1" bg="#464646"/>
-    <List x="0" y="56" w="320" h="392">
-      <Button x="0" y="0" w="320" h="48" command="noop">
-        <Text x="16" y="17" text="Sync your favorites and reading list" color="#FFFFFF" size="12"/>
-      </Button>
-      <Button x="0" y="0" w="320" h="48" command="noop">
-        <Text x="16" y="17" text="Open new tabs with" color="#FFFFFF" size="12"/>
-        <Text x="0" y="18" w="270" text="Top sites" color="#9A9A9A" size="11" align="2"/>
-        <Glyph x="288" y="16" w="16" h="16" text="chevron" color="#6E6E6E"/>
-      </Button>
-      <Button x="0" y="0" w="320" h="48" command="noop">
-        <Text x="16" y="17" text="Search in the address bar with" color="#FFFFFF" size="12"/>
-        <Text x="0" y="18" w="270" text="Bing" color="#9A9A9A" size="11" align="2"/>
-        <Glyph x="288" y="16" w="16" h="16" text="chevron" color="#6E6E6E"/>
-      </Button>
-      <Button x="0" y="0" w="320" h="48" command="advanced">
-        <Text x="16" y="17" text="Advanced settings" color="#FFFFFF" size="12"/>
-        <Glyph x="288" y="16" w="16" h="16" text="chevron" color="#6E6E6E"/>
-      </Button>
-      <Button x="0" y="0" w="320" h="48" command="cleardata">
-        <Text x="16" y="17" text="Clear browsing data" color="#FFFFFF" size="12"/>
-        <Glyph x="288" y="16" w="16" h="16" text="chevron" color="#6E6E6E"/>
-      </Button>
-      <Button x="0" y="0" w="320" h="48" command="feedback">
-        <Text x="16" y="17" text="Send feedback" color="#FFFFFF" size="12"/>
-      </Button>
-      <Button x="0" y="0" w="320" h="48" command="helpabout">
-        <Text x="16" y="17" text="Help &amp; about" color="#FFFFFF" size="12"/>
-      </Button>
-    </List>
+    <Text x="0" y="14" w="320" text="Settings" color="#FFFFFF" size="18" bold="true" align="1"/>
+    <Button x="0" y="56" w="320" h="48" command="noop">
+      <Text x="12" y="16" text="Sync your favorites and" color="#FFFFFF" size="14"/>
+      <Text x="12" y="30" text="reading list" color="#FFFFFF" size="14"/>
+      <Toggle name="SyncToggle" x="252" y="14" w="44" h="20" checked="true"/>
+    </Button>
+    <Button x="0" y="104" w="320" h="48" command="noop">
+      <Text x="12" y="28" text="Open new tabs with" color="#FFFFFF" size="14"/>
+      <Text x="0" y="28" w="296" text="Top sites" color="#9A9A9A" size="13" align="2"/>
+    </Button>
+    <Button x="0" y="152" w="320" h="48" command="noop">
+      <Text x="12" y="28" text="Search in the address bar with" color="#FFFFFF" size="14"/>
+      <Text x="0" y="28" w="296" text="Bing" color="#9A9A9A" size="13" align="2"/>
+    </Button>
+    <Button x="0" y="200" w="320" h="48" command="advanced">
+      <Text x="12" y="28" text="Advanced settings" color="#FFFFFF" size="14"/>
+      <Glyph x="288" y="28" w="16" h="16" text="chevron" color="#767676"/>
+    </Button>
+    <Button x="0" y="248" w="320" h="48" command="cleardata">
+      <Text x="12" y="28" text="Clear browsing data" color="#FFFFFF" size="14"/>
+      <Glyph x="288" y="28" w="16" h="16" text="chevron" color="#767676"/>
+    </Button>
+    <Button x="0" y="296" w="320" h="48" command="feedback">
+      <Text x="12" y="28" text="Send feedback" color="#FFFFFF" size="14"/>
+    </Button>
+    <Button x="0" y="344" w="320" h="48" command="helpabout">
+      <Text x="12" y="28" text="Help and about" color="#FFFFFF" size="14"/>
+    </Button>
   </Canvas>
 </Page>

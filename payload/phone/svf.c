@@ -262,7 +262,7 @@ int phone_unsupported(void)
 {
     return NOTIMPL;
 }
-#ifndef PHONE_HOST
+#if !defined(PHONE_HOST) && !defined(NTOS_LINUX_BUILD)
 int main(void)
 {
     return 1;

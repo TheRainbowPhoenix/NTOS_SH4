@@ -42,7 +42,9 @@ typedef struct {
     uint64_t ImageBase;
     uint32_t SectionAlignment, FileAlignment;
     uint16_t MajorOSVer, MinorOSVer, MajorImageVer, MinorImageVer,
-        MajorSubsysVer, MinorSubsysVer, Win32VerValue;
+        MajorSubsysVer, MinorSubsysVer;
+    uint32_t Win32VerValue; /* latent bug fixed: was in the u16 list,
+                             * shifting every later field by 2 bytes */
     uint32_t SizeOfImage, SizeOfHeaders, CheckSum;
     uint16_t Subsystem, DllCharacteristics;
     uint64_t SizeOfStackReserve, SizeOfStackCommit, SizeOfHeapReserve, SizeOfHeapCommit;

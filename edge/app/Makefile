@@ -1,25 +1,49 @@
 # Edge POC app — uXAML-driven Edge mobile chrome for NTOS.
-# Host build (NTOS_SH4_linux e2e): zig cc -> x86-64 PE DLL.
+# Host build (NTOS_SH4_linux e2e): zig cc -> x86-64 PE DLLs.
 # Device build: same sources through the SH4 payload flow (payload.ld + elf2ntx).
+#
+# Component reuse (the W10M shared-DLL model):
+#   edge.dll    = app + markup engine + icons
+#               + payload/phone/uixctl.c  (shared controls;  static)
+#               + payload/phone/svf.c     (shared SVF icons; static)
+#   fingerkb.dll= the shared keyboard DLL, loaded as a separate module;
+#                 the host loader cross-snaps the IAT slots (both ways)
 ZIG ?= /home/z/my-project/opt/zig/zig
 MQJS ?= /home/z/my-project/opt/src/mquickjs
+PHONE = ../../payload/phone
+IMPORTS = ../../payload
 
-all: edge.dll chakra.dll edge.uxaml
+# phone-framework sources compiled into edge.dll need their IAT slots
+# declared extern-only (edge_app.c owns the definitions) and must not
+# bring their own DLL entry point or factory.
+PHONE_CFLAGS = -DNTOS_LINUX_BUILD -DNT_IAT_EXTERN_ONLY -DUXCTL_NO_FACTORY
+
+all: edge.dll chakra.dll fingerkb.dll edge.uxaml
 
 edge.uxaml: uxaml_gen.py markup/*.xml
 	python3 uxaml_gen.py build markup/ -o edge.uxaml
 
-edge.dll: edge_app.c icons.c uxaml.c uxaml.h nt_app.h
+edge.dll: edge_app.c icons.c icons.h uxaml.c uxaml.h nt_app.h \
+          $(PHONE)/uixctl.c $(PHONE)/svf.c $(PHONE)/phone.h
 	$(ZIG) cc -target x86_64-windows-gnu -shared -O2 -nostdlib \
 	  -Wl,--image-base=0x180010000 -DNTOS_LINUX_BUILD \
-	  -I. -I../../payload/phone -o edge.dll edge_app.c icons.c uxaml.c
+	  -I. -I../../payload/phone -I../../payload -o edge.dll \
+	  edge_app.c icons.c uxaml.c \
+	  $(PHONE)/uixctl.c $(PHONE_CFLAGS) \
+	  $(PHONE)/svf.c $(PHONE_CFLAGS)
+
+# shared keyboard DLL (host build of the phone FINGERKB.DLL source)
+fingerkb.dll: $(PHONE)/fingerkb.c $(PHONE)/phone.h $(PHONE)/system_icons.h
+	$(ZIG) cc -target x86_64-windows-gnu -shared -Os -nostdlib \
+	  -Wl,--image-base=0x180200000 -DNTOS_LINUX_BUILD \
+	  -I$(PHONE) -I$(IMPORTS) -o fingerkb.dll $(PHONE)/fingerkb.c
 
 # chakra.dll — DEFAULT: pure API-shape stub (160 exports, no engine).
 # The device has no FPU and the POC targets the UI; the real 5.8MB ChakraCore
 # is out of reach. Regenerate with: python3 ../tools/gen_chakra_stub.py
 chakra.dll: chakra_stub.c nt_app.h
 	$(ZIG) cc -target x86_64-windows-gnu -shared -Os -nostdlib \
-	  -Wl,--image-base=0x180020000 -DNTOS_LINUX_BUILD \
+	  -Wl,--image-base=0x180100000 -DNTOS_LINUX_BUILD \
 	  -I. -o chakra.dll chakra_stub.c
 
 # ---- optional: behavioural engine over mquickjs (host experiments only) ----
@@ -39,14 +63,15 @@ chakra-full.dll: chakra_mqjs.c shim/shim.c shim/*.h nt_app.h mqjs_edge_stdlib.h 
 endif
 
 clean:
-	rm -f edge.dll chakra.dll chakra-full.dll edge.uxaml edge-*.png
+	rm -f edge.dll chakra.dll chakra-full.dll fingerkb.dll edge.uxaml edge-*.png
 
-# e2e: run under NTOS_SH4_linux; markup goes into the fake device root
+# e2e: run under NTOS_SH4_linux with the shared keyboard module; markup
+# goes into the fake device root
 test: all
 	rm -rf tests/fs/fls0 && mkdir -p tests/fs/fls0
 	cp edge.uxaml tests/fs/fls0/edge.uxaml
-	../ntos_linux/ntos_linux edge.dll --script tests/edge.script --shot edge \
-	  --fs tests/fs
+	../ntos_linux/ntos_linux fingerkb.dll edge.dll --script tests/edge.script \
+	  --shot edge --fs tests/fs
 	python3 tests/check_edge_shots.py edge-*.png
 	../ntos_linux/ntos_linux chakra.dll --entry ChakraSmokeTest
 

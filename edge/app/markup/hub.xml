@@ -1,28 +1,24 @@
 <Page name="HubPanel">
   <Canvas>
+    <!-- per history.png/edge4.png: fullscreen black, 4 pivot icons at
+         centers x22/66/110/154, blue underline under the active pivot,
+         pivot title + "Clear all history" link row, content below. -->
     <Rect x="0" y="0" w="320" h="528" bg="#000000"/>
-    <Button name="HubBack" x="0" y="0" w="48" h="48" command="hub-back">
-      <Glyph x="14" y="14" w="20" h="20" text="back" color="#FFFFFF"/>
+    <Button name="Pivot0" x="0" y="0" w="48" h="48" command="pivot-0">
+      <Glyph name="PivotIcon0" x="14" y="11" w="16" h="16" text="star" color="#FFFFFF"/>
     </Button>
-    <Text name="HubTitle" x="160" y="14" w="320" text="Favorites" color="#FFFFFF" size="18" bold="true" align="1"/>
-    <Button name="HubClear" x="256" y="10" w="60" h="30" command="hubclear" visible="false">
-      <Text name="HubClearText" x="0" y="8" w="60" text="Clear all" color="#0078D7" size="11" align="1"/>
+    <Button name="Pivot1" x="44" y="0" w="48" h="48" command="pivot-1">
+      <Glyph name="PivotIcon1" x="14" y="11" w="16" h="16" text="readlist" color="#FFFFFF"/>
     </Button>
-    <!-- pivot header: Favorites / Reading list / History / Downloads -->
-    <Button x="0" y="56" w="80" h="44" command="pivot-0">
-      <Text name="Pivot0" x="0" y="15" w="80" text="Favorites" color="#9A9A9A" size="12" align="1"/>
+    <Button name="Pivot2" x="88" y="0" w="48" h="48" command="pivot-2">
+      <Glyph name="PivotIcon2" x="14" y="11" w="16" h="16" text="clock" color="#FFFFFF"/>
     </Button>
-    <Button x="80" y="56" w="80" h="44" command="pivot-1">
-      <Text name="Pivot1" x="0" y="15" w="80" text="Reading list" color="#9A9A9A" size="12" align="1"/>
+    <Button name="Pivot3" x="132" y="0" w="48" h="48" command="pivot-3">
+      <Glyph name="PivotIcon3" x="14" y="11" w="16" h="16" text="download" color="#FFFFFF"/>
     </Button>
-    <Button x="160" y="56" w="80" h="44" command="pivot-2">
-      <Text name="Pivot2" x="0" y="15" w="80" text="History" color="#9A9A9A" size="12" align="1"/>
+    <Text name="HubTitle" x="12" y="60" text="Favorites" color="#FFFFFF" size="14" bold="true"/>
+    <Button name="HubClear" x="196" y="58" w="112" h="24" command="hubclear">
+      <Text x="0" y="3" w="112" text="Clear all history" color="#0078D7" size="12" align="2"/>
     </Button>
-    <Button x="240" y="56" w="80" h="44" command="pivot-3">
-      <Text name="Pivot3" x="0" y="15" w="80" text="Downloads" color="#9A9A9A" size="12" align="1"/>
-    </Button>
-    <Rect x="0" y="100" w="320" h="1" bg="#464646"/>
-    <!-- pivot content painted procedurally (104..528) -->
-    <Rect name="HubContentHost" x="0" y="104" w="320" h="424" bg="#000000"/>
   </Canvas>
 </Page>

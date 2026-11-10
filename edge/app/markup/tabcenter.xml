@@ -1,22 +1,18 @@
 <Page name="TabCenterPage">
   <Canvas>
-    <Rect x="0" y="0" w="320" h="528" bg="#000000"/>
-    <Button name="TabsBack" x="0" y="0" w="48" h="48" command="tabs-back">
-      <Glyph x="14" y="14" w="20" h="20" text="back" color="#FFFFFF"/>
+    <!-- per tabs.png/manytabs.png: black page, "Tabs" title, 2-col card grid
+         at x12/x166 (142 wide), toolbar with + / InPrivate / ... right -->
+    <Rect x="0" y="0" w="320" h="480" bg="#000000"/>
+    <Text x="12" y="17" text="Tabs" color="#FFFFFF" size="14" bold="true"/>
+    <Rect x="0" y="480" w="320" h="48" bg="#1F1F1F"/>
+    <Button name="TabsCenter_NewTabButton" x="135" y="480" w="56" h="48" command="newtab">
+      <Glyph x="18" y="16" w="20" h="20" text="plus" color="#FFFFFF"/>
     </Button>
-    <Text x="160" y="14" w="320" text="Tabs" color="#FFFFFF" size="18" bold="true" align="1"/>
-    <!-- tab cards painted procedurally: 2-column grid (TabsCustomGridView) -->
-    <Rect name="TabGridHost" x="8" y="56" w="304" h="420" bg="#000000"/>
-    <Rect x="0" y="472" w="320" h="1" bg="#464646"/>
-    <!-- bottom toolbar, right-padded: new tab / new InPrivate tab / tabs menu -->
-    <Button name="NewTabButton" x="148" y="480" w="48" h="48" command="newtab">
-      <Glyph x="12" y="12" w="24" h="24" text="plus" color="#FFFFFF"/>
+    <Button name="TabsCenter_NewPrivateButton" x="200" y="480" w="56" h="48" command="newprivate">
+      <Glyph x="28" y="16" w="20" h="20" text="inprivate" color="#FFFFFF"/>
     </Button>
-    <Button name="NewInPrivateTabButton" x="204" y="480" w="48" h="48" command="newprivate">
-      <Glyph x="12" y="12" w="24" h="24" text="inprivate" color="#FFFFFF"/>
-    </Button>
-    <Button name="TabsMenuButton" x="260" y="480" w="48" h="48" command="tabsmenu">
-      <Glyph x="12" y="12" w="24" h="24" text="more" color="#FFFFFF"/>
+    <Button name="TabsCenter_MoreButton" x="256" y="480" w="64" h="48" command="tabsmenu">
+      <Glyph x="25" y="17" w="22" h="18" text="more" color="#FFFFFF"/>
     </Button>
   </Canvas>
 </Page>

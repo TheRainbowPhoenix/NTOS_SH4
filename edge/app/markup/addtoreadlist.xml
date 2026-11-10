@@ -1,15 +1,21 @@
 <Page name="AddToReadingListDialog">
   <Canvas>
-    <!-- browser + scrim painted behind by the app -->
-    <Rect x="12" y="156" w="296" h="212" bg="#2B2B2B" radius="8"/>
-    <Text x="28" y="172" text="Add to reading list" color="#FFFFFF" size="18" bold="true"/>
-    <Text x="28" y="210" text="Name" color="#9A9A9A" size="9"/>
-    <TextBox name="RLName" x="28" y="224" w="264" h="36" bg="#1F1F1F" radius="2" text="Wikipedia"/>
-    <Button x="12" y="272" w="296" h="44" command="rl-add">
-      <Text x="0" y="15" w="296" text="Add" color="#0078D7" size="14" bold="true" align="1"/>
+    <!-- per add_reading.png: fullscreen black page, READING LIST title,
+         #333 preview hero y78..257 with the white reading-list glyph,
+         Name label + bordered input, Add/Cancel buttons. -->
+    <Rect x="0" y="0" w="320" h="528" bg="#000000"/>
+    <Text x="12" y="15" text="READING LIST" color="#FFFFFF" size="18"/>
+    <Rect x="0" y="78" w="320" h="180" bg="#333333"/>
+    <Glyph x="132" y="170" w="56" h="56" text="readlist" color="#FFFFFF"/>
+    <Text x="12" y="280" text="Name" color="#FFFFFF" size="14"/>
+    <Button name="RLName" x="12" y="298" w="296" h="33" command="noop">
+      <Text name="RLNameText" x="8" y="9" text="Test" color="#FFFFFF" size="14"/>
     </Button>
-    <Button x="12" y="316" w="296" h="44" command="dialog-cancel">
-      <Text x="0" y="15" w="296" text="Cancel" color="#FFFFFF" size="14" align="1"/>
+    <Button name="RLAdd" x="12" y="358" w="146" h="32" command="rl-add" bg="#2E2E2E">
+      <Text x="0" y="9" w="146" text="Add" color="#FFFFFF" size="14" align="1"/>
+    </Button>
+    <Button name="RLCancel" x="162" y="358" w="146" h="32" command="dialog-cancel" bg="#2E2E2E">
+      <Text x="0" y="9" w="146" text="Cancel" color="#FFFFFF" size="14" align="1"/>
     </Button>
   </Canvas>
 </Page>

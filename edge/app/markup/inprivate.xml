@@ -1,0 +1,19 @@
+<Page name="InPrivatePage">
+  <Canvas>
+    <!-- per inpriv.png: #1F1F1F page, heading, body copy, blue link.
+         Painted instead of the white page host when the current tab is
+         InPrivate and has no URL. -->
+    <Rect x="0" y="0" w="320" h="480" bg="#1F1F1F"/>
+    <Text x="36" y="130" text="Browsing InPrivate" color="#FFFFFF" size="22"/>
+    <Text x="36" y="183" text="When you use InPrivate tabs, your" color="#FFFFFF" size="14"/>
+    <Text x="36" y="204" text="browsing data (like cookies, history," color="#FFFFFF" size="14"/>
+    <Text x="36" y="225" text="or temporary files) isn't saved on" color="#FFFFFF" size="14"/>
+    <Text x="36" y="246" text="your device after you're done." color="#FFFFFF" size="14"/>
+    <Text x="36" y="267" text="Microsoft Edge deletes temporary" color="#FFFFFF" size="14"/>
+    <Text x="36" y="288" text="data after all InPrivate tabs are" color="#FFFFFF" size="14"/>
+    <Button name="PrivLink" x="36" y="344" w="220" h="20" command="priv-link">
+      <Text x="0" y="0" text="Read the Microsoft privacy" color="#009BE4" size="14"/>
+    </Button>
+    <Text x="36" y="365" text="statement" color="#009BE4" size="14"/>
+  </Canvas>
+</Page>

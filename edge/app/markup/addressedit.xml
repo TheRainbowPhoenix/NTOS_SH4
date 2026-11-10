@@ -1,13 +1,17 @@
 <Page name="AddressEditBoxPage">
   <Canvas>
-    <Rect x="0" y="0" w="320" h="528" bg="#000000"/>
-    <Button name="AddressBack" x="0" y="0" w="44" h="56" command="addr-close">
-      <Glyph x="13" y="19" w="18" h="18" text="close" color="#FFFFFF"/>
+    <!-- per type.png: dimmed page (#7F7F7F), dark strip, white address
+         field x5..314 y230..269, toolbar row with the tabs icon, then the
+         shared fingerkb.dll keyboard paints from y317. -->
+    <Rect name="Scrim" x="0" y="0" w="320" h="223" bg="#7F7F7F"/>
+    <Rect x="0" y="223" w="320" h="7" bg="#1F1F1F"/>
+    <Rect x="5" y="230" w="310" h="40" bg="#FFFFFF"/>
+    <Button name="AddressInput" x="5" y="230" w="310" h="40" command="noop">
+      <Text name="AddressHint" x="6" y="13" text="Search or browse" color="#767676" size="12"/>
     </Button>
-    <TextBox name="AddressInput" x="44" y="10" w="272" h="36" bg="#2B2B2B" radius="4" text="Search or browse"/>
-    <!-- suggestions painted procedurally (56..340) -->
-    <Rect name="SuggestionHost" x="0" y="56" w="320" h="284" bg="#000000"/>
-    <!-- SIP keyboard painted procedurally (340..528) -->
-    <Rect name="KeyboardHost" x="0" y="340" w="320" h="188" bg="#000000"/>
+    <Rect x="0" y="270" w="320" h="47" bg="#1F1F1F"/>
+    <Button name="TabsButton" x="0" y="270" w="48" h="47" command="addr-tabs">
+      <Glyph x="14" y="14" w="20" h="20" text="tabs" color="#FFFFFF"/>
+    </Button>
   </Canvas>
 </Page>

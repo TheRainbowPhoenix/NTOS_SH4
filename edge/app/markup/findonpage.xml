@@ -1,11 +1,19 @@
 <Page name="FindOnPageBar">
   <Canvas>
-    <!-- bar painted over the browser page by the app -->
-    <Rect x="0" y="0" w="320" h="44" bg="#2B2B2B"/>
-    <Button name="FindClose" x="0" y="0" w="40" h="44" command="find-close">
-      <Glyph x="12" y="14" w="16" h="16" text="close" color="#FFFFFF"/>
+    <!-- per find next.png: bar like the address bar (#1F1F1F): input area
+         on the left, prev/next chevrons at x158-168/x227-237, "..." right -->
+    <Rect x="0" y="480" w="320" h="48" bg="#1F1F1F"/>
+    <Button name="FindInput" x="0" y="480" w="150" h="48" command="find-type">
+      <Text name="FindText" x="12" y="17" text="" color="#FFFFFF" size="14"/>
     </Button>
-    <TextBox name="FindInput" x="44" y="8" w="200" h="28" bg="#1F1F1F" radius="2" text="Find on page"/>
-    <Text x="252" y="16" text="1/3" color="#9A9A9A" size="11"/>
+    <Button name="FindPrev" x="150" y="480" w="48" h="48" command="find-prev">
+      <Glyph x="7" y="14" w="12" h="20" text="chevronl" color="#FFFFFF"/>
+    </Button>
+    <Button name="FindNext" x="198" y="480" w="48" h="48" command="find-next">
+      <Glyph x="28" y="14" w="12" h="20" text="chevron" color="#FFFFFF"/>
+    </Button>
+    <Button name="FindMore" x="246" y="480" w="74" h="48" command="menu">
+      <Glyph x="35" y="17" w="22" h="18" text="more" color="#FFFFFF"/>
+    </Button>
   </Canvas>
 </Page>

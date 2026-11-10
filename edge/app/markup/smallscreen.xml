@@ -1,27 +1,26 @@
 <Page name="SmallScreenPage">
   <Canvas>
-    <!-- content host (mock web engine paints 0..480) -->
-    <Rect name="PageHost" x="0" y="0" w="320" h="480" bg="#000000"/>
-    <!-- bottom address bar: [tabs] | [reload] [url] [reader] | [...] -->
-    <Rect x="0" y="480" w="320" h="48" bg="#000000"/>
-    <Button name="TabsButton" x="0" y="480" w="46" h="48" command="tabs">
-      <Glyph x="11" y="12" w="24" h="24" text="tabs" color="#FFFFFF"/>
+    <!-- content host (mock web engine paints 0..480; home = white page) -->
+    <Rect name="PageHost" x="0" y="0" w="320" h="480" bg="#FFFFFF"/>
+    <!-- bottom address bar #1F1F1F, geometry per refs/edge-screens/home.png -->
+    <Rect x="0" y="480" w="320" h="48" bg="#1F1F1F"/>
+    <Button name="TabsButton" x="0" y="480" w="48" h="48" command="tabs">
+      <Glyph x="14" y="15" w="20" h="20" text="tabs" color="#FFFFFF"/>
     </Button>
-    <Text name="TabsCount" x="26" y="484" text="1" color="#0078D7" size="9" bold="true"/>
-    <Rect x="46" y="492" w="1" h="24" bg="#464646"/>
-    <Button name="ReloadButton" x="47" y="480" w="36" h="48" command="reload">
-      <Glyph name="ReloadIcon" x="8" y="14" w="20" h="20" text="reload" color="#6E6E6E"/>
+    <Rect x="48" y="491" w="1" h="28" bg="#767676"/>
+    <Button name="ReloadButton" x="49" y="480" w="36" h="48" command="reload">
+      <Glyph name="ReloadIcon" x="14" y="15" w="20" h="20" text="reload" color="#767676"/>
     </Button>
-    <Button name="AddressButton" x="83" y="480" w="149" h="48" command="address">
-      <Glyph name="AddressLock" x="5" y="17" w="14" h="14" text="lock" color="#9A9A9A" visible="false"/>
-      <Text name="AddressText" x="23" y="18" text="Search or browse" color="#9A9A9A" size="12"/>
+    <Button name="AddressButton" x="85" y="480" w="147" h="48" command="address">
+      <Glyph name="AddressLock" x="21" y="16" w="14" h="14" text="lock" color="#9A9A9A" visible="false"/>
+      <Text name="AddressText" x="44" y="19" text="Search or browse" color="#9A9A9A" size="12"/>
     </Button>
-    <Button name="ReaderButton" x="232" y="480" w="36" h="48" command="reader">
-      <Glyph x="8" y="14" w="20" h="20" text="reader" color="#6E6E6E"/>
+    <Button name="ReaderButton" x="232" y="480" w="39" h="48" command="reader">
+      <Glyph name="ReaderIcon" x="3" y="14" w="22" h="22" text="reader" color="#4C4C4C"/>
     </Button>
-    <Rect x="268" y="492" w="1" h="24" bg="#464646"/>
-    <Button name="MoreButton" x="269" y="480" w="51" h="48" command="menu">
-      <Glyph x="13" y="12" w="24" h="24" text="more" color="#FFFFFF"/>
+    <Rect x="271" y="491" w="1" h="28" bg="#767676"/>
+    <Button name="MoreButton" x="272" y="480" w="48" h="48" command="menu">
+      <Glyph x="9" y="16" w="22" h="18" text="more" color="#FFFFFF"/>
     </Button>
   </Canvas>
 </Page>

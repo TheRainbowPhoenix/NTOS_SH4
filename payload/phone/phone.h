@@ -46,7 +46,8 @@ enum {
     UIX_TH_ACCENT,      /* checked fill, focused caret, links */
     UIX_TH_CTRL_BG,     /* button/check strip background */
     UIX_TH_CTRL_INK,    /* button label */
-    UIX_TH_CTRL_EDGE,   /* unchecked border / field border */
+    UIX_TH_CTRL_EDGE,   /* unchecked checkbox border */
+    UIX_TH_FIELD_EDGE,  /* input field border / hint text */
     UIX_TH_COUNT
 };
 typedef struct Render {

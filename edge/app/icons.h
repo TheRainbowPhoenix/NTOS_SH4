@@ -32,7 +32,9 @@ enum {
     IC_BACK,       /* arrow left                     */
     IC_CHECK,      /* checkmark                      */
     IC_CHEVRON,    /* ">"                            */
+    IC_CHEVL,      /* "<"                            */
     IC_SETTINGS,   /* gear                           */
+    IC_READLIST,   /* reading list: stacked lines+hook */
     IC_COUNT
 };
 

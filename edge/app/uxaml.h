@@ -52,8 +52,9 @@ enum {
     UX_ROW,          /* list row (auto Y from parent, fixed height) */
     UX_TEXTBOX,      /* text input: Text/Placeholder/Caret/Active */
     UX_PROGRESS,     /* progress bar: Value/Max/Fill/Track */
-    UX_CHECK,        /* checkbox: Checked/Text */
+    UX_CHECK,        /* checkbox: Checked/Text (shared uixctl painter) */
     UX_SCROLL,       /* scroll container for one child */
+    UX_TOGGLE,       /* toggle switch: Checked (shared uixctl painter) */
     UX_KIND_COUNT
 };
 
@@ -78,14 +79,15 @@ enum {
     UXA_VISIBLE,
     UXA_ALIGN,      /* 0 left 1 center 2 right (text) */
     UXA_BORDER,     /* Rect: 1px outline in Color instead of Bg fill */
+    UXA_PLACEHOLDER,/* TextBox hint text (shown when empty) */
     UXA_COUNT
 };
 
 /* ---- parsed node (static arena, no pointers but child indices) ---- */
-#define UX_MAX_NODES 256
+#define UX_MAX_NODES 384
 #define UX_MAX_ATTRS 10
-#define UX_MAX_DOCS 16
-#define UX_MAX_STRINGS 360
+#define UX_MAX_DOCS 24
+#define UX_MAX_STRINGS 448
 #define UX_STR_MAX 96
 
 typedef struct {

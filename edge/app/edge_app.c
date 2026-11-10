@@ -1,18 +1,23 @@
-/* edge_app.c — "Edge" mobile POC for NTOS, driven by uXAML markup (v2 dark).
+/* edge_app.c — "Edge" mobile POC for NTOS, driven by uXAML markup (v3 ref).
  *
- * Reconstructs the Windows 10 Mobile Edge chrome (SmallScreenPage with the
- * bottom address bar [tabs|reload|url|reader|...], ActionsMenu sheet,
- * TabCenter 2-column grid + right-padded toolbar, HubPanel pivots,
- * Settings + Clear browsing data, Add to reading list / favorites dialogs,
- * AddressEditBox + dark SIP) from the binary uXAML file \fls0\edge.uxaml
- * loaded once at startup. Exact en-US strings from the real package
- * (edge/analysis/EDGE_UI_STRINGS.md); control names mirror the reverse-
- * engineered automation ids (TabsButton, AddressEditBox, MoreButton,
- * TabsCenter_NewTabButton, AddReadingListFlyout*...).
+ * Reconstructs the Windows 10 Mobile Edge chrome with pixel measurements
+ * taken from the real-device captures in refs/edge-screens/
+ * (edge/analysis/EDGE_UI_REFERENCE.md): bottom #1F1F1F address bar, the
+ * "..." actions sheet over a #7F7F7F scrim, the tab-center 2-column card
+ * grid on black, the fullscreen hub with pivot icons, Clear-browsing-data
+ * checkboxes, the reading-list dialog and the address editor with the
+ * shared FINGERKB.DLL keyboard.
  *
- * The "web engine" is a deterministic mock: a wikipedia-like article for
- * wikipedia hosts, a generic page otherwise, dark NTP with top sites.
- * No network, no HTML parser, no Chakra (pure stub DLL).
+ * Component reuse (the W10M shared-DLL model):
+ *   - keyboard: loaded as a separate module; the host loader snaps our
+ *     __imp_UIXGetSchemaFactory slot to fingerkb.dll's export, and its
+ *     render/svf imports snap back to the exports below
+ *   - controls + SVF icons: payload/phone/uixctl.c and svf.c compile into
+ *     this DLL and paint through the Render vtable below (dark theme)
+ *
+ * The "web engine" is a deterministic mock: a Wikipedia-like article for
+ * wikipedia hosts, a white page otherwise, the InPrivate page for private
+ * empty tabs. No network, no HTML parser, no Chakra (pure stub DLL).
  */
 #include "nt_app.h"
 #include "uxaml.h"
@@ -20,6 +25,51 @@
 
 /* bitmap font (generated 1-bpp glyphs, no TTF on device) */
 #include "font_bitmap.h"
+
+/* ---- shared phone-framework ABI (mirror of payload/phone/phone.h) ----
+ * phone.h cannot be included here (nt_app.h redefines the NT_IMPORT
+ * macros), so the two vtables the app hosts are mirrored 1:1. They MUST
+ * stay in sync with payload/phone/phone.h. */
+typedef struct EdgeRender {
+    U32 profile;
+    void (*clip)(int, int, int, int);
+    void (*fill)(void *, int, int, int, int, U32);
+    void (*text)(void *, int, int, const char *, U32, int);
+    void (*line)(void *, int, int, int, int, U32);
+    void (*ellipse)(void *, int, int, int, int, U32, int);
+    void (*polygon)(void *, const Pt *, unsigned, U32);
+    void (*surface)(int);
+    const U32 *theme; /* UIX_TH_* table (see phone.h) */
+} EdgeRender;
+
+typedef struct EdgeKb {
+    U32 profile; /* 0x55495831 "UIX1" */
+    void (*paint)(void *);
+    int (*input)(U32, U32, U32);
+    int (*page)(void);
+    void (*dock)(int);
+} EdgeKb;
+
+/* shared control painters (payload/phone/uixctl.c, linked into this DLL) */
+void ctl_button(void *dc, const EdgeRender *r, int x, int y, int w, int h,
+                const char *label, int pressed);
+void ctl_checkbox(void *dc, const EdgeRender *r, int x, int y, int checked,
+                  const char *label);
+void ctl_toggle(void *dc, const EdgeRender *r, int x, int y, int on);
+void ctl_field(void *dc, const EdgeRender *r, int x, int y, int w, int h,
+               const char *text, const char *hint, int focused);
+/* SVF icon draw (payload/phone/svf.c, linked into this DLL) */
+int SVFDrawTint(void *dc, const void *data, unsigned length, int x, int y,
+                int w, int h, U32 tint);
+
+/* IAT slot owned by this object: uixctl.c/svf.c reference it as extern
+ * (compiled with -DNT_IAT_EXTERN_ONLY) and the loader cannot snap a
+ * module's own export, so RunApplication initialises it manually. */
+NT_DEFINE(render_SpGetThreadContext)
+
+/* keyboard factory: imported from FINGERKB.DLL via the host loader */
+NT_IMPORT(const EdgeKb *, UIXGetSchemaFactory, (void))
+NT_DEFINE(UIXGetSchemaFactory)
 
 /* ---- imports (host loader or device COREDLL snap these) ---- */
 typedef int (*WndProcT)(void *, U32, U32, U32);
@@ -92,19 +142,22 @@ NT_DEFINE(SipShowIM)
 NT_IMPORT(int, SipGetInfo, (SipInfo *))
 NT_DEFINE(SipGetInfo)
 
-/* ---- dark theme palette (Edge 1607 mobile) ---- */
-#define C_BG     RGB_(0x00, 0x00, 0x00) /* app background            */
-#define C_SHEET  RGB_(0x2B, 0x2B, 0x2B) /* menus, cards, flyouts     */
-#define C_CARD   RGB_(0x33, 0x33, 0x33) /* tiles, keyboard keys      */
-#define C_SEL    RGB_(0x3A, 0x3A, 0x3A) /* selected tab card         */
-#define C_FIELD  RGB_(0x1F, 0x1F, 0x1F) /* input fields              */
-#define C_SEP    RGB_(0x46, 0x46, 0x46) /* separators                */
+/* ---- palette (measured from refs/edge-screens, dark theme) ---- */
+#define C_BAR    RGB_(0x1F, 0x1F, 0x1F) /* address bar, icon bar, kb bg  */
+#define C_SHEET  RGB_(0x2B, 0x2B, 0x2B) /* menu sheets, flyouts          */
+#define C_PAGE   RGB_(0x00, 0x00, 0x00) /* tabs/hub/settings pages       */
+#define C_CARD   RGB_(0x33, 0x33, 0x33) /* Clear button, preview areas   */
+#define C_BTN    RGB_(0x2E, 0x2E, 0x2E) /* dialog buttons                */
+#define C_SEP    RGB_(0x76, 0x76, 0x76) /* address-bar separators        */
 #define C_INK    RGB_(0xFF, 0xFF, 0xFF)
 #define C_MUT    RGB_(0x9A, 0x9A, 0x9A)
 #define C_DIM    RGB_(0x6E, 0x6E, 0x6E)
+#define C_DIS    RGB_(0x4C, 0x4C, 0x4C) /* disabled reader icon          */
 #define C_BLUE   RGB_(0x00, 0x78, 0xD7)
-#define C_SCRIM  RGB_(0x14, 0x14, 0x14)
-#define C_PAGEBG RGB_(0xFF, 0xFF, 0xFF) /* mock web page background  */
+#define C_LINK   RGB_(0x00, 0x9B, 0xE4) /* InPrivate page links          */
+#define C_SCRIM  RGB_(0x7F, 0x7F, 0x7F) /* 50% dim over white content    */
+#define C_WLINK  RGB_(0x33, 0x66, 0xCC) /* links inside mock web pages   */
+#define C_PAGEBG RGB_(0xFF, 0xFF, 0xFF) /* mock web page background      */
 
 /* ---- tiny utils (no CRT on device) ---- */
 static int xstrlen(const char *s)
@@ -238,7 +291,7 @@ static int text_w(const char *s, int h)
 {
     const PhoneFont *f = pick_font(h);
     int w = 0;
-    for (; *s; ++s) {
+    for (; s && *s; ++s) {
         int ch = (unsigned char)*s;
         if (ch < f->first || ch >= f->first + f->count)
             ch = '?';
@@ -317,6 +370,142 @@ static void draw_text_clamp(void *dc, int x, int y, const char *s, U32 c, int h,
     draw_text(dc, x + w, y, "...", c, h, 0, 0);
 }
 
+/* ---- shared-component render context (dark Edge theme) ----
+ * Serves uixctl.c (controls), svf.c (icons) and fingerkb.dll (keyboard):
+ * the same vtable model as uixrender.dll, with the dark UIX_TH table. */
+static const U32 edge_theme[] = {
+    RGB_(0x1F, 0x1F, 0x1F), /* 0 SURFACE   keyboard backdrop        */
+    RGB_(0x33, 0x33, 0x33), /* 1 KEY        normal key             */
+    RGB_(0x4C, 0x4C, 0x4C), /* 2 KEY_ALT    shift/&123             */
+    RGB_(0xFF, 0xFF, 0xFF), /* 3 INK        key text               */
+    RGB_(0xFF, 0xFF, 0xFF), /* 4 KEY_GO     enter/search key fill  */
+    RGB_(0x00, 0x00, 0x00), /* 5 GO_INK     glyph on the go key    */
+    RGB_(0x00, 0x78, 0xD7), /* 6 ACCENT     checked/caret/links    */
+    RGB_(0x33, 0x33, 0x33), /* 7 CTRL_BG    button fill            */
+    RGB_(0xFF, 0xFF, 0xFF), /* 8 CTRL_INK   button label           */
+    RGB_(0xCC, 0xCC, 0xCC), /* 9 CTRL_EDGE  unchecked border       */
+    RGB_(0xFF, 0xFF, 0xFF), /* 10 FIELD_EDGE input border/hint     */
+};
+
+static void r_clip(int l, int t, int r, int b)
+{
+    clip_set(l, t, r, b);
+}
+static void r_fill(void *dc, int l, int t, int r, int b, U32 c)
+{
+    fill(dc, l, t, r, b, c);
+}
+static void r_text(void *dc, int x, int y, const char *s, U32 c, int h)
+{
+    draw_text(dc, x, y, s, c, h, 0, 0);
+}
+static void r_line(void *dc, int x, int y, int xx, int yy, U32 c)
+{
+    if (y == yy) {
+        fill(dc, x < xx ? x : xx, y, (x > xx ? x : xx) + 1, y + 1, c);
+        return;
+    }
+    if (x == xx) {
+        fill(dc, x, y < yy ? y : yy, x + 1, (y > yy ? y : yy) + 1, c);
+        return;
+    }
+    int dx = xx > x ? xx - x : x - xx, sx = x < xx ? 1 : -1;
+    int dy = yy > y ? y - yy : yy - y, sy = y < yy ? 1 : -1, e = dx + dy;
+    for (;;) {
+        fill(dc, x, y, x + 1, y + 1, c);
+        if (x == xx && y == yy)
+            break;
+        int e2 = e * 2;
+        if (e2 >= dy) {
+            e += dy;
+            x += sx;
+        }
+        if (e2 <= dx) {
+            e += dx;
+            y += sy;
+        }
+    }
+}
+static void r_ellipse(void *dc, int cx, int cy, int rx, int ry, U32 c, int thick)
+{
+    if (rx < 1 || ry < 1 || rx > 100 || ry > 100)
+        return;
+    int ix = rx - thick, iy = ry - thick;
+    for (int y = -ry; y <= ry; ++y) {
+        int run = -999;
+        for (int x = -rx; x <= rx + 1; ++x) {
+            int in = x <= rx && x * x * ry * ry + y * y * rx * rx <= rx * rx * ry * ry;
+            if (thick > 0 && ix > 0 && iy > 0 &&
+                x * x * iy * iy + y * y * ix * ix < ix * ix * iy * iy)
+                in = 0;
+            if (in && run == -999)
+                run = x;
+            if (!in && run != -999) {
+                fill(dc, cx + run, cy + y, cx + x, cy + y + 1, c);
+                run = -999;
+            }
+        }
+    }
+}
+static void r_polygon(void *dc, const Pt *p, unsigned n, U32 c)
+{
+    if (!p || n < 3 || n > 255)
+        return;
+    int ymin = p[0].y, ymax = ymin;
+    for (unsigned i = 1; i < n; ++i) {
+        if (p[i].y < ymin)
+            ymin = p[i].y;
+        if (p[i].y > ymax)
+            ymax = p[i].y;
+    }
+    if (ymin < clip_rect.top)
+        ymin = clip_rect.top;
+    if (ymax > clip_rect.bottom)
+        ymax = clip_rect.bottom;
+    for (int y = ymin; y < ymax; ++y) {
+        int xs[255];
+        unsigned used = 0;
+        for (unsigned i = 0, j = n - 1; i < n; j = i++)
+            if ((p[i].y <= y && p[j].y > y) || (p[j].y <= y && p[i].y > y)) {
+                int num = (y - p[i].y) * (p[j].x - p[i].x);
+                int den = p[j].y - p[i].y;
+                int vx = p[i].x + num / den;
+                xs[used++] = vx;
+            }
+        for (unsigned i = 1; i < used; ++i) {
+            int v = xs[i];
+            unsigned j = i;
+            while (j && xs[j - 1] > v) {
+                xs[j] = xs[j - 1];
+                --j;
+            }
+            xs[j] = v;
+        }
+        for (unsigned i = 0; i + 1 < used; i += 2)
+            fill(dc, xs[i], y, xs[i + 1] + 1, y + 1, c);
+    }
+}
+static void r_surface(int b)
+{
+    (void)b;
+}
+static const EdgeRender edge_renderer = {
+    0x55495831u, r_clip,  r_fill,     r_text, r_line,
+    r_ellipse,   r_polygon, r_surface, edge_theme,
+};
+
+/* cross-module exports: fingerkb.dll snaps these (host loader) */
+__attribute__((dllexport)) const EdgeRender *render_SpGetThreadContext(void)
+{
+    return &edge_renderer;
+}
+__attribute__((dllexport)) int svf_SVFDrawTint(void *dc, const void *data,
+                                               unsigned length, int x, int y,
+                                               int w, int h, U32 tint)
+{
+    return SVFDrawTint(dc, data, length, x, y, w, h, tint);
+}
+
 /* ---- model ---- */
 #define MAX_TABS 8
 #define MAX_URL 96
@@ -333,7 +522,6 @@ typedef struct {
     U32 color;
 } Site;
 
-/* suggestion + title sources (subset of the real NTP/top-sites set) */
 static const Site SITES[6] = {
     {"en.wikipedia.org", "Wikipedia", RGB_(0x33, 0x33, 0x33)},
     {"github.com", "GitHub", RGB_(0x24, 0x29, 0x2E)},
@@ -343,48 +531,31 @@ static const Site SITES[6] = {
     {"bing.com", "Bing", RGB_(0x00, 0x83, 0x73)},
 };
 
-static const struct { const char *label; U32 color; } NTP_TILES[8] = {
-    {"Wikipedia", RGB_(0x33, 0x33, 0x33)},
-    {"GitHub", RGB_(0x24, 0x29, 0x2E)},
-    {"YouTube", RGB_(0xFF, 0x00, 0x00)},
-    {"MSN", RGB_(0x00, 0x78, 0xD7)},
-    {"Bing", RGB_(0x00, 0x83, 0x73)},
-    {"Outlook", RGB_(0x00, 0x72, 0xC6)},
-    {"Amazon", RGB_(0xFF, 0x99, 0x00)},
-    {"Reddit", RGB_(0xFF, 0x45, 0x00)},
-};
-
-typedef struct { const char *title, *host; } Item;
+typedef struct {
+    const char *title, *host, *time;
+} Item;
 static Item favorites[12] = {
-    {"Wikipedia", "en.wikipedia.org"},
-    {"GitHub", "github.com"},
-    {"Hacker News", "news.ycombinator.com"},
-    {"MSN", "msn.com"},
-    {"Xania", "xania.fr"},
+    {"Wikipedia", "en.wikipedia.org", ""},
+    {"GitHub", "github.com", ""},
+    {"Hacker News", "news.ycombinator.com", ""},
+    {"MSN", "msn.com", ""},
+    {"Xania", "xania.fr", ""},
 };
 static int fav_count = 5;
 static Item reading_list[12] = {
-    {"Stay on top of your reading", "msn.com"},
-    {"Windows 10 Mobile: the best bits", "theverge.com"},
-    {"Build 1607: what's new", "blogs.windows.com"},
+    {"Stay on top of your reading", "msn.com", ""},
+    {"Windows 10 Mobile: the best bits", "theverge.com", ""},
+    {"Build 1607: what's new", "blogs.windows.com", ""},
 };
 static int rl_count = 3;
-static Item hist_today[8] = {
-    {"GitHub", "github.com"},
-    {"Xania", "xania.fr"},
-    {"Bing", "bing.com"},
+/* history seeded like the reference device capture (history.png) */
+static Item hist_rows[8] = {
+    {"Exam - Wikipedia", "en.wikipedia.org", "8:27 PM"},
+    {"Test - Wikipedia", "en.wikipedia.org", "8:27 PM"},
+    {"test - Search", "bing.com", "8:27 PM"},
+    {"Download Microsoft Edge", "explore.microsoft.com", "8:26 PM"},
 };
-static int hist_count = 3;
-static const Item HIST_OLD[3] = {
-    {"MSN", "msn.com"},
-    {"BBC News", "bbc.com"},
-    {"The Verge", "theverge.com"},
-};
-static const struct { const char *name, *status; int prog; } DOWNLOADS[3] = {
-    {"EdgeUserGuide.pdf", "267 KB - Complete", 100},
-    {"build1607.iso", "1.2 GB of 4.5 GB - Paused", 27},
-    {"wallpaper.png", "1.1 MB - Complete", 100},
-};
+static int hist_count = 4;
 
 static UxFile ux;
 static Tab tabs[MAX_TABS];
@@ -399,9 +570,9 @@ enum {
 static int hub_pivot; /* 0 favorites 1 reading 2 history 3 downloads */
 static char addr_buf[MAX_URL];
 static int addr_len;
-static int loading_ttl;
 static char toast_text[80];
 static void *g_wnd;
+static const EdgeKb *g_kb;
 
 /* runtime per-node flags (index-stable after parse) */
 #define NS_TOGGLED 1u /* checkbox flipped at runtime */
@@ -452,18 +623,12 @@ static const char *dyn_text(const char *name, const char *def)
 {
     if (!name)
         return def;
-    if (xeq(name, "TabsCount")) {
-        static char b[4];
-        b[0] = (char)('0' + tab_count);
-        b[1] = 0;
-        return b;
-    }
     if (xeq(name, "HubTitle")) {
-        static const char *names[4] = {"Favorites", "Reading list", "History",
-                                       "Downloads"};
+        static const char *names[4] = {"FAVORITES", "READING LIST", "HISTORY",
+                                       "DOWNLOADS"};
         return names[hub_pivot & 3];
     }
-    if (xeq(name, "RLName") || xeq(name, "FavName")) {
+    if (xeq(name, "RLNameText") || xeq(name, "FavNameText")) {
         Tab *t = &tabs[tab_cur];
         return t->title[0] ? t->title : "New tab";
     }
@@ -475,12 +640,12 @@ static U32 dyn_color(const char *name, U32 def)
     if (!name)
         return def;
     if (xeq(name, "ReloadIcon"))
-        return tabs[tab_cur].url[0] ? C_INK : C_DIM;
-    if (xeq(name, "GoForwardText") || xeq(name, "GoForwardIcon"))
-        return C_MUT; /* disabled: no forward stack in the POC */
-    if (name[0] == 'P' && name[1] == 'i' && name[2] == 'v' && name[3] == 'o' &&
-        name[4] == 't' && name[5] >= '0' && name[5] <= '3')
-        return (hub_pivot == name[5] - '0') ? C_INK : C_MUT;
+        return tabs[tab_cur].url[0] ? C_INK : C_SEP;
+    if (xeq(name, "PivotIcon0") || xeq(name, "PivotIcon1") ||
+        xeq(name, "PivotIcon2") || xeq(name, "PivotIcon3")) {
+        int p = name[9] - '0';
+        return hub_pivot == p ? RGB_(0x00, 0x5A, 0xA1) : C_INK;
+    }
     return def;
 }
 
@@ -507,8 +672,6 @@ static void layout_doc(const UxDoc *d, int bx, int by, int bw, int bh)
         unsigned ni = stack[--sp];
         const UxNode *n = &ux.nodes[ni];
         NRect pr = nrect[ni];
-        /* pass 1: assign child rects in document order so stack/list flow
-         * (auto-Y / auto-X) runs top-down / left-right */
         int acc = 0;
         for (int ci = 0; ci < (int)n->child_count; ++ci) {
             unsigned c = n->child[ci];
@@ -540,7 +703,6 @@ static void layout_doc(const UxDoc *d, int bx, int by, int bw, int bh)
             nrect[c].w = (short)cw;
             nrect[c].h = (short)ch;
         }
-        /* pass 2: descend right-to-left so the stack pops left-to-right */
         for (int ci = (int)n->child_count - 1; ci >= 0; --ci) {
             unsigned c = n->child[ci];
             if (ux.nodes[c].child_count && sp < 60)
@@ -549,7 +711,7 @@ static void layout_doc(const UxDoc *d, int bx, int by, int bw, int bh)
     }
 }
 
-/* ---- node painting ---- */
+/* ---- node painting (shared controls via uixctl painters) ---- */
 static void paint_node(void *dc, unsigned ni)
 {
     const UxNode *n = &ux.nodes[ni];
@@ -614,48 +776,26 @@ static void paint_node(void *dc, unsigned ni)
         break;
     }
     case UX_CHECK: {
+        /* shared uixctl painter: 20px accent box + label (clean_hist.png) */
         int on = ux_int(&ux, n, UXA_CHECKED, 0) || (nstate[ni] & NS_TOGGLED);
-        int bx = r.x + 16, by = r.y + 12;
-        if (on) {
-            fill_round(dc, bx, by, bx + 20, by + 20, C_BLUE, 3);
-            ic_draw(ifill, dc, bx + 2, by + 2, 16, C_INK, IC_CHECK);
-        } else {
-            ic_rect(ifill, dc, bx, by, 20, 20, 1, C_MUT);
-        }
         const char *t;
         node_text(n, &t);
-        draw_text(dc, r.x + 52, r.y + 14, t, C_INK, 12, 0, 0);
+        ctl_checkbox(dc, &edge_renderer, r.x, r.y, on, t);
+        break;
+    }
+    case UX_TOGGLE: {
+        int on = ux_int(&ux, n, UXA_CHECKED, 0) || (nstate[ni] & NS_TOGGLED);
+        ctl_toggle(dc, &edge_renderer, r.x, r.y, on);
         break;
     }
     case UX_TEXTBOX: {
-        U32 bg = ux_clr(&ux, n, UXA_BG, C_FIELD);
+        U32 bg = ux_clr(&ux, n, UXA_BG, C_BAR);
         int rad = ux_int(&ux, n, UXA_RADIUS, 2);
         fill_round(dc, r.x, r.y, r.x + r.w, r.y + r.h, bg, rad);
-        if (mode == M_ADDRESS && xeq(name, "AddressInput")) {
-            if (addr_len) {
-                draw_text(dc, r.x + 8, r.y + (r.h - 12) / 2, addr_buf, C_INK, 12, 0, 0);
-                int cx = r.x + 8 + text_w(addr_buf, 12) + 2;
-                if (cx < r.x + r.w - 6)
-                    fill(dc, cx, r.y + 6, cx + 2, r.y + r.h - 6, C_BLUE);
-            } else {
-                const char *t;
-                node_text(n, &t);
-                draw_text(dc, r.x + 8, r.y + (r.h - 12) / 2, t, C_MUT, 12, 0, 0);
-                fill(dc, r.x + 8, r.y + 6, r.x + 10, r.y + r.h - 6, C_BLUE);
-            }
-        } else {
-            const char *t;
-            node_text(n, &t);
-            int live = t && *t && (xeq(name, "RLName") || xeq(name, "FavName"));
-            if (t && *t)
-                draw_text(dc, r.x + 8, r.y + (r.h - 12) / 2, t,
-                          live ? C_INK : C_MUT, 12, 0, 0);
-            if (live) {
-                int cx = r.x + 8 + text_w(t, 12) + 2;
-                if (cx < r.x + r.w - 6)
-                    fill(dc, cx, r.y + 6, cx + 2, r.y + r.h - 6, C_BLUE);
-            }
-        }
+        const char *t;
+        node_text(n, &t);
+        if (t && *t)
+            draw_text(dc, r.x + 8, r.y + (r.h - 12) / 2, t, C_MUT, 12, 0, 0);
         break;
     }
     default:
@@ -666,95 +806,130 @@ static void paint_node(void *dc, unsigned ni)
 }
 
 /* ---- mock web content (the "engine") ---- */
-static void paint_ntp(void *dc)
+/* token: a word + colour; used to lay out article text with inline links */
+typedef struct {
+    const char *s;
+    U32 c;
+} Tok;
+
+static void paint_tok_line(void *dc, int x, int y, const Tok *t, int n)
 {
-    fill(dc, 0, 0, 320, 480, C_BG);
-    /* top sites: 4 x 2 tiles */
-    for (int i = 0; i < 8; ++i) {
-        int gx = 8 + (i % 4) * 78, gy = 24 + (i / 4) * 104;
-        fill_round(dc, gx, gy, gx + 64, gy + 64, C_SHEET, 8);
-        const char *lab = NTP_TILES[i].label;
-        char c2[2] = {lab[0], 0};
-        draw_text(dc, gx + 32, gy + 20, c2, C_INK, 22, 1, 1);
-        draw_text(dc, gx + 32, gy + 72, lab, C_MUT, 9, 1, 0);
-    }
-    /* news cards */
-    static const char *NEWS[2][2] = {
-        {"Windows 10 Mobile gets a faster Edge", "MSN News"},
-        {"Best budget phones of 2016", "MSN News"},
-    };
-    for (int i = 0; i < 2; ++i) {
-        int gy = 248 + i * 96;
-        fill_round(dc, 8, gy, 312, gy + 84, RGB_(0x1F, 0x1F, 0x1F), 4);
-        draw_text_clamp(dc, 24, gy + 14, NEWS[i][0], C_INK, 12, 190);
-        draw_text(dc, 24, gy + 38, "Tap to read the full story on your", C_MUT, 9, 0, 0);
-        draw_text(dc, 24, gy + 52, "device, even without a connection.", C_MUT, 9, 0, 0);
-        draw_text(dc, 24, gy + 66, NEWS[i][1], C_DIM, 9, 0, 0);
-        fill_round(dc, 240, gy + 12, 300, gy + 72, C_CARD, 4);
-        draw_text(dc, 270, gy + 36, "i", C_MUT, 22, 1, 1);
+    for (int i = 0; i < n; ++i) {
+        draw_text(dc, x, y, t[i].s, t[i].c, 11, 0, 0);
+        x += text_w(t[i].s, 11);
     }
 }
 
-static void paint_bars_paragraph(void *dc, int y, const int *widths, int lines)
+#define BLK RGB_(0x00, 0x00, 0x00)
+#define LNK C_WLINK
+
+static void paint_wiki(void *dc)
 {
-    for (int i = 0; i < lines; ++i)
-        fill(dc, 16, y + i * 16, 16 + widths[i], y + i * 16 + 8,
-             RGB_(0xEA, 0xEC, 0xF0));
+    fill(dc, 0, 0, 320, 480, C_PAGEBG);
+    /* article title + language tabs + outline buttons (webpage.png) */
+    draw_text(dc, 16, 8, "Exam", BLK, 22, 0, 1);
+    draw_text(dc, 16, 40, "Article", LNK, 11, 0, 0);
+    fill(dc, 16, 51, 16 + text_w("Article", 11), 52, LNK);
+    draw_text(dc, 66, 40, "Talk", LNK, 11, 0, 0);
+    ic_rect(ifill, dc, 16, 60, 78, 80, 1, RGB_(0xA2, 0xA9, 0xB1));
+    draw_text(dc, 26, 65, "Language", BLK, 11, 0, 0);
+    ic_rect(ifill, dc, 242, 60, 304, 80, 1, RGB_(0xA2, 0xA9, 0xB1));
+    draw_text(dc, 262, 65, "Edit", BLK, 11, 0, 0);
+    draw_text(dc, 16, 90, "(Redirected from Test (assessment))",
+              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
+    draw_text(dc, 16, 104, "For other uses, see Exam (disambiguation)",
+              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
+    draw_text(dc, 16, 118, "and Examination (disambiguation).",
+              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
+    /* body with inline links */
+    static const Tok L1[] = {{"An ", BLK}, {"examination", BLK}, {" (exam or ", BLK},
+        {"test", LNK}, {"), or ", BLK}, {"test", LNK}, {", is an ", BLK},
+        {"educational", LNK}, {" ", BLK}, {"assessment", LNK}};
+    static const Tok L2[] = {{"intended to measure a test-taker's ", BLK},
+        {"knowledge", LNK}, {", ", BLK}, {"skill", LNK}, {", ", BLK},
+        {"aptitude", LNK}, {",", BLK}};
+    static const Tok L3[] = {{"", BLK}, {"physical fitness", LNK}, {", or ", BLK},
+        {"classification", LNK}, {" in many other", BLK}};
+    static const Tok L4[] = {{"topics (e.g. ", BLK}, {"beliefs", LNK}, {" or ", BLK},
+        {"personal opinion", LNK}, {"). A ", BLK}, {"test", LNK}, {" may", BLK}};
+    static const Tok L5[] = {{"be administered ", BLK}, {"verbally", LNK}, {", on ", BLK},
+        {"paper", LNK}, {", on a ", BLK}, {"computer", LNK}, {", or in a", BLK}};
+    static const Tok L6[] = {{"formal or informal setting. An ", BLK},
+        {"exam", LNK}, {" may be", BLK}};
+    static const Tok L7[] = {{"administered by an ", BLK}, {"examination board", LNK},
+        {", an", BLK}};
+    static const Tok L8[] = {{"instructor, a ", BLK}, {"proctor", LNK},
+        {", or a ", BLK}, {"testing service", LNK}, {".", BLK}};
+    static const Tok L9[] = {{"The ", BLK}, {"Wikipedia", LNK},
+        {" article on examinations", BLK}};
+    static const Tok L10[] = {{"covers the history of ", BLK}, {"testing", LNK},
+        {" in", BLK}};
+    static const Tok L11[] = {{"education and ", BLK}, {"psychometrics", LNK},
+        {".", BLK}};
+    static const Tok L12[] = {{"This page is rendered locally by the NTOS mock",
+                               RGB_(0x54, 0x59, 0x5D)}};
+    int y = 140;
+    paint_tok_line(dc, 16, y, L1, 10); y += 17;
+    paint_tok_line(dc, 16, y, L2, 7); y += 17;
+    paint_tok_line(dc, 16, y, L3, 4); y += 17;
+    paint_tok_line(dc, 16, y, L4, 7); y += 17;
+    paint_tok_line(dc, 16, y, L5, 7); y += 17;
+    paint_tok_line(dc, 16, y, L6, 3); y += 17;
+    paint_tok_line(dc, 16, y, L7, 3); y += 17;
+    paint_tok_line(dc, 16, y, L8, 5); y += 24;
+    paint_tok_line(dc, 16, y, L9, 3); y += 17;
+    paint_tok_line(dc, 16, y, L10, 3); y += 17;
+    paint_tok_line(dc, 16, y, L11, 3); y += 24;
+    draw_text(dc, 16, y, "This page is rendered locally by the NTOS mock",
+              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
+    draw_text(dc, 16, y + 13, "engine. No network stack involved.",
+              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
 }
 
 static void paint_page(void *dc)
 {
     Tab *t = &tabs[tab_cur];
     if (!t->url[0]) {
-        paint_ntp(dc);
+        if (t->priv) {
+            /* InPrivate new tab: uXAML page over the content host */
+            const UxDoc *d = ux_find_doc(&ux, "InPrivatePage");
+            if (d) {
+                layout_doc(d, 0, 0, 320, 528);
+                paint_node(dc, d->root);
+            }
+        } else {
+            /* home state per home.png: plain white page */
+            fill(dc, 0, 0, 320, 480, C_PAGEBG);
+        }
         return;
     }
     int wiki = 0;
     for (const char *p = t->host; *p; ++p)
         if (p[0] == 'w' && p[1] == 'i' && p[2] == 'k' && p[3] == 'i')
             wiki = 1;
-    fill(dc, 0, 0, 320, 480, C_PAGEBG);
     if (wiki) {
-        draw_text(dc, 16, 16, "Wikipedia", RGB_(0x00, 0x00, 0x00), 18, 0, 1);
-        draw_text(dc, 16, 44, "From Wikipedia, the free encyclopedia",
-                  RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
-        fill(dc, 16, 60, 304, 61, RGB_(0xA2, 0xA9, 0xB1));
-        static const int p1[4] = {288, 260, 274, 180};
-        paint_bars_paragraph(dc, 74, p1, 4);
-        /* table of contents */
-        ic_rect(ifill, dc, 16, 150, 288, 104, 1, RGB_(0xA2, 0xA9, 0xB1));
-        draw_text(dc, 28, 162, "Contents", RGB_(0x00, 0x00, 0x00), 12, 0, 1);
-        static const char *TOC[4] = {"1 History", "2 Features", "3 See also",
-                                     "4 References"};
-        for (int i = 0; i < 4; ++i)
-            draw_text(dc, 28, 184 + i * 17, TOC[i], RGB_(0x33, 0x66, 0xCC), 11, 0, 0);
-        static const int p2[5] = {288, 200, 288, 274, 132};
-        paint_bars_paragraph(dc, 270, p2, 5);
-        /* an inline blue link inside the third line */
-        fill(dc, 16, 302, 70, 310, RGB_(0x33, 0x66, 0xCC));
-        draw_text(dc, 16, 386, "This page is rendered locally by the NTOS",
-                  RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
-        draw_text(dc, 16, 400, "mock engine. No network stack involved.",
-                  RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
-        fill_round(dc, 248, 20, 304, 76, RGB_(0xEA, 0xEC, 0xF0), 4);
-        draw_text(dc, 276, 34, "W", RGB_(0x33, 0x33, 0x33), 22, 1, 1);
-    } else {
-        fill(dc, 0, 0, 320, 52, RGB_(0xF5, 0xF6, 0xF7));
-        draw_text(dc, 16, 18, t->title, RGB_(0x00, 0x00, 0x00), 14, 0, 1);
-        draw_text(dc, 16, 68, t->host, RGB_(0x33, 0x66, 0xCC), 12, 0, 0);
-        static const int p1[4] = {288, 260, 274, 180};
-        paint_bars_paragraph(dc, 92, p1, 4);
-        static const int p2[4] = {288, 274, 252, 210};
-        paint_bars_paragraph(dc, 170, p2, 4);
-        draw_text(dc, 16, 250, "This page is rendered locally by the NTOS",
-                  RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
-        draw_text(dc, 16, 264, "mock engine. No network stack involved.",
-                  RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
+        paint_wiki(dc);
+        return;
     }
+    fill(dc, 0, 0, 320, 480, C_PAGEBG);
+    draw_text(dc, 16, 16, t->title, BLK, 18, 0, 1);
+    draw_text(dc, 16, 48, t->host, LNK, 12, 0, 0);
+    static const int P1[4] = {288, 260, 274, 180};
+    for (int i = 0; i < 4; ++i)
+        fill(dc, 16, 78 + i * 16, 16 + P1[i], 78 + i * 16 + 8,
+             RGB_(0xEA, 0xEC, 0xF0));
+    static const int P2[4] = {288, 274, 252, 210};
+    for (int i = 0; i < 4; ++i)
+        fill(dc, 16, 156 + i * 16, 16 + P2[i], 156 + i * 16 + 8,
+             RGB_(0xEA, 0xEC, 0xF0));
+    draw_text(dc, 16, 240, "This page is rendered locally by the NTOS mock",
+              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
+    draw_text(dc, 16, 254, "engine. No network stack involved.",
+              RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
 }
 
-/* two-tone URL: subdomain greyed, domain white (AddressBar*TextBrush) */
-static void paint_address_url(void *dc, const UxDoc *d)
+/* two-tone URL: subdomain grey, domain white (webpage.png) */
+static void paint_address_url(void *dc)
 {
     Tab *t = &tabs[tab_cur];
     if (!t->url[0])
@@ -762,9 +937,12 @@ static void paint_address_url(void *dc, const UxDoc *d)
     int ti = find_node("AddressText");
     if (ti < 0)
         return;
-    (void)d;
     NRect r = nrect[ti];
-    fill(dc, r.x - 2, r.y - 2, r.x + 130, r.y + 16, C_BG); /* erase markup text */
+    /* inprivate "e" chip before the text (inpriv.png) */
+    if (t->priv) {
+        fill(dc, r.x - 24, r.y - 2, r.x - 10, r.y + 14, C_BLUE);
+        draw_text(dc, r.x - 21, r.y, "e", C_INK, 11, 0, 1);
+    }
     const char *h = t->host;
     const char *dot = h;
     while (*dot && *dot != '.')
@@ -777,242 +955,97 @@ static void paint_address_url(void *dc, const UxDoc *d)
         xcopy(pre, h, n);
         pre[n] = 0;
         draw_text_clamp(dc, r.x, r.y, pre, C_MUT, 12, 60);
-        draw_text_clamp(dc, r.x + text_w(pre, 12), r.y, dot + 1, C_INK, 12, 64);
+        draw_text_clamp(dc, r.x + text_w(pre, 12), r.y, dot + 1, C_INK, 12, 130);
     } else {
         draw_text_clamp(dc, r.x, r.y, h, C_INK, 12, 126);
     }
 }
 
-/* ---- tab center cards (2-column grid) ---- */
+/* ---- tab center cards: 2-col grid on black (tabs/manytabs.png) ---- */
+static int card_col_x(int col)
+{
+    return 12 + col * 154;
+}
+
 static void paint_tab_cards(void *dc)
 {
     for (int i = 0; i < tab_count; ++i) {
         int col = i % 2, row = i / 2;
-        int cx = 8 + col * 156, cy = 56 + row * 108;
+        int cx = card_col_x(col), cy = 40 + row * 148;
         if (cy > 420)
             break;
         Tab *t = &tabs[i];
-        int sel = (i == tab_cur);
-        fill_round(dc, cx, cy, cx + 148, cy + 100, sel ? C_SEL : C_SHEET, 4);
-        if (sel)
-            ic_rect(ifill, dc, cx + 1, cy + 1, 146, 98, 2, C_BLUE);
-        /* favicon plate */
-        U32 pc = t->priv ? C_BLUE : (t->url[0] ? RGB_(0x33, 0x33, 0x33) : C_BLUE);
-        fill_round(dc, cx + 10, cy + 10, cx + 40, cy + 40, pc, 6);
-        if (t->priv)
-            ic_draw(ifill, dc, cx + 14, cy + 14, 16, C_INK, IC_INPRIVATE);
-        else if (t->url[0]) {
+        /* header strip: #1F1F1F, small page icon + title + close X */
+        fill(dc, cx, cy, cx + 142, cy + 24, C_BAR);
+        if (t->url[0]) {
             char c2[2] = {t->title[0] ? t->title[0] : 'e', 0};
-            draw_text(dc, cx + 25, cy + 14, c2, C_INK, 18, 1, 1);
-        } else
-            draw_text(dc, cx + 25, cy + 13, "e", C_INK, 22, 1, 1);
-        draw_text_clamp(dc, cx + 10, cy + 50, t->title, C_INK, 11, 128);
-        draw_text_clamp(dc, cx + 10, cy + 68, t->priv ? "InPrivate"
-                    : (t->url[0] ? t->host : "New tab"), C_MUT, 9, 128);
-        ic_draw(ifill, dc, cx + 122, cy + 6, 16, C_MUT, IC_CLOSE);
+            fill_round(dc, cx + 6, cy + 5, cx + 18, cy + 17, C_BLUE, 2);
+            draw_text(dc, cx + 8, cy + 5, c2, C_INK, 9, 0, 1);
+        } else if (t->priv) {
+            ic_draw(ifill, dc, cx + 5, cy + 4, 14, C_MUT, IC_INPRIVATE);
+        } else {
+            ic_draw(ifill, dc, cx + 5, cy + 5, 13, C_MUT, IC_TABS);
+        }
+        draw_text_clamp(dc, cx + 26, cy + 6, t->title, C_INK, 11, 96);
+        ic_draw(ifill, dc, cx + 124, cy + 5, 13, C_MUT, IC_CLOSE);
+        /* thumbnail: white for loaded pages, black for empty tabs */
+        if (t->url[0])
+            fill(dc, cx, cy + 24, cx + 142, cy + 140, C_PAGEBG);
+        else
+            fill(dc, cx, cy + 24, cx + 142, cy + 140, C_PAGE);
     }
 }
 
-/* ---- hub content (pivot panes) ---- */
+/* ---- hub content (pivot panes; history.png / edge4.png) ---- */
 static void paint_hub_rows(void *dc, const Item *items, int count, int icon)
 {
-    int y = 104;
-    for (int i = 0; i < count && y < 500; ++i, y += 52) {
-        ic_draw(ifill, dc, 14, y + 16, 18, C_MUT, icon);
-        draw_text_clamp(dc, 44, y + 14, items[i].title, C_INK, 12, 240);
-        draw_text_clamp(dc, 44, y + 32, items[i].host, C_MUT, 9, 240);
+    int y = 96;
+    for (int i = 0; i < count && y < 500; ++i, y += 50) {
+        ic_draw(ifill, dc, 15, y + 2, 20, C_MUT, icon);
+        draw_text_clamp(dc, 44, y + 2, items[i].title, C_INK, 14, 230);
+        if (items[i].time && items[i].time[0])
+            draw_text(dc, 308, y + 2, items[i].time, C_MUT, 11, 2, 0);
+        draw_text_clamp(dc, 44, y + 22, items[i].host, C_MUT, 11, 230);
     }
 }
 
 static void paint_hub_content(void *dc)
 {
     if (hub_pivot == 0) {
-        int y = 104;
-        for (int i = 0; i < fav_count && y < 500; ++i, y += 52) {
+        int y = 96;
+        for (int i = 0; i < fav_count && y < 500; ++i, y += 50) {
             U32 pc = C_SHEET;
             for (unsigned s = 0; s < 6; ++s)
                 if (xeq(favorites[i].host, SITES[s].host))
                     pc = SITES[s].color;
-            fill_round(dc, 10, y + 11, 38, y + 39, pc, 6);
+            fill_round(dc, 15, y + 2, 35, y + 22, pc, 4);
             char c2[2] = {favorites[i].title[0], 0};
-            draw_text(dc, 24, y + 16, c2, C_INK, 18, 1, 1);
-            draw_text_clamp(dc, 50, y + 14, favorites[i].title, C_INK, 12, 236);
-            draw_text_clamp(dc, 50, y + 32, favorites[i].host, C_MUT, 9, 236);
+            draw_text(dc, 25, y + 4, c2, C_INK, 11, 1, 1);
+            draw_text_clamp(dc, 44, y + 2, favorites[i].title, C_INK, 14, 240);
+            draw_text_clamp(dc, 44, y + 22, favorites[i].host, C_MUT, 11, 240);
         }
     } else if (hub_pivot == 1) {
-        paint_hub_rows(dc, reading_list, rl_count, IC_BOOK);
+        paint_hub_rows(dc, reading_list, rl_count, IC_READLIST);
     } else if (hub_pivot == 2) {
-        draw_text(dc, 16, 110, "Today", C_DIM, 9, 0, 1);
+        draw_text(dc, 18, 104, "Last hour", C_INK, 11, 0, 1);
         int y = 126;
-        for (int i = 0; i < hist_count && y < 300; ++i, y += 44) {
-            ic_draw(ifill, dc, 14, y + 12, 18, C_MUT, IC_CLOCK);
-            draw_text_clamp(dc, 44, y + 11, hist_today[i].title, C_INK, 12, 240);
-            draw_text_clamp(dc, 44, y + 27, hist_today[i].host, C_MUT, 9, 240);
-        }
-        draw_text(dc, 16, y + 14, "Last month", C_DIM, 9, 0, 1);
-        y += 30;
-        for (int i = 0; i < 3 && y < 500; ++i, y += 44) {
-            ic_draw(ifill, dc, 14, y + 12, 18, C_MUT, IC_CLOCK);
-            draw_text_clamp(dc, 44, y + 11, HIST_OLD[i].title, C_INK, 12, 240);
-            draw_text_clamp(dc, 44, y + 27, HIST_OLD[i].host, C_MUT, 9, 240);
+        for (int i = 0; i < hist_count && y < 500; ++i, y += 50) {
+            U32 pc = C_SHEET;
+            for (unsigned s = 0; s < 6; ++s)
+                if (xeq(hist_rows[i].host, SITES[s].host))
+                    pc = SITES[s].color;
+            fill_round(dc, 15, y + 2, 35, y + 22, pc, 4);
+            char c2[2] = {hist_rows[i].title[0], 0};
+            draw_text(dc, 25, y + 4, c2, C_INK, 11, 1, 1);
+            draw_text_clamp(dc, 44, y + 2, hist_rows[i].title, C_INK, 14, 210);
+            draw_text(dc, 308, y + 2, hist_rows[i].time, C_MUT, 11, 2, 0);
+            draw_text_clamp(dc, 44, y + 22, hist_rows[i].host, C_MUT, 11, 230);
         }
     } else {
-        int y = 104;
-        for (int i = 0; i < 3 && y < 500; ++i, y += 60) {
-            ic_draw(ifill, dc, 14, y + 16, 18, C_MUT, IC_DOWNLOAD);
-            draw_text_clamp(dc, 44, y + 12, DOWNLOADS[i].name, C_INK, 12, 240);
-            draw_text_clamp(dc, 44, y + 30, DOWNLOADS[i].status, C_MUT, 9, 240);
-            if (DOWNLOADS[i].prog < 100) {
-                fill(dc, 44, y + 44, 260, y + 47, C_SHEET);
-                fill(dc, 44, y + 44, 44 + 216 * DOWNLOADS[i].prog / 100, y + 47,
-                     C_BLUE);
-            }
-        }
+        /* empty downloads pane (edge4.png) */
+        draw_text(dc, 10, 110, "You'll see current and past downloads here.",
+                  C_INK, 14, 0, 0);
     }
-}
-
-/* ---- address edit: suggestions + SIP ---- */
-static char sug_search_buf[64];
-static const char *sug_text[8];
-static unsigned char sug_is_search[8];
-static int sug_count;
-
-static int host_prefix(const char *host, const char *pre)
-{
-    int i = 0;
-    while (pre[i]) {
-        if (!host[i] || host[i] != pre[i])
-            return 0;
-        ++i;
-    }
-    return 1;
-}
-
-static void build_suggestions(void)
-{
-    sug_count = 0;
-    if (addr_len) {
-        /* "Search for <typed>" row first */
-        char *p = sug_search_buf;
-        const char *a = "Search for ";
-        while (*a)
-            *p++ = *a++;
-        for (int i = 0; i < addr_len && p < sug_search_buf + 60; ++i)
-            *p++ = addr_buf[i];
-        *p = 0;
-        sug_text[sug_count] = sug_search_buf;
-        sug_is_search[sug_count] = 1;
-        ++sug_count;
-    }
-    for (int i = 0; i < 6 && sug_count < 7; ++i) {
-        if (!addr_len || host_prefix(SITES[i].host, addr_buf)) {
-            sug_text[sug_count] = SITES[i].host;
-            sug_is_search[sug_count] = 0;
-            ++sug_count;
-        }
-    }
-}
-
-static void paint_suggestions(void *dc)
-{
-    for (int i = 0; i < sug_count; ++i) {
-        int y = 56 + i * 44;
-        if (y + 44 > 340)
-            break;
-        ic_draw(ifill, dc, 14, y + 13, 18, C_MUT,
-                sug_is_search[i] ? IC_FIND : IC_CLOCK);
-        draw_text_clamp(dc, 44, y + 16, sug_text[i], C_INK, 12, 260);
-    }
-}
-
-static const char *KROW[3] = {"qwertyuiop", "asdfghjkl", "zxcvbnm"};
-
-static void paint_keyboard(void *dc)
-{
-    int y0 = 340;
-    fill(dc, 0, y0, 320, 528, C_BG);
-    static const int rowx[3] = {2, 18, 14};
-    for (int r = 0; r < 3; ++r) {
-        int ky = 352 + r * 36;
-        for (int i = 0; KROW[r][i]; ++i) {
-            int kx = rowx[r] + i * 32;
-            fill_round(dc, kx, ky, kx + 28, ky + 32, C_CARD, 4);
-            char c2[2] = {KROW[r][i], 0};
-            draw_text(dc, kx + 14, ky + 10, c2, C_INK, 12, 1, 0);
-        }
-    }
-    /* backspace */
-    fill_round(dc, 258, 424, 306, 456, C_CARD, 4);
-    ic_draw(ifill, dc, 272, 432, 16, C_INK, IC_BACK);
-    /* row 4: . / - [space] enter */
-    fill_round(dc, 6, 460, 34, 492, C_CARD, 4);
-    draw_text(dc, 20, 470, ".", C_INK, 12, 1, 0);
-    fill_round(dc, 38, 460, 66, 492, C_CARD, 4);
-    draw_text(dc, 52, 470, "/", C_INK, 12, 1, 0);
-    fill_round(dc, 70, 460, 98, 492, C_CARD, 4);
-    draw_text(dc, 84, 470, "-", C_INK, 12, 1, 0);
-    fill_round(dc, 102, 460, 222, 492, C_CARD, 4);
-    fill_round(dc, 226, 460, 314, 492, C_BLUE, 4);
-    ic_draw(ifill, dc, 262, 468, 16, C_INK, IC_FORWARD);
-}
-
-static int keyboard_tap(int px, int py)
-{
-    static const int rowx[3] = {2, 18, 14};
-    if (py >= 352 && py < 456) {
-        int r = (py - 352) / 36;
-        if (r > 2)
-            r = 2;
-        for (int i = 0; KROW[r][i]; ++i) {
-            int kx = rowx[r] + i * 32;
-            if (px >= kx && px < kx + 28) {
-                if (addr_len < MAX_URL - 2) {
-                    addr_buf[addr_len++] = KROW[r][i];
-                    addr_buf[addr_len] = 0;
-                }
-                return 1;
-            }
-        }
-        if (r == 2 && px >= 258 && px < 306) { /* backspace */
-            if (addr_len)
-                addr_buf[--addr_len] = 0;
-            return 1;
-        }
-        return 0;
-    }
-    if (py >= 460 && py < 492) {
-        if (px >= 6 && px < 34) {
-            if (addr_len < MAX_URL - 2) {
-                addr_buf[addr_len++] = '.';
-                addr_buf[addr_len] = 0;
-            }
-            return 1;
-        }
-        if (px >= 38 && px < 66) {
-            if (addr_len < MAX_URL - 2) {
-                addr_buf[addr_len++] = '/';
-                addr_buf[addr_len] = 0;
-            }
-            return 1;
-        }
-        if (px >= 70 && px < 98) {
-            if (addr_len < MAX_URL - 2) {
-                addr_buf[addr_len++] = '-';
-                addr_buf[addr_len] = 0;
-            }
-            return 1;
-        }
-        if (px >= 102 && px < 222) {
-            if (addr_len < MAX_URL - 2) {
-                addr_buf[addr_len++] = ' ';
-                addr_buf[addr_len] = 0;
-            }
-            return 1;
-        }
-        if (px >= 226 && px < 314)
-            return 2; /* enter */
-    }
-    return 0;
 }
 
 /* ---- navigation ---- */
@@ -1026,16 +1059,16 @@ static void hist_add(const char *host, const char *title)
     if (hist_count >= 8)
         hist_count = 8 - 1;
     for (int i = hist_count; i > 0; --i)
-        hist_today[i] = hist_today[i - 1];
-    hist_today[0].host = host;
-    hist_today[0].title = title;
+        hist_rows[i] = hist_rows[i - 1];
+    hist_rows[0].host = host;
+    hist_rows[0].title = title;
+    hist_rows[0].time = "8:27 PM";
     ++hist_count;
 }
 
 static void nav_url(const char *url)
 {
     Tab *t = &tabs[tab_cur];
-    /* strip scheme */
     const char *p = url;
     if (p[0] == 'h' && p[1] == 't' && p[2] == 't' && p[3] == 'p') {
         while (*p && *p != '/')
@@ -1050,14 +1083,12 @@ static void nav_url(const char *url)
         n = MAX_URL - 1;
     xcopy(t->url, p, n);
     t->url[n] = 0;
-    /* host = up to first '/' */
     int hl = 0;
     while (p[hl] && p[hl] != '/' && hl < 39)
         ++hl;
     xcopy(t->host, p, hl);
     t->host[hl] = 0;
     t->hash = xhash(t->url);
-    /* title from the site table */
     const char *title = t->host;
     for (unsigned s = 0; s < 6; ++s)
         if (xeq(t->host, SITES[s].host))
@@ -1072,7 +1103,6 @@ static void nav_url(const char *url)
         t->title[4] = 0;
     }
     hist_add(t->host, t->title);
-    loading_ttl = 8;
     set_lock_flag();
 }
 
@@ -1094,7 +1124,6 @@ static void tab_new(int priv)
 static void tab_close_idx(int idx)
 {
     if (tab_count <= 1) {
-        /* Edge behaviour: closing the last tab yields a fresh New tab */
         tabs[0].url[0] = 0;
         tabs[0].host[0] = 0;
         xcopy(tabs[0].title, "New tab", 8);
@@ -1137,7 +1166,7 @@ static void paint_browser(void *dc)
     clip_set(0, 0, 320, 480);
     paint_page(dc);
     clip_set(0, 0, 320, 528);
-    paint_address_url(dc, d);
+    paint_address_url(dc);
 }
 
 static void paint_all(void *dc)
@@ -1151,7 +1180,6 @@ static void paint_all(void *dc)
         }
     } else if (mode == M_MENU) {
         paint_browser(dc);
-        fill(dc, 0, 0, 320, 136, C_SCRIM); /* sheet covers the rest */
         if ((d = ux_find_doc(&ux, "ActionsMenu"))) {
             layout_doc(d, 0, 0, 320, 528);
             paint_node(dc, d->root);
@@ -1170,27 +1198,38 @@ static void paint_all(void *dc)
         if ((d = ux_find_doc(&ux, "HubPanel"))) {
             layout_doc(d, 0, 0, 320, 528);
             paint_node(dc, d->root);
-            /* selected pivot underline */
-            fill(dc, hub_pivot * 80, 98, hub_pivot * 80 + 80, 101, C_BLUE);
+            /* active pivot underline (history.png: x88..131, y42..44) */
+            fill(dc, hub_pivot * 44, 42, hub_pivot * 44 + 44, 45,
+                 RGB_(0x00, 0x5A, 0xA1));
+            flag_named("HubClear", NS_HIDDEN, hub_pivot != 2);
             paint_hub_content(dc);
         }
     } else if (mode == M_ADDRESS) {
         if ((d = ux_find_doc(&ux, "AddressEditBoxPage"))) {
             layout_doc(d, 0, 0, 320, 528);
             paint_node(dc, d->root);
-            build_suggestions();
-            paint_suggestions(dc);
-            paint_keyboard(dc);
+            /* shared fingerkb.dll paints the SIP (from y271 backdrop) */
+            if (g_kb)
+                g_kb->paint(dc);
+            /* toolbar row over the SIP backdrop (tabs icon, type.png) */
+            fill(dc, 0, 270, 320, 317, C_BAR);
+            ic_draw(ifill, dc, 14, 284, 20, C_INK, IC_TABS);
+            /* typed text + caret in the white field */
+            if (addr_len) {
+                draw_text_clamp(dc, 11, 244, addr_buf, RGB_(0x00, 0x00, 0x00),
+                                12, 280);
+                int cx = 11 + text_w(addr_buf, 12);
+                if (cx < 306)
+                    fill(dc, cx + 2, 236, cx + 4, 266, C_BLUE);
+            }
         }
     } else if (mode == M_SETTINGS) {
         if ((d = ux_find_doc(&ux, "SettingsPage"))) {
             layout_doc(d, 0, 0, 320, 528);
             paint_node(dc, d->root);
-            /* hairline separators + sync toggle (row 0) */
+            /* hairline separators between rows */
             for (int i = 1; i <= 6; ++i)
-                fill(dc, 16, 56 + i * 48, 304, 57 + i * 48, RGB_(0x1F, 0x1F, 0x1F));
-            fill_round(dc, 252, 70, 296, 90, C_BLUE, 10);
-            ic_dot(ifill, dc, 286, 80, 8, C_INK);
+                fill(dc, 12, 48 + i * 48, 308, 49 + i * 48, RGB_(0x1F, 0x1F, 0x1F));
         }
     } else if (mode == M_CLEAR) {
         if ((d = ux_find_doc(&ux, "ClearBrowsingDataPage"))) {
@@ -1198,23 +1237,25 @@ static void paint_all(void *dc)
             paint_node(dc, d->root);
         }
     } else if (mode == M_DLG_READLIST || mode == M_DLG_FAV) {
-        paint_browser(dc);
-        fill(dc, 0, 0, 320, 528, C_SCRIM);
         const char *doc = mode == M_DLG_READLIST ? "AddToReadingListDialog"
                                                  : "AddToFavoritesDialog";
         if ((d = ux_find_doc(&ux, doc))) {
             layout_doc(d, 0, 0, 320, 528);
             paint_node(dc, d->root);
+            /* bordered input field via the shared ctl_field painter */
+            int fi = find_node(mode == M_DLG_READLIST ? "RLName" : "FavName");
+            if (fi >= 0) {
+                NRect r = nrect[fi];
+                Tab *t = &tabs[tab_cur];
+                const char *txt = t->title[0] ? t->title : "";
+                ctl_field(dc, &edge_renderer, r.x, r.y, r.w, r.h, txt,
+                          "Test", 1);
+            }
         }
-    }
-    /* loading strip over content */
-    if (loading_ttl > 0 && (mode == M_BROWSER || mode == M_FIND)) {
-        fill(dc, 0, 0, 320, 3, C_BLUE);
-        --loading_ttl;
     }
     /* notification bar (toast) sits above the address bar */
     if (toast_text[0]) {
-        fill(dc, 0, 428, 320, 480, RGB_(0x1F, 0x1F, 0x1F));
+        fill(dc, 0, 428, 320, 480, C_BAR);
         fill(dc, 0, 428, 320, 429, C_SEP);
         draw_text_clamp(dc, 16, 449, toast_text, C_INK, 11, 250);
     }
@@ -1231,11 +1272,12 @@ static const UxNode *hit_test(const UxDoc *d, int x, int y)
         hi = ux.node_count;
     for (unsigned i = lo; i < hi; ++i) {
         const UxNode *n = &ux.nodes[i];
-        if ((n->kind != UX_BUTTON && n->kind != UX_CHECK) || !node_visible_idx(i))
+        if ((n->kind != UX_BUTTON && n->kind != UX_CHECK &&
+             n->kind != UX_TOGGLE) || !node_visible_idx(i))
             continue;
         NRect r = nrect[i];
         if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) {
-            if (n->kind == UX_CHECK) {
+            if (n->kind == UX_CHECK || n->kind == UX_TOGGLE) {
                 nstate[i] ^= NS_TOGGLED;
                 best = n; /* toggled; no command dispatch needed */
                 continue;
@@ -1257,13 +1299,14 @@ static void do_command(const char *cmd)
         mode = M_ADDRESS;
         addr_len = 0;
         addr_buf[0] = 0;
-    } else if (xeq(cmd, "reload")) {
-        if (tabs[tab_cur].url[0])
-            loading_ttl = 8;
-    } else if (xeq(cmd, "reader"))
+        if (g_kb)
+            g_kb->dock(0);
+    } else if (xeq(cmd, "reload"))
+        toast("Refreshing...");
+    else if (xeq(cmd, "reader"))
         toast("This page can't be shown in reading view");
     else if (xeq(cmd, "fwd"))
-        ; /* disabled in the POC: no forward stack */
+        ; /* disabled: no forward stack in the POC */
     else if (xeq(cmd, "share"))
         toast("Microsoft Edge can't share right now because the page is still loading.");
     else if (xeq(cmd, "addread"))
@@ -1276,6 +1319,8 @@ static void do_command(const char *cmd)
         toast("Pinned to Start");
     else if (xeq(cmd, "settings"))
         mode = M_SETTINGS;
+    else if (xeq(cmd, "addr-tabs"))
+        mode = M_TABS;
     else if (xeq(cmd, "tabs-back") || xeq(cmd, "hub-back") ||
              xeq(cmd, "addr-close") || xeq(cmd, "set-back") ||
              xeq(cmd, "find-close") || xeq(cmd, "dialog-cancel") ||
@@ -1292,8 +1337,7 @@ static void do_command(const char *cmd)
     else if (xeq(cmd, "pivot-2")) hub_pivot = 2;
     else if (xeq(cmd, "pivot-3")) hub_pivot = 3;
     else if (xeq(cmd, "hubclear")) {
-        if (hub_pivot == 2)
-            hist_count = 0;
+        hist_count = 0;
         toast("All clear!");
     } else if (xeq(cmd, "newtab"))
         tab_new(0);
@@ -1301,10 +1345,9 @@ static void do_command(const char *cmd)
         tab_new(1);
     else if (xeq(cmd, "tabsmenu"))
         mode = M_TABSMENU;
-    else if (xeq(cmd, "ctx-refresh-all")) {
-        loading_ttl = 8;
+    else if (xeq(cmd, "ctx-refresh-all"))
         mode = M_TABS;
-    } else if (xeq(cmd, "ctx-duplicate")) {
+    else if (xeq(cmd, "ctx-duplicate")) {
         if (tab_count < MAX_TABS) {
             tabs[tab_count] = tabs[tab_cur];
             tab_cur = tab_count++;
@@ -1335,9 +1378,11 @@ static void do_command(const char *cmd)
         mode = M_TABS;
     } else if (xeq(cmd, "cleardata"))
         mode = M_CLEAR;
-    else if (xeq(cmd, "doclear"))
+    else if (xeq(cmd, "doclear")) {
+        hist_count = 0;
         toast("All clear!");
-    else if (xeq(cmd, "rl-add")) {
+        mode = M_SETTINGS;
+    } else if (xeq(cmd, "rl-add")) {
         if (rl_count < 12) {
             reading_list[rl_count].title = tabs[tab_cur].title[0]
                                                ? tabs[tab_cur].title
@@ -1345,9 +1390,9 @@ static void do_command(const char *cmd)
             reading_list[rl_count].host = tabs[tab_cur].host[0]
                                               ? tabs[tab_cur].host
                                               : "about:start";
+            reading_list[rl_count].time = "";
             ++rl_count;
         }
-        toast("Added to reading list");
         mode = M_BROWSER;
     } else if (xeq(cmd, "fav-add")) {
         if (fav_count < 12) {
@@ -1357,13 +1402,15 @@ static void do_command(const char *cmd)
             favorites[fav_count].host = tabs[tab_cur].host[0]
                                             ? tabs[tab_cur].host
                                             : "about:start";
+            favorites[fav_count].time = "";
             ++fav_count;
         }
-        toast("Added to favorites");
         mode = M_BROWSER;
     } else if (xeq(cmd, "link-cloud") || xeq(cmd, "link-bing") ||
                xeq(cmd, "advanced") || xeq(cmd, "feedback") ||
-               xeq(cmd, "helpabout") || xeq(cmd, "fav-folder"))
+               xeq(cmd, "helpabout") || xeq(cmd, "priv-link") ||
+               xeq(cmd, "fav-folder") || xeq(cmd, "find-type") ||
+               xeq(cmd, "find-prev") || xeq(cmd, "find-next"))
         toast("Not available in this POC");
     /* "noop" and unknown commands: silently ignored */
 }
@@ -1374,43 +1421,43 @@ static void process_tap(int x, int y)
     const UxDoc *d;
     const UxNode *b;
     if (mode == M_ADDRESS) {
-        if (y < 56) {
-            if ((d = ux_find_doc(&ux, "AddressEditBoxPage")) &&
-                (b = hit_test(d, x, y)))
-                do_command(ux_str(&ux, b, UXA_COMMAND, ""));
-            else
-                mode = M_BROWSER;
-        } else if (y < 340) {
-            build_suggestions();
-            int idx = (y - 56) / 44;
-            if (idx >= 0 && idx < sug_count) {
-                if (sug_is_search[idx])
-                    nav_url(addr_len ? addr_buf : "bing.com");
-                else
-                    nav_url(sug_text[idx]);
-                mode = M_BROWSER;
-            }
-        } else {
-            int r = keyboard_tap(x, y);
-            if (r == 2) {
+        if (y >= 317 && g_kb) {
+            /* shared SIP: fingerkb.dll owns the keyboard hit zones */
+            U32 lp = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
+            int c = g_kb->input(WM_DOWN_, 1, lp);
+            if (c == 13) { /* enter */
                 if (addr_len)
                     nav_url(addr_buf);
                 mode = M_BROWSER;
+            } else if (c == 8) {
+                if (addr_len)
+                    addr_buf[--addr_len] = 0;
+            } else if (c >= 32 && c < 127 && addr_len < MAX_URL - 2) {
+                addr_buf[addr_len++] = (char)c;
+                addr_buf[addr_len] = 0;
             }
+            return;
         }
+        if (y < 223) { /* scrim: dismiss */
+            mode = M_BROWSER;
+            return;
+        }
+        if ((d = ux_find_doc(&ux, "AddressEditBoxPage")) &&
+            (b = hit_test(d, x, y)))
+            do_command(ux_str(&ux, b, UXA_COMMAND, ""));
         return;
     }
     if (mode == M_TABS) {
         /* tab card grid hot zones (cards painted procedurally) */
-        if (x >= 8 && x < 312 && y >= 56 && y < 476) {
-            int col = x >= 164 ? 1 : 0;
-            int row = (y - 56) / 108;
+        if (x >= 12 && x < 308 && y >= 40 && y < 470) {
+            int col = x >= 166 ? 1 : 0;
+            int row = (y - 40) / 148;
             int idx = row * 2 + col;
-            int cx = 8 + col * 156, cy = 56 + row * 108;
+            int cx = card_col_x(col), cy = 40 + row * 148;
             if (idx < tab_count) {
-                if (x >= cx + 118 && y < cy + 28) {
+                if (x >= cx + 120 && y < cy + 24)
                     tab_close_idx(idx); /* close X */
-                } else {
+                else {
                     tab_cur = idx; /* switch */
                     set_lock_flag();
                     mode = M_BROWSER;
@@ -1430,8 +1477,36 @@ static void process_tap(int x, int y)
             mode = M_TABS; /* light dismiss */
         return;
     }
+    if (mode == M_HUB) {
+        /* content rows navigate (history/favorites/reading list);
+         * favorites/reading rows start at y96, history rows at y126
+         * under the "Last hour" group header */
+        const Item *rows = 0;
+        int count = 0, base = 96;
+        if (hub_pivot == 0) {
+            rows = favorites;
+            count = fav_count;
+        } else if (hub_pivot == 1) {
+            rows = reading_list;
+            count = rl_count;
+        } else if (hub_pivot == 2) {
+            rows = hist_rows;
+            count = hist_count;
+            base = 126;
+        }
+        if (rows && y >= base && y < base + count * 50) {
+            int idx = (y - base) / 50;
+            if (idx >= 0 && idx < count) {
+                nav_url(rows[idx].host);
+                mode = M_BROWSER;
+                return;
+            }
+        }
+        if ((d = ux_find_doc(&ux, "HubPanel")) && (b = hit_test(d, x, y)))
+            do_command(ux_str(&ux, b, UXA_COMMAND, ""));
+        return;
+    }
     const char *docn = mode == M_MENU ? "ActionsMenu"
-                    : mode == M_HUB ? "HubPanel"
                     : mode == M_SETTINGS ? "SettingsPage"
                     : mode == M_CLEAR ? "ClearBrowsingDataPage"
                     : mode == M_DLG_READLIST ? "AddToReadingListDialog"
@@ -1439,15 +1514,35 @@ static void process_tap(int x, int y)
                     : mode == M_FIND ? "FindOnPageBar"
                     : "SmallScreenPage";
     if ((d = ux_find_doc(&ux, docn)) && (b = hit_test(d, x, y))) {
-        if (b->kind == UX_CHECK)
+        if (b->kind == UX_CHECK || b->kind == UX_TOGGLE)
             return; /* toggled in hit_test */
         const char *cmd = ux_str(&ux, b, UXA_COMMAND, 0);
         if (cmd && *cmd)
             do_command(cmd);
-        else if (mode == M_MENU || mode == M_DLG_READLIST || mode == M_DLG_FAV)
+        else if (mode == M_MENU)
             mode = M_BROWSER; /* scrim dismiss */
-    } else if (mode == M_MENU || mode == M_DLG_READLIST || mode == M_DLG_FAV) {
+    } else if (mode == M_MENU) {
         mode = M_BROWSER; /* scrim tap dismisses */
+    } else if (mode == M_FIND) {
+        mode = M_BROWSER; /* tap on the page closes the find bar */
+    }
+}
+
+static void addr_key(unsigned wp)
+{
+    if (wp == 8) {
+        if (addr_len)
+            addr_buf[--addr_len] = 0;
+    } else if (wp == 13) {
+        if (addr_len)
+            nav_url(addr_buf);
+        mode = M_BROWSER;
+    } else if (addr_len < MAX_URL - 2 &&
+               ((wp >= 'a' && wp <= 'z') || (wp >= 'A' && wp <= 'Z') ||
+                (wp >= '0' && wp <= '9') || wp == '.' || wp == '/' ||
+                wp == '-' || wp == ' ')) {
+        addr_buf[addr_len++] = (char)wp;
+        addr_buf[addr_len] = 0;
     }
 }
 
@@ -1463,7 +1558,7 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
         NT_CALL(EndPaint, (hwnd, &ps));
         return 0;
     }
-    if (msg == WM_KEY_) {
+    if (msg == WM_KEY_ || msg == WM_CHAR_) {
         toast_text[0] = 0;
         if (wp == 0x1b) { /* hardware back: nested dismiss */
             if (mode == M_BROWSER)
@@ -1475,19 +1570,10 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
             else
                 mode = M_BROWSER;
         } else if (mode == M_ADDRESS) {
-            if (wp == 8) {
-                if (addr_len)
-                    addr_buf[--addr_len] = 0;
-            } else if (wp == 13) {
-                if (addr_len)
-                    nav_url(addr_buf);
-                mode = M_BROWSER;
-            } else if (addr_len < MAX_URL - 2 &&
-                       ((wp >= 'a' && wp <= 'z') || (wp >= '0' && wp <= '9') ||
-                        wp == '.' || wp == '/' || wp == '-' || wp == ' ')) {
-                addr_buf[addr_len++] = (char)wp;
-                addr_buf[addr_len] = 0;
-            }
+            addr_key(wp);
+        } else if (mode == M_BROWSER && (wp == 's' || wp == 'S')) {
+            /* POC shortcut into the settings page (e2e reachability) */
+            mode = M_SETTINGS;
         }
         NT_CALL(InvalidateRect, (hwnd, 0, 0));
         NT_CALL(UpdateWindow, (hwnd));
@@ -1542,6 +1628,13 @@ __attribute__((dllexport)) int RunApplication(void)
     tab_count = 1;
     tab_cur = 0;
     xcopy(tabs[0].title, "New tab", 8);
+    /* host-side IAT snap: uixctl.c + svf.c (linked into this DLL) share
+     * the render-context slot the device loader would snap per module */
+    __imp_render_SpGetThreadContext = (const void *)(uintptr_t)render_SpGetThreadContext;
+    /* shared keyboard DLL (FINGERKB.DLL), snapped by the host loader */
+    g_kb = NT_CALL(UIXGetSchemaFactory, ());
+    if (!g_kb || g_kb->profile != 0x55495831u)
+        g_kb = 0;
     WndClass wc;
     wc.style = 0;
     wc.proc = wndproc;

@@ -140,7 +140,8 @@ static const struct {
     {"plus", IC_PLUS},       {"inprivate", IC_INPRIVATE}, {"close", IC_CLOSE},
     {"share", IC_SHARE},     {"find", IC_FIND},       {"search", IC_FIND},
     {"pin", IC_PIN},         {"forward", IC_FORWARD}, {"back", IC_BACK},
-    {"check", IC_CHECK},     {"chevron", IC_CHEVRON}, {"settings", IC_SETTINGS},
+    {"check", IC_CHECK},     {"chevron", IC_CHEVRON}, {"chevronl", IC_CHEVL},
+    {"settings", IC_SETTINGS}, {"readlist", IC_READLIST},
 };
 
 int ic_find(const char *name)
@@ -198,6 +199,26 @@ void ic_draw(IconFillFn f, void *dc, int x, int y, int size,
         int ah = s / 4;
         ic_line(f, dc, cx - ah / 2, cy - ah, cx + ah / 2, cy, t, color);
         ic_line(f, dc, cx - ah / 2, cy + ah, cx + ah / 2, cy, t, color);
+        break;
+    }
+    case IC_CHEVL: {
+        int ah = s / 4;
+        ic_line(f, dc, cx + ah / 2, cy - ah, cx - ah / 2, cy, t, color);
+        ic_line(f, dc, cx + ah / 2, cy + ah, cx - ah / 2, cy, t, color);
+        break;
+    }
+    case IC_READLIST: {
+        /* stacked reading-list lines with a hooked first line, as on the
+         * W10M reading-list hero glyph and hub pivot */
+        int lw = s * 7 / 10;
+        ic_line(f, dc, cx - lw / 2 + s / 10, cy - s * 2 / 5, cx + lw / 2,
+                cy - s * 2 / 5, t, color);
+        ic_line(f, dc, cx - lw / 2 + s / 10, cy - s * 2 / 5,
+                cx - lw / 2 + s / 10, cy - s * 3 / 10, t, color);
+        ic_line(f, dc, cx - lw / 2, cy - s / 10, cx + lw / 2, cy - s / 10, t, color);
+        ic_line(f, dc, cx - lw / 2, cy + s / 5, cx + lw / 2, cy + s / 5, t, color);
+        ic_line(f, dc, cx - lw / 2, cy + s * 2 / 5 - t, cx + lw / 2 - s / 5,
+                cy + s * 2 / 5 - t, t, color);
         break;
     }
     case IC_CHECK: {

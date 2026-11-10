@@ -1,42 +1,77 @@
-# Edge POC e2e (dark UI): boot NTP, address+suggestion nav to wikipedia,
-# actions menu, reading list dialog, settings, clear browsing data (+toggle),
-# hub pivots, tab center (2-col grid, duplicate), tabs context menu.
+# Edge POC e2e (reference-matched states, refs/edge-screens):
+#   boot=home.png  menu=context.png  address=type.png  tabs=tabs.png
+#   manytabs=manytabs.png  clear=clean_hist.png  clear-toggled (checkbox off)
+#   hub-history=history.png  hub-downloads=edge4.png  wiki=webpage.png
+#   readlist=add_reading.png  inpriv=inpriv.png  findbar=find next.png
+# Tab-center shots run BEFORE any navigation so every card is a fresh
+# "New tab" with a black thumbnail, as in the reference captures.
+# 'key 0x73' ('s') is the POC shortcut into Settings (the reference "..."
+# sheet has no Settings row; on the device it lives in the system hub).
 shot boot
-tap 158 504
-shot address
-tap 60 78
-shot wiki
 tap 294 504
 shot menu
-tap 60 294
-shot readlist
-tap 160 338
-tap 294 504
-tap 60 426
-shot settings
-tap 60 272
-shot clear
-tap 30 218
-shot clear-toggled
-tap 160 364
-shot clear-toast
-key 0x1b
-key 0x1b
-tap 294 504
-tap 200 488
-shot hub-history
-tap 40 78
-shot hub-favorites
+tap 120 80
+tap 158 504
+shot address
 key 0x1b
 tap 23 504
-shot tabcenter
-tap 172 504
-shot tabcenter2
-tap 84 106
+shot tabs
+tap 163 504
+tap 163 504
+tap 163 504
+tap 163 504
+shot manytabs
+tap 84 110
 tap 23 504
 tap 284 504
 shot tabsmenu
 tap 160 260
-shot tabcenter3
+tap 170 110
+key 0x73
+shot settings
+tap 160 272
+shot clear
+tap 30 218
+shot clear-toggled
 key 0x1b
+key 0x1b
+tap 294 504
+tap 212 445
+shot hub-history
+tap 146 20
+shot hub-downloads
+key 0x1b
+tap 158 504
+char 101
+char 110
+char 46
+char 119
+char 105
+char 107
+char 105
+char 112
+char 101
+char 100
+char 105
+char 97
+char 46
+char 111
+char 114
+char 103
+key 13
+shot wiki
+tap 294 504
+tap 60 310
+shot readlist
+tap 230 374
+tap 23 504
+tap 237 504
+key 0x1b
+shot inpriv
+tap 23 504
+tap 84 110
+tap 294 504
+tap 60 346
+shot findbar
+tap 160 100
 shot final

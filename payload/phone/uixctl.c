@@ -30,6 +30,7 @@ static const U32 light_theme[UIX_TH_COUNT] = {
     RGB_(195, 215, 232),    /* UIX_TH_CTRL_BG   */
     INK,                    /* UIX_TH_CTRL_INK  */
     RGB_(124, 142, 158),    /* UIX_TH_CTRL_EDGE */
+    RGB_(124, 142, 158),    /* UIX_TH_FIELD_EDGE */
 };
 
 static U32 th(const Render *r, int slot)
@@ -143,7 +144,7 @@ void ctl_field(void *dc, const Render *r, int x, int y, int w, int h,
 {
     if (!r)
         return;
-    U32 border = th(r, UIX_TH_CTRL_EDGE);
+    U32 border = th(r, UIX_TH_FIELD_EDGE);
     if (focused)
         border = th(r, UIX_TH_ACCENT);
     /* 1px border on the page background (parent paints the fill) */
@@ -153,7 +154,7 @@ void ctl_field(void *dc, const Render *r, int x, int y, int w, int h,
     r->fill(dc, x + w - 1, y, x + w, y + h, border);
     const char *show = (text && *text) ? text : hint;
     if (show && *show) {
-        U32 c = (text && *text) ? th(r, UIX_TH_CTRL_INK) : th(r, UIX_TH_CTRL_EDGE);
+        U32 c = (text && *text) ? th(r, UIX_TH_CTRL_INK) : th(r, UIX_TH_FIELD_EDGE);
         r->text(dc, x + 8, y + ((h - 15) >> 1), show, c, 15);
         if (focused && text && *text) {
             int tw = (int)txt_w(r, text, 15);
@@ -166,14 +167,11 @@ void ctl_field(void *dc, const Render *r, int x, int y, int w, int h,
     }
 }
 
-int phone_unsupported(void)
-{
-    return NOTIMPL;
-}
-
 /* ---- UXCTL.DLL vtable (device shared-controls model) ----
- * Hosts that statically link this file call ctl_* directly; device apps
- * import the Controls vtable the same way they import the keyboard. */
+ * Static-link hosts (e.g. the Edge app) compile with -DUXCTL_NO_FACTORY
+ * and call ctl_* directly; device apps import the Controls vtable the
+ * same way they import the keyboard. */
+#ifndef UXCTL_NO_FACTORY
 static void v_button(void *dc, int x, int y, int w, int h, const char *label,
                      int pressed)
 {
@@ -207,6 +205,10 @@ __attribute__((dllexport))
 void UIXSchemaUnloaded(void)
 {
 }
+int phone_unsupported(void)
+{
+    return NOTIMPL;
+}
 #ifdef NTOS_LINUX_BUILD
 int DllMainCRTStartup_impl(void *h, U32 r, void *r2)
 {
@@ -224,3 +226,4 @@ int main(void)
 }
 #endif
 #endif
+#endif /* !UXCTL_NO_FACTORY */

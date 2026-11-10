@@ -164,9 +164,12 @@ int main(int argc, char **argv)
     }
 
     /* two IAT patch passes so cross-DLL order never matters */
+    PeModule *mod_ptrs[MAX_MODULES];
+    for (size_t i = 0; i < mod_count; ++i)
+        mod_ptrs[i] = &mods[i];
     for (int pass = 0; pass < 2; ++pass)
         for (size_t i = 0; i < mod_count; ++i)
-            pe_patch_iat_slots(&mods[i], (PeModule * const *)mods, mod_count);
+            pe_patch_iat_slots(&mods[i], mod_ptrs, mod_count);
 
     for (size_t i = 0; i < mod_count; ++i)
         pe_call_entry(&mods[i], mods[i].base);

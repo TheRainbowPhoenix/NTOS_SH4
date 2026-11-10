@@ -30,17 +30,18 @@ import xml.etree.ElementTree as ET
 KINDS = {
     'Page': 0, 'Canvas': 1, 'StackV': 2, 'StackH': 3, 'Text': 4, 'Button': 5,
     'Rect': 6, 'Ellipse': 7, 'Glyph': 8, 'List': 9, 'Row': 10, 'TextBox': 11,
-    'Progress': 12, 'Check': 13, 'Scroll': 14,
+    'Progress': 12, 'Check': 13, 'Scroll': 14, 'Toggle': 15,
 }
 ATTRS = {
     'x': 0, 'y': 1, 'w': 2, 'h': 3, 'text': 4, 'color': 5, 'bg': 6, 'size': 7,
     'bold': 8, 'radius': 9, 'name': 10, 'command': 11, 'src': 12, 'value': 13,
     'max': 14, 'checked': 15, 'visible': 16, 'align': 17, 'border': 18,
+    'placeholder': 19,
 }
 INT_ATTRS = {0, 1, 2, 3, 7, 9, 13, 14, 17}
 CLR_ATTRS = {5, 6}
 BOOL_ATTRS = {8, 15, 16, 18}
-STR_ATTRS = {4, 10, 11, 12}
+STR_ATTRS = {4, 10, 11, 12, 19}
 
 TYPE_STR, TYPE_INT, TYPE_CLR, TYPE_BOOL = 0, 1, 2, 3
 
@@ -66,7 +67,7 @@ class Builder:
     def intern(self, s):
         if s in self.sidx:
             return self.sidx[s]
-        if len(self.strings) >= 360:
+        if len(self.strings) >= 448:
             raise SystemExit('too many strings')
         self.sidx[s] = len(self.strings)
         self.strings.append(s)
@@ -83,7 +84,7 @@ class Builder:
         def walk(elem, depth):
             if elem.tag not in KINDS:
                 raise SystemExit(f'{path}: unknown element <{elem.tag}>')
-            if len(nodes) >= 256:
+            if len(nodes) >= 384:
                 raise SystemExit('too many nodes')
             node = {'kind': KINDS[elem.tag], 'attrs': [], 'children': []}
             for k, v in elem.attrib.items():

@@ -50,6 +50,15 @@
 /* Call an imported function: NT_CALL(coredll_puts, ("hi")); */
 #define NT_CALL(name, args) __ntx_ref_##name() args
 
+/* Multi-object host builds (several payload .c files linked into ONE DLL,
+ * e.g. the Edge app): exactly one object owns each IAT slot definition.
+ * Compile the non-owner objects with -DNT_IAT_EXTERN_ONLY so their
+ * NT_DEFINE degrades to an extern declaration. */
+#ifdef NT_IAT_EXTERN_ONLY
+#undef NT_DEFINE
+#define NT_DEFINE(name) extern const void *volatile __imp_##name NT_IAT_EXPORT;
+#endif
+
 /* Opt-in boundary calling-convention experiment. Both the imported
  * FUNCTION POINTER TYPE and the exported function must agree. Plain
  * NT_IMPORT is intentionally unchanged so native NTOS calls stay stable.

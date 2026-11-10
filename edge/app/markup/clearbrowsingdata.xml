@@ -1,26 +1,28 @@
 <Page name="ClearBrowsingDataPage">
   <Canvas>
+    <!-- per clean_hist.png: fullscreen black page, title, 6 checkbox rows
+         (20px box at x12, first y66, pitch 44), Show more, Clear button,
+         two blue links. Checkboxes use the shared uixctl painter. -->
     <Rect x="0" y="0" w="320" h="528" bg="#000000"/>
-    <Button name="ClearBack" x="0" y="0" w="48" h="48" command="clear-back">
-      <Glyph x="14" y="14" w="20" h="20" text="back" color="#FFFFFF"/>
+    <Text x="13" y="16" text="Clear browsing data" color="#FFFFFF" size="14"/>
+    <Check name="ClearHistory" x="12" y="66" w="296" h="44" checked="true" text="Browsing history"/>
+    <Check name="ClearCookies" x="12" y="110" w="296" h="44" checked="true" text="Cookies and saved website data"/>
+    <Check name="ClearCache" x="12" y="154" w="296" h="44" checked="true" text="Cached data and files"/>
+    <Check name="ClearDownloads" x="12" y="198" w="296" h="44" text="Download history"/>
+    <Check name="ClearForms" x="12" y="242" w="296" h="44" text="Form data"/>
+    <Check name="ClearPasswords" x="12" y="286" w="296" h="44" text="Passwords"/>
+    <Button name="ShowMore" x="0" y="330" w="320" h="44" command="noop">
+      <Text x="13" y="10" text="Show more" color="#FFFFFF" size="14"/>
     </Button>
-    <Text x="160" y="14" w="320" text="Clear browsing data" color="#FFFFFF" size="18" bold="true" align="1"/>
-    <List x="0" y="64" w="320" h="264">
-      <Check x="0" y="0" w="320" h="44" text="Browsing history" checked="true"/>
-      <Check x="0" y="0" w="320" h="44" text="Cookies and saved website data" checked="true"/>
-      <Check x="0" y="0" w="320" h="44" text="Cached data and files" checked="true"/>
-      <Check x="0" y="0" w="320" h="44" text="Download history"/>
-      <Check x="0" y="0" w="320" h="44" text="Form data"/>
-      <Check x="0" y="0" w="320" h="44" text="Passwords"/>
-    </List>
-    <Button x="16" y="340" w="288" h="48" command="doclear" bg="#0078D7" radius="4">
-      <Text x="0" y="17" w="288" text="Clear" color="#FFFFFF" size="14" bold="true" align="1"/>
+    <Button name="ClearButton" x="12" y="394" w="166" h="32" command="doclear" bg="#333333">
+      <Text x="0" y="9" w="166" text="Clear" color="#FFFFFF" size="14" align="1"/>
     </Button>
-    <Button x="16" y="408" w="288" h="28" command="link-cloud">
-      <Text x="0" y="8" text="Change what Microsoft Edge knows about me in the cloud" color="#0078D7" size="11"/>
+    <Button name="LinkCloud" x="0" y="452" w="320" h="52" command="link-cloud">
+      <Text x="12" y="5" text="Change what Microsoft Edge knows about" color="#0078D7" size="14"/>
+      <Text x="12" y="25" text="me in the cloud" color="#0078D7" size="14"/>
     </Button>
-    <Button x="16" y="440" w="288" h="28" command="link-bing">
-      <Text x="0" y="8" text="Clear Bing search history" color="#0078D7" size="11"/>
+    <Button name="LinkBing" x="0" y="504" w="320" h="24" command="link-bing">
+      <Text x="12" y="2" text="Clear Bing search history" color="#0078D7" size="14"/>
     </Button>
   </Canvas>
 </Page>

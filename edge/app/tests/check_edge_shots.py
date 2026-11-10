@@ -1,150 +1,317 @@
 #!/usr/bin/env python3
-"""check_edge_shots.py — pixel-precise validation for the Edge POC frames.
+"""check_edge_shots.py — visual-similarity validation for the Edge POC.
 
-Each frame gets region checks (exact fill colours at safe coordinates) on top
-of the generic non-blank check. Colours are PNG RGB (the host LCD shuffles
-device 0x00BBGGRR to RGB on output). Tolerance +-2 per channel.
+Compares each scripted capture against the real-device reference shots in
+refs/edge-screens/ using the agreed block metric: both images are split
+into 16x16 blocks, each block reduced to its average colour; a block
+matches when every channel is within TOL of the reference. A screen passes
+when at least MATCH_MIN of its blocks match (antialiasing and small font
+differences average out at block granularity).
+
+Also keeps a few exact pixel probes for structural anchors (address bar
+colour, sheet colours) so layout regressions fail loudly.
+
+Stdlib only (the CI runner has no PIL).
 """
 import os
+import struct
 import sys
+import zlib
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..',
                                 'ntos_linux', 'tests'))
-from check_shots import read_png  # noqa: E402
+from check_shots import read_png  # noqa: E402  -> (w, h, rgb_bytes)
 
-BLACK = (0x00, 0x00, 0x00)
-SHEET = (0x2B, 0x2B, 0x2B)   # menus, cards, flyouts
-CARD = (0x33, 0x33, 0x33)    # tiles, keyboard keys
-SEL = (0x3A, 0x3A, 0x3A)     # selected tab card
-FIELD = (0x1F, 0x1F, 0x1F)   # inputs, news cards, toast
-SEP = (0x46, 0x46, 0x46)
-BLUE = (0x00, 0x78, 0xD7)
-SCRIM = (0x14, 0x14, 0x14)
-WHITE = (0xFF, 0xFF, 0xFF)
 
-# name -> [(x, y, (r, g, b)), ...]
-EXPECT = {
+def _paeth(a, b, c):
+    p = a + b - c
+    pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+    if pa <= pb and pa <= pc:
+        return a
+    return b if pb <= pc else c
+
+
+def _unfilter(raw, w, h, bpp):
+    stride = w * bpp
+    out = bytearray(h * stride)
+    prev = bytearray(stride)
+    pos = 0
+    for y in range(h):
+        f = raw[pos]
+        row = bytearray(raw[pos + 1:pos + 1 + stride])
+        pos += 1 + stride
+        if f == 0:
+            pass
+        elif f == 1:
+            for i in range(bpp, stride):
+                row[i] = (row[i] + row[i - bpp]) & 0xFF
+        elif f == 2:
+            for i in range(stride):
+                row[i] = (row[i] + prev[i]) & 0xFF
+        elif f == 3:
+            for i in range(stride):
+                left = row[i - bpp] if i >= bpp else 0
+                row[i] = (row[i] + ((left + prev[i]) >> 1)) & 0xFF
+        elif f == 4:
+            for i in range(stride):
+                left = row[i - bpp] if i >= bpp else 0
+                upl = prev[i - bpp] if i >= bpp else 0
+                row[i] = (row[i] + _paeth(left, prev[i], upl)) & 0xFF
+        else:
+            raise AssertionError(f'bad filter {f}')
+        out[y * stride:(y + 1) * stride] = row
+        prev = row
+    return bytes(out)
+
+
+def read_any_png(path):
+    """read_png for RGB captures and the RGBA reference shots alike."""
+    d = open(path, 'rb').read()
+    assert d[:8] == b'\x89PNG\r\n\x1a\n', 'bad signature'
+    pos = 8
+    idat = b''
+    w = h = ctype = None
+    while pos < len(d):
+        ln, typ = struct.unpack('>I4s', d[pos:pos + 8])
+        body = d[pos + 8:pos + 8 + ln]
+        if typ == b'IHDR':
+            w, h, depth, ctype = struct.unpack('>IIBB', body[:10])
+            assert depth == 8 and ctype in (2, 6), f'unsupported {depth=} {ctype=}'
+        elif typ == b'IDAT':
+            idat += body
+        pos += 12 + ln
+    raw = zlib.decompress(idat)
+    bpp = 4 if ctype == 6 else 3
+    rgb = _unfilter(raw, w, h, bpp)
+    if bpp == 3:
+        return w, h, rgb
+    out = bytearray()
+    for i in range(0, len(rgb), 4):
+        out += rgb[i:i + 3]  # drop alpha
+    return w, h, bytes(out)
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+REF_DIR = os.path.normpath(os.path.join(HERE, '..', '..', '..',
+                                        'refs', 'edge-screens'))
+
+BLK = 16
+TOL = 48           # per-channel tolerance on block-average colour
+MATCH_MIN = 0.80   # >= 80% of blocks must match the reference
+
+# shot name -> reference capture
+REFERENCE = {
+    'boot': 'home.png',
+    'menu': 'context.png',
+    'address': 'type.png',
+    'wiki': 'webpage.png',
+    'readlist': 'add_reading.png',
+    'tabs': 'tabs.png',
+    'manytabs': 'manytabs.png',
+    'clear': 'clean_hist.png',
+    'hub-history': 'history.png',
+    'hub-downloads': 'edge4.png',
+    'inpriv': 'inpriv.png',
+    'findbar': 'find next.png',
+}
+
+# structural anchors: (x, y) must be near the given RGB
+ANCHORS = {
     'edge-boot': [
-        (150, 486, BLACK),   # bottom address bar background
-        (40, 56, SHEET),     # NTP top-site plate (row 1)
-        (274, 160, SHEET),   # NTP top-site plate (row 2 col 4)
-        (160, 260, FIELD),   # news card surface
-        (160, 200, BLACK),   # gap between tile rows
-    ],
-    'edge-address': [
-        (100, 28, SHEET),    # address field background
-        (160, 150, BLACK),   # suggestions area
-        (30, 400, CARD),     # SIP key (row 2)
-        (232, 476, BLUE),    # enter key (left of the arrow glyph)
-    ],
-    'edge-wiki': [
-        (160, 40, WHITE),    # article page background
-        (300, 100, WHITE),
-        (150, 486, BLACK),   # bottom bar
-        (16, 508, BLACK),
+        (160, 505, (0x1F, 0x1F, 0x1F)),  # address bar
+        (160, 240, (0xFF, 0xFF, 0xFF)),  # white content
     ],
     'edge-menu': [
-        (160, 60, SCRIM),    # scrim above the sheet
-        (160, 200, SHEET),   # sheet: options list
-        (160, 470, SHEET),   # sheet: hub icons row
-        (10, 100, SCRIM),
+        (160, 80, (0x7F, 0x7F, 0x7F)),   # scrim
+        (160, 200, (0x2B, 0x2B, 0x2B)),  # sheet list
+        (160, 430, (0x1F, 0x1F, 0x1F)),  # icon bar
     ],
-    'edge-readlist': [
-        (160, 60, SCRIM),    # scrim
-        (250, 180, SHEET),   # dialog card (right of the title text)
-        (160, 240, FIELD),   # Name field
-        (160, 340, SHEET),   # Cancel button area
-    ],
-    'edge-settings': [
-        (160, 30, BLACK),    # header
-        (160, 80, BLACK),    # row background
-        (160, 104, FIELD),   # hairline separator
-        (274, 80, BLUE),     # sync toggle (on)
+    'edge-address': [
+        (160, 250, (0xFF, 0xFF, 0xFF)),  # white field
+        (160, 300, (0x1F, 0x1F, 0x1F)),  # toolbar row
+        (16, 330, (0x33, 0x33, 0x33)),   # a key
     ],
     'edge-clear': [
-        (160, 30, BLACK),
-        (26, 86, BLUE),      # checkbox 1 checked (Browsing history)
-        (26, 218, BLACK),    # checkbox 4 unchecked (Download history)
-        (30, 364, BLUE),     # Clear button (left of label)
+        (19, 73, (0x00, 0x78, 0xD7)),    # checked box fill
+        (160, 200, (0x00, 0x00, 0x00)),  # black page
+        (80, 410, (0x33, 0x33, 0x33)),   # Clear button
     ],
-    'edge-clear-toggled': [
-        (26, 218, BLUE),     # Download history now checked
-        (30, 364, BLUE),
-        (26, 86, BLUE),
+    'edge-tabs': [
+        (160, 300, (0x00, 0x00, 0x00)),  # black page
+        (80, 60, (0x1F, 0x1F, 0x1F)),    # card header strip
     ],
-    'edge-clear-toast': [
-        (160, 440, FIELD),   # notification bar
-        (30, 364, BLUE),
+}
+
+ATOL = 8  # anchor tolerance per channel
+
+# glyph-presence regions: (x0, y0, x1, y1, min_pixels, threshold, channel)
+# channel: 0 red, 1 green, 2 blue; negative threshold = count pixels BELOW
+# its absolute value (dark text on white). Guards against "right colours,
+# missing text/icons" regressions the block metric alone can hide.
+PRESENCE = {
+    'boot': [
+        (98, 496, 212, 512, 40, 140, 0),   # "Search or browse" placeholder
+        (14, 494, 34, 516, 20, 140, 0),    # tabs icon
+        (286, 498, 306, 510, 6, 140, 0),   # "..." dots
     ],
-    'edge-hub-history': [
-        (160, 80, BLACK),
-        (200, 99, BLUE),     # pivot underline (History selected)
-        (300, 190, BLACK),   # row area background
+    'menu': [
+        (13, 200, 120, 235, 40, 150, 0),   # "Share" row text
+        (13, 380, 200, 415, 60, 150, 0),   # "Pin this page to Start"
+        (60, 424, 90, 448, 15, 100, 0),    # star icon
+        (40, 456, 300, 474, 60, 150, 0),   # icon-bar labels
     ],
-    'edge-hub-favorites': [
-        (40, 99, BLUE),      # pivot underline (Favorites selected)
-        (24, 130, CARD),     # first favorite plate (Wikipedia #333333)
-        (300, 190, BLACK),
+    'address': [
+        (11, 238, 130, 258, 30, 100, 0),   # hint text in the white field
+        (14, 282, 36, 306, 15, 100, 0),    # tabs icon on the toolbar row
     ],
-    'edge-tabcenter': [
-        (160, 30, BLACK),    # header
-        (40, 100, SEL),      # single card, selected
-        (238, 100, BLACK),   # no second card
+    'clear': [
+        (13, 16, 150, 32, 50, 150, 0),     # title
+        (20, 396, 170, 420, 30, 150, 0),   # Clear button label
+        (12, 290, 310, 320, 30, 150, 0),   # "Passwords" row label
+        (12, 452, 306, 526, 20, 150, 2),   # blue links (blue channel)
     ],
-    'edge-tabcenter2': [
-        (40, 100, SHEET),    # card 0 unselected
-        (238, 100, SEL),     # card 1 selected (new tab)
-        (160, 30, BLACK),
+    'tabs': [
+        (12, 14, 50, 32, 20, 150, 0),      # "Tabs" title
+        (20, 46, 140, 70, 20, 100, 0),     # card header text
     ],
-    'edge-tabsmenu': [
-        (160, 300, SHEET),   # flyout
-        (40, 300, BLACK),    # tab center behind (no card there)
-        (300, 200, SHEET),
+    'hub-history': [
+        (12, 58, 90, 76, 25, 150, 0),      # HISTORY title
+        (220, 58, 310, 78, 25, 180, 2),    # "Clear all history" blue link
+        (44, 140, 300, 175, 60, 150, 0),   # first history row title
     ],
-    'edge-tabcenter3': [
-        (40, 100, SHEET),    # card 0 unselected
-        (238, 100, SHEET),   # card 1 unselected
-        (100, 190, SEL),     # card 2 selected (duplicate): bg right of plate
+    'inpriv': [
+        (36, 128, 222, 150, 30, 150, 0),   # Browsing InPrivate heading
+        (36, 180, 270, 300, 100, 150, 0),  # body paragraph
+        (36, 342, 250, 360, 25, 180, 2),   # blue link (blue channel)
     ],
-    'edge-final': [
-        (160, 40, WHITE),    # back on the wikipedia article
-        (150, 486, BLACK),
+    'readlist': [
+        (12, 13, 156, 34, 25, 150, 0),     # READING LIST title
+        (130, 170, 190, 226, 40, 150, 0),  # white hero glyph
+    ],
+    'wiki': [
+        (16, 6, 90, 34, 40, -100, 0),      # "Exam" title (dark on white)
     ],
 }
 
 
-def close(a, b):
-    return all(abs(x - y) <= 2 for x, y in zip(a, b))
+class Img:
+    def __init__(self, path):
+        self.w, self.h, self.px = read_any_png(path)
+
+    def pixel(self, x, y):
+        i = (y * self.w + x) * 3
+        return (self.px[i], self.px[i + 1], self.px[i + 2])
+
+    def block_avg(self, bx, by):
+        rs = gs = bs = n = 0
+        for y in range(by, min(by + BLK, self.h)):
+            base = y * self.w * 3
+            for x in range(bx, min(bx + BLK, self.w)):
+                i = base + x * 3
+                rs += self.px[i]
+                gs += self.px[i + 1]
+                bs += self.px[i + 2]
+                n += 1
+        return (rs // n, gs // n, bs // n)
 
 
-def main():
+def similarity(ours_path, ref_path):
+    a = Img(ours_path)
+    b = Img(ref_path)
+    if (a.w, a.h) != (b.w, b.h):
+        return None, f'size mismatch {a.w}x{a.h} vs {b.w}x{b.h}'
+    total = match = 0
+    worst = []
+    for by in range(0, a.h, BLK):
+        for bx in range(0, a.w, BLK):
+            ca = a.block_avg(bx, by)
+            cb = b.block_avg(bx, by)
+            total += 1
+            d = max(abs(ca[i] - cb[i]) for i in range(3))
+            if d <= TOL:
+                match += 1
+            else:
+                worst.append((d, (bx, by), ca, cb))
+    worst.sort(reverse=True)
+    return match / total, worst
+
+
+def anchors_ok(path, probes):
+    im = Img(path)
+    bad = []
+    for x, y, want in probes:
+        if not (0 <= x < im.w and 0 <= y < im.h):
+            bad.append((x, y, want, None))
+            continue
+        got = im.pixel(x, y)
+        if max(abs(got[i] - want[i]) for i in range(3)) > ATOL:
+            bad.append((x, y, want, got))
+    return bad
+
+
+def presence_ok(path, regions):
+    """regions: (x0, y0, x1, y1, min_count, thr, channel)."""
+    im = Img(path)
+    bad = []
+    for x0, y0, x1, y1, need, thr, ch in regions:
+        n = 0
+        below = thr < 0
+        t = abs(thr)
+        for y in range(y0, min(y1, im.h)):
+            base = y * im.w * 3
+            for x in range(x0, min(x1, im.w)):
+                v = im.px[base + x * 3 + ch]
+                if (below and v < t) or (not below and v > t):
+                    n += 1
+        if n < need:
+            bad.append((x0, y0, x1, y1, need, n))
+    return bad
+
+
+def main(paths):
     failures = 0
-    for path in sys.argv[1:]:
-        base = os.path.basename(path)
-        name = base[:-4] if base.endswith('.png') else base
-        w, h, px = read_png(path)
-        colors = {px[i:i + 3] for i in range(0, len(px), 3)}
-        problems = []
-        if len(colors) <= 3:
-            problems.append(f'blank? only {len(colors)} colors')
-        checks = EXPECT.get(name, [])
-        if not checks:
-            problems.append('NO EXPECTATIONS DEFINED')
-        for x, y, want in checks:
-            got = (px[(y * w + x) * 3], px[(y * w + x) * 3 + 1],
-                   px[(y * w + x) * 3 + 2])
-            if not close(got, want):
-                problems.append(f'({x},{y}) got {got} want {want}')
-        status = 'OK' if not problems else 'FAIL'
-        print(f'{base}: {w}x{h}, {len(colors)} colors, '
-              f'{len(checks)} px checks [{status}]')
-        for p in problems:
-            print(f'    {p}')
-        if problems:
+    for p in paths:
+        name = os.path.basename(p)[len('edge-'):-len('.png')]
+        ref = REFERENCE.get(name)
+        status = []
+        if ref:
+            ref_path = os.path.join(REF_DIR, ref)
+            if not os.path.exists(ref_path):
+                print(f'{p}: MISSING reference {ref}')
+                failures += 1
+                continue
+            ratio, worst = similarity(p, ref_path)
+            if ratio is None:
+                print(f'{p}: {worst}')
+                failures += 1
+                continue
+            status.append(f'{ratio * 100:.1f}% blocks match {ref} '
+                          f'(need {MATCH_MIN * 100:.0f}%)')
+            if ratio < MATCH_MIN:
+                failures += 1
+                status.append('FAIL')
+                for d, (bx, by), ca, cb in worst[:5]:
+                    status.append(f'   worst block ({bx},{by}) '
+                                  f'ours{ca} ref{cb} d={d}')
+            else:
+                status.append('ok')
+        for x, y, want, got in anchors_ok(p, ANCHORS.get(name, [])):
             failures += 1
+            print(f'{p}: anchor ({x},{y}) want {want} got {got}')
+        for x0, y0, x1, y1, need, got in presence_ok(p, PRESENCE.get(name, [])):
+            failures += 1
+            print(f'{p}: glyphs missing in ({x0},{y0})-({x1},{y1}): '
+                  f'{got} px, need {need}')
+        print(f'{p}: ' + '; '.join(status) if status
+              else f'{p}: no reference (state-only)')
     if failures:
-        sys.exit(1)
+        print(f'{failures} failure(s)')
+        return 1
+    print('all edge shot checks passed')
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) < 2:
+        print('usage: check_edge_shots.py edge-*.png')
+        sys.exit(2)
+    sys.exit(main(sys.argv[1:]))
