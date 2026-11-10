@@ -170,9 +170,57 @@ int phone_unsupported(void)
 {
     return NOTIMPL;
 }
+
+/* ---- UXCTL.DLL vtable (device shared-controls model) ----
+ * Hosts that statically link this file call ctl_* directly; device apps
+ * import the Controls vtable the same way they import the keyboard. */
+static void v_button(void *dc, int x, int y, int w, int h, const char *label,
+                     int pressed)
+{
+    ctl_button(dc, ctx(), x, y, w, h, label, pressed);
+}
+static void v_checkbox(void *dc, int x, int y, int checked, const char *label)
+{
+    ctl_checkbox(dc, ctx(), x, y, checked, label);
+}
+static void v_toggle(void *dc, int x, int y, int on)
+{
+    ctl_toggle(dc, ctx(), x, y, on);
+}
+static void v_field(void *dc, int x, int y, int w, int h, const char *text,
+                    const char *hint, int focused)
+{
+    ctl_field(dc, ctx(), x, y, w, h, text, hint, focused);
+}
+static const Controls uixctl_vtable = {PROFILE, 0, v_button, v_checkbox,
+                                       v_toggle, v_field};
+#ifdef NTOS_LINUX_BUILD
+__attribute__((dllexport))
+#endif
+const Controls *UIXGetSchemaFactory(void)
+{
+    return &uixctl_vtable;
+}
+#ifdef NTOS_LINUX_BUILD
+__attribute__((dllexport))
+#endif
+void UIXSchemaUnloaded(void)
+{
+}
+#ifdef NTOS_LINUX_BUILD
+int DllMainCRTStartup_impl(void *h, U32 r, void *r2)
+{
+    (void)h;
+    (void)r;
+    (void)r2;
+    return 1;
+}
+__asm__(".globl _DllMainCRTStartup\n_DllMainCRTStartup = DllMainCRTStartup_impl\n");
+#else
 #ifndef PHONE_HOST
 int main(void)
 {
     return 1;
 }
+#endif
 #endif

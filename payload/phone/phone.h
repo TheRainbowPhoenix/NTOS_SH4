@@ -63,6 +63,13 @@ typedef struct Render {
 typedef struct Controls {
     U32 profile;
     void (*icon)(void *, int, int, int, int, U32);
+    /* shared control painters (UXCTL.DLL; geometry per the W10M captures) */
+    void (*button)(void *dc, int x, int y, int w, int h, const char *label,
+                   int pressed);
+    void (*checkbox)(void *dc, int x, int y, int checked, const char *label);
+    void (*toggle)(void *dc, int x, int y, int on);
+    void (*field)(void *dc, int x, int y, int w, int h, const char *text,
+                  const char *hint, int focused);
 } Controls;
 
 /* Shared control painters (uixctl.c): themed, geometry measured from the

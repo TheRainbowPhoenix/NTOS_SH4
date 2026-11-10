@@ -3,6 +3,7 @@
 IMP(const Render *, render_SpGetThreadContext, (void))
 IMP(int, svf_SVFDrawTint, (void *, const void *, unsigned, int, int, int, int, U32))
 IMP(int, SipShowIM, (U32))
+IMP(const Controls *, ctl_UIXGetSchemaFactory, (void))
 #include "settings_icons.h"
 static int content_bottom = 528;
 static void bounds(int b)
@@ -62,18 +63,24 @@ static int matches(const char *s)
 }
 static void toggle(void *dc, const Render *r, int y, int on)
 {
-    U32 c = on ? BLUE : GRAY;
-    r->fill(dc, 12, y, 56, y + 20, c);
-    r->fill(dc, 14, y + 2, 54, y + 18, on ? BLUE : CARD);
-    r->fill(dc, on ? 40 : 16, y + 4, on ? 52 : 28, y + 16, WHITE);
+    /* Shared W10M toggle from UXCTL.DLL: one implementation for Settings
+     * (light) and Edge (dark); only the On/Off word stays local. */
+    const Controls *ctl = CALL(ctl_UIXGetSchemaFactory, ());
+    if (ctl && ctl->profile == PROFILE && ctl->toggle)
+        ctl->toggle(dc, 12, y, on);
     r->text(dc, 68, y + 2, on ? "On" : "Off", INK, 14);
 }
 static void flat_button(void *dc, const Render *r, int x, int y, int width, const char *label,
                         int pressed)
 {
-    U32 fill = pressed ? RGB_(160, 190, 216) : RGB_(195, 215, 232);
-    r->fill(dc, x + pressed, y + pressed, x + width - pressed, y + 32 - pressed, fill);
-    r->text(dc, x + 14 + pressed, y + 9 + pressed, label, INK, 14);
+    const Controls *ctl = CALL(ctl_UIXGetSchemaFactory, ());
+    if (ctl && ctl->profile == PROFILE && ctl->button)
+        ctl->button(dc, x, y, width, 32, label, pressed);
+    else {
+        U32 fill = pressed ? RGB_(160, 190, 216) : RGB_(195, 215, 232);
+        r->fill(dc, x + pressed, y + pressed, x + width - pressed, y + 32 - pressed, fill);
+        r->text(dc, x + 14 + pressed, y + 9 + pressed, label, INK, 14);
+    }
 }
 static int slider_value(int x)
 {
