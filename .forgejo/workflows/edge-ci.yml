@@ -81,10 +81,17 @@ jobs:
           fi
           python3 -c 'import zlib,struct,xml.etree.ElementTree' && echo "python3 stdlib OK"
 
-          # -- zig for PE payload builds --
+          # -- zig for PE payload builds (retry: runner DNS is flaky) --
           if ! command -v zig >/dev/null 2>&1; then
-            curl -sSL --max-time 300 -o /tmp/zig.tar.xz \
-              "https://ziglang.org/download/0.14.0/zig-linux-x86_64-0.14.0.tar.xz"
+            for i in 1 2 3 4 5; do
+              curl -sSL --max-time 300 -o /tmp/zig.tar.xz \
+                "https://ziglang.org/download/0.14.0/zig-linux-x86_64-0.14.0.tar.xz" && break
+              echo "WARN: zig download attempt $i failed; retrying in 20s"
+              sleep 20
+            done
+            if [ ! -s /tmp/zig.tar.xz ]; then
+              echo "FATAL: could not download zig after retries"; exit 7
+            fi
             tar -C /opt -xf /tmp/zig.tar.xz
             ln -sf /opt/zig-linux-x86_64-0.14.0/zig /usr/local/bin/zig
           fi
