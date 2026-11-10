@@ -72,14 +72,13 @@ jobs:
           fi
           git log --oneline -1
 
-          # -- deps: best effort apt, then pip bootstrap --
-          if ! command -v python3 >/dev/null 2>&1; then
+          # -- deps: make/gcc/curl via best-effort apt; python is stdlib-only --
+          if ! command -v make >/dev/null 2>&1 || ! command -v gcc >/dev/null 2>&1; then
             rm -rf /var/lib/apt/lists/*
-            (apt-get update && apt-get install -y python3 python3-venv curl unzip make gcc) \
-              || echo "WARNING: apt failed; relying on runner image"
+            (apt-get update && apt-get install -y make gcc curl ca-certificates xz-utils) \
+              || echo "WARNING: apt failed; hoping the image has toolchains"
           fi
-          python3 -m pip install --break-system-packages pefile capstone lief meson ninja cmake pillow \
-            || pip install pefile capstone lief meson ninja cmake pillow
+          python3 -c 'import zlib,struct,xml.etree.ElementTree' && echo "python3 stdlib OK"
 
           # -- zig for PE payload builds --
           if ! command -v zig >/dev/null 2>&1; then
