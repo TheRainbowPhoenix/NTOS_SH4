@@ -177,9 +177,17 @@ key 0x1b
 shot light-inpriv
 tap 23 455
 tap 84 110
+# light hub screens (light/downloads.png): the panel sits below the
+# launcher status bar, content clips above the system nav bar; pivots
+# live at y24-72 (xml y0-48 + 24)
 tap 294 456
-tap 212 397
-tap 146 20
+tap 60 397
+shot light-hub-favorites
+tap 50 44
+shot light-hub-reading
+tap 100 44
+shot light-hub-history
+tap 146 44
 shot light-downloads
 key 0x1b
 tap 24 455

@@ -1280,6 +1280,13 @@ static int chrome_yoff(void)
 {
     return g_light ? -48 : 0;
 }
+/* hub screens sit below the launcher status bar in light (24px), and
+ * their content must stop above the SHELLCHROME nav bar (light
+ * downloads.png: fullscreen panel, no app toolbar, system bars only) */
+static int hub_yoff(void)
+{
+    return g_light ? 24 : 0;
+}
 
 /* paints the current page (home / engine / InPrivate) with the viewport
  * height the caller needs: full 480+chrome in browser mode, the shortened
@@ -1519,8 +1526,10 @@ static void paint_settings_page(void *dc)
 }
 static void paint_hub_rows(void *dc, const Item *items, int count, int icon)
 {
-    int y = 96;
-    for (int i = 0; i < count && y < 500; ++i, y += 50) {
+    int yo = hub_yoff();
+    int y = 96 + yo;
+    int ymax = g_light ? 480 : 500; /* light stops above the nav bar */
+    for (int i = 0; i < count && y < ymax; ++i, y += 50) {
         ic_draw(ifill, dc, 15, y + 2, 20, C_MUT, icon);
         draw_text_clamp(dc, 44, y + 2, items[i].title, C_INK, 14, 230);
         if (items[i].time && items[i].time[0])
@@ -1531,9 +1540,11 @@ static void paint_hub_rows(void *dc, const Item *items, int count, int icon)
 
 static void paint_hub_content(void *dc)
 {
+    int yo = hub_yoff();
+    int ymax = g_light ? 480 : 500;
     if (hub_pivot == 0) {
-        int y = 96;
-        for (int i = 0; i < fav_count && y < 500; ++i, y += 50) {
+        int y = 96 + yo;
+        for (int i = 0; i < fav_count && y < ymax; ++i, y += 50) {
             U32 pc = C_SHEET;
             for (unsigned s = 0; s < 6; ++s)
                 if (xeq(favorites[i].host, SITES[s].host))
@@ -1547,9 +1558,9 @@ static void paint_hub_content(void *dc)
     } else if (hub_pivot == 1) {
         paint_hub_rows(dc, reading_list, rl_count, IC_READLIST);
     } else if (hub_pivot == 2) {
-        draw_text(dc, 18, 104, "Last hour", C_INK, 11, 0, 1);
-        int y = 126;
-        for (int i = 0; i < hist_count && y < 500; ++i, y += 50) {
+        draw_text(dc, 18, 104 + yo, "Last hour", C_INK, 11, 0, 1);
+        int y = 126 + yo;
+        for (int i = 0; i < hist_count && y < ymax; ++i, y += 50) {
             U32 pc = C_SHEET;
             for (unsigned s = 0; s < 6; ++s)
                 if (xeq(hist_rows[i].host, SITES[s].host))
@@ -1563,7 +1574,7 @@ static void paint_hub_content(void *dc)
         }
     } else {
         /* empty downloads pane (edge4.png) */
-        draw_text(dc, 10, 110, "You'll see current and past downloads here.",
+        draw_text(dc, 10, 110 + yo, "You'll see current and past downloads here.",
                   C_INK, 14, 0, 0);
     }
 }
@@ -2205,13 +2216,20 @@ static void paint_all(void *dc)
         }
     } else if (mode == M_HUB) {
         if ((d = ux_find_doc(&ux, "HubPanel"))) {
-            layout_doc(d, 0, 0, 320, 528);
+            int yo = hub_yoff();
+            layout_doc(d, 0, yo, 320, 528);
             paint_node(dc, d->root);
             /* active pivot underline (history.png: x88..131, y42..44) */
-            fill(dc, hub_pivot * 44, 42, hub_pivot * 44 + 44, 45,
+            fill(dc, hub_pivot * 44, 42 + yo, hub_pivot * 44 + 44, 45 + yo,
                  RGB_(0x00, 0x5A, 0xA1));
             flag_named("HubClear", NS_HIDDEN, hub_pivot != 2);
+            /* light: content clips above the system nav bar, the shared
+             * chrome repaints the status bar + nav bar over the panel */
+            clip_set(0, 0, 320, g_light ? 480 : 528);
             paint_hub_content(dc);
+            clip_set(0, 0, 320, 528);
+            if (g_light && g_chrome)
+                g_chrome->paint(dc);
         }
     } else if (mode == M_ADDRESS) {
         /* Address edit stack (type.png dark / test123_input.png light):
@@ -2627,6 +2645,7 @@ static void process_tap(int x, int y)
             count = hist_count;
             base = 126;
         }
+        base += hub_yoff(); /* painted rows carry the same offset */
         if (rows && y >= base && y < base + count * 50) {
             int idx = (y - base) / 50;
             if (idx >= 0 && idx < count) {

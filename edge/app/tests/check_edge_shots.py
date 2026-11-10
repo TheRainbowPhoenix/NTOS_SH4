@@ -240,6 +240,21 @@ ANCHORS = {
         (160, 215, (0xCE, 0xCF, 0xCE)),  # separator
         (100, 510, (0xCE, 0xCF, 0xCE)),  # nav bar
     ],
+    # light hub screens: panel below the status bar, pivot underline
+    # #005AA1, content clipped above the nav bar, system bars present
+    'edge-light-hub-favorites': [
+        (22, 67, (0x00, 0x5A, 0xA1)),    # pivot 0 underline
+        (160, 10, (0xFF, 0xFF, 0xFF)),   # launcher status bar bg
+        (100, 510, (0xCE, 0xCF, 0xCE)),  # nav bar bg
+    ],
+    'edge-light-hub-reading': [
+        (66, 67, (0x00, 0x5A, 0xA1)),    # pivot 1 underline
+        (100, 510, (0xCE, 0xCF, 0xCE)),
+    ],
+    'edge-light-hub-history': [
+        (110, 67, (0x00, 0x5A, 0xA1)),   # pivot 2 underline
+        (100, 510, (0xCE, 0xCF, 0xCE)),
+    ],
     'edge-light-find-next': [
         (160, 209, (0x00, 0x79, 0xD6)),  # blue focus underline
         (160, 215, (0xCE, 0xCF, 0xCE)),  # separator
@@ -449,6 +464,19 @@ PRESENCE = {
         (240, 188, 258, 206, 6, -100, 0),   # prev chevron in the field
         (274, 188, 292, 206, 6, -100, 0),   # next chevron in the field
         (100, 510, 180, 518, 10, -150, 0),  # nav bar glyphs below the SIP
+    ],
+    'light-hub-favorites': [
+        (44, 120, 300, 145, 30, -100, 0),  # first favorites row title
+        (12, 84, 200, 102, 15, -100, 0),   # FAVORITES title (bold)
+        (270, 4, 306, 20, 8, -100, 0),     # status-bar clock glyphs
+    ],
+    'light-hub-reading': [
+        (44, 120, 300, 145, 30, -100, 0),  # first reading-list row title
+    ],
+    'light-hub-history': [
+        (18, 126, 130, 140, 10, -100, 0),  # "Last hour" group header
+        (44, 150, 300, 175, 30, -100, 0),  # first history row title
+        (200, 82, 306, 106, 10, 150, 2),  # "Clear all history" link (blue ch)
     ],
     'light-find-next': [
         (0, 0, 320, 175, 60, -180, 1),      # orange active match (g<180)
