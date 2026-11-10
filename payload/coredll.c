@@ -337,6 +337,7 @@ static void copy_msg(NT_MSG *out, const NT_MSG *from)
     out->pt.y = from->pt.y;
 }
 static int is_phone_shell(void);
+static int is_hosted_phone(void);
 static int legacy_nav_input(NT_MSG *);
 static void legacy_nav_paint(void);
 u32 RegisterClassW(const NT_WNDCLASS *wc)
@@ -421,7 +422,7 @@ int DispatchMessageW(const NT_MSG *msg)
     if (!msg)
         return 0;
     /* Close belongs to shared chrome, not to individual app WNDPROCs. */
-    if (is_hwnd(msg->hwnd) && !is_phone_shell() && msg->message == 0x0202u && msg->pt.x >= 288 &&
+    if (is_hwnd(msg->hwnd) && !is_phone_shell() && !is_hosted_phone() && msg->message == 0x0202u && msg->pt.x >= 288 &&
         msg->pt.y < 24 && msg->pt.y >= 0) {
         PostQuitMessage(0);
         return 0;
@@ -568,7 +569,7 @@ int TextOutW(void *hdc, int x, int y, const u16 *text, int n);
 u32 SetTextColor(void *hdc, u32 color);
 static void ntos_paint_titlebar(void)
 {
-    if (!g_window.title[0] || is_phone_shell())
+    if (!g_window.title[0] || is_phone_shell() || is_hosted_phone())
         return;
     /* Shared light system title bar; app windows never draw another bar.
      * RGB565 path retains gentle slate colors without a black screen edge. */
@@ -1507,11 +1508,20 @@ static int is_phone_shell(void)
     static const u16 name[] = {'S', 't', 'a', 'r', 't', 'H', 'o', 's', 't', 0};
     return same_wstr(g_class_name, name);
 }
+static int is_hosted_phone(void)
+{
+    static const u16 edge[] = {'E','d','g','e','M','o','b','i','l','e',0};
+    static const u16 calc[] = {'C','a','l','c','u','l','a','t','o','r',0};
+    static const u16 files[] = {'F','i','l','e','E','x','p','l','o','r','e','r',0};
+    static const u16 cortana[] = {'C','o','r','t','a','n','a',0};
+    return same_wstr(g_class_name, edge) || same_wstr(g_class_name, calc) ||
+           same_wstr(g_class_name, files) || same_wstr(g_class_name, cortana);
+}
 static const u16 legacy_pref[] = {'\\', 'f', 'l', 's', '0', '\\', 'n',
                                   'a',  'v', '.', 'd', 'a', 't',  0};
 static int legacy_enabled(void)
 {
-    if (is_phone_shell())
+    if (is_phone_shell() || is_hosted_phone())
         return 0;
     if (!legacy_nav_loaded) {
         legacy_nav_loaded = 1;

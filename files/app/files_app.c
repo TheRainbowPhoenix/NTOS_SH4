@@ -234,6 +234,8 @@ static void clip_set(int l, int t, int r, int b)
     clip_rect.bottom = b > t ? b : t;
 }
 
+#include "hosted_content.h"
+
 static void fill(void *dc, int l, int t, int r, int b, U32 c)
 {
     Rect v;
@@ -248,6 +250,11 @@ static void fill(void *dc, int l, int t, int r, int b, U32 c)
             NT_CALL(DeleteObject, (cached_brush));
         cached_brush = NT_CALL(CreateSolidBrush, (c));
         cached_color = c;
+    }
+    if (hosted_content_painting) {
+        v.top = hosted_content_y(v.top);
+        v.bottom = hosted_content_y(v.bottom);
+        if (v.bottom <= v.top) v.bottom = v.top + 1;
     }
     NT_CALL(FillRect, (dc, &v, cached_brush));
 }
@@ -1768,7 +1775,7 @@ static void paint_all(void *dc)
                     /* SIP docks above the system navbar (y231..488),
                      * like rename_folder_focused_input.png */
                     g_kb->dock(40);
-                    g_kb->paint(dc);
+                    HOSTED_SYSTEM_PAINT(g_kb, dc);
                 }
             }
         } else {
@@ -1852,7 +1859,7 @@ static void paint_all(void *dc)
             if (g_kb) {
                 /* the shared SIP rises above the navbar: 231..488 */
                 g_kb->dock(40);
-                g_kb->paint(dc);
+                HOSTED_SYSTEM_PAINT(g_kb, dc);
             }
         }
     } else if (mode == M_CONFIRM) {
@@ -1918,7 +1925,7 @@ static void paint_all(void *dc)
     /* system navigation bar (SHELLCHROME.DLL): always the topmost strip,
      * over content, navpane and dialogs alike */
     if (g_chrome)
-        g_chrome->paint(dc);
+        HOSTED_SYSTEM_PAINT(g_chrome, dc);
 }
 
 /* =====================================================================
@@ -2232,9 +2239,8 @@ static void process_tap(int x, int y)
     const UxDoc *d;
     const UxNode *b;
     if (mode == M_RENAME || mode == M_NEWFOLDER) {
-        if (y >= 231 && g_kb) { /* docked SIP (y231..488) */
-            U32 lp = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
-            int c = g_kb->input(WM_DOWN_, 1, lp);
+        if ((int)(short)(hosted_raw_pointer >> 16) >= 231 && g_kb) { /* docked SIP (y231..488) */
+            int c = g_kb->input(WM_DOWN_, 1, hosted_raw_pointer);
             if (c > 0)
                 edit_key((unsigned)c);
             return;
@@ -2252,9 +2258,8 @@ static void process_tap(int x, int y)
         return;
     }
     if (mode == M_SEARCH) {
-        if (y >= 231 && g_kb) {
-            U32 lp = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
-            int c = g_kb->input(WM_DOWN_, 1, lp);
+        if ((int)(short)(hosted_raw_pointer >> 16) >= 231 && g_kb) {
+            int c = g_kb->input(WM_DOWN_, 1, hosted_raw_pointer);
             if (c > 0)
                 edit_key((unsigned)c);
             return;
@@ -2448,14 +2453,20 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
 {
     if (hosted_shell_input(hwnd, msg, wp, lp))
         return 0;
+    if (msg == WM_DOWN_ || msg == WM_MOVE_ || msg == WM_UP_) {
+        hosted_raw_pointer = lp;
+        lp = hosted_content_pointer(lp);
+    }
     if (msg == WM_PAINT_) {
         Paint ps;
         void *dc = NT_CALL(BeginPaint, (hwnd, &ps));
         if (dc) {
             clip_set(0, 0, 320, 528);
+            hosted_content_painting = 1;
             paint_all(dc);
+            hosted_content_painting = 0;
             if (g_chrome)
-                g_chrome->paint(dc);
+                HOSTED_SYSTEM_PAINT(g_chrome, dc);
         }
         NT_CALL(EndPaint, (hwnd, &ps));
         return 0;
@@ -2481,27 +2492,8 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
         NT_CALL(UpdateWindow, (hwnd));
         return 0;
     }
-    if (msg == WM_DOWN_ || msg == WM_MOVE_ || msg == WM_UP_) {
-        int x = (int)(short)(lp & 0xffff);
-        int y = (int)(short)(lp >> 16);
-        (void)x;
-        /* system navbar (y488..528): the SHELLCHROME chrome owns the strip
-         * — 4/5/6 = Back/Home/Search, 1 = consumed, 0 = not ours */
-        int cr = g_chrome ? g_chrome->input(msg, wp, lp) : 0;
-        if (cr >= 4 && cr <= 6) {
-            nav_bar_action(cr);
-            NT_CALL(InvalidateRect, (hwnd, 0, 0));
-            NT_CALL(UpdateWindow, (hwnd));
-            return 0;
-        }
-        if (cr == 1) {
-            NT_CALL(InvalidateRect, (hwnd, 0, 0));
-            NT_CALL(UpdateWindow, (hwnd));
-            return 0; /* press tracked by the bar */
-        }
-        if (msg == WM_UP_)
-            return 0;
-    }
+    if (msg == WM_UP_)
+        return 0;
     if (msg == WM_DOWN_) {
         int x = (int)(short)(lp & 0xffff);
         int y = (int)(short)(lp >> 16);

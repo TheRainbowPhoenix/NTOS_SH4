@@ -859,6 +859,11 @@
    "rva": 0
   },
   {
+   "ordinal": 186,
+   "name": "UIXSetStatusBarVisible",
+   "rva": 0
+  },
+  {
    "ordinal": 171,
    "name": "UIXSchemaUnloaded",
    "rva": 576000

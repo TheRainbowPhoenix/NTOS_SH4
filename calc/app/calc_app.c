@@ -2055,6 +2055,8 @@ static void clip_set(int l, int t, int r, int b)
     clip_rect.bottom = b > t ? b : t;
 }
 
+#include "hosted_content.h"
+
 static void fill(void *dc, int l, int t, int r, int b, U32 c)
 {
     Rect v;
@@ -2069,6 +2071,11 @@ static void fill(void *dc, int l, int t, int r, int b, U32 c)
             NT_CALL(DeleteObject, (cached_brush));
         cached_brush = NT_CALL(CreateSolidBrush, (c));
         cached_color = c;
+    }
+    if (hosted_content_painting) {
+        v.top = hosted_content_y(v.top);
+        v.bottom = hosted_content_y(v.bottom);
+        if (v.bottom <= v.top) v.bottom = v.top + 1;
     }
     NT_CALL(FillRect, (dc, &v, cached_brush));
 }
@@ -2684,7 +2691,7 @@ static void paint_all(void *dc)
     default: break;
     }
     if (g_chrome)
-        g_chrome->paint(dc);
+        HOSTED_SYSTEM_PAINT(g_chrome, dc);
 }
 
 /* =====================================================================
@@ -3129,14 +3136,20 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
 {
     if (hosted_shell_input(hwnd, msg, wp, lp))
         return 0;
+    if (msg == WM_DOWN_ || msg == WM_MOVE_ || msg == WM_UP_) {
+        hosted_raw_pointer = lp;
+        lp = hosted_content_pointer(lp);
+    }
     if (msg == WM_PAINT_) {
         Paint ps;
         void *dc = NT_CALL(BeginPaint, (hwnd, &ps));
         if (dc) {
             clip_set(0, 0, 320, 528);
+            hosted_content_painting = 1;
             paint_all(dc);
+            hosted_content_painting = 0;
             if (g_chrome)
-                g_chrome->paint(dc);
+                HOSTED_SYSTEM_PAINT(g_chrome, dc);
         }
         NT_CALL(EndPaint, (hwnd, &ps));
         return 0;
@@ -3149,20 +3162,7 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
         NT_CALL(UpdateWindow, (hwnd));
         return 0;
     }
-    if (msg == WM_DOWN_ || msg == WM_MOVE_ || msg == WM_UP_) {
-        int cr = g_chrome ? g_chrome->input(msg, wp, lp) : 0;
-        if (cr >= 4 && cr <= 6) {
-            nav_bar_action(cr);
-            NT_CALL(InvalidateRect, (hwnd, 0, 0));
-            NT_CALL(UpdateWindow, (hwnd));
-            return 0;
-        }
-        if (cr == 1) {
-            NT_CALL(InvalidateRect, (hwnd, 0, 0));
-            NT_CALL(UpdateWindow, (hwnd));
-            return 0;
-        }
-    }
+
     if (msg == WM_DOWN_) {
         int x = (int)(short)(lp & 0xffff);
         int y = (int)(short)(lp >> 16);

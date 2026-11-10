@@ -88,6 +88,7 @@ static void status_paint(void *dc, const Render *r)
 }
 
 static int nav = 1, panel, tracking, origin, press_x, press_y, pending = -1;
+static int hosted_status_visible = 1;
 static unsigned toggles = (1u << 5) | (1u << 13);
 static char notification[64];
 static const char *labels[16] = {
@@ -304,7 +305,8 @@ static void hosted_paint(void *dc)
         paint(dc);
         return;
     }
-    status_paint(dc, r);
+    if (hosted_status_visible)
+        status_paint(dc, r);
     if (nav)
         navigation_paint(dc, r);
 }
@@ -325,7 +327,15 @@ __attribute__((dllexport))
 const Chrome *UIXChromeFactory(void)
 {
     load_nav();
+    hosted_status_visible = 1;
     return &hosted_chrome;
+}
+#ifdef NTOS_LINUX_BUILD
+__attribute__((dllexport))
+#endif
+void UIXSetStatusBarVisible(int visible)
+{
+    hosted_status_visible = visible != 0;
 }
 void UIXSchemaUnloaded(void)
 {

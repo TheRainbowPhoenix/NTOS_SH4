@@ -68,6 +68,7 @@ def main():
     pack.build_import_section = imports
     groups = [('UIXGetSchemaFactory', 'FINGERKB.DLL'),
               ('UIXChromeFactory', 'SHELLCHROME.DLL'),
+              ('UIXSetStatusBarVisible', 'SHELLCHROME.DLL'),
               ('render_', 'UIXRENDER.DLL'), ('md_', 'HTML.DLL'), ('Js', 'CHAKRA.DLL')]
 
     for name, source, exports in [

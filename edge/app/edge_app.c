@@ -136,6 +136,8 @@ NT_DEFINE(md_anchor_scroll)
  * hosted-app surface: nav bar only, themed through edge_renderer) */
 NT_IMPORT(const EdgeChrome *, UIXChromeFactory, (void))
 NT_DEFINE(UIXChromeFactory)
+NT_IMPORT(void, UIXSetStatusBarVisible, (int))
+NT_DEFINE(UIXSetStatusBarVisible)
 
 /* ---- imports (host loader or device COREDLL snap these) ---- */
 typedef int (*WndProcT)(void *, U32, U32, U32);
@@ -723,12 +725,15 @@ __attribute__((dllexport)) int svf_SVFDrawTint(void *dc, const void *data,
  * the same primitives the chrome uses (fill / draw_text / SVF / NT APIs). */
 int mdh_read_file(const char *name, unsigned char *buf, int cap)
 {
-    W16 path[40];
+    W16 path[96];
     int n = 0;
     path[n++] = '\\'; path[n++] = 'f'; path[n++] = 'l'; path[n++] = 's';
     path[n++] = '0'; path[n++] = '\\';
-    for (int i = 0; name[i] && n < 38; ++i)
-        path[n++] = (W16)(unsigned char)name[i];
+    for (int i = 0; name[i]; ++i) {
+        if (n >= 95)
+            return 0;
+        path[n++] = (W16)(unsigned char)(name[i] == '/' ? '\\' : name[i]);
+    }
     path[n] = 0;
     void *h = NT_CALL(CreateFileW, (path, 0x80000000u, 1, 0, 3, 0, 0));
     if (!h || h == (void *)(intptr_t)-1)
@@ -1804,6 +1809,7 @@ static void nav_url(const char *url)
         web_reader_reset();
         web_kind = web_open_file(t->file) ? 1 : 0;
         if (web_kind) {
+            NT_CALL(md_layout, (320));
             int tl2 = 0;
             const char *dt = NT_CALL(md_title, (&tl2));
             if (dt && tl2 > 0) {
@@ -2786,6 +2792,8 @@ __attribute__((dllexport)) int RunApplication(void)
 {
     if (load_markup())
         return 0x80070002u; /* file missing: ERROR_FILE_NOT_FOUND */
+    __imp_render_SpGetThreadContext = (const void *)(uintptr_t)render_SpGetThreadContext;
+    NT_CALL(md_set_host, (&g_mdhost));
     tab_count = 1;
     tab_cur = 0;
     xcopy(tabs[0].title, "New tab", 8);
@@ -2811,12 +2819,12 @@ __attribute__((dllexport)) int RunApplication(void)
      * the render-context slot the device loader would snap per module */
     __imp_render_SpGetThreadContext = (const void *)(uintptr_t)render_SpGetThreadContext;
     /* shared keyboard DLL (FINGERKB.DLL), snapped by the host loader */
-    g_kb = NT_CALL(UIXGetSchemaFactory, ())
-    , NT_CALL(md_set_host, (&g_mdhost));
+    g_kb = NT_CALL(UIXGetSchemaFactory, ());
     if (!g_kb || g_kb->profile != 0x55495831u)
         g_kb = 0;
     /* nav-bar chrome from SHELLCHROME.DLL (hosted-app surface) */
     g_chrome = NT_CALL(UIXChromeFactory, ());
+    NT_CALL(UIXSetStatusBarVisible, (0));
     if (!g_chrome || g_chrome->profile != 0x55495831u)
         g_chrome = 0;
     WndClass wc;

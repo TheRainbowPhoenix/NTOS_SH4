@@ -165,6 +165,9 @@ int main(void)
     g_class_name[0] = 0;
     assert(GetMessageW(&msg, 0, 0, 0) == 0 && msg.message == 0x12u);
     const u16 shell[] = {'S', 't', 'a', 'r', 't', 'H', 'o', 's', 't', 0};
+    const u16 hosted[] = {'F','i','l','e','E','x','p','l','o','r','e','r',0};
+    copy_wstr(g_class_name, hosted, 48);
+    assert(is_hosted_phone() && !legacy_enabled());
     copy_wstr(g_class_name, shell, 48);
     assert(GetMessageW(&msg, 0, 0, 0) == 1 && msg.message == 0x100u && msg.wParam == 0x1bu);
     g_class_name[0] = 0;
