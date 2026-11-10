@@ -308,6 +308,7 @@ static void hosted_paint(void *dc)
 }
 static int hosted_input(U32 msg, U32 wp, U32 lp)
 {
+    (void)wp;
     int x = (int)(short)(lp & 65535u), y = (int)(short)(lp >> 16);
     if (closing) {
         if (msg == WM_UP_)
