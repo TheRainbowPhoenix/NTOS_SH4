@@ -2,3 +2,7 @@ ntos_linux
 sample.dll
 lcd-*.png
 test-*.png
+sample.pdb
+sample_app.lib
+*.pdb
+*.lib
