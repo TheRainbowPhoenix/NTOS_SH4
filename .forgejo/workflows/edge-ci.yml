@@ -1,0 +1,99 @@
+name: edge CI
+
+on:
+  push:
+    branches: [main, 310c]
+  pull_request:
+
+jobs:
+  edge:
+    runs-on: docker
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Build NTOS_SH4_linux + run e2e (single self-contained step)
+        shell: bash
+        run: |
+          set -ex
+          export DEBIAN_FRONTEND=noninteractive
+          cd "$GITHUB_WORKSPACE"
+
+          LOG="$GITHUB_WORKSPACE/edge-ci.log"
+          touch "$LOG"
+          exec > >(tee -a "$LOG") 2>&1
+
+          RURL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          AURL="$RURL"
+          case "${GITHUB_TOKEN:-}" in
+            "") ;;
+            *:*|*@*) AURL="${RURL/https:\/\//https:\/\/${GITHUB_TOKEN}@}" ;;
+            *) AURL="${RURL/https:\/\//https:\/\/x-access-token:${GITHUB_TOKEN}@}" ;;
+          esac
+
+          finish() {
+            rc=$?
+            if [ -d "$GITHUB_WORKSPACE/repo/.git" ]; then
+              set +ex
+              echo "== edge CI exit=$rc; shipping log + screenshots to edge-ci branch =="
+              cd "$GITHUB_WORKSPACE/repo"
+              OUT="$GITHUB_WORKSPACE/ci-out"
+              rm -rf "$OUT"; mkdir -p "$OUT"
+              cp "$LOG" "$OUT/edge-ci.log"
+              cp edge/ntos_linux/*.png "$OUT/" 2>/dev/null || true
+              export GIT_INDEX_FILE="$GITHUB_WORKSPACE/ci.index"
+              rm -f "$GIT_INDEX_FILE"
+              git read-tree --empty
+              ( cd "$OUT" && find . -type f ) | while IFS= read -r f; do
+                f="${f#./}"
+                blob=$(git hash-object -w "$OUT/$f")
+                git update-index --add --cacheinfo "100644,$blob,$f"
+              done
+              tree=$(git write-tree)
+              unset GIT_INDEX_FILE
+              commit=$(GIT_AUTHOR_NAME=clemu-ci GIT_AUTHOR_EMAIL=ci@noreply \
+                       GIT_COMMITTER_NAME=clemu-ci GIT_COMMITTER_EMAIL=ci@noreply \
+                       git commit-tree "$tree" -m "edge CI: $GITHUB_SHA exit=$rc")
+              git push -qf "$AURL" "$commit:refs/heads/edge-ci" \
+                || echo "log push FAILED (token may lack write access)"
+              set -ex
+            fi
+            exit "$rc"
+          }
+          trap finish EXIT
+
+          # -- checkout (runner has no github.com access; plain git clone) --
+          if ! git clone --depth 1 "$RURL" repo; then
+            git clone --depth 1 "$AURL" repo
+          fi
+          cd repo
+          if [ -n "$GITHUB_SHA" ]; then
+            git fetch --depth 1 origin "$GITHUB_SHA" || true
+            git checkout --force "$GITHUB_SHA" || true
+          fi
+          git log --oneline -1
+
+          # -- deps: best effort apt, then pip bootstrap --
+          if ! command -v python3 >/dev/null 2>&1; then
+            rm -rf /var/lib/apt/lists/*
+            (apt-get update && apt-get install -y python3 python3-venv curl unzip make gcc) \
+              || echo "WARNING: apt failed; relying on runner image"
+          fi
+          python3 -m pip install --break-system-packages pefile capstone lief meson ninja cmake pillow \
+            || pip install pefile capstone lief meson ninja cmake pillow
+
+          # -- zig for PE payload builds --
+          if ! command -v zig >/dev/null 2>&1; then
+            curl -sSL --max-time 300 -o /tmp/zig.tar.xz \
+              "https://ziglang.org/download/0.14.0/zig-linux-x86_64-0.14.0.tar.xz"
+            tar -C /opt -xf /tmp/zig.tar.xz
+            ln -sf /opt/zig-linux-x86_64-0.14.0/zig /usr/local/bin/zig
+          fi
+          zig version
+
+          # -- build + e2e the NTOS_SH4_linux env with the sample payload --
+          make -C edge/ntos_linux ZIG=$(command -v zig) clean all
+          ./edge/ntos_linux/ntos_linux edge/ntos_linux/sample.dll \
+            --script edge/ntos_linux/tests/sample.script --shot ci --fs edge/ntos_linux/tests/fs
+          python3 edge/ntos_linux/tests/check_shots.py edge/ntos_linux/ci-*.png
+
+          echo "== edge CI step complete =="
