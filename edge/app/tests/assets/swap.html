@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Swap Test A</title>
+<style>
+/* render-from-content proof page: the e2e Makefile derives swap2.html
+   from this file by swapping the colour and size VALUES (sed), renders
+   both, and check_edge_shots.py asserts the pixels followed the values.
+   If any renderer ever hardcodes this page, swap-b fails loudly. */
+body { margin: 0; background-color: #0000FF; font: 14px sans-serif; }
+h1 { color: #FF0000; font-size: 22px; margin: 8px 8px 4px 8px; }
+p  { color: #00CC00; margin: 4px 8px; }
+</style>
+</head>
+<body>
+<h1>Swap Test A</h1>
+<p>The background is blue, the heading red, this text green.</p>
+<p>Swap the values and the render must follow.</p>
+</body>
+</html>

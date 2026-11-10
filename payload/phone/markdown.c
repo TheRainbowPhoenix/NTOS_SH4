@@ -3711,6 +3711,13 @@ void md_paint(const MdHost *h, int sx, int sy, int vw, int vh)
 {
     if (!h)
         return;
+    /* the canvas (ops[0], html/body colour or white) must cover the whole
+     * viewport, not just the laid-out page extent — a short page over a
+     * previously-painted frame otherwise leaves stale pixels below the
+     * content (the swap-a gate caught exactly that). Overdraw is cheap:
+     * one fill, then the ops paint on top. */
+    if (nops > 0 && h->fill)
+        h->fill(h->dc, 0, 0, vw, vh, ops[0].c);
     for (int i = 0; i < nops; ++i) {
         POp *o = &ops[i];
         if (o->y + o->h < sy || o->y > sy + vh)
@@ -4105,7 +4112,12 @@ void md_layout(int view_w)
         layout_children(0, 0, 0, view_w, 0);
     else
         layout_children(0, 4, 4, view_w - 8, 0);
-    /* canvas colour: html/body bg or white (reader: warm paper) */
+    /* canvas colour: html/body bg or white (reader: warm paper).
+     * CSS canvas propagation: html's background propagates to the
+     * canvas; when html has none, BODY's does — so a bg-less <html>
+     * block must not stop the scan (that bug left body{background-
+     * color:blue} painting only its own box: white canvas + a short
+     * blue stripe, caught by the swap-a render gate). */
     unsigned canvas = 0xFFFFFF;
     if (g_reader) {
         canvas = 0xEDE6D9;
@@ -4113,11 +4125,11 @@ void md_layout(int view_w)
         for (int bi = 0; bi < nblk && bi < 4; ++bi) {
             if (rs_[bi].bg != UNSET) {
                 canvas = rs_[bi].bg;
-                if (blks[bi].tag == TG_BODY)
-                    break;
+                if (blks[bi].tag == TG_BODY || blks[bi].tag == TG_HTML)
+                    break; /* authored html/body bg wins */
+            } else if (blks[bi].tag == TG_BODY) {
+                break; /* body itself has no bg: nothing propagates */
             }
-            if (blks[bi].tag == TG_BODY || blks[bi].tag == TG_HTML)
-                break;
         }
     }
     ops[0].c = canvas;

@@ -355,6 +355,22 @@ ANCHORS['edge-errorpage'] = [
     (10, 100, (0xA2, 0xA9, 0xB1)),
 ]
 
+# render-from-content gate: swap.html vs swap2.html differ ONLY in CSS
+# values (bg #0000FF->#FFFFFF, h1 #FF0000->#0000FF at 22px->16px, text
+# #00CC00->#CC0000). The renders must follow: swap-a shows a pure-blue
+# page with red 22px heading and green text; swap-b a white page with a
+# blue 16px heading (which must NOT reach y30+ where the 22px one did)
+# and dark-red text.
+ANCHORS['edge-swap-a'] = [
+    (200, 240, (0x00, 0x00, 0xFF)),  # page background: authored #0000FF
+]
+ANCHORS['edge-swap-b'] = [
+    (200, 240, (0xFF, 0xFF, 0xFF)),  # page background: authored #FFFFFF
+]
+# exact-colour glyph probes live in COLORS below (stronger than channel
+# thresholds: they pin the authored RGB, so a renderer that ignored the
+# CSS values cannot pass even by accident).
+
 
 class Img:
     def __init__(self, path):
@@ -412,7 +428,13 @@ def anchors_ok(path, probes):
 
 
 def presence_ok(path, regions):
-    """regions: (x0, y0, x1, y1, min_count, thr, channel)."""
+    """regions: (x0, y0, x1, y1, need, thr, channel).
+
+    need > 0: at least `need` pixels must pass the threshold (presence).
+    need < 0: at most -need pixels may pass it (forbidden-zone probe —
+    lets tests assert that something is ABSENT, e.g. the tail of a
+    22px heading where a swapped 16px heading must not reach).
+    """
     im = Img(path)
     bad = []
     for x0, y0, x1, y1, need, thr, ch in regions:
@@ -425,8 +447,47 @@ def presence_ok(path, regions):
                 v = im.px[base + x * 3 + ch]
                 if (below and v < t) or (not below and v > t):
                     n += 1
-        if n < need:
+        if (need >= 0 and n < need) or (need < 0 and n > -need):
             bad.append((x0, y0, x1, y1, need, n))
+    return bad
+
+
+# exact-colour glyph probes: (x0, y0, x1, y1, (r, g, b), tol, need).
+# Counts pixels within tol per channel of the authored colour; need < 0
+# means "at most -need pixels may match" (forbidden zone). Used by the
+# render-from-content gate: the glyphs must carry the exact CSS colours.
+COLORS = {
+    # swap.html: bg #0000FF, h1 #FF0000 @22px, body #00CC00
+    'swap-a': [
+        (10, 4, 310, 44, (0xFF, 0x00, 0x00), 36, 300),  # red 22px heading
+        (10, 44, 310, 95, (0x00, 0xCC, 0x00), 36, 200), # green body text
+    ],
+    # swap2.html (sed-swapped values): bg #FFFFFF, h1 #0000FF @16px,
+    # body #CC0000 — smaller heading, different colours, same page
+    'swap-b': [
+        (10, 4, 310, 40, (0x00, 0x00, 0xFF), 36, 120),   # blue 16px heading
+        (10, 4, 310, 40, (0x00, 0x00, 0xFF), 36, -400),  # ...far fewer px than 22px (measured: 320 vs 487)
+        (10, 44, 310, 95, (0xCC, 0x00, 0x00), 36, 200),  # dark-red body text
+        (10, 40, 310, 95, (0x00, 0x00, 0xFF), 36, -20),  # heading never reaches the body zone
+    ],
+}
+
+
+def colors_ok(path, regions):
+    im = Img(path)
+    bad = []
+    for x0, y0, x1, y1, want, tol, need in regions:
+        n = 0
+        for y in range(y0, min(y1, im.h)):
+            base = y * im.w * 3
+            for x in range(x0, min(x1, im.w)):
+                i = base + x * 3
+                if (abs(im.px[i] - want[0]) <= tol and
+                        abs(im.px[i + 1] - want[1]) <= tol and
+                        abs(im.px[i + 2] - want[2]) <= tol):
+                    n += 1
+        if (need >= 0 and n < need) or (need < 0 and n > -need):
+            bad.append((x0, y0, x1, y1, want, need, n))
     return bad
 
 
@@ -463,6 +524,10 @@ def main(paths):
         for x0, y0, x1, y1, need, got in presence_ok(p, PRESENCE.get(name, [])):
             failures += 1
             print(f'{p}: glyphs missing in ({x0},{y0})-({x1},{y1}): '
+                  f'{got} px, need {need}')
+        for x0, y0, x1, y1, want, need, got in colors_ok(p, COLORS.get(name, [])):
+            failures += 1
+            print(f'{p}: colour {want} in ({x0},{y0})-({x1},{y1}): '
                   f'{got} px, need {need}')
         print(f'{p}: ' + '; '.join(status) if status
               else f'{p}: no reference (state-only)')

@@ -48,6 +48,11 @@ package: all
 	cp $(APP)/tests/assets/article.md $(APP)/tests/assets/logo.svf \
 	$(APP)/tests/assets/demo.md $(APP)/tests/assets/cool.svf $(PKG)/fs/fls0/
 	cp $(APP)/edge.uxaml $(APP)/edgelight.uxaml $(PKG)/fs/fls0/
+	cp $(APP)/tests/assets/swap.html $(PKG)/fs/fls0/
+	sed -e 's/#0000FF/#FFFFFF/g' -e 's/#FF0000/#0000FF/g' \
+	    -e 's/#00CC00/#CC0000/g' -e 's/font-size: 22px/font-size: 16px/g' \
+	    -e 's/Swap Test A/Swap Test B/g' \
+	    $(APP)/tests/assets/swap.html > $(PKG)/fs/fls0/swap2.html
 	{ printf '@echo off\r\n'; \
 	printf 'cd /d %%~dp0\r\n'; \
 	printf 'ntos_windows.exe html.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --fs fs --record session.script\r\n'; \

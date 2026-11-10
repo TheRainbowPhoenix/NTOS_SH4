@@ -92,6 +92,13 @@ test: all
 	cp edgelight.uxaml tests/fs/fls0/edgelight.uxaml
 	cp tests/assets/article.md tests/assets/logo.svf tests/fs/fls0/
 	cp tests/assets/demo.md tests/assets/cool.svf tests/fs/fls0/
+	cp tests/assets/swap.html tests/fs/fls0/swap.html
+	# swap2.html: the SAME page with colour/size values swapped — the
+	# render-from-content gate (see check_edge_shots.py 'swap-b')
+	sed -e 's/#0000FF/#FFFFFF/g' -e 's/#FF0000/#0000FF/g' \
+	    -e 's/#00CC00/#CC0000/g' -e 's/font-size: 22px/font-size: 16px/g' \
+	    -e 's/Swap Test A/Swap Test B/g' \
+	    tests/assets/swap.html > tests/fs/fls0/swap2.html
 	../ntos_linux/ntos_linux html.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --script tests/edge.script \
 	  --shot edge --fs tests/fs
 	python3 tests/check_edge_shots.py edge-*.png

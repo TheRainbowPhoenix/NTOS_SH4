@@ -257,3 +257,32 @@ char 115
 char 116
 key 13
 shot errorpage
+
+# ---- render-from-content gate: swap.html vs swap2.html --------------
+# the two files differ ONLY in CSS colour/size values; the renders must
+# differ exactly there (probes in check_edge_shots.py)
+tap 158 455
+char 115
+char 119
+char 97
+char 112
+char 46
+char 104
+char 116
+char 109
+char 108
+key 13
+shot swap-a
+tap 158 455
+char 115
+char 119
+char 97
+char 112
+char 50
+char 46
+char 104
+char 116
+char 109
+char 108
+key 13
+shot swap-b
