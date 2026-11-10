@@ -1432,33 +1432,80 @@ static int card_col_x(int col)
 #define C_TABTITLE (g_th->tabtitle)
 #define C_CROSS   (g_th->cross)
 
+/* light card grid: measured off light/tabs_menu.png — card 142px
+ * (title strip #E7E7E7 28 + white thumbnail 114) inside a 1px #E6E6E6
+ * frame, then a 12px gap and a full-width #E7E7E7 strip with the mini
+ * close X centred under the card (27x26 touch zone, #B8B8B8 pressed);
+ * row pitch 180. Dark keeps the legacy tabs.png grid (44/148). */
+static int tabs_close_press = -1; /* light: mini close press feedback */
+
+static int tab_grid_top(void) { return g_light ? 68 : 44; }
+static int tab_row_pitch(void) { return g_light ? 192 : 148; }
+
 static void paint_tab_cards(void *dc)
 {
+    int top = tab_grid_top(), pitch = tab_row_pitch();
     for (int i = 0; i < tab_count; ++i) {
         int col = i % 2, row = i / 2;
-        int cx = card_col_x(col), cy = 44 + row * 148;
-        if (cy > 420)
+        int cx = card_col_x(col), cy = top + row * pitch;
+        if (cy > 420) /* dark rows 44/192/340; light 68/260 (row2 hides
+                          under the toolbar, like manytabs.png row 2) */
             break;
         Tab *t = &tabs[i];
-        /* header strip: #1F1F1F, 30px tall. Reference tabs.png card0:
-         * favicon starts 12px from the card edge (card x~10, icon 22-34),
-         * title 6px after the icon, X ~4px from the right edge. */
-        fill(dc, cx, cy, cx + 142, cy + 30, C_BAR);
-        if (t->priv)
-            ic_draw(ifill, dc, cx + 11, cy + 9, 13, C_MUT, IC_INPRIVATE);
-        else
-            ic_draw(ifill, dc, cx + 11, cy + 9, 13, C_MUT, IC_TABS);
-        draw_text_clamp(dc, cx + 31, cy + 10, t->title, C_TABTITLE, 11, 92);
-        ic_draw(ifill, dc, cx + 124, cy + 9, 12, C_CROSS, IC_CLOSE);
-        /* thumbnail: white for loaded pages, black for empty tabs */
-        if (t->url[0])
-            fill(dc, cx, cy + 30, cx + 142, cy + 146, C_PAGEBG);
-        else
-            fill(dc, cx, cy + 30, cx + 142, cy + 146, C_PAGE);
-        /* minimized-tab frame: 1px #1F1F1F on left/right/bottom */
-        fill(dc, cx, cy + 30, cx + 1, cy + 146, C_BAR);
-        fill(dc, cx + 141, cy + 30, cx + 142, cy + 146, C_BAR);
-        fill(dc, cx, cy + 145, cx + 142, cy + 146, C_BAR);
+        if (g_light) {
+            /* title strip #E7E7E7 28px: favicon, title, header X */
+            fill(dc, cx, cy, cx + 142, cy + 28, RGB_(0xE7, 0xE7, 0xE7));
+            if (t->priv)
+                ic_draw(ifill, dc, cx + 11, cy + 8, 13, C_MUT, IC_INPRIVATE);
+            else
+                ic_draw(ifill, dc, cx + 11, cy + 8, 13, C_MUT, IC_TABS);
+            draw_text_clamp(dc, cx + 31, cy + 9, t->title, C_TABTITLE, 11, 92);
+            ic_draw(ifill, dc, cx + 124, cy + 8, 12,
+                    RGB_(0x76, 0x76, 0x76), IC_CLOSE);
+            /* thumbnail: white for pages, theme page colour for empty */
+            fill(dc, cx, cy + 28, cx + 142, cy + 142, RGB_(0xFF, 0xFF, 0xFF));
+            /* InPrivate badge: #1A5290 plate at the thumbnail's top-left,
+             * directly under the strip icon, white glyph */
+            if (t->priv) {
+                fill(dc, cx + 2, cy + 30, cx + 34, cy + 58,
+                     RGB_(0x1A, 0x52, 0x90));
+                ic_draw(ifill, dc, cx + 10, cy + 36, 16,
+                        RGB_(0xFF, 0xFF, 0xFF), IC_INPRIVATE);
+            }
+            /* 1px #E6E6E6 frame */
+            fill(dc, cx, cy, cx + 142, cy + 1, RGB_(0xE6, 0xE6, 0xE6));
+            fill(dc, cx, cy + 141, cx + 142, cy + 142, RGB_(0xE6, 0xE6, 0xE6));
+            fill(dc, cx, cy, cx + 1, cy + 142, RGB_(0xE6, 0xE6, 0xE6));
+            fill(dc, cx + 141, cy, cx + 142, cy + 142, RGB_(0xE6, 0xE6, 0xE6));
+            /* the mini close strip under the card: #E7E7E7 plate, X
+             * centred; #B8B8B8 flash while the 27x26 zone is pressed */
+            fill(dc, cx, cy + 154, cx + 142, cy + 180, RGB_(0xE7, 0xE7, 0xE7));
+            if (tabs_close_press == i)
+                fill(dc, cx + 57, cy + 154, cx + 84, cy + 180,
+                     RGB_(0xB8, 0xB8, 0xB8));
+            ic_draw(ifill, dc, cx + 70, cy + 161, 13,
+                    RGB_(0x76, 0x76, 0x76), IC_CLOSE);
+        } else {
+            /* header strip: #1F1F1F, 30px tall. Reference tabs.png card0:
+             * favicon starts 12px from the card edge (card x~10, icon 22-34),
+             * title 6px after the icon, X ~4px from the right edge. */
+            fill(dc, cx, cy, cx + 142, cy + 30, C_BAR);
+            if (t->priv)
+                ic_draw(ifill, dc, cx + 11, cy + 9, 13, C_MUT, IC_INPRIVATE);
+            else
+                ic_draw(ifill, dc, cx + 11, cy + 9, 13, C_MUT, IC_TABS);
+            draw_text_clamp(dc, cx + 31, cy + 10, t->title, C_TABTITLE, 11, 92);
+            ic_draw(ifill, dc, cx + 124, cy + 9, 12, C_CROSS, IC_CLOSE);
+            /* thumbnail: white for loaded pages, black for empty tabs */
+            if (t->url[0])
+                fill(dc, cx, cy + 30, cx + 142, cy + 146, C_PAGEBG);
+            else
+                fill(dc, cx, cy + 30, cx + 142, cy + 146, C_PAGE);
+            /* minimized-tab frame: 1px #1F1F1F on left/right/bottom */
+            fill(dc, cx, cy + 30, cx + 1, cy + 146, C_BAR);
+            fill(dc, cx + 141, cy + 30, cx + 142, cy + 146, C_BAR);
+            fill(dc, cx, cy + 145, cx + 142, cy + 146, C_BAR);
+        }
     }
 }
 
@@ -2196,19 +2243,26 @@ static void paint_all(void *dc)
         paint_menu(dc);
     } else if (mode == M_TABS || mode == M_TABSMENU) {
         if ((d = ux_find_doc(&ux, "TabCenterPage"))) {
-            layout_doc(d, 0, chrome_yoff(), 320, 528);
-            /* doc first (page, "Tabs" title, toolbar strip), then the
-             * cards clipped to the content area: a 6th tab's row 2 stops at
-             * the toolbar like on the device (manytabs.png). Theme split is
-             * reference-true: dark tabs.png = the tab toolbar owns the full
-             * strip; light tabs_menu.png = toolbar raised 48px with the
-             * shared SHELLCHROME nav bar below it. */
+            /* doc first (page bg + "Tabs" title), then the cards clipped
+             * to the content area. Dark keeps the legacy tabs.png layout
+             * (markup owns the 480-528 toolbar). Light sits below the
+             * status bar (+24): cards to y480, a procedural toolbar at
+             * 432-480 above the SHELLCHROME nav bar (light tabs_menu.png). */
+            layout_doc(d, 0, g_light ? hub_yoff() : 0, 320, 528);
             paint_node(dc, d->root);
-            clip_set(0, 0, 320, 480 + chrome_yoff());
+            clip_set(0, 0, 320, 480);
             paint_tab_cards(dc);
             clip_set(0, 0, 320, 528);
-            if (g_light && g_chrome)
-                g_chrome->paint(dc);
+            if (g_light) {
+                /* toolbar strip: #E7E7E7, + / InPrivate / ... */
+                fill(dc, 0, 432, 320, 480, RGB_(0xE7, 0xE7, 0xE7));
+                ic_draw(ifill, dc, 163, 446, 18, RGB_(0x66, 0x66, 0x66), IC_PLUS);
+                ic_draw(ifill, dc, 226, 446, 18, RGB_(0x66, 0x66, 0x66),
+                        IC_INPRIVATE);
+                ic_draw(ifill, dc, 288, 447, 18, RGB_(0x66, 0x66, 0x66), IC_MORE);
+                if (g_chrome)
+                    g_chrome->paint(dc);
+            }
         }
         if (mode == M_TABSMENU && (d = ux_find_doc(&ux, "TabsContextMenu"))) {
             layout_doc(d, 0, chrome_yoff(), 320, 528);
@@ -2596,11 +2650,44 @@ static void process_tap(int x, int y)
         return;
     }
     if (mode == M_TABS) {
-        /* tab card grid hot zones (cards painted procedurally):
-         * 142x146 cards at x12/x166, top y44, pitch 148. The light
-         * chrome raises the toolbar, so the grid stops 48px higher. */
-        int grid_bottom = 470 + chrome_yoff();
-        if (x >= 12 && x < 308 && y >= 44 && y < grid_bottom) {
+        if (g_light) {
+            /* light: the toolbar is procedural at 432-480 (+/InPrivate/
+             * ...); the card grid runs y68+, pitch 180, cards 142 with a
+             * 12px gap and the 26px mini-close strip under each card */
+            if (y >= 432 && y < 480) {
+                if (x >= 150 && x < 206)
+                    do_command("newtab");
+                else if (x >= 210 && x < 260)
+                    do_command("newprivate");
+                else if (x >= 265)
+                    do_command("tabsmenu");
+                return;
+            }
+            if (x >= 12 && x < 308 && y >= 68 && y < 480) {
+                int col = x >= 166 ? 1 : 0;
+                int row = (y - 68) / 192;
+                int within = (y - 68) % 192;
+                int idx = row * 2 + col;
+                int cx = card_col_x(col);
+                if (idx < tab_count) {
+                    if (within >= 154 && within < 180 && x >= cx + 57 &&
+                        x < cx + 84)
+                        tab_close_idx(idx); /* 27x26 mini close zone */
+                    else if (within < 28 && x >= cx + 124)
+                        tab_close_idx(idx); /* header X glyph */
+                    else if (within < 142) {
+                        tab_cur = idx; /* switch */
+                        set_lock_flag();
+                        mode = M_BROWSER;
+                    }
+                    return;
+                }
+            }
+            return; /* markup buttons are off-screen in the light layout */
+        }
+        /* dark: tab card grid hot zones (cards painted procedurally):
+         * 142x146 cards at x12/x166, top y44, pitch 148. */
+        if (x >= 12 && x < 308 && y >= 44 && y < 470) {
             int col = x >= 166 ? 1 : 0;
             int row = (y - 44) / 148;
             int idx = row * 2 + col;
@@ -2997,6 +3084,20 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
             drag_y = y;
             drag_x = x;
             drag_moved = 0;
+            if (mode == M_TABS && g_light) {
+                /* mini close press feedback: the 27x26 zone flashes
+                 * #B8B8B8 until the finger lifts */
+                tabs_close_press = -1;
+                if (y >= 68 && y < 480 && x >= 12 && x < 308) {
+                    int col = x >= 166 ? 1 : 0;
+                    int row = (y - 68) / 192;
+                    int within = (y - 68) % 192;
+                    int idx = row * 2 + col;
+                    if (idx < tab_count && within >= 154 && within < 180 &&
+                        x >= card_col_x(col) + 57 && x < card_col_x(col) + 84)
+                        tabs_close_press = idx;
+                }
+            }
         } else if (msg == WM_MOVE_ && dragging) {
             int dy = drag_y - y;
             int dx = drag_x - x;
@@ -3026,6 +3127,7 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
             if (dragging && !drag_moved)
                 process_tap(x, y);
             dragging = 0;
+            tabs_close_press = -1;
             NT_CALL(InvalidateRect, (hwnd, 0, 0));
             NT_CALL(UpdateWindow, (hwnd));
         }

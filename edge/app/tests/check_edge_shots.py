@@ -255,6 +255,25 @@ ANCHORS = {
         (110, 67, (0x00, 0x5A, 0xA1)),   # pivot 2 underline
         (100, 510, (0xCE, 0xCF, 0xCE)),
     ],
+    # light tabs list (fixes_1/SIDEBSIDE_tabs_list.png spec): #E7E7E7
+    # title strips, 1px #E6E6E6 frames, toolbar 432-480 above the nav bar
+    'edge-light-tabs': [
+        (80, 80, (0xE7, 0xE7, 0xE7)),    # card 0 title strip
+        (12, 100, (0xE6, 0xE6, 0xE6)),   # card frame left
+        (153, 100, (0xE6, 0xE6, 0xE6)),  # card frame right
+        (80, 209, (0xE6, 0xE6, 0xE6)),   # card frame bottom (68+141)
+        (80, 230, (0xE7, 0xE7, 0xE7)),   # mini close strip under the card
+        (80, 455, (0xE7, 0xE7, 0xE7)),   # toolbar strip
+        (100, 510, (0xCE, 0xCF, 0xCE)),  # nav bar
+    ],
+    'edge-light-tabs-inpriv': [
+        (20, 110, (0x1A, 0x52, 0x90)),   # InPrivate #1A5290 plate
+        (80, 80, (0xE7, 0xE7, 0xE7)),    # title strip
+    ],
+    'edge-light-tabs-close-press': [
+        (80, 240, (0xB8, 0xB8, 0xB8)),   # the 27x26 zone flashes #B8B8B8
+        (50, 240, (0xE7, 0xE7, 0xE7)),   # the rest of the strip stays #E7E7E7
+    ],
     'edge-light-find-next': [
         (160, 209, (0x00, 0x79, 0xD6)),  # blue focus underline
         (160, 215, (0xCE, 0xCF, 0xCE)),  # separator
@@ -464,6 +483,19 @@ PRESENCE = {
         (240, 188, 258, 206, 6, -100, 0),   # prev chevron in the field
         (274, 188, 292, 206, 6, -100, 0),   # next chevron in the field
         (100, 510, 180, 518, 10, -150, 0),  # nav bar glyphs below the SIP
+    ],
+    'light-tabs': [
+        (15, 76, 140, 88, 15, -100, 0),   # card title-strip glyphs
+        (80, 226, 95, 244, 8, -200, 0),   # mini close X under card 0
+        (160, 446, 180, 466, 10, -200, 0),# toolbar + glyph
+        (228, 446, 246, 466, 10, -200, 0),# toolbar InPrivate glyph
+    ],
+    'light-tabs-inpriv': [
+        (16, 100, 44, 124, 40, 100, 2),   # #1A5290 plate (blue channel)
+        (14, 98, 46, 126, 20, 200, 0),    # white InPrivate glyph on the plate
+    ],
+    'light-tabs-close-press': [
+        (76, 226, 92, 244, 6, -200, 0),   # the X still visible on #B8B8B8
     ],
     'light-hub-favorites': [
         (44, 120, 300, 145, 30, -100, 0),  # first favorites row title

@@ -176,6 +176,21 @@ tap 237 455
 key 0x1b
 shot light-inpriv
 tap 23 455
+# the list with the InPrivate card: #1A5290 plate under the strip icon
+shot light-tabs-inpriv
+tap 163 455
+tap 163 455
+tap 163 455
+tap 163 455
+shot light-tabs
+tap 315 455
+shot light-tabsmenu
+key 0x1b
+# mini close under the card: 27x26 zone flashes #B8B8B8 while pressed
+# (raw down/shot/up), then the release closes tab 0
+down 83 240
+shot light-tabs-close-press
+up 83 240
 tap 84 110
 # light hub screens (light/downloads.png): the panel sits below the
 # launcher status bar, content clips above the system nav bar; pivots
