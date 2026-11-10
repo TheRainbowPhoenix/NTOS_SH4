@@ -5,3 +5,4 @@ cortana-*.png
 fingerkb.dll
 *.lib
 tests/fs/fls0/
+cortana.pdb
