@@ -2,7 +2,11 @@
   <Canvas>
     <!-- content host (mock web engine paints 0..480; home = white page) -->
     <Rect name="PageHost" x="0" y="0" w="320" h="480" bg="#FFFFFF"/>
-    <!-- bottom address bar #1F1F1F, geometry per refs/edge-screens/home.png -->
+    <!-- bottom address bar #1F1F1F; geometry pixel-audited on home.png/
+         inpriv.png/webpage.png: tabs icon x15-33 (2px stroke), separator
+         x48, reload x63-83, lock/InPrivate glyph x104-120, address text
+         x124 (placeholder x98), reader x235-257 (#4C4C4C), separator x271,
+         "..." dots x289/296/303 (3px). -->
     <Rect x="0" y="480" w="320" h="48" bg="#1F1F1F"/>
     <Button name="TabsButton" x="0" y="480" w="48" h="48" command="tabs">
       <Glyph x="14" y="15" w="20" h="20" text="tabs" color="#FFFFFF"/>
@@ -12,15 +16,18 @@
       <Glyph name="ReloadIcon" x="14" y="15" w="20" h="20" text="reload" color="#767676"/>
     </Button>
     <Button name="AddressButton" x="85" y="480" w="147" h="48" command="address">
-      <Glyph name="AddressLock" x="21" y="16" w="14" h="14" text="lock" color="#9A9A9A" visible="false"/>
-      <Text name="AddressText" x="44" y="19" text="Search or browse" color="#9A9A9A" size="12"/>
+      <Glyph name="AddressLock" x="19" y="19" w="14" h="14" text="lock" color="#767676" visible="false"/>
+      <Glyph name="PrivChip" x="19" y="18" w="16" h="16" text="inprivate" color="#0078D7" visible="false"/>
+      <Text name="AddressHint" x="13" y="19" text="Search or browse" color="#9A9A9A" size="12"/>
+      <Text name="AddressHintPriv" x="39" y="19" text="Search or browse" color="#9A9A9A" size="12" visible="false"/>
+      <Text name="AddressText" x="39" y="19" text="" color="#FFFFFF" size="12"/>
     </Button>
     <Button name="ReaderButton" x="232" y="480" w="39" h="48" command="reader">
-      <Glyph name="ReaderIcon" x="3" y="14" w="22" h="22" text="reader" color="#4C4C4C"/>
+      <Glyph name="ReaderIcon" x="3" y="15" w="22" h="22" text="reader" color="#4C4C4C"/>
     </Button>
     <Rect x="271" y="491" w="1" h="28" bg="#767676"/>
     <Button name="MoreButton" x="272" y="480" w="48" h="48" command="menu">
-      <Glyph x="9" y="16" w="22" h="18" text="more" color="#FFFFFF"/>
+      <Glyph x="15" y="15" w="18" h="18" text="more" color="#FFFFFF"/>
     </Button>
   </Canvas>
 </Page>

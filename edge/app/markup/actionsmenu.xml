@@ -24,23 +24,24 @@
       <Text x="13" y="12" text="Pin this page to Start" color="#FFFFFF" size="14"/>
     </Button>
     <!-- hub icon bar: Favorites / Reading list / History / Downloads
-         (icon + label centers at x 75/144/212/280 per context.png) -->
-    <Rect x="0" y="420" w="320" h="57" bg="#1F1F1F"/>
-    <Button x="35" y="420" w="80" h="57" command="hub-favorites">
-      <Glyph x="30" y="6" w="20" h="20" text="star" color="#FFFFFF"/>
-      <Text x="0" y="39" w="80" text="Favorites" color="#FFFFFF" size="11" align="1"/>
+         (context.png: icon strip is continuous #1F1F1F down to the address
+         bar at y480 — no white gap; icons y434-454, labels y464) -->
+    <Rect x="0" y="420" w="320" h="60" bg="#1F1F1F"/>
+    <Button x="35" y="420" w="80" h="60" command="hub-favorites">
+      <Glyph x="30" y="14" w="20" h="20" text="star" color="#FFFFFF"/>
+      <Text x="0" y="44" w="80" text="Favorites" color="#FFFFFF" size="11" align="1"/>
     </Button>
-    <Button x="104" y="420" w="80" h="57" command="hub-reading">
-      <Glyph x="30" y="6" w="20" h="20" text="readlist" color="#FFFFFF"/>
-      <Text x="0" y="39" w="80" text="Reading list" color="#FFFFFF" size="11" align="1"/>
+    <Button x="104" y="420" w="80" h="60" command="hub-reading">
+      <Glyph x="30" y="14" w="20" h="20" text="readlist" color="#FFFFFF"/>
+      <Text x="0" y="44" w="80" text="Reading list" color="#FFFFFF" size="11" align="1"/>
     </Button>
-    <Button x="172" y="420" w="80" h="57" command="hub-history">
-      <Glyph x="30" y="6" w="20" h="20" text="clock" color="#FFFFFF"/>
-      <Text x="0" y="39" w="80" text="History" color="#FFFFFF" size="11" align="1"/>
+    <Button x="172" y="420" w="80" h="60" command="hub-history">
+      <Glyph x="30" y="14" w="20" h="20" text="clock" color="#FFFFFF"/>
+      <Text x="0" y="44" w="80" text="History" color="#FFFFFF" size="11" align="1"/>
     </Button>
-    <Button x="240" y="420" w="80" h="57" command="hub-downloads">
-      <Glyph x="30" y="6" w="20" h="20" text="download" color="#FFFFFF"/>
-      <Text x="0" y="39" w="80" text="Downloads" color="#FFFFFF" size="11" align="1"/>
+    <Button x="240" y="420" w="80" h="60" command="hub-downloads">
+      <Glyph x="30" y="14" w="20" h="20" text="download" color="#FFFFFF"/>
+      <Text x="0" y="44" w="80" text="Downloads" color="#FFFFFF" size="11" align="1"/>
     </Button>
   </Canvas>
 </Page>

@@ -45,5 +45,5 @@ static const unsigned char si20[]={86,69,67,49,96,0,32,0,32,1,255,255,127,255,64
 /* go/enter key arrow: straight tail + open head, 4-logical (2px at 18px)
  * stroke; drawn in GO_INK on the accent key (type.png reference). */
 #define SYS_GO_ARROW 21
-static const unsigned char si21[]={86,69,67,49,96,0,32,0,32,1,255,255,127,255,49,0,7,0,16,0,22,0,16,4,49,0,15,0,9,0,23,0,16,4,49,0,15,0,23,0,23,0,16,4,0};
+static const unsigned char si21[]={86,69,67,49,96,0,32,0,32,1,255,255,127,255,49,0,6,0,16,0,23,0,16,6,49,0,14,0,8,0,24,0,16,5,49,0,14,0,24,0,24,0,16,5,0};
 static const SysIcon system_icons[]={{si0,sizeof(si0)},{si1,sizeof(si1)},{si2,sizeof(si2)},{si3,sizeof(si3)},{si4,sizeof(si4)},{si5,sizeof(si5)},{si6,sizeof(si6)},{si7,sizeof(si7)},{si8,sizeof(si8)},{si9,sizeof(si9)},{si10,sizeof(si10)},{si11,sizeof(si11)},{si12,sizeof(si12)},{si13,sizeof(si13)},{si14,sizeof(si14)},{si15,sizeof(si15)},{si16,sizeof(si16)},{si17,sizeof(si17)},{si18,sizeof(si18)},{si19,sizeof(si19)},{si20,sizeof(si20)},{si21,sizeof(si21)}};

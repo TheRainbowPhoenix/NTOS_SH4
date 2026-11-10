@@ -829,16 +829,20 @@ typedef struct {
     U32 c;
 } Tok;
 
+#define BLK RGB_(0x00, 0x00, 0x00)
+#define LNK C_WLINK
+
 static void paint_tok_line(void *dc, int x, int y, const Tok *t, int n)
 {
     for (int i = 0; i < n; ++i) {
+        int w = text_w(t[i].s, 11);
         draw_text(dc, x, y, t[i].s, t[i].c, 11, 0, 0);
-        x += text_w(t[i].s, 11);
+        /* links are underlined (webpage.png): 1px rule under the text */
+        if (t[i].c == LNK && t[i].s[0])
+            fill(dc, x, y + 11, x + w, y + 12, LNK);
+        x += w;
     }
 }
-
-#define BLK RGB_(0x00, 0x00, 0x00)
-#define LNK C_WLINK
 
 static void paint_wiki(void *dc)
 {
@@ -848,6 +852,7 @@ static void paint_wiki(void *dc)
     draw_text(dc, 16, 40, "Article", LNK, 11, 0, 0);
     fill(dc, 16, 51, 16 + text_w("Article", 11), 52, LNK);
     draw_text(dc, 66, 40, "Talk", LNK, 11, 0, 0);
+    fill(dc, 66, 51, 66 + text_w("Talk", 11), 52, LNK);
     ic_rect(ifill, dc, 16, 60, 78, 80, 1, RGB_(0xA2, 0xA9, 0xB1));
     draw_text(dc, 26, 65, "Language", BLK, 11, 0, 0);
     ic_rect(ifill, dc, 242, 60, 304, 80, 1, RGB_(0xA2, 0xA9, 0xB1));
@@ -931,6 +936,7 @@ static void paint_page(void *dc)
     fill(dc, 0, 0, 320, 480, C_PAGEBG);
     draw_text(dc, 16, 16, t->title, BLK, 18, 0, 1);
     draw_text(dc, 16, 48, t->host, LNK, 12, 0, 0);
+    fill(dc, 16, 60, 16 + text_w(t->host, 12), 61, LNK); /* underlined link */
     static const int P1[4] = {288, 260, 274, 180};
     for (int i = 0; i < 4; ++i)
         fill(dc, 16, 78 + i * 16, 16 + P1[i], 78 + i * 16 + 8,
@@ -945,7 +951,9 @@ static void paint_page(void *dc)
               RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
 }
 
-/* two-tone URL: subdomain grey, domain white (webpage.png) */
+/* two-tone URL: subdomain grey, domain white (webpage.png).
+ * Private tabs carry the small blue InPrivate glyph before the text
+ * (inpriv.png: ~16px at x104, then "Search or browse"/URL from x124). */
 static void paint_address_url(void *dc)
 {
     Tab *t = &tabs[tab_cur];
@@ -955,11 +963,8 @@ static void paint_address_url(void *dc)
     if (ti < 0)
         return;
     NRect r = nrect[ti];
-    /* inprivate "e" chip before the text (inpriv.png) */
-    if (t->priv) {
-        fill(dc, r.x - 24, r.y - 2, r.x - 10, r.y + 14, C_BLUE);
-        draw_text(dc, r.x - 21, r.y, "e", C_INK, 11, 0, 1);
-    }
+    if (t->priv)
+        ic_draw(ifill, dc, r.x - 20, r.y - 3, 16, C_BLUE, IC_INPRIVATE);
     const char *h = t->host;
     const char *dot = h;
     while (*dot && *dot != '.')
@@ -978,38 +983,45 @@ static void paint_address_url(void *dc)
     }
 }
 
-/* ---- tab center cards: 2-col grid on black (tabs/manytabs.png) ---- */
+/* ---- tab center cards: 2-col grid on black (tabs/manytabs.png) ----
+ * Reference geometry (pixel-audited): card 142x146 at x12/x166,
+ * header 30px (#1F1F1F) with the 1px-stroke default window icon at 13px,
+ * dim #8A8A8A title, 12px close cross; thumbnail below with a 1px
+ * #1F1F1F frame on LEFT/RIGHT/BOTTOM — the minimized-tab border the
+ * real device shows. Pitch 148. */
 static int card_col_x(int col)
 {
     return 12 + col * 154;
 }
 
+#define C_TABTITLE RGB_(0x8A, 0x8A, 0x8A) /* dimmer than pure white  */
+#define C_CROSS   RGB_(0xB0, 0xB0, 0xB0) /* card close cross         */
+
 static void paint_tab_cards(void *dc)
 {
     for (int i = 0; i < tab_count; ++i) {
         int col = i % 2, row = i / 2;
-        int cx = card_col_x(col), cy = 40 + row * 148;
+        int cx = card_col_x(col), cy = 44 + row * 148;
         if (cy > 420)
             break;
         Tab *t = &tabs[i];
-        /* header strip: #1F1F1F, small page icon + title + close X */
-        fill(dc, cx, cy, cx + 142, cy + 24, C_BAR);
-        if (t->url[0]) {
-            char c2[2] = {t->title[0] ? t->title[0] : 'e', 0};
-            fill_round(dc, cx + 6, cy + 5, cx + 18, cy + 17, C_BLUE, 2);
-            draw_text(dc, cx + 8, cy + 5, c2, C_INK, 9, 0, 1);
-        } else if (t->priv) {
-            ic_draw(ifill, dc, cx + 5, cy + 4, 14, C_MUT, IC_INPRIVATE);
-        } else {
-            ic_draw(ifill, dc, cx + 5, cy + 5, 13, C_MUT, IC_TABS);
-        }
-        draw_text_clamp(dc, cx + 26, cy + 6, t->title, C_INK, 11, 96);
-        ic_draw(ifill, dc, cx + 124, cy + 5, 13, C_MUT, IC_CLOSE);
+        /* header strip: #1F1F1F, 30px tall */
+        fill(dc, cx, cy, cx + 142, cy + 30, C_BAR);
+        if (t->priv)
+            ic_draw(ifill, dc, cx + 21, cy + 9, 13, C_MUT, IC_INPRIVATE);
+        else
+            ic_draw(ifill, dc, cx + 21, cy + 9, 13, C_MUT, IC_TABS);
+        draw_text_clamp(dc, cx + 42, cy + 10, t->title, C_TABTITLE, 11, 92);
+        ic_draw(ifill, dc, cx + 128, cy + 9, 12, C_CROSS, IC_CLOSE);
         /* thumbnail: white for loaded pages, black for empty tabs */
         if (t->url[0])
-            fill(dc, cx, cy + 24, cx + 142, cy + 140, C_PAGEBG);
+            fill(dc, cx, cy + 30, cx + 142, cy + 146, C_PAGEBG);
         else
-            fill(dc, cx, cy + 24, cx + 142, cy + 140, C_PAGE);
+            fill(dc, cx, cy + 30, cx + 142, cy + 146, C_PAGE);
+        /* minimized-tab frame: 1px #1F1F1F on left/right/bottom */
+        fill(dc, cx, cy + 30, cx + 1, cy + 146, C_BAR);
+        fill(dc, cx + 141, cy + 30, cx + 142, cy + 146, C_BAR);
+        fill(dc, cx, cy + 145, cx + 142, cy + 146, C_BAR);
     }
 }
 
@@ -1068,7 +1080,14 @@ static void paint_hub_content(void *dc)
 /* ---- navigation ---- */
 static void set_lock_flag(void)
 {
-    flag_named("AddressLock", NS_SHOWN, tabs[tab_cur].url[0] != 0);
+    int loaded = tabs[tab_cur].url[0] != 0;
+    int priv = tabs[tab_cur].priv;
+    flag_named("AddressLock", NS_SHOWN, loaded);
+    /* placeholder hides once a URL is loaded; private tabs get the small
+     * blue InPrivate glyph at x104 + a re-indented placeholder (inpriv.png) */
+    flag_named("AddressHint", NS_HIDDEN, loaded || priv);
+    flag_named("AddressHintPriv", NS_SHOWN, priv && !loaded);
+    flag_named("PrivChip", NS_SHOWN, priv && !loaded);
 }
 
 static void hist_add(const char *host, const char *title)
@@ -1204,8 +1223,13 @@ static void paint_all(void *dc)
     } else if (mode == M_TABS || mode == M_TABSMENU) {
         if ((d = ux_find_doc(&ux, "TabCenterPage"))) {
             layout_doc(d, 0, 0, 320, 528);
+            /* doc first (black page, "Tabs" title, toolbar strip), then the
+             * cards clipped to the content area: a 6th tab's row 2 stops at
+             * the toolbar like on the device (manytabs.png) */
             paint_node(dc, d->root);
+            clip_set(0, 0, 320, 480);
             paint_tab_cards(dc);
+            clip_set(0, 0, 320, 528);
         }
         if (mode == M_TABSMENU && (d = ux_find_doc(&ux, "TabsContextMenu"))) {
             layout_doc(d, 0, 0, 320, 528);
@@ -1465,15 +1489,16 @@ static void process_tap(int x, int y)
         return;
     }
     if (mode == M_TABS) {
-        /* tab card grid hot zones (cards painted procedurally) */
-        if (x >= 12 && x < 308 && y >= 40 && y < 470) {
+        /* tab card grid hot zones (cards painted procedurally):
+         * 142x146 cards at x12/x166, top y44, pitch 148 */
+        if (x >= 12 && x < 308 && y >= 44 && y < 470) {
             int col = x >= 166 ? 1 : 0;
-            int row = (y - 40) / 148;
+            int row = (y - 44) / 148;
             int idx = row * 2 + col;
-            int cx = card_col_x(col), cy = 40 + row * 148;
+            int cx = card_col_x(col), cy = 44 + row * 148;
             if (idx < tab_count) {
-                if (x >= cx + 120 && y < cy + 24)
-                    tab_close_idx(idx); /* close X */
+                if (x >= cx + 132 && y < cy + 30)
+                    tab_close_idx(idx); /* close X in the header */
                 else {
                     tab_cur = idx; /* switch */
                     set_lock_flag();

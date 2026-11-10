@@ -168,18 +168,24 @@ void ic_draw(IconFillFn f, void *dc, int x, int y, int size,
     if (size < 4)
         return;
     int cx = x + size / 2, cy = y + size / 2;
-    int t = size / 10 + 1;          /* stroke thickness */
+    /* stroke thickness: 2px for toolbar-size (16..32px) icons, 1px for the
+     * small card-header glyphs (13px new-tab icon, 12px close cross) —
+     * per the reference stroke audit (user feedback, 2px/1px lines). */
+    int t = size / 16 + 1;          /* stroke thickness */
     int s = size;                   /* box */
 
     switch (id) {
     case IC_MORE:
-        ic_dot(f, dc, cx - s / 5, cy, s / 8 + 1, color);
-        ic_dot(f, dc, cx, cy, s / 8 + 1, color);
-        ic_dot(f, dc, cx + s / 5, cy, s / 8 + 1, color);
+        /* three 3px dots, pitch 7 (address bar: x289/296/303 at y503) */
+        ic_dot(f, dc, cx - 7, cy, 1, color);
+        ic_dot(f, dc, cx, cy, 1, color);
+        ic_dot(f, dc, cx + 7, cy, 1, color);
         break;
     case IC_PLUS:
-        ic_line(f, dc, cx - s * 3 / 10, cy, cx + s * 3 / 10, cy, t, color);
-        ic_line(f, dc, cx, cy - s * 3 / 10, cx, cy + s * 3 / 10, t, color);
+        /* arms to 45% of the box: the tab-center + is ~19px wide at 21px
+         * (refs x160-180), 2px stroke */
+        ic_line(f, dc, cx - s * 9 / 20, cy, cx + s * 9 / 20, cy, t, color);
+        ic_line(f, dc, cx, cy - s * 9 / 20, cx, cy + s * 9 / 20, t, color);
         break;
     case IC_CLOSE:
         ic_line(f, dc, cx - s / 4, cy - s / 4, cx + s / 4, cy + s / 4, t, color);
@@ -335,11 +341,15 @@ void ic_draw(IconFillFn f, void *dc, int x, int y, int size,
         break;
     }
     case IC_INPRIVATE: {
+        /* square + hat line + '/' hatch stripes in the body (refs: the
+         * tab-center toolbar icon, 21px, white 2px outline, striped body) */
         int w = s * 3 / 4, h = s * 5 / 8;
         ic_rect(f, dc, cx - w / 2, cy - h / 2, w, h, t, color);
         ic_line(f, dc, cx - w / 2, cy - h / 2 + h / 3, cx + w / 2,
                 cy - h / 2 + h / 3, t, color);
-        ic_line(f, dc, cx - w / 3, cy + h / 2, cx + w / 3, cy - h / 2, t, color);
+        for (int k = -1; k <= 1; ++k)
+            ic_line(f, dc, cx - w / 3 + k * (w / 5), cy + h / 2,
+                    cx + w / 3 + k * (w / 5), cy - h / 2 + h / 3, t, color);
         break;
     }
     case IC_STAR:

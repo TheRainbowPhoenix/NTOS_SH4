@@ -1,18 +1,20 @@
 <Page name="TabCenterPage">
   <Canvas>
     <!-- per tabs.png/manytabs.png: black page, "Tabs" title, 2-col card grid
-         at x12/x166 (142 wide), toolbar with + / InPrivate / ... right -->
+         at x12/x166 (142 wide, painted procedurally), toolbar strip #1F1F1F
+         y480-528 with "+" (x160-180, #C7C7C7), InPrivate (x228-248, white
+         hatched) and "..." (dots x289/296/303, #D5D5D5), 2px strokes. -->
     <Rect x="0" y="0" w="320" h="480" bg="#000000"/>
-    <Text x="12" y="17" text="Tabs" color="#FFFFFF" size="14" bold="true"/>
+    <Text x="12" y="17" text="TABS" color="#FFFFFF" size="14" bold="true"/>
     <Rect x="0" y="480" w="320" h="48" bg="#1F1F1F"/>
-    <Button name="TabsCenter_NewTabButton" x="135" y="480" w="56" h="48" command="newtab">
-      <Glyph x="18" y="16" w="20" h="20" text="plus" color="#FFFFFF"/>
+    <Button name="TabsCenter_NewTabButton" x="150" y="480" w="56" h="48" command="newtab">
+      <Glyph x="11" y="14" w="21" h="21" text="plus" color="#C7C7C7"/>
     </Button>
-    <Button name="TabsCenter_NewPrivateButton" x="200" y="480" w="56" h="48" command="newprivate">
-      <Glyph x="28" y="16" w="20" h="20" text="inprivate" color="#FFFFFF"/>
+    <Button name="TabsCenter_NewPrivateButton" x="210" y="480" w="50" h="48" command="newprivate">
+      <Glyph x="18" y="14" w="21" h="21" text="inprivate" color="#FFFFFF"/>
     </Button>
-    <Button name="TabsCenter_MoreButton" x="256" y="480" w="64" h="48" command="tabsmenu">
-      <Glyph x="25" y="17" w="22" h="18" text="more" color="#FFFFFF"/>
+    <Button name="TabsCenter_MoreButton" x="265" y="480" w="55" h="48" command="tabsmenu">
+      <Glyph x="22" y="15" w="18" h="18" text="more" color="#D5D5D5"/>
     </Button>
   </Canvas>
 </Page>

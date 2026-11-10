@@ -124,6 +124,7 @@ ANCHORS = {
         (160, 80, (0x7F, 0x7F, 0x7F)),   # scrim
         (160, 200, (0x2B, 0x2B, 0x2B)),  # sheet list
         (160, 430, (0x1F, 0x1F, 0x1F)),  # icon bar
+        (160, 478, (0x1F, 0x1F, 0x1F)),  # icon bar reaches the address bar
     ],
     'edge-address': [
         (160, 250, (0xFF, 0xFF, 0xFF)),  # white field
@@ -138,6 +139,12 @@ ANCHORS = {
     'edge-tabs': [
         (160, 300, (0x00, 0x00, 0x00)),  # black page
         (80, 60, (0x1F, 0x1F, 0x1F)),    # card header strip
+        (13, 100, (0x1F, 0x1F, 0x1F)),   # minimized-tab left border
+        (154, 100, (0x1F, 0x1F, 0x1F)),  # minimized-tab right border
+        (80, 189, (0x1F, 0x1F, 0x1F)),   # minimized-tab bottom border
+    ],
+    'edge-inpriv': [
+        (110, 505, (0x00, 0x78, 0xD7)),  # blue InPrivate glyph in the address bar
     ],
 }
 
@@ -152,16 +159,19 @@ PRESENCE = {
         (98, 496, 212, 512, 40, 140, 0),   # "Search or browse" placeholder
         (14, 494, 34, 516, 20, 140, 0),    # tabs icon
         (286, 498, 306, 510, 6, 140, 0),   # "..." dots
+        (235, 494, 258, 518, 8, 60, 0),    # reader icon (#4C4C4C)
     ],
     'menu': [
         (13, 200, 120, 235, 40, 150, 0),   # "Share" row text
         (13, 380, 200, 415, 60, 150, 0),   # "Pin this page to Start"
-        (60, 424, 90, 448, 15, 100, 0),    # star icon
-        (40, 456, 300, 474, 60, 150, 0),   # icon-bar labels
+        (60, 432, 92, 458, 12, 100, 0),    # star icon (y434-454)
+        (40, 460, 300, 478, 40, 150, 0),   # icon-bar labels (y464)
     ],
     'address': [
         (11, 238, 130, 258, 30, 100, 0),   # hint text in the white field
         (14, 282, 36, 306, 15, 100, 0),    # tabs icon on the toolbar row
+        (289, 489, 307, 509, 100, 100, 0), # white go key
+        (291, 494, 305, 506, 5, -100, 0),  # black go-arrow glyph
     ],
     'clear': [
         (13, 16, 150, 32, 50, 150, 0),     # title
@@ -171,7 +181,14 @@ PRESENCE = {
     ],
     'tabs': [
         (12, 14, 50, 32, 20, 150, 0),      # "Tabs" title
-        (20, 46, 140, 70, 20, 100, 0),     # card header text
+        (42, 52, 134, 68, 15, 100, 0),      # card title (#8A8A8A)
+        (12, 75, 14, 185, 60, 20, 0),       # left border column
+        (152, 75, 154, 185, 60, 20, 0),     # right border column
+        (14, 188, 150, 190, 80, 20, 0),     # bottom border row
+        (138, 52, 152, 68, 8, 100, 0),      # close cross (#B0B0B0)
+        (162, 496, 180, 512, 15, 100, 0),   # toolbar "+" (#C7C7C7)
+        (228, 494, 248, 512, 25, 100, 0),   # InPrivate hatch icon
+        (287, 502, 305, 508, 6, 100, 0),    # toolbar "..." dots
     ],
     'hub-history': [
         (12, 58, 90, 76, 25, 150, 0),      # HISTORY title
@@ -182,6 +199,7 @@ PRESENCE = {
         (36, 128, 222, 150, 30, 150, 0),   # Browsing InPrivate heading
         (36, 180, 270, 300, 100, 150, 0),  # body paragraph
         (36, 342, 250, 360, 25, 180, 2),   # blue link (blue channel)
+        (100, 494, 124, 516, 20, 150, 2),  # blue InPrivate address glyph
     ],
     'readlist': [
         (12, 13, 156, 34, 25, 150, 0),     # READING LIST title
@@ -189,6 +207,9 @@ PRESENCE = {
     ],
     'wiki': [
         (16, 6, 90, 34, 40, -100, 0),      # "Exam" title (dark on white)
+        (16, 38, 60, 56, 8, 120, 2),       # "Article" link + underline
+        (64, 38, 92, 56, 8, 120, 2),       # "Talk" link + underline
+        (104, 496, 120, 516, 8, 60, 0),     # lock glyph in the address bar
     ],
 }
 

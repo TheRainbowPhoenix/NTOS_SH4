@@ -7,7 +7,7 @@
     <Rect x="0" y="223" w="320" h="7" bg="#1F1F1F"/>
     <Rect x="5" y="230" w="310" h="40" bg="#FFFFFF"/>
     <Button name="AddressInput" x="5" y="230" w="310" h="40" command="noop">
-      <Text name="AddressHint" x="6" y="13" text="Search or browse" color="#767676" size="12"/>
+      <Text name="AddrEditHint" x="18" y="14" text="Search or browse" color="#767676" size="12"/>
     </Button>
     <Rect x="0" y="270" w="320" h="47" bg="#1F1F1F"/>
     <Button name="TabsButton" x="0" y="270" w="48" h="47" command="addr-tabs">
