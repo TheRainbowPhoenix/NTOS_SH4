@@ -1279,11 +1279,10 @@ static void paint_node(void *dc, unsigned ni)
         paint_node(dc, n->child[i]);
 }
 
-/* light chrome geometry: the browser toolbar strip sits at y432-479 with
- * the system nav bar below (light refs); dark keeps it at y480-527 */
+/* The browser toolbar sits above the system navigation bar in both themes. */
 static int chrome_yoff(void)
 {
-    return g_light ? -48 : 0;
+    return -48;
 }
 
 /* paints the current page (home / engine / InPrivate) with the viewport
@@ -2153,7 +2152,7 @@ static void do_command(const char *cmd)
         addr_sel_drag = 0;
         if (g_kb) {
             /* light chrome: the SIP rides 48px above the nav bar */
-            g_kb->dock(g_light ? 48 : 0);
+            g_kb->dock(48);
             g_kb->context(0); /* go key: arrow (address entry) */
         }
     } else if (xeq(cmd, "reload"))
@@ -2589,7 +2588,7 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
             g_light = !g_light;
             theme_update();
             if (mode == M_ADDRESS && g_kb)
-                g_kb->dock(g_light ? 48 : 0); /* SIP follows the chrome */
+                g_kb->dock(48); /* SIP follows the chrome */
             NT_CALL(InvalidateRect, (hwnd, 0, 0));
             NT_CALL(UpdateWindow, (hwnd));
         } else if (mode == M_ADDRESS) {

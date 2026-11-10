@@ -13,17 +13,16 @@ static const W16 nav_file[] = {'\\', 'f', 'l', 's', '0', '\\', 'n',
                                'a',  'v', '.', 'd', 'a', 't',  0};
 static void load_nav(void);
 int SetIsNavigationBarVisible(int);
-/* Nav-bar colours follow the hosting app: dark hosts (Edge) publish a
- * theme with black NAV_BG / white NAV_INK, light hosts keep the phone
- * PANEL/INK pair. Falls back to PANEL/INK when no theme is published. */
+/* Status-bar colours can follow the hosting app's theme. */
 static U32 nav_th(const Render *r, int slot, U32 fallback)
 {
     return (r && r->theme) ? r->theme[slot] : fallback;
 }
 static void navigation_paint(void *dc, const Render *r)
 {
-    U32 bg = nav_th(r, UIX_TH_NAV_BG, PANEL);
-    U32 ink = nav_th(r, UIX_TH_NAV_INK, INK);
+    /* Navigation belongs to the system, so every app uses Start's palette. */
+    U32 bg = PANEL;
+    U32 ink = INK;
     /* the system nav bar owns the full 48px strip y480..528 (light
      * refs: toolbar e7e7e7 ends at y479, bar cecfce starts at y480);
      * painting the whole strip also erases any stale SIP pixels left
