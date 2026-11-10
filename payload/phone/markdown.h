@@ -19,6 +19,14 @@
 #ifndef MARKDOWN_H
 #define MARKDOWN_H
 
+/* export the API when built as the host PE module (device build uses the
+ * packer's named exports instead) */
+#if defined(NTOS_LINUX_BUILD) && !defined(MD_STATIC)
+#define MD_API __attribute__((dllexport))
+#else
+#define MD_API
+#endif
+
 /* host hooks the engine calls; all length-based, no CRT */
 typedef struct MdHost {
     void *dc; /* opaque drawing context handed back to the painters */
@@ -52,17 +60,17 @@ typedef struct MdHost {
 #define MDTF_STRIKE 8
 
 /* public API (named exports; host apps import with the md_ prefix) */
-void md_set_host(const MdHost *host);
-int md_load(int dialect, const char *src, int len); /* 0 = too big/broken */
-void md_layout(int view_w); /* (re)flow; also used by reader toggling */
-void md_reader(int on);
-int md_reader_is(void);
-void md_paint(const MdHost *h, int sx, int sy, int vw, int vh);
-void md_size(int *w, int *h); /* laid-out page extent */
-const char *md_title(int *len); /* <title> / first h1 / frontmatter */
-int md_find(const char *query, int *x, int *y, int *w, int cap);
+void MD_API md_set_host(const MdHost *host);
+int MD_API md_load(int dialect, const char *src, int len); /* 0 = too big/broken */
+void MD_API md_layout(int view_w); /* (re)flow; also used by reader toggling */
+void MD_API md_reader(int on);
+int MD_API md_reader_is(void);
+void MD_API md_paint(const MdHost *h, int sx, int sy, int vw, int vh);
+void MD_API md_size(int *w, int *h); /* laid-out page extent */
+const MD_API char *md_title(int *len); /* <title> / first h1 / frontmatter */
+int MD_API md_find(const char *query, int *x, int *y, int *w, int cap);
 /* returns 1 + fills href when (x,y) page coords hit a laid-out link */
-int md_link_at(int x, int y, const char **href, int *len);
-int md_anchor_scroll(int y); /* clamp a scroll target, returns it */
+int MD_API md_link_at(int x, int y, const char **href, int *len);
+int MD_API md_anchor_scroll(int y); /* clamp a scroll target, returns it */
 
 #endif /* MARKDOWN_H */

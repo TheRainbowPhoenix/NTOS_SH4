@@ -73,7 +73,7 @@ class Builder:
         self.strings.append(s)
         return len(self.strings) - 1
 
-    def parse_xml(self, path):
+    def parse_xml(self, path, remap=None):
         tree = ET.parse(path)
         root = tree.getroot()
         if root.tag != 'Page':
@@ -81,12 +81,13 @@ class Builder:
         name = root.get('name') or os.path.splitext(os.path.basename(path))[0]
         nodes = []
 
-        def walk(elem, depth):
+        def walk(elem, depth, accent_bg=False):
             if elem.tag not in KINDS:
                 raise SystemExit(f'{path}: unknown element <{elem.tag}>')
             if len(nodes) >= 384:
                 raise SystemExit('too many nodes')
             node = {'kind': KINDS[elem.tag], 'attrs': [], 'children': []}
+            my_accent = accent_bg
             for k, v in elem.attrib.items():
                 if k not in ATTRS:
                     raise SystemExit(f'{path}: unknown attribute {k}')
@@ -94,6 +95,10 @@ class Builder:
                 if a in INT_ATTRS:
                     node['attrs'].append((a, TYPE_INT, int(v, 0)))
                 elif a in CLR_ATTRS:
+                    if remap is not None:
+                        v = remap(k, v, accent_bg)
+                        if k == 'bg' and v.upper() == '#0078D7':
+                            my_accent = True
                     node['attrs'].append((a, TYPE_CLR, rgb_to_device(v)))
                 elif a in BOOL_ATTRS:
                     node['attrs'].append((a, TYPE_BOOL, 1 if v.lower() == 'true' else 0))
@@ -104,7 +109,7 @@ class Builder:
             kids = list(elem)
             if len(kids) > 16:
                 raise SystemExit(f'{path}: too many children on <{elem.tag}>')
-            node['children'] = [walk(k, depth + 1) for k in kids]
+            node['children'] = [walk(k, depth + 1, my_accent) for k in kids]
             return idx
 
         walk(root, 0)
@@ -235,6 +240,31 @@ def toxml(data):
     return out
 
 
+# light-theme palette transform: markup is authored dark; the light build
+# flips surfaces/text (attribute-aware, keeps white labels on accent fills)
+LIGHT_BG = {
+    '#1F1F1F': '#E7E7E7', '#2B2B2B': '#E7E7E7', '#2E2E2E': '#F7F3F7',
+    '#333333': '#DEDEDE', '#313131': '#DEDEDE', '#000000': '#F7F3F7',
+    '#767676': '#CECFCE', '#333': '#DEDEDE',
+}
+LIGHT_COLOR = {
+    '#FFFFFF': '#000000', '#9A9A9A': '#7B7D7B', '#767676': '#5A5D5A',
+    '#4C4C4C': '#A5A6A5', '#313131': '#262626', '#009BE4': '#0062B1',
+    '#C7C7C7': '#666666', '#D5D5D5': '#666666', '#8C8C8C': '#6E6E6E',
+    '#737373': '#5E5E5E',
+}
+
+def light_remap(attr, value, accent_bg):
+    v = value.upper()
+    if attr == 'bg':
+        return LIGHT_BG.get(v, value)
+    if attr == 'color':
+        if v == '#FFFFFF' and accent_bg:
+            return value  # white label on an accent fill stays white
+        return LIGHT_COLOR.get(v, value)
+    return value
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__)
@@ -242,13 +272,14 @@ def main():
     mode = sys.argv[1]
     if mode == 'build':
         src = sys.argv[2]
+        remap = light_remap if '--light' in sys.argv else None
         b = Builder()
         if os.path.isdir(src):
             for fn in sorted(os.listdir(src)):
                 if fn.endswith('.xml'):
-                    b.parse_xml(os.path.join(src, fn))
+                    b.parse_xml(os.path.join(src, fn), remap)
         else:
-            b.parse_xml(src)
+            b.parse_xml(src, remap)
         out = sys.argv[sys.argv.index('-o') + 1]
         data = b.emit()
         open(out, 'wb').write(data)

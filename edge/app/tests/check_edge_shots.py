@@ -121,6 +121,11 @@ REFERENCE = {
     'advanced-bottom': 'settings/settings_2_advanced_scolled_bottom.png',
     'advanced-cookies-dd': 'settings/settings_2_advanced_scolled_bottom_dropdown_open.png',
     'feedback': 'settings/feedback.png',
+    'light-home': 'light/home_empty.png',
+    'light-menu': 'light/home_empty_menu.png',
+    'light-inpriv': 'light/inprivate.png',
+    'light-tabsmenu': 'light/tabs_menu.png',
+    'light-downloads': 'light/downloads.png',
 }
 
 # structural anchors: (x, y) must be near the given RGB

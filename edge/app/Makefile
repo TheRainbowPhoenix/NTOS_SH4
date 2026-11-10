@@ -18,19 +18,27 @@ IMPORTS = ../../payload
 # bring their own DLL entry point or factory.
 PHONE_CFLAGS = -DNTOS_LINUX_BUILD -DNT_IAT_EXTERN_ONLY -DUXCTL_NO_FACTORY
 
-all: edge.dll chakra.dll fingerkb.dll shellchrome.dll edge.uxaml
+all: edge.dll markdown.dll chakra.dll fingerkb.dll shellchrome.dll edge.uxaml
 
 edge.uxaml: uxaml_gen.py markup/*.xml
 	python3 uxaml_gen.py build markup/ -o edge.uxaml
+	python3 uxaml_gen.py build markup/ -o edgelight.uxaml --light
 
-edge.dll: edge_app.c icons.c icons.h uxaml.c uxaml.h nt_app.h mdrender.c \
+edge.dll: edge_app.c icons.c icons.h uxaml.c uxaml.h nt_app.h mockweb.h \
           $(PHONE)/uixctl.c $(PHONE)/svf.c $(PHONE)/phone.h
 	$(ZIG) cc -target x86_64-windows-gnu -shared -O2 -nostdlib \
 	  -Wl,--image-base=0x180010000 -DNTOS_LINUX_BUILD \
 	  -I. -I../../payload/phone -I../../payload -o edge.dll \
-	  edge_app.c icons.c uxaml.c mdrender.c \
+	  edge_app.c icons.c uxaml.c \
 	  $(PHONE)/uixctl.c $(PHONE_CFLAGS) \
 	  $(PHONE)/svf.c $(PHONE_CFLAGS)
+
+# shared web-document engine (MARKDOWN.DLL): html4/css1/markdown core,
+# box-model layout, find-in-page, reader mode. Any app can host it.
+markdown.dll: $(PHONE)/markdown.c $(PHONE)/markdown.h
+	$(ZIG) cc -target x86_64-windows-gnu -shared -Os -nostdlib \
+	  -Wl,--image-base=0x180400000 -DNTOS_LINUX_BUILD \
+	  -I$(PHONE) -I$(IMPORTS) -o markdown.dll $(PHONE)/markdown.c
 
 # shared keyboard DLL (host build of the phone FINGERKB.DLL source)
 fingerkb.dll: $(PHONE)/fingerkb.c $(PHONE)/phone.h $(PHONE)/system_icons.h
@@ -71,15 +79,17 @@ chakra-full.dll: chakra_mqjs.c shim/shim.c shim/*.h nt_app.h mqjs_edge_stdlib.h 
 endif
 
 clean:
-	rm -f edge.dll chakra.dll chakra-full.dll fingerkb.dll shellchrome.dll edge.uxaml edge-*.png
+	rm -f edge.dll markdown.dll chakra.dll chakra-full.dll fingerkb.dll shellchrome.dll edge.uxaml edge-*.png
 
 # e2e: run under NTOS_SH4_linux with the shared keyboard module; markup
 # goes into the fake device root
 test: all
 	rm -rf tests/fs/fls0 && mkdir -p tests/fs/fls0
 	cp edge.uxaml tests/fs/fls0/edge.uxaml
+	cp edgelight.uxaml tests/fs/fls0/edgelight.uxaml
 	cp tests/assets/article.md tests/assets/logo.svf tests/fs/fls0/
-	../ntos_linux/ntos_linux fingerkb.dll shellchrome.dll chakra.dll edge.dll --script tests/edge.script \
+	cp tests/assets/demo.md tests/assets/cool.svf tests/fs/fls0/
+	../ntos_linux/ntos_linux markdown.dll fingerkb.dll shellchrome.dll chakra.dll edge.dll --script tests/edge.script \
 	  --shot edge --fs tests/fs
 	python3 tests/check_edge_shots.py edge-*.png
 	../ntos_linux/ntos_linux chakra.dll --entry ChakraSmokeTest

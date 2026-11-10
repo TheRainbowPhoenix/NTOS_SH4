@@ -245,6 +245,14 @@ static char g_title[72];
 static int g_title_len;
 static const MdHost *g_host;
 static int g_dialect;
+#ifdef MD_TRACE
+int md_trace[16]; /* 0 html tag, 1 head, 2 title, 3 style-branch, 4 style-collect,
+                     5 style-close, 6 script, 7 block, 8 inline, 9 text-run,
+                     10 doctype, 11 comment, 12 headskip, 13 headclose */
+#define TRACE(i) (++md_trace[i])
+#else
+#define TRACE(i) ((void)0)
+#endif
 
 /* css rules */
 typedef struct {
@@ -1512,6 +1520,7 @@ static void html_parse(HParser *ps, const char *p, const char *end)
         if (*p == '<') {
             /* doctype / declarations: <!DOCTYPE ...>, <![CDATA[...]> */
             if (p + 1 < end && p[1] == '!') {
+                TRACE(10);
                 while (p < end && *p != '>')
                     ++p;
                 if (p < end)
@@ -1548,12 +1557,14 @@ static void html_parse(HParser *ps, const char *p, const char *end)
                 lname[i] = (char)xlow((unsigned char)tg[i]);
             lname[cl] = 0;
 #define TIS(s) (cl == xlen(s) && xeq(lname, s, cl))
+            TRACE(1);
             if (TIS("head")) {
                 if (!close) in_head = 1;
                 else in_head = 0;
                 p = tagend + 1;
                 continue;
             }
+            TRACE(2);
             if (TIS("title")) {
                 if (!close) { in_title = 1; title0 = g_txt_len; }
                 else if (in_title) {
@@ -1572,8 +1583,10 @@ static void html_parse(HParser *ps, const char *p, const char *end)
                 p = tagend + 1;
                 continue;
             }
+            TRACE(3);
             if (TIS("style")) {
                 if (!close) {
+                    TRACE(4);
                     if (cssbuf_len < 0)
                         cssbuf_len = 0;
                     p = tagend + 1;
@@ -1589,6 +1602,7 @@ static void html_parse(HParser *ps, const char *p, const char *end)
                     if (p < end)
                         ++p;
                     cssbuf[cssbuf_len] = 0;
+                    TRACE(5);
 #ifdef MD_DEBUG
                     fprintf(stderr, "[css] collected %d bytes\n", cssbuf_len);
 #endif
@@ -1601,6 +1615,7 @@ static void html_parse(HParser *ps, const char *p, const char *end)
                     p = tagend + 1;
                 continue;
             }
+            TRACE(6);
             if (TIS("script")) {
                 if (!close) {
                     const char *b = tagend + 1;
@@ -1630,6 +1645,8 @@ static void html_parse(HParser *ps, const char *p, const char *end)
                     p = tagend + 1;
                 continue;
             }
+            if (in_head)
+                TRACE(12);
             if (!close && (in_head || TIS("link") || TIS("meta") ||
                            TIS("base") || TIS("doctype"))) {
                 p = tagend + 1;
@@ -1666,6 +1683,7 @@ static void html_parse(HParser *ps, const char *p, const char *end)
                     break;
                 }
             if (tagid != TG_NONE && TG_IS_BLOCK[tagid]) {
+                TRACE(7);
                 TagAttr at;
                 attr_parse(te, tagend, &at);
                 if (!close) {
@@ -1689,6 +1707,7 @@ static void html_parse(HParser *ps, const char *p, const char *end)
             continue;
         }
         /* text run: inside <title> it feeds the title buffer, not items */
+        TRACE(9);
         const char *q = p;
         while (q < end && *q != '<')
             ++q;
@@ -3509,6 +3528,18 @@ static void finish_title(void)
 }
 
 /* =============== public API =============== */
+/* freestanding DLL entry (no CRT): keep the loader happy, do nothing */
+#ifndef NTOS_DEVICE
+__attribute__((dllexport)) int DllMainCRTStartup_impl(void *h, unsigned r,
+                                                      void *r2)
+{
+    (void)h;
+    (void)r;
+    (void)r2;
+    return 1;
+}
+__asm__(".globl _DllMainCRTStartup\n_DllMainCRTStartup = DllMainCRTStartup_impl\n");
+#endif
 void md_set_host(const MdHost *host)
 {
     g_host = host;
@@ -3731,4 +3762,46 @@ int md_anchor_scroll(int y)
     if (y > g_page_h)
         y = g_page_h;
     return y;
+}
+
+/* diag entry: full ACID1 source; returns packed block/op/float counts */
+/* self-test entry (host: ntos_linux markdown.dll --entry MDSmokeTest).
+ * Loads a markdown + an html source, lays out both, and returns a packed
+ * pass code so CI catches engine regressions without any UI. */
+MD_API int MDSmokeTest(void)
+{
+    static const char MD[] = "# Hello\n\nSome **bold** text and "
+        "[a link](http://example.com) plus `code`.\n\n- item one\n"
+        "- item two\n\n```\nfenced code\n```\n\n| A | B |\n"
+        "| --- | --- |\n| 1 | 2 |\n";
+    static const char HTML[] = "<html><head><title>t</title><style>"
+        "body{margin:8px;border:2px solid black;background-color:white}"
+        " p{color:black;font-size:12px}</style></head>"
+        "<body><p>hello <b>world</b></p><div style='float:left'>"
+        "box</div></body></html>";
+    static MdHost h; /* zeroed: painters optional for layout */
+    g_host = &h;
+    int ok = 0;
+    if (md_load(MD_SRC_MD, MD, xlen(MD))) {
+        md_layout(300);
+        int pw = 0, ph = 0;
+        md_size(&pw, &ph);
+        if (pw >= 300 && ph > 50 && nops > 10 && nblk > 4)
+            ok |= 1;
+    }
+    if (md_load(MD_SRC_HTML, HTML, xlen(HTML))) {
+        md_layout(300);
+        int pw = 0, ph = 0;
+        md_size(&pw, &ph);
+        if (nflt >= 1 && nblk > 4)
+            ok |= 2;
+    }
+    /* find-in-page over the md doc */
+    if (md_load(MD_SRC_MD, MD, xlen(MD))) {
+        md_layout(300);
+        int fx[4], fy[4], fw[4];
+        if (md_find("bold", fx, fy, fw, 4) == 1)
+            ok |= 4;
+    }
+    return 0x1000 | ok; /* 0x1007 = all three */
 }

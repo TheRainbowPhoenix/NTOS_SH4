@@ -61,13 +61,7 @@ typedef struct EdgeChrome {
     int (*navigation)(int);
 } EdgeChrome;
 
-/* ---- mdrender (mdrender.c): the text-page "web engine" + find-in-page ---- */
-int md_page_load(const char *name);
-int md_line_count_get(void);
-int md_find(const char *query, int *out_x, int *out_y, int *out_w, int cap,
-            void *unused);
-int md_paint(void *dc);
-/* CHAKRA.DLL stub entry (script forwarding; the stub does nothing) */
+/* CHAKRA.DLL stub entry (script forwarding; tiny expression evaluator) */
 NT_IMPORT(int, JsRunScript, (const W16 *, unsigned, const W16 *, void **))
 NT_DEFINE(JsRunScript)
 
@@ -105,6 +99,33 @@ NT_DEFINE(render_SpGetThreadContext)
 /* keyboard factory: imported from FINGERKB.DLL via the host loader */
 NT_IMPORT(const EdgeKb *, UIXGetSchemaFactory, (void))
 NT_DEFINE(UIXGetSchemaFactory)
+
+/* MARKDOWN.DLL: the shared web-document engine (html4/css1/markdown core,
+ * box-model layout with floats, find-in-page, reader mode). Edge hosts it
+ * through an MdHost callback table; other apps can do the same. */
+#include "markdown.h"
+NT_IMPORT(void, md_set_host, (const MdHost *))
+NT_IMPORT(int, md_load, (int, const char *, int))
+NT_IMPORT(void, md_layout, (int))
+NT_IMPORT(void, md_reader, (int))
+NT_IMPORT(int, md_reader_is, (void))
+NT_IMPORT(void, md_paint, (const MdHost *, int, int, int, int))
+NT_IMPORT(void, md_size, (int *, int *))
+NT_IMPORT(const char *, md_title, (int *))
+NT_IMPORT(int, md_find, (const char *, int *, int *, int *, int))
+NT_IMPORT(int, md_link_at, (int, int, const char **, int *))
+NT_IMPORT(int, md_anchor_scroll, (int))
+NT_DEFINE(md_set_host)
+NT_DEFINE(md_load)
+NT_DEFINE(md_layout)
+NT_DEFINE(md_reader)
+NT_DEFINE(md_reader_is)
+NT_DEFINE(md_paint)
+NT_DEFINE(md_size)
+NT_DEFINE(md_title)
+NT_DEFINE(md_find)
+NT_DEFINE(md_link_at)
+NT_DEFINE(md_anchor_scroll)
 /* nav-bar chrome: imported from SHELLCHROME.DLL (UIXChromeFactory is the
  * hosted-app surface: nav bar only, themed through edge_renderer) */
 NT_IMPORT(const EdgeChrome *, UIXChromeFactory, (void))
@@ -184,21 +205,75 @@ NT_IMPORT(const W16 *, GetCommandLineW, (void))
 NT_DEFINE(GetCommandLineW)
 
 /* ---- palette (measured from refs/edge-screens, dark theme) ---- */
-#define C_BAR    RGB_(0x1F, 0x1F, 0x1F) /* address bar, icon bar, kb bg  */
-#define C_SHEET  RGB_(0x2B, 0x2B, 0x2B) /* menu sheets, flyouts          */
-#define C_PAGE   RGB_(0x00, 0x00, 0x00) /* tabs/hub/settings pages       */
-#define C_CARD   RGB_(0x33, 0x33, 0x33) /* Clear button, preview areas   */
-#define C_BTN    RGB_(0x2E, 0x2E, 0x2E) /* dialog buttons                */
-#define C_SEP    RGB_(0x76, 0x76, 0x76) /* address-bar separators        */
-#define C_INK    RGB_(0xFF, 0xFF, 0xFF)
-#define C_MUT    RGB_(0x9A, 0x9A, 0x9A)
-#define C_DIM    RGB_(0x6E, 0x6E, 0x6E)
-#define C_DIS    RGB_(0x4C, 0x4C, 0x4C) /* disabled reader icon          */
-#define C_BLUE   RGB_(0x00, 0x78, 0xD7)
-#define C_LINK   RGB_(0x00, 0x9B, 0xE4) /* InPrivate page links          */
-#define C_SCRIM  RGB_(0x7F, 0x7F, 0x7F) /* 50% dim over white content    */
-#define C_WLINK  RGB_(0x33, 0x66, 0xCC) /* links inside mock web pages   */
-#define C_PAGEBG RGB_(0xFF, 0xFF, 0xFF) /* mock web page background      */
+/* ---- app theme ----
+ * Light is the NTOS system default (refs/edge-screens/light); dark is the
+ * classic Edge chrome. InPrivate swaps the light surfaces for grey, like
+ * the light reference capture. 't' (POC shortcut) toggles at runtime. */
+typedef struct {
+    U32 bar, sheet, page, card, btn, sep, ink, mut, dim, dis, blue, link,
+        scrim, wlink, pagebg, tabtitle, cross, hubbg, sheetrow;
+} EdgeTh;
+static const EdgeTh TH_LIGHT = {
+    RGB_(0xFF, 0xFF, 0xFF), /* bar: white address/toolbar               */
+    RGB_(0xE7, 0xE7, 0xE7), /* sheet: menu sheets                        */
+    RGB_(0xF7, 0xF3, 0xF7), /* page: hub/settings surfaces              */
+    RGB_(0xE7, 0xE7, 0xE7), /* card: Clear button, preview areas        */
+    RGB_(0xF7, 0xF3, 0xF7), /* btn: dialog buttons                      */
+    RGB_(0xCE, 0xCF, 0xCE), /* sep: separators                          */
+    RGB_(0x00, 0x00, 0x00), /* ink                                      */
+    RGB_(0x7B, 0x7D, 0x7B), /* mut                                      */
+    RGB_(0x4A, 0x49, 0x4A), /* dim                                      */
+    RGB_(0xA5, 0xA6, 0xA5), /* dis: disabled reader icon                */
+    RGB_(0x00, 0x78, 0xD7), /* blue                                     */
+    RGB_(0x00, 0x62, 0xB1), /* link: InPrivate page links               */
+    RGB_(0x7F, 0x7F, 0x7F), /* scrim                                   */
+    RGB_(0x06, 0x45, 0xAD), /* wlink: links inside web pages            */
+    RGB_(0xFF, 0xFF, 0xFF), /* pagebg: web page background              */
+    RGB_(0x31, 0x30, 0x31), /* tabtitle: card titles                    */
+    RGB_(0x5A, 0x5D, 0x5A), /* cross: card close glyph                  */
+    RGB_(0xF7, 0xF3, 0xF7), /* hubbg: hub surface                       */
+    RGB_(0xF7, 0xF3, 0xF7), /* sheetrow: menu sheet rows                */
+};
+static const EdgeTh TH_DARK = {
+    RGB_(0x1F, 0x1F, 0x1F), RGB_(0x2B, 0x2B, 0x2B), RGB_(0x00, 0x00, 0x00),
+    RGB_(0x33, 0x33, 0x33), RGB_(0x2E, 0x2E, 0x2E), RGB_(0x76, 0x76, 0x76),
+    RGB_(0xFF, 0xFF, 0xFF), RGB_(0x9A, 0x9A, 0x9A), RGB_(0x6E, 0x6E, 0x6E),
+    RGB_(0x4C, 0x4C, 0x4C), RGB_(0x00, 0x78, 0xD7), RGB_(0x00, 0x9B, 0xE4),
+    RGB_(0x7F, 0x7F, 0x7F), RGB_(0x33, 0x66, 0xCC), RGB_(0xFF, 0xFF, 0xFF),
+    RGB_(0x8A, 0x8A, 0x8A), RGB_(0xB0, 0xB0, 0xB0), RGB_(0x00, 0x00, 0x00),
+    RGB_(0x2B, 0x2B, 0x2B),
+};
+/* InPrivate keeps its grey identity in light mode (light/inprivate.png) */
+static const EdgeTh TH_LIGHT_PRIV = {
+    RGB_(0xE7, 0xE7, 0xE7), RGB_(0xE7, 0xE7, 0xE7), RGB_(0xE7, 0xE7, 0xE7),
+    RGB_(0xDE, 0xDE, 0xDE), RGB_(0xE7, 0xE7, 0xE7), RGB_(0xCE, 0xCF, 0xCE),
+    RGB_(0x26, 0x26, 0x26), RGB_(0x6E, 0x70, 0x6E), RGB_(0x4A, 0x49, 0x4A),
+    RGB_(0xA5, 0xA6, 0xA5), RGB_(0x00, 0x78, 0xD7), RGB_(0x00, 0x62, 0xB1),
+    RGB_(0x7F, 0x7F, 0x7F), RGB_(0x06, 0x45, 0xAD), RGB_(0xE7, 0xE7, 0xE7),
+    RGB_(0x4A, 0x49, 0x4A), RGB_(0x6E, 0x70, 0x6E), RGB_(0xE7, 0xE7, 0xE7),
+    RGB_(0xE7, 0xE7, 0xE7),
+};
+static int g_light = 1; /* system default: light */
+static const EdgeTh *g_th = &TH_LIGHT;
+static void theme_update(void);
+/* defined after the renderer/model: flips both the chrome palette and
+ * the UIX_TH table shared with fingerkb/shellchrome/uixctl */
+static void theme_update(void);
+#define C_BAR (g_th->bar)
+#define C_SHEET (g_th->sheet)
+#define C_PAGE (g_th->page)
+#define C_CARD (g_th->card)
+#define C_BTN (g_th->btn)
+#define C_SEP (g_th->sep)
+#define C_INK (g_th->ink)
+#define C_MUT (g_th->mut)
+#define C_DIM (g_th->dim)
+#define C_DIS (g_th->dis)
+#define C_BLUE (g_th->blue)
+#define C_LINK (g_th->link)
+#define C_SCRIM (g_th->scrim)
+#define C_WLINK (g_th->wlink)
+#define C_PAGEBG (g_th->pagebg)
 
 /* ---- tiny utils (no CRT on device) ---- */
 static int xstrlen(const char *s)
@@ -221,6 +296,20 @@ static int xeq(const char *a, const char *b)
     while (a[i] && a[i] == b[i])
         ++i;
     return a[i] == 0 && b[i] == 0;
+}
+static int xstr_contains(const char *hay, const char *needle)
+{
+    int nl = xstrlen(needle);
+    if (!nl)
+        return 0;
+    for (const char *p = hay; *p; ++p) {
+        int i = 0;
+        while (i < nl && p[i] && p[i] == needle[i])
+            ++i;
+        if (i == nl)
+            return 1;
+    }
+    return 0;
 }
 static unsigned xhash(const char *s)
 {
@@ -411,10 +500,11 @@ static void draw_text_clamp(void *dc, int x, int y, const char *s, U32 c, int h,
     draw_text(dc, x + w, y, "...", c, h, 0, 0);
 }
 
-/* ---- shared-component render context (dark Edge theme) ----
+/* ---- shared-component render context ----
  * Serves uixctl.c (controls), svf.c (icons) and fingerkb.dll (keyboard):
- * the same vtable model as uixrender.dll, with the dark UIX_TH table. */
-static const U32 edge_theme[] = {
+ * the same vtable model as uixrender.dll. The UIX_TH table follows the
+ * app theme (light system default, 't' toggles). */
+static const U32 edge_theme_dark[] = {
     RGB_(0x1F, 0x1F, 0x1F), /* 0 SURFACE   keyboard backdrop        */
     RGB_(0x33, 0x33, 0x33), /* 1 KEY        normal key             */
     RGB_(0x4C, 0x4C, 0x4C), /* 2 KEY_ALT    shift/&123             */
@@ -429,6 +519,22 @@ static const U32 edge_theme[] = {
     RGB_(0x00, 0x00, 0x00), /* 11 NAV_BG    nav bar strip (black)  */
     RGB_(0xFF, 0xFF, 0xFF), /* 12 NAV_INK   nav bar glyphs (white) */
 };
+static const U32 edge_theme_light[] = {
+    RGB_(0xF7, 0xF3, 0xF7), /* 0 SURFACE   keyboard backdrop        */
+    RGB_(0xFF, 0xFF, 0xFF), /* 1 KEY        normal key             */
+    RGB_(0xE7, 0xE7, 0xE7), /* 2 KEY_ALT    shift/&123             */
+    RGB_(0x00, 0x00, 0x00), /* 3 INK        key text               */
+    RGB_(0x00, 0x78, 0xD7), /* 4 KEY_GO     enter/search key fill  */
+    RGB_(0xFF, 0xFF, 0xFF), /* 5 GO_INK     glyph on the go key    */
+    RGB_(0x00, 0x78, 0xD7), /* 6 ACCENT     checked/caret/links    */
+    RGB_(0xFF, 0xFF, 0xFF), /* 7 CTRL_BG    button fill            */
+    RGB_(0x00, 0x00, 0x00), /* 8 CTRL_INK   button label           */
+    RGB_(0x76, 0x76, 0x76), /* 9 CTRL_EDGE  unchecked border       */
+    RGB_(0x76, 0x76, 0x76), /* 10 FIELD_EDGE input border/hint     */
+    RGB_(0xCE, 0xCF, 0xCE), /* 11 NAV_BG    nav bar strip          */
+    RGB_(0x31, 0x30, 0x31), /* 12 NAV_INK   nav bar glyphs         */
+};
+static const U32 *edge_theme = edge_theme_light;
 
 static void r_clip(int l, int t, int r, int b)
 {
@@ -532,10 +638,11 @@ static void r_surface(int b)
 {
     (void)b;
 }
-static const EdgeRender edge_renderer = {
+static EdgeRender edge_renderer = {
     0x55495831u, r_clip,  r_fill,     r_text, r_line,
-    r_ellipse,   r_polygon, r_surface, edge_theme,
+    r_ellipse,   r_polygon, r_surface, edge_theme_light,
 };
+
 
 /* cross-module exports: fingerkb.dll snaps these (host loader) */
 __attribute__((dllexport)) const EdgeRender *render_SpGetThreadContext(void)
@@ -549,8 +656,10 @@ __attribute__((dllexport)) int svf_SVFDrawTint(void *dc, const void *data,
     return SVFDrawTint(dc, data, length, x, y, w, h, tint);
 }
 
-/* ---- mdrender host hooks ---- */
-int md_read_file(const char *name, unsigned char *buf, int cap)
+/* ---- MARKDOWN.DLL host hooks ----
+ * The engine calls back through this table; every painter funnels into
+ * the same primitives the chrome uses (fill / draw_text / SVF / NT APIs). */
+int mdh_read_file(const char *name, unsigned char *buf, int cap)
 {
     W16 path[40];
     int n = 0;
@@ -567,53 +676,56 @@ int md_read_file(const char *name, unsigned char *buf, int cap)
     NT_CALL(CloseHandle, (h));
     return ok && got ? (int)got : 0;
 }
-U32 md_rgb(int r, int g, int b)
+__attribute__((dllexport)) int mdh_read_file_exp(const char *n, unsigned char *b, int c)
 {
-    return RGB_(r, g, b);
+    return mdh_read_file(n, b, c);
 }
-void md_fill(void *dc, int l, int t, int r, int b, U32 c)
+static void mdh_fill(void *dc, int l, int t, int r, int b, unsigned c)
 {
     fill(dc, l, t, r, b, c);
 }
-static void draw_text_n(void *dc, int x, int y, const char *s, int len,
-                        U32 c, int h, int bold)
+static void mdh_text(void *dc, int x, int y, const char *s, int len,
+                     unsigned c, int h, int flags)
 {
-    char tmp[96];
-    if (len > 90)
-        len = 90;
+    char tmp[110];
+    if (len > 105)
+        len = 105;
     for (int i = 0; i < len; ++i)
         tmp[i] = s[i];
     tmp[len] = 0;
-    draw_text(dc, x, y, tmp, c, h, 0, bold);
+    draw_text(dc, x, y, tmp, c, h, 0, flags & MDTF_BOLD);
+    if (flags & MDTF_STRIKE)
+        fill(dc, x, y + h / 2, x + text_w(tmp, h), y + h / 2 + 1, c);
 }
-static int text_w_n(const char *s, int len, int h)
+static int mdh_text_w(const char *s, int len, int h)
 {
-    char tmp[96];
-    if (len > 90)
-        len = 90;
+    char tmp[110];
+    if (len > 105)
+        len = 105;
     for (int i = 0; i < len; ++i)
         tmp[i] = s[i];
     tmp[len] = 0;
     return text_w(tmp, h);
 }
-void md_text(void *dc, int x, int y, const char *s, int len, U32 c, int h, int bold)
-{
-    draw_text_n(dc, x, y, s, len, c, h, bold);
-}
-int md_text_w(const char *s, int len, int h)
-{
-    return text_w_n(s, len, h);
-}
-void md_svfdraw(void *dc, const unsigned char *data, unsigned len, int x, int y,
-                int w, int h)
+static void mdh_svf(void *dc, const unsigned char *data, unsigned len,
+                    int x, int y, int w, int h)
 {
     SVFDrawTint(dc, data, len, x, y, w, h, RGB_(0x00, 0x00, 0x00));
 }
-int md_chakra(const char *script)
+static void mdh_ellipse(void *dc, int l, int t, int r, int b, unsigned c,
+                        int filled)
 {
-    /* forward the <script> body to the CHAKRA.DLL stub. The stub returns
-     * E_NOTIMPL (no engine on this profile) and executes nothing — the
-     * entire scripting story of the POC in one call. */
+    int cx = (l + r) / 2, cy = (t + b) / 2;
+    int rx = (r - l) / 2, ry = (b - t) / 2;
+    if (rx < 1) rx = 1;
+    if (ry < 1) ry = 1;
+    r_ellipse(dc, cx, cy, rx, ry, c, filled ? (rx < ry ? rx : ry) : 1);
+}
+static int mdh_chakra(const char *script)
+{
+    /* <script> bodies go to CHAKRA.DLL (JsRunScript). The stub evaluates
+     * a tiny expression subset and ignores the rest - the POC's whole
+     * scripting story in one hop. */
     static W16 wbuf[512];
     int n = 0;
     while (script[n] && n < 500) {
@@ -623,24 +735,36 @@ int md_chakra(const char *script)
     wbuf[n] = 0;
     return NT_CALL(JsRunScript, (wbuf, 0, 0, 0));
 }
+static MdHost g_mdhost = {
+    0, mdh_fill, mdh_text, mdh_text_w, mdh_svf, mdh_ellipse,
+    mdh_read_file, mdh_chakra,
+};
+
+/* web view state (MARKDOWN.DLL engine pages; kept theme/model-free) */
+static int web_kind;
+static int web_scroll_x, web_scroll_y;
+static int web_reader_on;
+static char web_loaded_url[96]; /* engine page currently loaded */
 
 /* ---- find-in-page helpers ---- */
 static void find_run(void)
 {
     find_nmatch = 0;
     find_active = 0;
-    if (find_len && md_line_count_get())
-        find_nmatch = md_find(find_query, fm_x, fm_y, fm_w, 24, 0);
+    if (find_len && web_kind)
+        find_nmatch = NT_CALL(md_find, (find_query, fm_x, fm_y, fm_w, 24));
     if (find_active >= find_nmatch)
         find_active = 0;
 }
 static void paint_find_highlights(void *dc, int clip_bottom)
 {
     for (int i = 0; i < find_nmatch; ++i) {
-        if (fm_y[i] + 14 > clip_bottom)
+        int y = fm_y[i] - web_scroll_y;
+        int x = fm_x[i] - web_scroll_x;
+        if (y + 14 > clip_bottom || y < 0)
             continue;
         U32 c = i == find_active ? RGB_(0xFF, 0x8C, 0x00) : RGB_(0xFF, 0xD7, 0x00);
-        fill(dc, fm_x[i] - 2, fm_y[i] - 2, fm_x[i] + fm_w[i] + 2, fm_y[i] + 13, c);
+        fill(dc, x - 2, y - 2, x + fm_w[i] + 2, y + 13, c);
     }
 }
 
@@ -697,11 +821,25 @@ static Item hist_rows[8] = {
 };
 static int hist_count = 4;
 
-static UxFile ux;
+static UxFile ux_dark, ux_light_file;
+static UxFile *g_uxp = &ux_light_file; /* light is the system default */
+#define ux (*g_uxp)
 static Tab tabs[MAX_TABS];
 static Tab closed_tabs[4];
 static int closed_count;
 static int tab_count = 1, tab_cur;
+
+static void theme_update(void)
+{
+    if (!g_light)
+        g_th = &TH_DARK;
+    else
+        g_th = tabs[tab_cur].priv ? &TH_LIGHT_PRIV : &TH_LIGHT;
+    edge_theme = g_light ? edge_theme_light : edge_theme_dark;
+    edge_renderer.theme = edge_theme;
+    g_uxp = g_light ? &ux_light_file : &ux_dark;
+}
+
 static int mode; /* see enum below */
 enum {
     M_BROWSER = 0, M_MENU, M_TABS, M_HUB, M_ADDRESS, M_SETTINGS, M_CLEAR,
@@ -725,7 +863,7 @@ static const char *const WEBSITE_OPTS[2] = {"Mobile version", "Desktop version"}
 static const char *const COOKIE_OPTS[3] = {"Block all cookies",
                                            "Block only third party cookies",
                                            "Don't block cookies"};
-static int dragging, drag_y;
+static int dragging, drag_y, drag_x, drag_moved;
 
 static int settings_mode(void)
 {
@@ -998,7 +1136,7 @@ typedef struct {
 } Tok;
 
 #define BLK RGB_(0x00, 0x00, 0x00)
-#define LNK C_WLINK
+#define LNK RGB_(0x06, 0x45, 0xAD) /* link blue on white pages (any theme) */
 
 static void paint_tok_line(void *dc, int x, int y, const Tok *t, int n)
 {
@@ -1076,33 +1214,60 @@ static void paint_wiki(void *dc)
               RGB_(0x54, 0x59, 0x5D), 9, 0, 0);
 }
 
+/* light chrome geometry: the browser toolbar strip sits at y432-479 with
+ * the system nav bar below (light refs); dark keeps it at y480-527 */
+static int chrome_yoff(void)
+{
+    return g_light ? -48 : 0;
+}
+
 static void paint_page(void *dc)
 {
     Tab *t = &tabs[tab_cur];
     if (!t->url[0]) {
         if (t->priv) {
-            /* InPrivate new tab: uXAML page over the content host */
-            const UxDoc *d = ux_find_doc(&ux, "InPrivatePage");
-            if (d) {
-                layout_doc(d, 0, 0, 320, 528);
-                paint_node(dc, d->root);
+            if (g_light) {
+                /* light InPrivate (light/inprivate.png): grey surfaces,
+                 * dark copy, blue link */
+                fill(dc, 0, 0, 320, 480, C_PAGEBG);
+                draw_text(dc, 36, 130, "Browsing InPrivate", C_INK, 22, 0, 1);
+                static const char *const PL[] = {
+                    "When you use InPrivate tabs, your",
+                    "browsing data (like cookies, history,",
+                    "or temporary files) isn't saved on",
+                    "your device after you're done.",
+                    "Microsoft Edge deletes temporary",
+                    "data from your device after all of",
+                    "your InPrivate tabs are closed.",
+                };
+                for (unsigned i = 0; i < sizeof(PL) / sizeof(PL[0]); ++i)
+                    draw_text(dc, 36, 183 + i * 21, PL[i], C_INK, 14, 0, 0);
+                draw_text(dc, 36, 344, "Read the Microsoft privacy statement",
+                          C_LINK, 14, 0, 0);
+                fill(dc, 36, 358, 36 + text_w("Read the Microsoft privacy statement", 14), 359, C_LINK);
+            } else {
+                /* dark InPrivate new tab: uXAML page over the content host */
+                const UxDoc *d = ux_find_doc(&ux, "InPrivatePage");
+                if (d) {
+                    layout_doc(d, 0, 0, 320, 528);
+                    paint_node(dc, d->root);
+                }
             }
         } else {
-            /* home state per home.png: plain white page */
+            /* home state per home.png / home_empty light: plain page */
             fill(dc, 0, 0, 320, 480, C_PAGEBG);
         }
         return;
     }
-    /* markdown text pages render through the shared mdrender core;
-     * file:// activations (.md/.html/.htm/.txt from File Explorer) go
-     * through the same engine — the parser handles HTML tags too. */
-    if (t->is_file && t->file[0] && md_page_load(t->file)) {
-        md_paint(dc);
-        return;
-    }
-    int hl = xstrlen(t->host);
-    if (hl > 3 && xeq(t->host + hl - 3, ".md") && md_page_load(t->host)) {
-        md_paint(dc);
+    /* engine pages: MARKDOWN.DLL paints the scrolled viewport. File
+     * activations from File Explorer (file://) route through the same
+     * engine as mock-http pages. */
+    if (web_kind) {
+        int vh = 480 + chrome_yoff();
+        clip_set(0, 0, 320, vh);
+        g_mdhost.dc = dc;
+        NT_CALL(md_paint, (&g_mdhost, web_scroll_x, web_scroll_y, 320, vh));
+        clip_set(0, 0, 320, 528);
         return;
     }
     int wiki = 0;
@@ -1179,8 +1344,8 @@ static int card_col_x(int col)
     return 12 + col * 154;
 }
 
-#define C_TABTITLE RGB_(0x8A, 0x8A, 0x8A) /* dimmer than pure white  */
-#define C_CROSS   RGB_(0xB0, 0xB0, 0xB0) /* card close cross         */
+#define C_TABTITLE (g_th->tabtitle)
+#define C_CROSS   (g_th->cross)
 
 static void paint_tab_cards(void *dc)
 {
@@ -1325,6 +1490,7 @@ static void paint_hub_content(void *dc)
 /* ---- navigation ---- */
 static void set_lock_flag(void)
 {
+    theme_update();
     int loaded = tabs[tab_cur].url[0] != 0;
     int priv = tabs[tab_cur].priv;
     flag_named("AddressLock", NS_SHOWN, loaded);
@@ -1345,6 +1511,98 @@ static void hist_add(const char *host, const char *title)
     hist_rows[0].title = title;
     hist_rows[0].time = "8:27 PM";
     ++hist_count;
+}
+
+/* ---- web view: the MARKDOWN.DLL engine serves pages ----
+ * The POC is offline: the router pretends to be online by serving embedded
+ * content for known sites (mock DNS) and reading fls0 files for file://
+ * and .md/.html URLs. web_kind: 0 = procedural mock, 1 = engine page. */
+#include "mockweb.h"
+static int web_serve(const char *host, const char *url)
+{
+    /* mock DNS table: host substring -> embedded source */
+    int dialect = MD_SRC_MD;
+    const char *body = 0;
+    if (xstr_contains(url, "test5526c") || xstr_contains(host, "acid1")) {
+        dialect = MD_SRC_HTML;
+        body = MW_ACID1;
+    } else if (xstr_contains(host, "classpad") &&
+               !xstr_contains(host, "classpaddev")) {
+        body = MW_WIKI_CP300; /* wikipedia Casio ClassPad 300 */
+    } else if (xstr_contains(host, "classpaddev") || xstr_contains(host, "hh3") ||
+               xstr_contains(host, "hollyhock")) {
+        body = MW_CWIKI_FAQ;
+    } else {
+        return 0;
+    }
+    return NT_CALL(md_load, (dialect, body, xstrlen(body))) ? 1 : 0;
+}
+
+static int web_open_file(const char *name)
+{
+    static unsigned char fbuf[20480];
+    int n = mdh_read_file(name, fbuf, sizeof fbuf - 1);
+    if (n <= 0)
+        return 0;
+    fbuf[n] = 0;
+    int dialect = MD_SRC_MD;
+    int l = xstrlen(name);
+    if (l > 5 && (xeq(name + l - 5, ".html") || xeq(name + l - 4, ".htm")))
+        dialect = MD_SRC_HTML;
+    else if (l > 4 && xeq(name + l - 4, ".txt"))
+        dialect = MD_SRC_TEXT;
+    return NT_CALL(md_load, (dialect, (const char *)fbuf, n)) ? 1 : 0;
+}
+
+/* load a url into the engine; returns web_kind for the tab */
+static int web_load(const char *url)
+{
+    const char *p = url;
+    if (p[0] == 'f' && p[1] == 'i' && p[2] == 'l' && p[3] == 'e' &&
+        p[4] == ':' && p[5] == '/' && p[6] == '/') {
+        p += 7;
+        if (p[0] == '/')
+            ++p;
+        if (web_open_file(p)) {
+            xcopy(web_loaded_url, p, xstrlen(p) + 1);
+            NT_CALL(md_layout, (320));
+            return 1;
+        }
+        return 0;
+    }
+    if (web_serve("", url)) {
+        xcopy(web_loaded_url, url, xstrlen(url) + 1);
+        NT_CALL(md_layout, (320));
+        return 1;
+    }
+    /* host-part classification */
+    char host[48];
+    int hl = 0;
+    while (url[hl] && url[hl] != '/' && hl < 47)
+        ++hl;
+    xcopy(host, url, hl);
+    host[hl] = 0;
+    if (web_serve(host, url)) {
+        xcopy(web_loaded_url, url, xstrlen(url) + 1);
+        NT_CALL(md_layout, (320));
+        return 1;
+    }
+    /* local file by name (.md/.html/.txt from fls0) */
+    int l = xstrlen(url);
+    if (l > 3 && (xeq(url + l - 3, ".md") || xeq(url + l - 5, ".html") ||
+                  xeq(url + l - 4, ".htm") || xeq(url + l - 4, ".txt"))) {
+        if (web_open_file(url)) {
+            xcopy(web_loaded_url, url, xstrlen(url) + 1);
+            NT_CALL(md_layout, (320));
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void web_view_reset(void)
+{
+    web_scroll_x = web_scroll_y = 0;
 }
 
 static void nav_url(const char *url)
@@ -1394,6 +1652,19 @@ static void nav_url(const char *url)
             t->title[4] = 0;
         }
         hist_add(t->file, t->title);
+        /* load through the engine now that the tab is set up */
+        web_view_reset();
+        web_kind = web_open_file(t->file) ? 1 : 0;
+        if (web_kind) {
+            int tl2 = 0;
+            const char *dt = NT_CALL(md_title, (&tl2));
+            if (dt && tl2 > 0) {
+                if (tl2 > 39)
+                    tl2 = 39;
+                xcopy(t->title, dt, tl2);
+                t->title[tl2] = 0;
+            }
+        }
         set_lock_flag();
         return;
     }
@@ -1416,10 +1687,18 @@ static void nav_url(const char *url)
     xcopy(t->host, p, hl);
     t->host[hl] = 0;
     t->hash = xhash(t->url);
+    web_view_reset();
+    web_kind = web_load(t->url);
     const char *title = t->host;
     for (unsigned s = 0; s < 6; ++s)
         if (xeq(t->host, SITES[s].host))
             title = SITES[s].label;
+    if (web_kind) {
+        int tl2 = 0;
+        const char *dt = NT_CALL(md_title, (&tl2));
+        if (dt && tl2 > 0 && !xstr_contains(t->url, "wikipedia.org"))
+            title = dt; /* <title>/h1 wins for engine pages (not the wiki mock) */
+    }
     int tl = xstrlen(title);
     if (tl > 39)
         tl = 39;
@@ -1488,18 +1767,31 @@ static void paint_browser(void *dc)
     const UxDoc *d = ux_find_doc(&ux, "SmallScreenPage");
     if (!d)
         return;
-    layout_doc(d, 0, 0, 320, 528);
+    int yo = chrome_yoff();
+    layout_doc(d, 0, yo, 320, 528);
     paint_node(dc, d->root); /* chrome incl. PageHost background */
-    clip_set(0, 0, 320, 480);
+    clip_set(0, 0, 320, 480 + yo);
     paint_page(dc);
     clip_set(0, 0, 320, 528);
     paint_address_url(dc);
+    if (g_light) {
+        /* nav strip visible below the raised toolbar */
+        if (g_chrome)
+            g_chrome->paint(dc);
+    }
 }
 
 static void paint_all(void *dc)
 {
     const UxDoc *d;
     if (mode == M_BROWSER || mode == M_FIND) {
+        /* reading-view affordance: the chrome book icon lights up when the
+         * engine can serve the current page in reader mode (smallscreen
+         * refs keep the greyed look for non-reader pages) */
+        if (web_kind) {
+            U32 rc = web_reader_on ? RGB_(0x00, 0x78, 0xD7) : RGB_(0x00, 0x00, 0x00);
+            ic_draw(ifill, dc, 236, 495 + chrome_yoff(), 22, rc, IC_READER);
+        }
         if (mode == M_FIND && find_sip) {
             /* with the SIP up the find bar rides above the keyboard */
             clip_set(0, 0, 320, 223);
@@ -1534,22 +1826,24 @@ static void paint_all(void *dc)
     } else if (mode == M_MENU) {
         paint_browser(dc);
         if ((d = ux_find_doc(&ux, "ActionsMenu"))) {
-            layout_doc(d, 0, 0, 320, 528);
+            layout_doc(d, 0, chrome_yoff(), 320, 528);
             paint_node(dc, d->root);
         }
     } else if (mode == M_TABS || mode == M_TABSMENU) {
         if ((d = ux_find_doc(&ux, "TabCenterPage"))) {
-            layout_doc(d, 0, 0, 320, 528);
+            layout_doc(d, 0, chrome_yoff(), 320, 528);
             /* doc first (black page, "Tabs" title, toolbar strip), then the
              * cards clipped to the content area: a 6th tab's row 2 stops at
              * the toolbar like on the device (manytabs.png) */
             paint_node(dc, d->root);
-            clip_set(0, 0, 320, 480);
+            clip_set(0, 0, 320, 480 + chrome_yoff());
             paint_tab_cards(dc);
             clip_set(0, 0, 320, 528);
+            if (g_light && g_chrome)
+                g_chrome->paint(dc);
         }
         if (mode == M_TABSMENU && (d = ux_find_doc(&ux, "TabsContextMenu"))) {
-            layout_doc(d, 0, 0, 320, 528);
+            layout_doc(d, 0, chrome_yoff(), 320, 528);
             paint_node(dc, d->root);
         }
     } else if (mode == M_HUB) {
@@ -1657,8 +1951,17 @@ static void do_command(const char *cmd)
         }
     } else if (xeq(cmd, "reload"))
         toast("Refreshing...");
-    else if (xeq(cmd, "reader"))
-        toast("This page can't be shown in reading view");
+    else if (xeq(cmd, "reader")) {
+        if (web_kind) {
+            web_reader_on = !web_reader_on;
+            NT_CALL(md_reader, (web_reader_on));
+            NT_CALL(md_layout, (320));
+            web_view_reset();
+        } else {
+            web_reader_on = 0;
+            toast("This page can't be shown in reading view");
+        }
+    }
     else if (xeq(cmd, "fwd"))
         ; /* disabled: no forward stack in the POC */
     else if (xeq(cmd, "share"))
@@ -1837,8 +2140,10 @@ static void process_tap(int x, int y)
     }
     if (mode == M_TABS) {
         /* tab card grid hot zones (cards painted procedurally):
-         * 142x146 cards at x12/x166, top y44, pitch 148 */
-        if (x >= 12 && x < 308 && y >= 44 && y < 470) {
+         * 142x146 cards at x12/x166, top y44, pitch 148. The light
+         * chrome raises the toolbar, so the grid stops 48px higher. */
+        int grid_bottom = 470 + chrome_yoff();
+        if (x >= 12 && x < 308 && y >= 44 && y < grid_bottom) {
             int col = x >= 166 ? 1 : 0;
             int row = (y - 44) / 148;
             int idx = row * 2 + col;
@@ -1964,6 +2269,64 @@ static void process_tap(int x, int y)
         mode = M_BROWSER; /* scrim tap dismisses */
     } else if (mode == M_FIND) {
         mode = M_BROWSER; /* tap on the page closes the find bar */
+    } else if (mode == M_BROWSER && web_kind && y > 45 && y < 480) {
+        /* engine page: follow links (page coords include the scroll) */
+        const char *href;
+        int hlen;
+        if (NT_CALL(md_link_at, (x + web_scroll_x, y + web_scroll_y, &href, &hlen))) {
+            char target[MAX_URL];
+            if (hlen > MAX_URL - 1)
+                hlen = MAX_URL - 1;
+            xcopy(target, href, hlen);
+            target[hlen] = 0;
+            /* relative hrefs resolve against the current page's "site" */
+            if (target[0] == '/' || !(target[0] == 'h' || target[0] == 'f')) {
+                /* same-site mock: keep the host, swap the path */
+                char host[40];
+                int hl = 0;
+                while (web_loaded_url[hl] && web_loaded_url[hl] != '/' &&
+                       hl < 39)
+                    ++hl;
+                xcopy(host, web_loaded_url, hl);
+                host[hl] = 0;
+                char abs[MAX_URL];
+                int hn = xstrlen(host);
+                xcopy(abs, host, hn);
+                abs[hn] = '/';
+                int tn = xstrlen(target);
+                if (hn + 1 + tn < MAX_URL - 1) {
+                    xcopy(abs + hn + 1, target, tn + 1);
+                    xcopy(target, abs, hn + 1 + tn + 1);
+                }
+            }
+            if (web_load(target)) {
+                xcopy(web_loaded_url, target, xstrlen(target) + 1);
+                web_view_reset();
+                /* visible url + title follow the navigation */
+                Tab *t = &tabs[tab_cur];
+                int un = xstrlen(target);
+                if (un > MAX_URL - 1)
+                    un = MAX_URL - 1;
+                xcopy(t->url, target, un);
+                t->url[un] = 0;
+                int thl = 0;
+                while (target[thl] && target[thl] != '/' && thl < 39)
+                    ++thl;
+                xcopy(t->host, target, thl);
+                t->host[thl] = 0;
+                int tl2 = 0;
+                const char *dt = NT_CALL(md_title, (&tl2));
+                if (dt && tl2 > 0) {
+                    if (tl2 > 39)
+                        tl2 = 39;
+                    xcopy(t->title, dt, tl2);
+                    t->title[tl2] = 0;
+                }
+                set_lock_flag();
+            } else {
+                toast("This page can't be opened right now.");
+            }
+        }
     }
 }
 
@@ -2035,6 +2398,11 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
                 mode = M_BROWSER;
             set_scroll = 0;
             dd_open = 0;
+        } else if (msg == WM_KEY_ && wp == 0x74) { /* 't' key: theme toggle */
+            g_light = !g_light;
+            theme_update();
+            NT_CALL(InvalidateRect, (hwnd, 0, 0));
+            NT_CALL(UpdateWindow, (hwnd));
         } else if (mode == M_ADDRESS) {
             addr_key(wp);
         } else if (mode == M_FIND && (wp >= 32 && wp < 127)) {
@@ -2108,8 +2476,42 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
             NT_CALL(UpdateWindow, (hwnd));
             return 0;
         }
+        /* browser mode: engine pages drag-scroll (vertical always,
+         * horizontal when the page is wider than the viewport) */
         if (msg == WM_DOWN_) {
-            process_tap(x, y);
+            dragging = 1;
+            drag_y = y;
+            drag_x = x;
+            drag_moved = 0;
+        } else if (msg == WM_MOVE_ && dragging) {
+            int dy = drag_y - y;
+            int dx = drag_x - x;
+            if (dy < -3 || dy > 3 || dx < -3 || dx > 3)
+                drag_moved = 1;
+            if (web_kind) {
+                int pw = 320, ph = 0;
+                NT_CALL(md_size, (&pw, &ph));
+                web_scroll_y += dy;
+                { int vh = 440 + chrome_yoff();
+                  if (web_scroll_y > ph - vh) web_scroll_y = ph - vh; }
+                if (web_scroll_y < 0)
+                    web_scroll_y = 0;
+                if (pw > 320) {
+                    web_scroll_x += dx;
+                    if (web_scroll_x > pw - 320)
+                        web_scroll_x = pw - 320;
+                    if (web_scroll_x < 0)
+                        web_scroll_x = 0;
+                }
+                NT_CALL(InvalidateRect, (hwnd, 0, 0));
+                NT_CALL(UpdateWindow, (hwnd));
+            }
+            drag_y = y;
+            drag_x = x;
+        } else if (msg == WM_UP_) {
+            if (dragging && !drag_moved)
+                process_tap(x, y);
+            dragging = 0;
             NT_CALL(InvalidateRect, (hwnd, 0, 0));
             NT_CALL(UpdateWindow, (hwnd));
         }
@@ -2118,14 +2520,15 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
     return 0;
 }
 
-/* ---- markup load: \fls0\edge.uxaml, single read ---- */
+/* ---- markup load: \fls0\edge.uxaml (dark) + edgelight.uxaml ----
+ * The markup is authored dark; uxaml_gen.py --light emits a light-palette
+ * twin. Both load at boot and the active one follows the theme. */
 #define UX_FILE_MAX (48 * 1024)
 static unsigned char ux_blob[UX_FILE_MAX];
+static unsigned char ux_blob_light[UX_FILE_MAX];
 
-static int load_markup(void)
+static int read_ux_file(const W16 *path, unsigned char *buf, U32 *out_size)
 {
-    static const W16 path[] = {'\\', 'f', 'l', 's', '0', '\\', 'e', 'd', 'g', 'e',
-                               '.', 'u', 'x', 'a', 'm', 'l', 0};
     void *h = NT_CALL(CreateFileW, (path, 0x80000000u, 0, 0, 3 /*OPEN_EXISTING*/, 0, 0));
     if (!h || h == (void *)(intptr_t)-1)
         return -1;
@@ -2135,13 +2538,33 @@ static int load_markup(void)
         return -1;
     }
     U32 got = 0;
-    int ok = NT_CALL(ReadFile, (h, ux_blob, size, &got, 0));
+    int ok = NT_CALL(ReadFile, (h, buf, size, &got, 0));
     NT_CALL(CloseHandle, (h));
     if (!ok || got != size)
         return -1;
+    *out_size = size;
+    return 0;
+}
+
+static int load_markup(void)
+{
+    static const W16 path[] = {'\\', 'f', 'l', 's', '0', '\\', 'e', 'd', 'g', 'e',
+                               '.', 'u', 'x', 'a', 'm', 'l', 0};
+    static const W16 pathl[] = {'\\', 'f', 'l', 's', '0', '\\', 'e', 'd', 'g', 'e',
+                                'l', 'i', 'g', 'h', 't', '.', 'u', 'x', 'a', 'm', 'l', 0};
+    U32 size = 0;
     const char *err = 0;
-    if (ux_parse(ux_blob, got, &ux, &err))
+    if (read_ux_file(path, ux_blob, &size))
         return -1;
+    if (ux_parse(ux_blob, size, &ux_dark, &err))
+        return -1;
+    U32 sizel = 0;
+    if (!read_ux_file(pathl, ux_blob_light, &sizel)) {
+        err = 0;
+        ux_parse(ux_blob_light, sizel, &ux_light_file, &err);
+    } else {
+        ux_light_file = ux_dark; /* fallback: reuse the dark blob */
+    }
     return 0;
 }
 
@@ -2177,7 +2600,8 @@ __attribute__((dllexport)) int RunApplication(void)
      * the render-context slot the device loader would snap per module */
     __imp_render_SpGetThreadContext = (const void *)(uintptr_t)render_SpGetThreadContext;
     /* shared keyboard DLL (FINGERKB.DLL), snapped by the host loader */
-    g_kb = NT_CALL(UIXGetSchemaFactory, ());
+    g_kb = NT_CALL(UIXGetSchemaFactory, ())
+    , NT_CALL(md_set_host, (&g_mdhost));
     if (!g_kb || g_kb->profile != 0x55495831u)
         g_kb = 0;
     /* nav-bar chrome from SHELLCHROME.DLL (hosted-app surface) */
