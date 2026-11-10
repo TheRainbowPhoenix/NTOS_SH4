@@ -67,6 +67,7 @@ void ctl_button(void *dc, const EdgeRender *r, int x, int y, int w, int h,
 void ctl_checkbox(void *dc, const EdgeRender *r, int x, int y, int checked,
                   const char *label);
 void ctl_toggle(void *dc, const EdgeRender *r, int x, int y, int on);
+void ctl_toggle_ex(void *dc, const EdgeRender *r, int x, int y, int on, int dim);
 void ctl_field(void *dc, const EdgeRender *r, int x, int y, int w, int h,
                const char *text, const char *hint, int focused);
 /* SVF icon draw (payload/phone/svf.c, linked into this DLL) */
@@ -582,7 +583,7 @@ static int tab_count = 1, tab_cur;
 static int mode; /* see enum below */
 enum {
     M_BROWSER = 0, M_MENU, M_TABS, M_HUB, M_ADDRESS, M_SETTINGS, M_CLEAR,
-    M_DLG_READLIST, M_DLG_FAV, M_FIND, M_TABSMENU,
+    M_DLG_READLIST, M_DLG_FAV, M_FIND, M_TABSMENU, M_ADVANCED, M_FEEDBACK,
 };
 static int hub_pivot; /* 0 favorites 1 reading 2 history 3 downloads */
 static char addr_buf[MAX_URL];
@@ -590,6 +591,24 @@ static int addr_len;
 static char toast_text[80];
 static void *g_wnd;
 static const EdgeKb *g_kb;
+static const EdgeChrome *g_chrome;
+
+/* settings pages: scroll + dropdown state (settings/advanced references) */
+#define SET_VIEW_H 455
+static int set_scroll;
+static int dd_open; /* 0 closed 1 website preference 2 cookies */
+static int website_sel; /* 0 Mobile version 1 Desktop version */
+static int cookies_sel = 2; /* default value: Don't block cookies */
+static const char *const WEBSITE_OPTS[2] = {"Mobile version", "Desktop version"};
+static const char *const COOKIE_OPTS[3] = {"Block all cookies",
+                                           "Block only third party cookies",
+                                           "Don't block cookies"};
+static int dragging, drag_y;
+
+static int settings_mode(void)
+{
+    return mode == M_SETTINGS || mode == M_ADVANCED || mode == M_FEEDBACK;
+}
 
 /* runtime per-node flags (index-stable after parse) */
 #define NS_TOGGLED 1u /* checkbox flipped at runtime */
@@ -649,6 +668,11 @@ static const char *dyn_text(const char *name, const char *def)
         Tab *t = &tabs[tab_cur];
         return t->title[0] ? t->title : "New tab";
     }
+    /* dropdown closed-box values follow the live selection */
+    if (xeq(name, "WebsitePrefValue"))
+        return WEBSITE_OPTS[website_sel & 1];
+    if (xeq(name, "CookiesValue"))
+        return COOKIE_OPTS[cookies_sel % 3];
     return def;
 }
 
@@ -663,6 +687,13 @@ static U32 dyn_color(const char *name, U32 def)
         int p = name[9] - '0';
         return hub_pivot == p ? RGB_(0x00, 0x5A, 0xA1) : C_INK;
     }
+    /* open-flyout rows: the selected option takes the accent fill */
+    if (xeq(name, "DDRow0") || xeq(name, "DDRow1"))
+        return (dd_open == 1 && website_sel == name[5] - '0') ? C_BLUE
+                                                             : RGB_(0x1F, 0x1F, 0x1F);
+    if (xeq(name, "DDRow2") || xeq(name, "DDRow3") || xeq(name, "DDRow4"))
+        return (dd_open == 2 && cookies_sel == name[5] - '2') ? C_BLUE
+                                                             : RGB_(0x1F, 0x1F, 0x1F);
     return def;
 }
 
@@ -739,10 +770,10 @@ static void paint_node(void *dc, unsigned ni)
     switch (n->kind) {
     case UX_RECT: {
         if (ux_int(&ux, n, UXA_BORDER, 0)) {
-            U32 c = ux_clr(&ux, n, UXA_COLOR, C_MUT);
+            U32 c = dyn_color(name, ux_clr(&ux, n, UXA_COLOR, C_MUT));
             ic_rect(ifill, dc, r.x, r.y, r.w, r.h, 1, c);
         } else {
-            U32 c = ux_clr(&ux, n, UXA_BG, C_INK);
+            U32 c = dyn_color(name, ux_clr(&ux, n, UXA_BG, C_INK));
             int rad = ux_int(&ux, n, UXA_RADIUS, 0);
             if (rad)
                 fill_round(dc, r.x, r.y, r.x + r.w, r.y + r.h, c, rad);
@@ -788,7 +819,19 @@ static void paint_node(void *dc, unsigned ni)
                 tx += r.w / 2;
             else if (align == 2)
                 tx += r.w;
+            int und = ux_int(&ux, n, UXA_UNDERLINE, 0);
+            if (und && align != 1) {
+                /* draw first so the rule never clips the glyphs */
+                int w = text_w(t, size);
+                int ux0 = align == 2 ? r.x + r.w - w : r.x;
+                fill(dc, ux0, ty + size - 1, ux0 + w, ty + size, col);
+            }
             draw_text(dc, tx, ty, t, col, size, align, bold);
+            if (und && align == 1) {
+                int w = text_w(t, size);
+                fill(dc, r.x + (r.w - w) / 2, ty + size - 1,
+                     r.x + (r.w + w) / 2, ty + size, col);
+            }
         }
         break;
     }
@@ -802,7 +845,8 @@ static void paint_node(void *dc, unsigned ni)
     }
     case UX_TOGGLE: {
         int on = ux_int(&ux, n, UXA_CHECKED, 0) || (nstate[ni] & NS_TOGGLED);
-        ctl_toggle(dc, &edge_renderer, r.x, r.y, on);
+        int dim = ux_int(&ux, n, UXA_DISABLED, 0);
+        ctl_toggle_ex(dc, &edge_renderer, r.x, r.y, on, dim);
         break;
     }
     case UX_TEXTBOX: {
@@ -1025,7 +1069,67 @@ static void paint_tab_cards(void *dc)
     }
 }
 
-/* ---- hub content (pivot panes; history.png / edge4.png) ---- */
+/* ---- settings pages on uXAML (settings/advanced/feedback refs) ----
+ * Content taller than the viewport scrolls (drag); the system nav bar
+ * comes from the imported SHELLCHROME chrome and paints last at y488. */
+static const char *settings_docname(void)
+{
+    return mode == M_ADVANCED  ? "AdvancedPage"
+         : mode == M_FEEDBACK ? "FeedbackPage"
+                              : "SettingsPage";
+}
+
+static int settings_content_h(void)
+{
+    return mode == M_ADVANCED ? 1130 : mode == M_FEEDBACK ? 470 : 1010;
+}
+
+static void paint_settings_page(void *dc)
+{
+    const UxDoc *d = ux_find_doc(&ux, settings_docname());
+    if (!d)
+        return;
+    int total = settings_content_h();
+    int max_scroll = total - SET_VIEW_H;
+    if (max_scroll < 0)
+        max_scroll = 0;
+    if (set_scroll > max_scroll)
+        set_scroll = max_scroll;
+    clip_set(0, 0, 320, 487);
+    layout_doc(d, 0, -set_scroll, 320, 528);
+    paint_node(dc, d->root);
+    clip_set(0, 0, 320, 528);
+    /* scrollbar per settings_2_advanced_scolled.png: 2px track at the
+     * right edge, proportional thumb, chevrons at both ends */
+    if (max_scroll > 0 && set_scroll > 0) { /* W10M fades the bar at rest */
+        fill(dc, 316, 4, 318, 483, RGB_(0x1A, 0x1A, 0x1A));
+        int track_h = 479 - 2 * 12; /* leave room for the chevrons */
+        int thumb_h = SET_VIEW_H * track_h / total;
+        if (thumb_h < 24)
+            thumb_h = 24;
+        if (thumb_h > track_h)
+            thumb_h = track_h;
+        int ty = 16 + set_scroll * (track_h - thumb_h) / max_scroll;
+        fill(dc, 316, ty, 318, ty + thumb_h, RGB_(0x76, 0x76, 0x76));
+        ic_draw(ifill, dc, 310, 2, 10, C_MUT, IC_CHEVD);
+        ic_draw(ifill, dc, 310, 477, 10, C_MUT, IC_CHEVU);
+    }
+    /* open flyout over the dropdown box (selected row aligned on the box) */
+    if (dd_open) {
+        const UxDoc *f = ux_find_doc(&ux, dd_open == 1 ? "WebsitePrefFlyout"
+                                                     : "CookiesFlyout");
+        int bi = find_node(dd_open == 1 ? "WebsitePrefDD" : "CookiesDD");
+        if (f && bi >= 0) {
+            int sel = dd_open == 1 ? website_sel : cookies_sel;
+            int fy = nrect[bi].y - 12 - sel * 33;
+            layout_doc(f, 14, fy, 284, 528);
+            paint_node(dc, f->root);
+        }
+    }
+    /* system navigation bar: imported SHELLCHROME chrome, dark theme */
+    if (g_chrome)
+        g_chrome->paint(dc);
+}
 static void paint_hub_rows(void *dc, const Item *items, int count, int icon)
 {
     int y = 96;
@@ -1264,14 +1368,8 @@ static void paint_all(void *dc)
                     fill(dc, cx + 2, 236, cx + 4, 266, C_BLUE);
             }
         }
-    } else if (mode == M_SETTINGS) {
-        if ((d = ux_find_doc(&ux, "SettingsPage"))) {
-            layout_doc(d, 0, 0, 320, 528);
-            paint_node(dc, d->root);
-            /* hairline separators between rows */
-            for (int i = 1; i <= 6; ++i)
-                fill(dc, 12, 48 + i * 48, 308, 49 + i * 48, RGB_(0x1F, 0x1F, 0x1F));
-        }
+    } else if (mode == M_SETTINGS || mode == M_ADVANCED || mode == M_FEEDBACK) {
+        paint_settings_page(dc);
     } else if (mode == M_CLEAR) {
         if ((d = ux_find_doc(&ux, "ClearBrowsingDataPage"))) {
             layout_doc(d, 0, 0, 320, 528);
@@ -1360,6 +1458,21 @@ static void do_command(const char *cmd)
         toast("Pinned to Start");
     else if (xeq(cmd, "settings"))
         mode = M_SETTINGS;
+    else if (xeq(cmd, "advanced")) {
+        mode = M_ADVANCED;
+        set_scroll = 0;
+    } else if (xeq(cmd, "feedback")) {
+        mode = M_FEEDBACK;
+        set_scroll = 0;
+    } else if (xeq(cmd, "dd-websitepref"))
+        dd_open = dd_open == 1 ? 0 : 1;
+    else if (xeq(cmd, "dd-cookies"))
+        dd_open = dd_open == 2 ? 0 : 2;
+    else if (xeq(cmd, "ddsel-0")) { website_sel = 0; dd_open = 0; }
+    else if (xeq(cmd, "ddsel-1")) { website_sel = 1; dd_open = 0; }
+    else if (xeq(cmd, "ddsel-2")) { cookies_sel = 0; dd_open = 0; }
+    else if (xeq(cmd, "ddsel-3")) { cookies_sel = 1; dd_open = 0; }
+    else if (xeq(cmd, "ddsel-4")) { cookies_sel = 2; dd_open = 0; }
     else if (xeq(cmd, "addr-tabs"))
         mode = M_TABS;
     else if (xeq(cmd, "tabs-back") || xeq(cmd, "hub-back") ||
@@ -1448,10 +1561,15 @@ static void do_command(const char *cmd)
         }
         mode = M_BROWSER;
     } else if (xeq(cmd, "link-cloud") || xeq(cmd, "link-bing") ||
-               xeq(cmd, "advanced") || xeq(cmd, "feedback") ||
                xeq(cmd, "helpabout") || xeq(cmd, "priv-link") ||
                xeq(cmd, "fav-folder") || xeq(cmd, "find-type") ||
-               xeq(cmd, "find-prev") || xeq(cmd, "find-next"))
+               xeq(cmd, "find-prev") || xeq(cmd, "find-next") ||
+               xeq(cmd, "link-account") || xeq(cmd, "link-devsync") ||
+               xeq(cmd, "link-learnmore") || xeq(cmd, "link-savedpwd") ||
+               xeq(cmd, "link-changeengine") || xeq(cmd, "link-binghist") ||
+               xeq(cmd, "link-terms") || xeq(cmd, "link-privacy") ||
+               xeq(cmd, "link-report") || xeq(cmd, "link-openfb") ||
+               xeq(cmd, "dd-style") || xeq(cmd, "dd-font"))
         toast("Not available in this POC");
     /* "noop" and unknown commands: silently ignored */
 }
@@ -1548,8 +1666,27 @@ static void process_tap(int x, int y)
             do_command(ux_str(&ux, b, UXA_COMMAND, ""));
         return;
     }
+    if (settings_mode()) {
+        /* settings-family pages: flyout taps, then page buttons */
+        if (dd_open) {
+            const char *fd = dd_open == 1 ? "WebsitePrefFlyout" : "CookiesFlyout";
+            if ((d = ux_find_doc(&ux, fd)) && (b = hit_test(d, x, y))) {
+                do_command(ux_str(&ux, b, UXA_COMMAND, ""));
+                return;
+            }
+            dd_open = 0; /* light dismiss */
+        }
+        const char *sdoc = settings_docname();
+        if ((d = ux_find_doc(&ux, sdoc)) && (b = hit_test(d, x, y))) {
+            if (b->kind != UX_CHECK && b->kind != UX_TOGGLE) {
+                const char *cmd = ux_str(&ux, b, UXA_COMMAND, 0);
+                if (cmd && *cmd)
+                    do_command(cmd);
+            }
+        }
+        return;
+    }
     const char *docn = mode == M_MENU ? "ActionsMenu"
-                    : mode == M_SETTINGS ? "SettingsPage"
                     : mode == M_CLEAR ? "ClearBrowsingDataPage"
                     : mode == M_DLG_READLIST ? "AddToReadingListDialog"
                     : mode == M_DLG_FAV ? "AddToFavoritesDialog"
@@ -1588,6 +1725,25 @@ static void addr_key(unsigned wp)
     }
 }
 
+static void nav_bar_action(int key)
+{
+    /* 4 = Back, 5 = Home, 6 = Search (SHELLCHROME hosted input codes) */
+    if (key == 4) {
+        if (mode == M_ADVANCED || mode == M_FEEDBACK)
+            mode = M_SETTINGS;
+        else if (mode == M_SETTINGS)
+            mode = M_BROWSER;
+        set_scroll = 0;
+        dd_open = 0;
+    } else if (key == 5) {
+        mode = M_BROWSER;
+        set_scroll = 0;
+        dd_open = 0;
+    } else if (key == 6) {
+        toast("Search isn't available in this POC");
+    }
+}
+
 static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
 {
     if (msg == WM_PAINT_) {
@@ -1607,27 +1763,87 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
                 NT_CALL(PostQuitMessage, (0));
             else if (mode == M_CLEAR)
                 mode = M_SETTINGS;
+            else if (mode == M_ADVANCED || mode == M_FEEDBACK)
+                mode = M_SETTINGS;
             else if (mode == M_TABSMENU)
                 mode = M_TABS;
+            else if (mode == M_SETTINGS)
+                mode = M_BROWSER;
             else
                 mode = M_BROWSER;
+            set_scroll = 0;
+            dd_open = 0;
         } else if (mode == M_ADDRESS) {
             addr_key(wp);
         } else if (mode == M_BROWSER && (wp == 's' || wp == 'S')) {
             /* POC shortcut into the settings page (e2e reachability) */
             mode = M_SETTINGS;
+            set_scroll = 0;
+        } else if (mode == M_BROWSER && (wp == 'f' || wp == 'F')) {
+            /* POC shortcut into the feedback page (reference feedback.png) */
+            mode = M_FEEDBACK;
+            set_scroll = 0;
         }
         NT_CALL(InvalidateRect, (hwnd, 0, 0));
         NT_CALL(UpdateWindow, (hwnd));
         return 0;
     }
-    if (msg == WM_DOWN_) {
+    if (msg == WM_DOWN_ || msg == WM_MOVE_ || msg == WM_UP_) {
         int x = (int)(short)(lp & 0xffff);
         int y = (int)(short)(lp >> 16);
-        toast_text[0] = 0; /* any input dismisses the toast */
-        process_tap(x, y);
-        NT_CALL(InvalidateRect, (hwnd, 0, 0));
-        NT_CALL(UpdateWindow, (hwnd));
+        if (msg == WM_DOWN_)
+            toast_text[0] = 0; /* any input dismisses the toast */
+        if (settings_mode()) {
+            /* nav bar owns the y488..528 strip; content drags scroll */
+            int r = g_chrome ? g_chrome->input(msg, wp, lp) : 0;
+            if (r >= 4 && r <= 6) {
+                nav_bar_action(r);
+                NT_CALL(InvalidateRect, (hwnd, 0, 0));
+                NT_CALL(UpdateWindow, (hwnd));
+                return 0;
+            }
+            if (r == 1) {
+                NT_CALL(InvalidateRect, (hwnd, 0, 0));
+                NT_CALL(UpdateWindow, (hwnd));
+                return 0; /* consumed by the bar */
+            }
+            if (msg == WM_DOWN_) {
+                dragging = 1;
+                drag_y = y;
+                process_tap(x, y);
+            } else if (msg == WM_MOVE_ && dragging) {
+                int max_scroll = settings_content_h() - SET_VIEW_H;
+                if (max_scroll < 0)
+                    max_scroll = 0;
+                set_scroll += drag_y - y;
+                if (set_scroll > max_scroll)
+                    set_scroll = max_scroll;
+                if (set_scroll < 0)
+                    set_scroll = 0;
+                drag_y = y;
+                dd_open = 0;
+            } else if (msg == WM_UP_) {
+                if (dragging) { /* final delta at lift-off */
+                    int max_scroll = settings_content_h() - SET_VIEW_H;
+                    if (max_scroll < 0)
+                        max_scroll = 0;
+                    set_scroll += drag_y - y;
+                    if (set_scroll > max_scroll)
+                        set_scroll = max_scroll;
+                    if (set_scroll < 0)
+                        set_scroll = 0;
+                }
+                dragging = 0;
+            }
+            NT_CALL(InvalidateRect, (hwnd, 0, 0));
+            NT_CALL(UpdateWindow, (hwnd));
+            return 0;
+        }
+        if (msg == WM_DOWN_) {
+            process_tap(x, y);
+            NT_CALL(InvalidateRect, (hwnd, 0, 0));
+            NT_CALL(UpdateWindow, (hwnd));
+        }
         return 0;
     }
     return 0;
@@ -1642,7 +1858,7 @@ static int load_markup(void)
     static const W16 path[] = {'\\', 'f', 'l', 's', '0', '\\', 'e', 'd', 'g', 'e',
                                '.', 'u', 'x', 'a', 'm', 'l', 0};
     void *h = NT_CALL(CreateFileW, (path, 0x80000000u, 0, 0, 3 /*OPEN_EXISTING*/, 0, 0));
-    if (!h || h == (void *)(uintptr_t)0xFFFFFFFFu)
+    if (!h || h == (void *)(intptr_t)-1)
         return -1;
     U32 size = NT_CALL(GetFileSize, (h, 0));
     if (size == 0xFFFFFFFFu || size > UX_FILE_MAX) {
@@ -1677,6 +1893,10 @@ __attribute__((dllexport)) int RunApplication(void)
     g_kb = NT_CALL(UIXGetSchemaFactory, ());
     if (!g_kb || g_kb->profile != 0x55495831u)
         g_kb = 0;
+    /* nav-bar chrome from SHELLCHROME.DLL (hosted-app surface) */
+    g_chrome = NT_CALL(UIXChromeFactory, ());
+    if (!g_chrome || g_chrome->profile != 0x55495831u)
+        g_chrome = 0;
     WndClass wc;
     wc.style = 0;
     wc.proc = wndproc;

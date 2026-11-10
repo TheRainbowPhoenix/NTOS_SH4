@@ -1,0 +1,19 @@
+<Page name="CookiesFlyout">
+  <!-- settings_2_advanced_scolled_bottom_dropdown_open.png:
+       3 rows, "Don't block cookies" selected (blue), order as on device -->
+  <Canvas>
+    <Rect x="0" y="0" w="284" h="100" border="true" color="#767676"/>
+    <Rect name="DDRow2" x="1" y="1" w="282" h="32" bg="#1F1F1F"/>
+    <Button x="1" y="1" w="282" h="32" command="ddsel-2">
+      <Text x="10" y="9" text="Block all cookies" color="#FFFFFF" size="13"/>
+    </Button>
+    <Rect name="DDRow3" x="1" y="34" w="282" h="32" bg="#1F1F1F"/>
+    <Button x="1" y="34" w="282" h="32" command="ddsel-3">
+      <Text x="10" y="9" text="Block only third party cookies" color="#FFFFFF" size="13"/>
+    </Button>
+    <Rect name="DDRow4" x="1" y="67" w="282" h="32" bg="#1F1F1F"/>
+    <Button x="1" y="67" w="282" h="32" command="ddsel-4">
+      <Text x="10" y="9" text="Don't block cookies" color="#FFFFFF" size="13"/>
+    </Button>
+  </Canvas>
+</Page>

@@ -33,6 +33,8 @@ enum {
     IC_CHECK,      /* checkmark                      */
     IC_CHEVRON,    /* ">"                            */
     IC_CHEVL,      /* "<"                            */
+    IC_CHEVD,      /* "v" (dropdown)                 */
+    IC_CHEVU,      /* "^"                            */
     IC_SETTINGS,   /* gear                           */
     IC_READLIST,   /* reading list: stacked lines+hook */
     IC_COUNT

@@ -1,36 +1,64 @@
 <Page name="SettingsPage">
   <Canvas>
-    <Rect x="0" y="0" w="320" h="528" bg="#000000"/>
-    <Button name="SettingsBack" x="0" y="0" w="48" h="48" command="set-back">
-      <Glyph x="14" y="14" w="20" h="20" text="back" color="#FFFFFF"/>
-    </Button>
-    <Text x="0" y="14" w="320" text="Settings" color="#FFFFFF" size="18" bold="true" align="1"/>
-    <Button x="0" y="56" w="320" h="48" command="noop">
-      <Text x="12" y="16" text="Sync your favorites and" color="#FFFFFF" size="14"/>
-      <Text x="12" y="30" text="reading list" color="#FFFFFF" size="14"/>
-      <Toggle name="SyncToggle" x="252" y="14" w="44" h="20" checked="true"/>
-    </Button>
-    <Button x="0" y="104" w="320" h="48" command="noop">
-      <Text x="12" y="28" text="Open new tabs with" color="#FFFFFF" size="14"/>
-      <Text x="0" y="28" w="296" text="Top sites" color="#9A9A9A" size="13" align="2"/>
-    </Button>
-    <Button x="0" y="152" w="320" h="48" command="noop">
-      <Text x="12" y="28" text="Search in the address bar with" color="#FFFFFF" size="14"/>
-      <Text x="0" y="28" w="296" text="Bing" color="#9A9A9A" size="13" align="2"/>
-    </Button>
-    <Button x="0" y="200" w="320" h="48" command="advanced">
-      <Text x="12" y="28" text="Advanced settings" color="#FFFFFF" size="14"/>
-      <Glyph x="288" y="28" w="16" h="16" text="chevron" color="#767676"/>
-    </Button>
-    <Button x="0" y="248" w="320" h="48" command="cleardata">
-      <Text x="12" y="28" text="Clear browsing data" color="#FFFFFF" size="14"/>
-      <Glyph x="288" y="28" w="16" h="16" text="chevron" color="#767676"/>
-    </Button>
-    <Button x="0" y="296" w="320" h="48" command="feedback">
-      <Text x="12" y="28" text="Send feedback" color="#FFFFFF" size="14"/>
-    </Button>
-    <Button x="0" y="344" w="320" h="48" command="helpabout">
-      <Text x="12" y="28" text="Help and about" color="#FFFFFF" size="14"/>
-    </Button>
+    <!-- Edge in-app settings per refs/edge-screens/settings/settings_1.png
+         (+ _scrolled/_more below the fold). Content sections are nested
+         Canvases (uXAML keeps 16 children per node, like W10M panels). -->
+    <Rect x="0" y="0" w="320" h="1010" bg="#000000"/>
+    <Text x="12" y="14" text="SETTINGS" color="#FFFFFF" size="14" bold="true"/>
+
+    <Canvas x="0" y="0" w="320" h="460">
+      <Text x="12" y="52" text="Website preference" color="#FFFFFF" size="14"/>
+      <Rect x="12" y="84" w="288" h="30" border="true" color="#767676"/>
+      <Button name="WebsitePrefDD" x="12" y="84" w="288" h="30" command="dd-websitepref">
+        <Text name="WebsitePrefValue" x="14" y="8" text="Mobile version" color="#FFFFFF" size="13"/>
+        <Glyph x="270" y="9" w="12" h="12" text="chevd" color="#767676"/>
+      </Button>
+      <Text x="12" y="148" text="Clear browsing data" color="#FFFFFF" size="16" bold="true"/>
+      <Button name="ChooseClear" x="12" y="182" w="160" h="30" command="cleardata" bg="#313131">
+        <Text x="0" y="8" w="160" text="Choose what to clear" color="#FFFFFF" size="13" align="1"/>
+      </Button>
+      <Text x="12" y="218" text="Account" color="#FFFFFF" size="16" bold="true"/>
+      <Button name="AccountLink" x="12" y="277" w="180" h="20" command="link-account">
+        <Text x="0" y="0" text="Account settings" color="#0078D7" size="14" underline="true"/>
+      </Button>
+      <Text x="12" y="296" text="Sync your favorites and reading list" color="#FFFFFF" size="14"/>
+      <Toggle name="SyncToggle" x="12" y="325" w="44" h="20" checked="true" disabled="true"/>
+      <Text x="68" y="331" text="On" color="#737373" size="13"/>
+      <Text x="12" y="394" text="Some Windows features are only available if you" color="#E74918" size="12"/>
+      <Text x="12" y="412" text="are using a Microsoft account or work account." color="#E74918" size="12"/>
+      <Button name="DeviceSyncLink" x="12" y="429" w="180" h="20" command="link-devsync">
+        <Text x="0" y="0" text="Device sync settings" color="#0078D7" size="14" underline="true"/>
+      </Button>
+    </Canvas>
+
+    <Canvas x="0" y="460" w="320" h="500">
+      <Text x="12" y="32" text="Reading" color="#FFFFFF" size="16" bold="true"/>
+      <Text x="12" y="67" text="Reading view style" color="#FFFFFF" size="14"/>
+      <Rect x="12" y="92" w="288" h="30" border="true" color="#767676"/>
+      <Button name="ReadingStyleDD" x="12" y="92" w="288" h="30" command="dd-style">
+        <Text name="ReadingStyleValue" x="14" y="8" text="Default" color="#FFFFFF" size="13"/>
+        <Glyph x="270" y="9" w="12" h="12" text="chevd" color="#767676"/>
+      </Button>
+      <Text x="12" y="140" text="Reading view font size" color="#FFFFFF" size="14"/>
+      <Rect x="12" y="167" w="288" h="30" border="true" color="#767676"/>
+      <Button name="FontSizeDD" x="12" y="167" w="288" h="30" command="dd-font">
+        <Text name="FontSizeValue" x="14" y="8" text="Medium" color="#FFFFFF" size="13"/>
+        <Glyph x="270" y="9" w="12" h="12" text="chevd" color="#767676"/>
+      </Button>
+      <Text x="12" y="237" text="Advanced settings" color="#FFFFFF" size="16" bold="true"/>
+      <Button name="ViewAdvanced" x="12" y="267" w="168" h="30" command="advanced" bg="#313131">
+        <Text x="0" y="8" w="168" text="View advanced settings" color="#FFFFFF" size="13" align="1"/>
+      </Button>
+      <Text x="12" y="334" text="About this app" color="#FFFFFF" size="16" bold="true"/>
+      <Text x="12" y="366" text="Microsoft Edge 38.14393.0.0" color="#FFFFFF" size="14"/>
+      <Text x="12" y="389" text="Microsoft EdgeHTML 14.14393" color="#FFFFFF" size="14"/>
+      <Text x="12" y="412" text="(c) 2016 Microsoft" color="#FFFFFF" size="14"/>
+      <Button name="TermsLink" x="12" y="446" w="140" h="20" command="link-terms">
+        <Text x="0" y="0" text="Terms of use" color="#0078D7" size="14" underline="true"/>
+      </Button>
+      <Button name="PrivacyLink" x="12" y="471" w="160" h="20" command="link-privacy">
+        <Text x="0" y="0" text="Privacy statement" color="#0078D7" size="14" underline="true"/>
+      </Button>
+    </Canvas>
   </Canvas>
 </Page>

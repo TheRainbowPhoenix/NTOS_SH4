@@ -29,9 +29,34 @@ tap 160 260
 tap 170 110
 key 0x73
 shot settings
-tap 160 272
+tap 160 99
+shot settings-dd
+tap 160 120
+tap 160 99
+shot settings-dd2
+drag 200 450 200 98
+shot settings-scrolled
+drag 200 450 200 253
+shot settings-scrolled-more
+tap 96 193
+shot advanced
+drag 200 450 200 68
+shot advanced-scrolled
+drag 200 450 200 157
+shot advanced-bottom
+drag 200 250 200 276
+tap 160 120
+shot advanced-cookies-dd
+tap 160 120
+shot advanced-cookies-dd2
+key 0x1b
+key 0x1b
+key 0x66
+shot feedback
+key 0x1b
+tap 92 197
 shot clear
-tap 30 218
+tap 30 88
 shot clear-toggled
 key 0x1b
 key 0x1b

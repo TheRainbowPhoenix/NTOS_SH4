@@ -112,6 +112,15 @@ REFERENCE = {
     'hub-downloads': 'edge4.png',
     'inpriv': 'inpriv.png',
     'findbar': 'find next.png',
+    'settings': 'settings/settings_1.png',
+    'settings-dd': 'settings/settings_1_websitepref_dropdown.png',
+    'settings-scrolled': 'settings/settings_1_scrolled.png',
+    'settings-scrolled-more': 'settings/settings_1_scrolled_more.png',
+    'advanced': 'settings/settings_2_advanced.png',
+    'advanced-scrolled': 'settings/settings_2_advanced_scolled.png',
+    'advanced-bottom': 'settings/settings_2_advanced_scolled_bottom.png',
+    'advanced-cookies-dd': 'settings/settings_2_advanced_scolled_bottom_dropdown_open.png',
+    'feedback': 'settings/feedback.png',
 }
 
 # structural anchors: (x, y) must be near the given RGB
@@ -145,6 +154,24 @@ ANCHORS = {
     ],
     'edge-inpriv': [
         (110, 505, (0x00, 0x78, 0xD7)),  # blue InPrivate glyph in the address bar
+    ],
+    'edge-settings': [
+        (160, 505, (0x00, 0x00, 0x00)),  # nav bar strip (black)
+    ],
+    'edge-settings-dd': [
+        (60, 90, (0x00, 0x78, 0xD7)),    # selected flyout row
+    ],
+    'edge-advanced': [
+        (160, 505, (0x00, 0x00, 0x00)),
+    ],
+    'edge-advanced-bottom': [
+        (160, 505, (0x00, 0x00, 0x00)),
+    ],
+    'edge-advanced-cookies-dd': [
+        (60, 110, (0x00, 0x78, 0xD7)),   # selected "Don't block" row
+    ],
+    'edge-feedback': [
+        (160, 505, (0x00, 0x00, 0x00)),
     ],
 }
 
@@ -210,6 +237,57 @@ PRESENCE = {
         (16, 38, 60, 56, 8, 120, 2),       # "Article" link + underline
         (64, 38, 92, 56, 8, 120, 2),       # "Talk" link + underline
         (104, 496, 120, 516, 8, 60, 0),     # lock glyph in the address bar
+    ],
+    # settings family: state discriminators + shared nav-bar glyphs.
+    # The block metric alone cannot tell the settings pages apart, so each
+    # screen carries probes for content ONLY that page can show.
+    'settings': [
+        (12, 12, 100, 32, 15, 200, 0),      # SETTINGS title (white)
+        (53, 496, 77, 518, 8, 200, 0),      # nav bar back arrow
+        (149, 497, 170, 518, 30, 200, 0),   # nav bar home squares
+        (244, 496, 268, 518, 8, 200, 0),    # nav bar search
+        (10, 320, 60, 350, 25, 60, 0),      # disabled Sync pill (#4A4A4A)
+        (12, 390, 310, 445, 30, 150, 0),    # orange account warning
+    ],
+    'settings-dd': [
+        (14, 70, 300, 145, 300, 180, 2),    # selected blue flyout row
+        (24, 105, 200, 140, 10, 200, 0),    # "Desktop version" row text
+    ],
+    'settings-scrolled': [
+        (12, 132, 170, 172, 10, 200, 0),    # Reading section header
+        (12, 36, 310, 76, 30, 150, 0),      # orange warning (top of fold)
+        (53, 496, 77, 518, 8, 200, 0),      # nav bar back
+    ],
+    'settings-scrolled-more': [
+        (12, 350, 170, 400, 8, 180, 2),     # blue Terms/Privacy links
+        (12, 300, 210, 335, 8, 200, 0),     # (c) 2016 Microsoft row
+        (53, 496, 77, 518, 8, 200, 0),      # nav bar back
+    ],
+    'advanced': [
+        (12, 110, 300, 142, 20, 200, 0),    # "Ask me what to do with each download"
+        (12, 455, 92, 485, 4, 200, 0),      # DNT "Off" label
+        (10, 140, 60, 170, 40, 180, 2),     # blue ON toggle pill
+        (12, 455, 60, 485, 20, 90, 0),      # OFF toggle outline (dim)
+    ],
+    'advanced-scrolled': [
+        (12, 148, 90, 182, 8, 120, 0),      # "Bing" value (gray #9A9A9A)
+        (12, 255, 300, 290, 15, 200, 0),    # Cookies dropdown box row
+        (10, 260, 60, 290, 30, 180, 2),     # a blue ON pill below the fold
+    ],
+    'advanced-bottom': [
+        (12, 350, 300, 385, 15, 200, 0),    # SmartScreen label
+        (10, 410, 60, 435, 30, 180, 2),     # SmartScreen ON pill
+        (53, 496, 77, 518, 8, 200, 0),      # nav bar back
+    ],
+    'advanced-cookies-dd': [
+        (14, 0, 300, 145, 300, 180, 2),     # selected blue flyout row
+        (24, 100, 290, 135, 10, 200, 0),    # "Don't block cookies" row text
+    ],
+    'feedback': [
+        (12, 250, 320, 292, 15, 200, 0),    # section header
+        (12, 176, 184, 212, 15, 200, 0),    # "Report site issue" button label
+        (12, 450, 310, 470, 8, 200, 0),     # bottom note
+        (53, 496, 77, 518, 8, 200, 0),      # nav bar back
     ],
 }
 

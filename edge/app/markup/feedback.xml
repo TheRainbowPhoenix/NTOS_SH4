@@ -1,0 +1,26 @@
+<Page name="FeedbackPage">
+  <Canvas>
+    <!-- Feedback & reporting per settings/feedback.png: two sections with
+         gray body copy, #313131 action buttons, bottom note. -->
+    <Rect x="0" y="0" w="320" h="480" bg="#000000"/>
+    <Text x="12" y="14" text="Feedback &amp; reporting" color="#FFFFFF" size="14" bold="true"/>
+    <Text x="12" y="45" text="Tell us what's going on" color="#9A9A9A" size="14"/>
+
+    <Text x="12" y="98" text="Website problems" color="#FFFFFF" size="16" bold="true"/>
+    <Text x="12" y="125" text="The site or parts of the site are broken," color="#9A9A9A" size="12"/>
+    <Text x="12" y="143" text="don't look right, or are slow to load." color="#9A9A9A" size="12"/>
+    <Button name="ReportSite" x="12" y="176" w="170" h="30" command="link-report" bg="#313131">
+      <Text x="0" y="8" w="170" text="Report site issue" color="#FFFFFF" size="13" align="1"/>
+    </Button>
+
+    <Text x="12" y="250" text="Microsoft Edge problems or suggestions" color="#FFFFFF" size="16" bold="true"/>
+    <Text x="12" y="278" text="Problems with Microsoft Edge browser" color="#9A9A9A" size="12"/>
+    <Text x="12" y="296" text="features or suggestions to make them" color="#9A9A9A" size="12"/>
+    <Text x="12" y="314" text="better." color="#9A9A9A" size="12"/>
+    <Button name="OpenFeedback" x="12" y="355" w="170" h="30" command="link-openfb" bg="#313131">
+      <Text x="0" y="8" w="170" text="Open Feedback Hub" color="#FFFFFF" size="13" align="1"/>
+    </Button>
+
+    <Text x="12" y="456" text="We'll send the URL of this site to Microsoft." color="#FFFFFF" size="12"/>
+  </Canvas>
+</Page>

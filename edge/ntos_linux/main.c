@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 /* main.c — NTOS_SH4_linux runner.
  *
  * Usage:
@@ -32,6 +33,27 @@ static size_t mod_count;
 
 static const char *g_shot_prefix = "lcd";
 
+#include <signal.h>
+#include <ucontext.h>
+static void crash_handler(int sig, siginfo_t *si, void *uc)
+{
+    ucontext_t *u = uc;
+    fprintf(stderr, "SIGSEGV addr=%p RIP=%#llx RSP=%#llx RCX=%#llx RAX=%#llx\n",
+            si->si_addr, (unsigned long long)u->uc_mcontext.gregs[REG_RIP],
+            (unsigned long long)u->uc_mcontext.gregs[REG_RSP],
+            (unsigned long long)u->uc_mcontext.gregs[REG_RCX],
+            (unsigned long long)u->uc_mcontext.gregs[REG_RAX]);
+    _exit(139);
+}
+static void install_crash_handler(void)
+{
+    struct sigaction sa;
+    sa.sa_sigaction = crash_handler;
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, 0);
+}
+
 static void *read_file(const char *path, size_t *size)
 {
     FILE *f = fopen(path, "rb");
@@ -65,7 +87,7 @@ static int script_step(void)
             ++line;
         if (*line == '#' || !*line)
             continue;
-        int x = 0, y = 0;
+        int x = 0, y = 0, x2 = 0, y2 = 0;
         unsigned vk = 0;
         char arg[256] = "";
         if (sscanf(line, "tap %d %d", &x, &y) == 2) {
@@ -73,6 +95,19 @@ static int script_step(void)
             host_post(WM_DOWN_, 1, lp);
             host_post(WM_UP_, 0, lp);
             return 1; /* messages queued; loop will process them */
+        }
+        if (sscanf(line, "drag %d %d %d %d", &x, &y, &x2, &y2) == 4) {
+            /* touch drag: DOWN, interpolated MOVEs, UP (scrolls lists) */
+            U32 lp = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
+            host_post(WM_DOWN_, 1, lp);
+            for (int i = 1; i < 8; ++i) {
+                int mx = x + (x2 - x) * i / 8, my = y + (y2 - y) * i / 8;
+                U32 m = (U32)(((my & 0xffff) << 16) | (mx & 0xffff));
+                host_post(WM_MOVE_, 1, m);
+            }
+            U32 le = (U32)(((y2 & 0xffff) << 16) | (x2 & 0xffff));
+            host_post(WM_UP_, 0, le);
+            return 1;
         }
         if (sscanf(line, "key %i", (int *)&vk) == 1) {
             host_post(WM_KEY_, vk, 0);
@@ -142,6 +177,7 @@ int main(int argc, char **argv)
         return 2;
     }
     g_shot_prefix = shot_prefix;
+    install_crash_handler();
 
     host_init(argc, argv, fs_root);
 

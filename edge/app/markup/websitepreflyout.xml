@@ -1,0 +1,15 @@
+<Page name="WebsitePrefFlyout">
+  <!-- open combobox list (settings_1_websitepref_dropdown.png):
+       33px rows, selected row in accent blue, 1px border -->
+  <Canvas>
+    <Rect x="0" y="0" w="284" h="67" border="true" color="#767676"/>
+    <Rect name="DDRow0" x="1" y="1" w="282" h="32" bg="#1F1F1F"/>
+    <Button x="1" y="1" w="282" h="32" command="ddsel-0">
+      <Text x="10" y="9" text="Mobile version" color="#FFFFFF" size="13"/>
+    </Button>
+    <Rect name="DDRow1" x="1" y="34" w="282" h="32" bg="#1F1F1F"/>
+    <Button x="1" y="34" w="282" h="32" command="ddsel-1">
+      <Text x="10" y="9" text="Desktop version" color="#FFFFFF" size="13"/>
+    </Button>
+  </Canvas>
+</Page>

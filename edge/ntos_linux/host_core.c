@@ -369,7 +369,7 @@ static MSABI void *create_file_w(const W16 *name, U32 access, U32 share, void *s
     }
     if (!hf->f) {
         free(hf);
-        return (void *)(uintptr_t)0xFFFFFFFF; /* INVALID_HANDLE_VALUE */
+        return (void *)(intptr_t)-1; /* INVALID_HANDLE_VALUE (sign-extended) */
     }
     return hf;
 }

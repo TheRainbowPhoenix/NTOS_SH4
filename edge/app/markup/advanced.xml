@@ -1,0 +1,67 @@
+<Page name="AdvancedPage">
+  <Canvas>
+    <!-- Advanced settings per settings_2_advanced.png (+ _scolled/_bottom
+         below the fold). Sections nested as Canvases (16-child uXAML limit). -->
+    <Rect x="0" y="0" w="320" h="1130" bg="#000000"/>
+    <Text x="12" y="14" text="Advanced settings" color="#FFFFFF" size="14" bold="true"/>
+
+    <Canvas x="0" y="0" w="320" h="500">
+      <Text x="12" y="70" text="Downloads" color="#FFFFFF" size="16" bold="true"/>
+      <Text x="12" y="115" text="Ask me what to do with each download" color="#FFFFFF" size="14"/>
+      <Toggle name="AskDownloads" x="12" y="145" w="44" h="20" checked="true"/>
+      <Text x="68" y="151" text="On" color="#FFFFFF" size="13"/>
+      <Text x="12" y="210" text="Privacy and services" color="#FFFFFF" size="16" bold="true"/>
+      <Text x="12" y="240" text="Some features might save data on your device or" color="#FFFFFF" size="12"/>
+      <Text x="12" y="258" text="send it to Microsoft to improve your browsing" color="#FFFFFF" size="12"/>
+      <Text x="12" y="276" text="experience." color="#FFFFFF" size="12"/>
+      <Button name="LearnMoreLink" x="12" y="288" w="120" h="20" command="link-learnmore">
+        <Text x="0" y="0" text="Learn more" color="#0078D7" size="14" underline="true"/>
+      </Button>
+      <Text x="12" y="330" text="Offer to save passwords" color="#FFFFFF" size="14"/>
+      <Toggle name="SavePasswords" x="12" y="360" w="44" h="20" checked="true"/>
+      <Text x="68" y="366" text="On" color="#FFFFFF" size="13"/>
+      <Button name="SavedPwdLink" x="12" y="402" w="230" h="20" command="link-savedpwd">
+        <Text x="0" y="0" text="Manage my saved passwords" color="#0078D7" size="14" underline="true"/>
+      </Button>
+      <Text x="12" y="430" text="Send Do Not Track requests" color="#FFFFFF" size="14"/>
+      <Toggle name="DNTToggle" x="12" y="457" w="44" h="20"/>
+      <Text x="68" y="463" text="Off" color="#FFFFFF" size="13"/>
+    </Canvas>
+
+    <Canvas x="0" y="500" w="320" h="330">
+      <Text x="12" y="10" text="Search in the address bar with" color="#FFFFFF" size="14"/>
+      <Text x="12" y="40" text="Bing" color="#9A9A9A" size="13"/>
+      <Button name="ChangeEngine" x="12" y="65" w="170" h="30" command="link-changeengine" bg="#313131">
+        <Text x="0" y="8" w="170" text="Change search engine" color="#FFFFFF" size="13" align="1"/>
+      </Button>
+      <Text x="12" y="115" text="Show search and site suggestions as I type" color="#FFFFFF" size="14"/>
+      <Toggle name="Suggestions" x="12" y="145" w="44" h="20" checked="true"/>
+      <Text x="68" y="151" text="On" color="#FFFFFF" size="13"/>
+      <Button name="BingHistLink" x="12" y="188" w="200" h="20" command="link-binghist">
+        <Text x="0" y="0" text="Clear Bing search history" color="#0078D7" size="14" underline="true"/>
+      </Button>
+      <Text x="12" y="230" text="Cookies" color="#FFFFFF" size="14"/>
+      <Rect x="12" y="255" w="288" h="30" border="true" color="#767676"/>
+      <Button name="CookiesDD" x="12" y="255" w="288" h="30" command="dd-cookies">
+        <Text name="CookiesValue" x="14" y="8" text="Don't block cookies" color="#FFFFFF" size="13"/>
+        <Glyph x="270" y="9" w="12" h="12" text="chevd" color="#767676"/>
+      </Button>
+    </Canvas>
+
+    <Canvas x="0" y="800" w="320" h="330">
+      <Text x="12" y="10" text="Let sites save protected media licenses" color="#FFFFFF" size="14"/>
+      <Text x="12" y="32" text="on my device" color="#FFFFFF" size="14"/>
+      <Toggle name="MediaLicenses" x="12" y="62" w="44" h="20" checked="true"/>
+      <Text x="68" y="68" text="On" color="#FFFFFF" size="13"/>
+      <Text x="12" y="115" text="Use page prediction to speed up browsing," color="#FFFFFF" size="12"/>
+      <Text x="12" y="133" text="improve reading, and make my overall" color="#FFFFFF" size="12"/>
+      <Text x="12" y="151" text="experience better" color="#FFFFFF" size="12"/>
+      <Toggle name="PagePrediction" x="12" y="175" w="44" h="20" checked="true"/>
+      <Text x="68" y="181" text="On" color="#FFFFFF" size="13"/>
+      <Text x="12" y="230" text="Help protect me from malicious sites and" color="#FFFFFF" size="12"/>
+      <Text x="12" y="248" text="downloads with SmartScreen Filter" color="#FFFFFF" size="12"/>
+      <Toggle name="SmartScreen" x="12" y="290" w="44" h="20" checked="true"/>
+      <Text x="68" y="296" text="On" color="#FFFFFF" size="13"/>
+    </Canvas>
+  </Canvas>
+</Page>

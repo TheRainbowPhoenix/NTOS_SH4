@@ -80,6 +80,8 @@ enum {
     UXA_ALIGN,      /* 0 left 1 center 2 right (text) */
     UXA_BORDER,     /* Rect: 1px outline in Color instead of Bg fill */
     UXA_PLACEHOLDER,/* TextBox hint text (shown when empty) */
+    UXA_UNDERLINE,  /* Text: 1px rule under the text in its colour */
+    UXA_DISABLED,   /* Toggle: the disabled look (50% colours) */
     UXA_COUNT
 };
 

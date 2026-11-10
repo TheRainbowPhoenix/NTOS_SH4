@@ -36,11 +36,11 @@ ATTRS = {
     'x': 0, 'y': 1, 'w': 2, 'h': 3, 'text': 4, 'color': 5, 'bg': 6, 'size': 7,
     'bold': 8, 'radius': 9, 'name': 10, 'command': 11, 'src': 12, 'value': 13,
     'max': 14, 'checked': 15, 'visible': 16, 'align': 17, 'border': 18,
-    'placeholder': 19,
+    'placeholder': 19, 'underline': 20, 'disabled': 21,
 }
 INT_ATTRS = {0, 1, 2, 3, 7, 9, 13, 14, 17}
 CLR_ATTRS = {5, 6}
-BOOL_ATTRS = {8, 15, 16, 18}
+BOOL_ATTRS = {8, 15, 16, 18, 20, 21}
 STR_ATTRS = {4, 10, 11, 12, 19}
 
 TYPE_STR, TYPE_INT, TYPE_CLR, TYPE_BOOL = 0, 1, 2, 3
