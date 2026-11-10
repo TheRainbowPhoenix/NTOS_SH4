@@ -41,14 +41,17 @@ fingerkb.dll: $(PHONE)/fingerkb.c $(PHONE)/phone.h $(PHONE)/system_icons.h
 
 clean:
 	rm -f settings.dll fingerkb.dll settings.uxaml settings-*.png
+	rm -rf tests/build tests/fs
 
 # e2e: run under NTOS_SH4_linux with the shared keyboard + navbar modules
 test: all
 	rm -rf tests/fs/fls0 && mkdir -p tests/fs/fls0
 	cp settings.uxaml tests/fs/fls0/settings.uxaml
 	$(MAKE) -C $(EDGEAPP) ZIG=$(ZIG) fingerkb.dll shellchrome.dll
-	cp $(EDGEAPP)/fingerkb.dll $(EDGEAPP)/shellchrome.dll . 2>/dev/null || true
-	../../edge/ntos_linux/ntos_linux fingerkb.dll shellchrome.dll settings.dll \
+	mkdir -p tests/build
+	cp $(EDGEAPP)/fingerkb.dll $(EDGEAPP)/shellchrome.dll tests/build/
+	cp fingerkb.dll settings.dll tests/build/
+	../../edge/ntos_linux/ntos_linux tests/build/fingerkb.dll tests/build/shellchrome.dll tests/build/settings.dll \
 	  --script tests/settings.script --shot settings --fs tests/fs
 	python3 tests/check_settings_shots.py settings-*.png
 
