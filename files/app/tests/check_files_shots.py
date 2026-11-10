@@ -2,11 +2,10 @@
 """check_files_shots.py — pixel sanity checks for the File Explorer e2e.
 
 Verifies each screenshot is the right size, non-blank, uses the expected
-palette for the W10M light theme (white page, #E6E6E6 chrome, black ink,
-#0078D7 accents where expected) and — per screen — the specific colour
-anchors of the layout. Same philosophy as edge's check_edge_shots.py:
-block-averaging catches layout breakage; anchors catch colour/palette
-regressions.
+palette for the W10M light theme and — per screen — the specific anchors
+of the v2 layout: icon-only app bar (the label strip under the glyphs must
+stay chrome-colour), labels-expanded "..." state, sort flyout, overflow
+menu, destination picker and the file:// hand-off shot (Edge chrome).
 """
 import struct, sys, zlib, os
 
@@ -38,15 +37,37 @@ INK = (0, 0, 0)
 ACCENT = (0x00, 0x78, 0xD7)
 SEL = (0xCC, 0xE8, 0xFF)
 SCRIM = (0x7F, 0x7F, 0x7F)
+AMBER = (0xF5, 0xC2, 0x42)      # VEC folder front panel (reference tone)
+EDGE_BAR = (0x1F, 0x1F, 0x1F)   # edge address bar
+
+# the label strip under the app-bar glyphs (y518..523) must be pure chrome
+# when the bar is collapsed: icons only, labels hidden by default
+def labels_hidden(px):
+    for x in (32, 96, 160, 224, 288):
+        for y in (518, 521, 523):
+            if not near(pix(px, x, y), CHROME):
+                return False
+    return True
+
+
+def labels_visible(px):
+    # "New folder" spans ~x64..120 at y500..511; sample the label band
+    hits = 0
+    for x in range(66, 124, 4):
+        for y in range(500, 512, 3):
+            c = pix(px, x, y)
+            if near(c, INK, 60):
+                hits += 1
+    return hits >= 2
+
 
 CHECKS = {
-    # boot (root): navbar + page + appbar chrome, amber folder icon
     'boot': [
         ('navbar', 160, 24, CHROME),
         ('page', 160, 300, WHITE),
         ('appbar', 40, 504, CHROME),
+        ('folder-amber', 24, 116, AMBER),   # VEC folder front panel, row 0
     ],
-    # navpane: pane surface + scrim + title text row
     'navpane': [
         ('pane', 120, 300, PANE),
         ('scrim', 300, 300, SCRIM),
@@ -57,65 +78,84 @@ CHECKS = {
         ('page', 160, 300, WHITE),
         ('appbar', 40, 504, CHROME),
     ],
-    'root': [('page', 160, 200, WHITE), ('appbar', 200, 504, CHROME)],
-    # select mode: selection app bar + a checkbox border pixel
-    'select-mode': [
+    'sortflyout': [
+        ('flyout-panel', 200, 100, WHITE),
+        ('divider', 100, 119, (0xE0, 0xE0, 0xE0)),
+        ('page-below', 260, 300, WHITE),
+    ],
+    'sortdesc': [
+        ('page', 160, 300, WHITE),
         ('appbar', 40, 504, CHROME),
-        ('content', 160, 300, WHITE),
     ],
-    'select-one': [
-        ('selrow', 200, 110, SEL),
+    'sortasc': [
+        ('page', 160, 300, WHITE),
         ('appbar', 40, 504, CHROME),
     ],
-    'commands': [
-        ('scrim', 160, 100, SCRIM),
-        ('sheet', 250, 190, WHITE),
-        ('row-sep', 4, 255, (0xE0, 0xE0, 0xE0)),
+    'overflow-browse': [
+        ('scrim', 160, 200, SCRIM),
+        ('panel', 160, 340, WHITE),
+        ('expanded-bar', 10, 465, CHROME),
     ],
-    'properties': [
+    'props-root': [
         ('navbar', 160, 24, CHROME),
         ('page', 160, 300, WHITE),
     ],
-    # newfolder sheet above the SIP + keyboard backdrop
-    'newfolder-sheet': [
+    'selectmode': [
+        ('appbar', 40, 504, CHROME),
+        ('content', 160, 300, WHITE),
+    ],
+    'overflow-select': [
+        ('scrim', 160, 200, SCRIM),
+        ('panel', 160, 340, WHITE),
+        ('expanded-bar', 10, 465, CHROME),
+    ],
+    'rename-sheet': [
         ('sheet', 160, 150, WHITE),
         ('kb-backdrop', 160, 300, PANE),
         ('scrim', 160, 100, SCRIM),
     ],
-    'newfolder-typed': [
+    'rename-typed': [
         ('sheet', 160, 150, WHITE),
         ('kb-key', 16, 340, WHITE),
     ],
-    'newfolder-created': [
+    'rename-done': [
         ('page', 160, 300, WHITE),
         ('appbar', 40, 504, CHROME),
     ],
-    'search': [
-        ('navbar', 160, 4, CHROME),
-        ('field', 160, 24, WHITE),
-        ('kb-backdrop', 160, 300, PANE),
-    ],
-    'search-typed': [
-        ('field', 160, 24, WHITE),
-        ('kb-key', 16, 340, WHITE),
-        ('content', 40, 60, WHITE),
-    ],
-    'search-jump': [('selrow', 200, 168, SEL), ('page', 160, 300, WHITE)],
-    'pictures': [('page', 160, 300, WHITE), ('navbar', 160, 24, CHROME)],
-    'select-photo': [('selrow', 200, 110, SEL), ('appbar', 40, 504, CHROME)],
-    'delete-confirm': [
-        ('scrim', 160, 200, SCRIM),
-        ('sheet', 200, 385, WHITE),
-        ('ok-btn', 30, 500, WHITE),
-    ],
-    'deleted': [('page', 160, 300, WHITE)],
     'dest-picker': [
         ('content', 160, 300, WHITE),
-        ('appbar', 200, 504, CHROME),
+        ('appbar', 40, 504, CHROME),
     ],
     'dest-documents': [('content', 160, 200, WHITE), ('appbar', 40, 504, CHROME)],
+    'dest-copy': [('content', 160, 300, WHITE), ('appbar', 40, 504, CHROME)],
+    'move-done': [('page', 160, 300, WHITE), ('appbar', 40, 504, CHROME)],
     'copy-done': [('page', 160, 300, WHITE), ('appbar', 40, 504, CHROME)],
+    'scrolled': [
+        ('page', 160, 300, WHITE),
+        ('scrollbar', 318, 220, (0xC8, 0xC8, 0xC8)),
+    ],
+    'scrolled-top': [
+        ('page', 160, 300, WHITE),
+        ('appbar', 40, 504, CHROME),
+    ],
+    # file:// activation: Edge takes the foreground (dark chrome, white
+    # md content) — the files light theme is gone
+    'edge-open': [
+        ('edge-bar', 160, 490, EDGE_BAR),
+        ('edge-content', 160, 240, WHITE),
+    ],
+    'final': [
+        ('edge-bar', 160, 490, EDGE_BAR),
+    ],
 }
+
+# screens where the app bar must be icon-only (label strip pure chrome)
+ICON_ONLY = {'boot', 'documents', 'sortflyout', 'sortdesc',
+             'sortasc', 'selectmode', 'dest-picker',
+             'dest-documents', 'dest-copy', 'rename-done', 'move-done',
+             'copy-done', 'scrolled', 'scrolled-top'}
+# screens where the labels are expanded (the "..." state)
+LABELS_OUT = {'overflow-browse', 'overflow-select'}
 
 
 def main():
@@ -132,7 +172,6 @@ def main():
             print(f'{path}: {w}x{h} WRONG SIZE')
             fails += 1
             continue
-        # non-blank: colour variance
         colors = set()
         for y in range(0, 528, 8):
             for x in range(0, 320, 8):
@@ -147,6 +186,12 @@ def main():
                 print(f'{path}: {what} anchor @{x},{y} '
                       f'{pix(px, x, y)} != {want}')
                 ok = False
+        if name in ICON_ONLY and not labels_hidden(px):
+            print(f'{path}: app-bar labels visible while collapsed')
+            ok = False
+        if name in LABELS_OUT and not labels_visible(px):
+            print(f'{path}: expanded app-bar labels missing')
+            ok = False
         if ok:
             print(f'{path}: {len(colors)} sampled colors [OK]')
         else:

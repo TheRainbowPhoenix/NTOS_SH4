@@ -139,6 +139,16 @@ static void g_chevron(PC *p)
     L(p, 32, 14, 70, 50, 10);
     L(p, 70, 50, 32, 86, 10);
 }
+static void g_chevdown(PC *p)
+{
+    L(p, 30, 22, 50, 44, 10);
+    L(p, 50, 44, 70, 22, 10);
+}
+static void g_chevup(PC *p)
+{
+    L(p, 30, 44, 50, 22, 10);
+    L(p, 50, 22, 70, 44, 10);
+}
 static void g_folder(PC *p)
 {
     B(p, 4, 20, 40, 14);   /* tab */
@@ -330,6 +340,8 @@ static const struct {
     {"hamburger", FI_HAMBURGER, g_hamburger},
     {"up", FI_UP, g_up},
     {"chevron", FI_CHEVRON, g_chevron},
+    {"chevdown", FI_CHEVDOWN, g_chevdown},
+    {"chevup", FI_CHEVUP, g_chevup},
     {"folder", FI_FOLDER, g_folder},
     {"newfolder", FI_FOLDER_ADD, g_folder_add},
     {"file", FI_FILE, g_file},

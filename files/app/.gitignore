@@ -5,3 +5,5 @@ files.uxaml
 files-*.png
 *.lib
 tests/fs/fls0/
+fingerkb.dll
+e2e.log

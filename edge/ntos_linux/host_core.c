@@ -72,6 +72,57 @@ void host_set_idle_hook(int (*hook)(void))
     idle_hook = hook;
 }
 
+/* ---------------- foreground app launch (CreateProcessW model) ----------------
+ * The device hands the foreground to the launched app and the caller quits;
+ * the host mirrors this by running the target module's RunApplication
+ * synchronously (the caller is expected to PostQuitMessage right after).
+ * main.c registers the resolver so host_core stays PE-loader-agnostic. */
+static int (*launch_hook)(const char *image, const char *cmdline);
+
+void host_set_launch_hook(int (*hook)(const char *, const char *))
+{
+    launch_hook = hook;
+}
+
+static W16 launch_cmdline[512];
+
+static MSABI int create_process_w(const W16 *image, const W16 *cmdline, void *psa,
+                                  void *pta, int inherit, U32 flags, void *env,
+                                  const W16 *cwd, void *si, void *pi)
+{
+    (void)psa; (void)pta; (void)inherit; (void)flags; (void)env;
+    (void)cwd; (void)si; (void)pi;
+    char img[256] = "", cmd[512] = "";
+    size_t j = 0;
+    for (size_t i = 0; image && image[i] && j + 1 < sizeof(img); ++i)
+        if (image[i] < 0x80)
+            img[j++] = (char)image[i];
+    img[j] = 0;
+    j = 0;
+    for (size_t i = 0; cmdline && cmdline[i] && j + 1 < sizeof(cmd); ++i)
+        if (cmdline[i] < 0x80)
+            cmd[j++] = (char)cmdline[i];
+    cmd[j] = 0;
+    if (!launch_hook)
+        return 0;
+    return launch_hook(img, cmd);
+}
+
+static MSABI const W16 *get_command_line_w(void)
+{
+    return launch_cmdline;
+}
+
+void host_set_launch_cmdline(const char *cmdline)
+{
+    size_t i = 0;
+    while (cmdline && cmdline[i] && i + 1 < sizeof(launch_cmdline) / sizeof(launch_cmdline[0])) {
+        launch_cmdline[i] = (W16)(unsigned char)cmdline[i];
+        ++i;
+    }
+    launch_cmdline[i] = 0;
+}
+
 void host_sip_set(int visible)
 {
     sip_visible = !!visible;
@@ -686,6 +737,8 @@ const BuiltinExport host_builtins[] = {
     B2(GetDiskFreeSpaceExW, get_disk_free_space_ex_w),
     B(coredll_puts),
     B(coredll_launch),
+    B2(CreateProcessW, create_process_w),
+    B2(GetCommandLineW, get_command_line_w),
     B2(Sleep, sleep_ms),
     B2(GetTickCount, get_tick_count),
     /* freestanding payloads pull these through msvcrt */

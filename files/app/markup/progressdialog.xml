@@ -1,9 +1,0 @@
-<Page name="ProgressDialog">
-  <Canvas>
-    <Rect name="PgScrim" x="0" y="0" w="320" h="528" bg="#7F7F7F"/>
-    <!-- small centered card (ProgressBarDialog) -->
-    <Rect x="60" y="228" w="200" h="72" bg="#FFFFFF"/>
-    <Text name="ProgressText" x="160" y="244" text="Copying files..." color="#000000" size="14" align="1"/>
-    <Rect name="ProgressDots" x="76" y="272" w="168" h="12" bg="#FFFFFF"/>
-  </Canvas>
-</Page>

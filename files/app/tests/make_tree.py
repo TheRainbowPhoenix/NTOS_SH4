@@ -16,6 +16,14 @@ files = {
                             b"Ported from Microsoft.Windows.FileExplorer (W10M).\n",
     "Documents/Notes/todo.txt": b"1. port the XBF pages\n2. wire the keyboard\n3. ship\n",
     "Documents/report.pdf": b"%PDF-1.4 fake sample for the icon grid\n",
+    "Documents/ntos.html": b"<html><head><title>NTOS File Explorer</title></head>"
+                           b"<body><h1>Hello from files</h1>"
+                           b"<p>This local page was opened from File Explorer "
+                           b"through a <b>file://</b> activation of Edge.</p>"
+                           b"<ul><li>files app taps an .html item</li>"
+                           b"<li>CreateProcessW hands the URL to edge</li>"
+                           b"<li>edge renders it with the md engine</li></ul>"
+                           b"</body></html>\n",
     "Pictures/photo_001.jpg": b"\xff\xd8\xff\xe0 JPEG sample",
     "Pictures/wallpaper.png": b"\x89PNG\r\n\x1a\n sample",
     "Downloads/setup.cab": b"MSCF sample cabinet",
@@ -24,6 +32,10 @@ files = {
     "Videos/clip.mp4": b"\x00\x00\x00\x18ftypmp42 sample",
     "data.dat": b"0123456789" * 103,  # 1030 bytes -> "1.0 KB"
 }
+# bulk rows so Downloads overflows the 396px list area (drag-scroll e2e);
+# "zz_" keeps them sorted behind the named samples
+for i in range(16):
+    files[f"Downloads/zz_bulk_{i:02d}.dat"] = b"bulk sample %02d" % i
 for f in folders:
     os.makedirs(os.path.join(root, f), exist_ok=True)
 for path, data in files.items():

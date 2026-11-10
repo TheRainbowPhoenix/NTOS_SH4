@@ -132,6 +132,13 @@ void host_set_idle_hook(int (*hook)(void));
 void host_sip_set(int visible);
 int host_sip_visible(void);
 
+/* foreground-app launch (CreateProcessW): main.c registers a resolver that
+ * maps an image path ("\fls0\Apps\edge\edge.exe") to a loaded module and
+ * calls its RunApplication; the stashed command line is what the launched
+ * app sees through GetCommandLineW. */
+void host_set_launch_hook(int (*hook)(const char *image, const char *cmdline));
+void host_set_launch_cmdline(const char *cmdline);
+
 /* debug log */
 void host_log(const char *fmt, ...);
 

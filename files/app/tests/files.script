@@ -1,61 +1,86 @@
-# files e2e: boot, navpane, browse, select, commands, properties, search
-# (typed on the shared FINGERKB SIP), new folder, delete + copy file ops.
+# files e2e v2: icon-only app bar (labels expand on "..."), sort flyout,
+# overflow menu, rename via SIP, real move/copy through the destination
+# picker, drag-scrolling and the file:// hand-off to Edge.
 # Keyboard key centres: row0 y342 (q17 w49 e81 r113 t145 y177 u209 i241 o273
 # p305), row1 y395 (a33 s65 d97 f129 g161 h193 j225 k257 l289), row2 y448
 # (shift24 z65 x97 c129 v161 b193 n225 m257 bksp297), row3 y502 (space177
 # period258 enter297).
+# App bar buttons (64px pitch, y504): Select32 NewFolder96 View160
+# Search224 More288; select row: Delete32 Move96 Copy160 Share224.
 shot boot
 tap 24 24
 shot navpane
 tap 20 169
 shot documents
-tap 296 24
-shot root
-tap 40 504
-shot select-mode
-tap 100 112
-shot select-one
-tap 60 60
-tap 280 504
-shot commands
-tap 160 382
-shot properties
+# sort flyout: "Sort by: Name" -> Name (Z on top)
+tap 160 66
+shot sortflyout
+tap 160 138
+shot sortdesc
+tap 160 66
+tap 160 102
+shot sortasc
+# browse "..." overflow: Refresh / Select all / Clear selection (dim) / Properties
+tap 288 504
+shot overflow-browse
+tap 160 442
+shot props-root
 key 0x1b
-tap 120 504
-shot newfolder-sheet
-tap 97 395
-tap 273 342
-tap 129 448
-tap 65 395
-shot newfolder-typed
-tap 80 245
-shot newfolder-created
-tap 200 504
-shot search
-tap 113 342
-tap 81 342
-tap 33 395
-tap 97 395
-shot search-typed
-tap 100 90
-shot search-jump
-tap 60 60
+# back to the root for the selection flows
 tap 296 24
-tap 100 280
-shot pictures
-tap 40 504
-tap 100 112
-shot select-photo
-tap 280 504
-shot delete-confirm
-tap 80 504
-shot deleted
-tap 40 504
-tap 100 112
-tap 120 504
+# select mode: icon-only Delete/Move/Copy/Share row
+tap 32 504
+shot selectmode
+tap 100 336
+tap 288 504
+shot overflow-select
+# rename Videos -> movies on the shared SIP
+tap 160 406
+shot rename-sheet
+tap 297 448
+tap 297 448
+tap 297 448
+tap 297 448
+tap 297 448
+tap 297 448
+tap 257 448
+tap 273 342
+tap 161 448
+tap 241 342
+tap 81 342
+tap 65 395
+shot rename-typed
+tap 80 245
+shot rename-done
+# move data.dat into Documents through the picker
+tap 32 504
+tap 100 392
+tap 96 504
 shot dest-picker
-tap 100 113
+tap 100 112
 shot dest-documents
-tap 200 504
+tap 160 504
+shot move-done
+# copy Downloads/song.mp3 into Documents
+tap 296 24
+tap 100 168
+tap 32 504
+tap 100 168
+tap 160 504
+shot dest-copy
+tap 100 112
+tap 160 504
 shot copy-done
+# drag-scroll the Downloads bulk list, then back up
+tap 296 24
+tap 100 168
+drag 160 300 160 150
+shot scrolled
+drag 160 200 160 380
+shot scrolled-top
+tap 296 24
+tap 100 112
+# open ntos.html in Edge through the file:// activation
+tap 100 224
+shot edge-open
 quit

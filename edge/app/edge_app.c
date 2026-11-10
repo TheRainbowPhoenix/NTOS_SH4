@@ -180,6 +180,8 @@ NT_IMPORT(int, SipShowIM, (U32))
 NT_DEFINE(SipShowIM)
 NT_IMPORT(int, SipGetInfo, (SipInfo *))
 NT_DEFINE(SipGetInfo)
+NT_IMPORT(const W16 *, GetCommandLineW, (void))
+NT_DEFINE(GetCommandLineW)
 
 /* ---- palette (measured from refs/edge-screens, dark theme) ---- */
 #define C_BAR    RGB_(0x1F, 0x1F, 0x1F) /* address bar, icon bar, kb bg  */
@@ -649,6 +651,8 @@ typedef struct {
     char title[40];
     char url[MAX_URL];
     char host[40];
+    char file[MAX_URL]; /* \fls0-relative path for file:// pages */
+    int is_file;        /* file:// activation (opened from File Explorer) */
     unsigned hash;
     int priv; /* InPrivate tab */
 } Tab;
@@ -1089,7 +1093,13 @@ static void paint_page(void *dc)
         }
         return;
     }
-    /* markdown text pages render through the shared mdrender core */
+    /* markdown text pages render through the shared mdrender core;
+     * file:// activations (.md/.html/.htm/.txt from File Explorer) go
+     * through the same engine — the parser handles HTML tags too. */
+    if (t->is_file && t->file[0] && md_page_load(t->file)) {
+        md_paint(dc);
+        return;
+    }
     int hl = xstrlen(t->host);
     if (hl > 3 && xeq(t->host + hl - 3, ".md") && md_page_load(t->host)) {
         md_paint(dc);
@@ -1135,6 +1145,11 @@ static void paint_address_url(void *dc)
     NRect r = nrect[ti];
     if (t->priv)
         ic_draw(ifill, dc, r.x - 20, r.y - 3, 16, C_BLUE, IC_INPRIVATE);
+    if (t->is_file) {
+        /* local file: single-tone path (no subdomain/domain split) */
+        draw_text_clamp(dc, r.x, r.y, t->file, C_INK, 12, 126);
+        return;
+    }
     const char *h = t->host;
     const char *dot = h;
     while (*dot && *dot != '.')
@@ -1336,6 +1351,52 @@ static void nav_url(const char *url)
 {
     Tab *t = &tabs[tab_cur];
     const char *p = url;
+    t->is_file = 0;
+    t->file[0] = 0;
+    /* file:// activation (File Explorer "open in Edge"): the address bar
+     * keeps the full URL, the md engine gets the \fls0-relative path. */
+    if (p[0] == 'f' && p[1] == 'i' && p[2] == 'l' && p[3] == 'e' && p[4] == ':' &&
+        p[5] == '/' && p[6] == '/') {
+        const char *path = p + 7;
+        int n = xstrlen(p);
+        if (n > MAX_URL - 1)
+            n = MAX_URL - 1;
+        xcopy(t->url, p, n);
+        t->url[n] = 0;
+        /* \fls0-relative name for md_read_file (it prepends \fls0\) */
+        const char *rel = path;
+        if (rel[0] == '\\' && rel[1] == 'f' && rel[2] == 'l' && rel[3] == 's' &&
+            rel[4] == '0' && rel[5] == '\\')
+            rel += 6;
+        else if (rel[0] == '/' && rel[1] == 'f' && rel[2] == 'l' && rel[3] == 's' &&
+                 rel[4] == '0' && rel[5] == '/')
+            rel += 6;
+        int m = xstrlen(rel);
+        if (m > MAX_URL - 1)
+            m = MAX_URL - 1;
+        xcopy(t->file, rel, m);
+        t->file[m] = 0;
+        t->is_file = 1;
+        /* title + display host: the file name (last path segment) */
+        const char *name = rel + xstrlen(rel);
+        while (name > rel && name[-1] != '\\' && name[-1] != '/')
+            --name;
+        int tl = xstrlen(name);
+        if (tl > 39)
+            tl = 39;
+        xcopy(t->title, name, tl);
+        t->title[tl] = 0;
+        xcopy(t->host, name, tl);
+        t->host[tl] = 0;
+        t->hash = xhash(t->url);
+        if (!t->title[0]) {
+            xcopy(t->title, "File", 5);
+            t->title[4] = 0;
+        }
+        hist_add(t->file, t->title);
+        set_lock_flag();
+        return;
+    }
     if (p[0] == 'h' && p[1] == 't' && p[2] == 't' && p[3] == 'p') {
         while (*p && *p != '/')
             ++p;
@@ -2094,6 +2155,24 @@ __attribute__((dllexport)) int RunApplication(void)
     tab_count = 1;
     tab_cur = 0;
     xcopy(tabs[0].title, "New tab", 8);
+    /* activation argument (device: \fls0\intent.dat via GetCommandLineW;
+     * host: the CreateProcessW command line). A file:// argument opens
+     * the document straight into the first tab, like tapping it in File
+     * Explorer on the real phone. */
+    {
+        const W16 *cl = NT_CALL(GetCommandLineW, ());
+        if (cl && cl[0] == 'f' && cl[1] == 'i' && cl[2] == 'l' && cl[3] == 'e') {
+            char url[MAX_URL];
+            int i = 0;
+            while (cl[i] && i < MAX_URL - 1) {
+                url[i] = (char)cl[i];
+                ++i;
+            }
+            url[i] = 0;
+            if (i > 7)
+                nav_url(url);
+        }
+    }
     /* host-side IAT snap: uixctl.c + svf.c (linked into this DLL) share
      * the render-context slot the device loader would snap per module */
     __imp_render_SpGetThreadContext = (const void *)(uintptr_t)render_SpGetThreadContext;

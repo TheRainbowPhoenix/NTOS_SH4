@@ -92,3 +92,87 @@ export), resources.pri 524KB, folder PNG assets, BitMDL2.ttf.
 - Picker mode UI (Done/Cancel app bar — the app doubles as the system
   file picker), sort-direction toggle, breadcrumb ellipsis flyout.
 - SH4 device build of files.dll through build_phone.py / elf2ntx.
+
+## 2026-11-10 — session 2: reference-parity pass (refs/files-screens)
+
+### Toolbar: labels hidden by default (the user-visible fix)
+The W10M CommandBar shows icon-only buttons collapsed; labels appear only
+while the "..." overflow is open. LIGHT_THEME_this_device.png drove the
+rework: 5 x 64px buttons (browse: Select / New folder / View / Search /
+"..."; select: Delete / Move to / Copy to / Share / "..."; picker:
+Done / Cancel / "..." right-aligned), glyph centred at y15 in the 48px
+bar. The "..." state swaps to a second 68px markup row (glyph y8 + 11px
+label y40) and grows the content clamp accordingly. The e2e now asserts
+the label strip (y518..523) stays pure chrome in every collapsed screen
+and that labels exist in the expanded screens.
+
+### Sort + overflow menus (replaces the CommandsDialog)
+- "Sort by: Name" bar with accent key + chevron (up while open) opens a
+  6-row flyout (this_device__sort_by.png): Name/Size/Date x asc/desc,
+  selected row in accent. sort_key + sort_desc replace the old 4-way
+  cycle; folders still sort first.
+- "..." opens the MenuFlyout: browse = Refresh / Select all / Clear
+  selection (disabled) / Properties; select mode = Select all / Clear
+  selection / Rename (enabled iff exactly 1) / Properties. Panels paint
+  procedurally OVER the rows (the markup-rect version landed under the
+  items — z-order lesson).
+
+### Row layout details from the references
+- Folders: date-only second line; files: "size date" (the Downloads shot
+  shows "11.4 KB 11/8/2026"). fmt_date dropped the time everywhere.
+- Separators removed (clean white rows in the light reference).
+- Properties gained the Description section (Title/Authors/Comments/Tags)
+  per file_property.png.
+
+### Multi-layer coloured SVF type icons
+files/tools/vec_icons.py authors the W10M type icons as layered VEC2
+command streams (back panel / paper sheet / amber front / highlight /
+shade for the manila folder; sky+sun+mountains photo, Groove-purple
+note, film strip, globe html page, slate phone, gold-contact SD card).
+The generator byte-validates every stream against svf.c's scan() before
+emitting files_vecicons.h. Row/grid/nav/properties icons now render
+through the shared SVF engine (SVFDrawTint, no recolor) — which required
+the real scanline r_polygon + integer r_ellipse in files_app.c (they
+were no-ops before).
+
+### file:// open-in-Edge (the cool test)
+- files: tapping .html/.htm/.md/.txt builds "file://\<device path\>" and
+  calls CreateProcessW(\fls0\Apps\edge\edge.exe, url), then PostQuit.
+- host: CreateProcessW + GetCommandLineW builtins; main.c registers a
+  launch hook that matches the image to a loaded module by basename,
+  stashes the command line, re-snaps the shared-component IAT slots to
+  the new foreground (fingerkb/shellchrome repaint with edge's dark
+  context) and calls its RunApplication; when the launched app exits the
+  foreground + context return to the caller.
+- edge: nav_url gained the file:// branch (full URL in the address bar,
+  \fls0-relative path for the md engine); RunApplication consumes
+  GetCommandLineW and opens the document in tab 0. paint_page renders
+  .html/.htm through the md engine too. The e2e's edge-open shot shows
+  edge's dark chrome + the parsed ntos.html and the log line
+  `launch: foreground -> edge.dll (cmdline "file://\fls0\Documents\ntos.html")`
+  is asserted.
+- device: payload/coredll.c gained the real implementations the files
+  model needed: CopyFileW (CreateFile/Read/Write composite),
+  RemoveDirectoryW (kernel unlink on the empty dir), GetCommandLineW
+  (reads + consumes \fls0\intent.dat) and CreateProcessW (writes
+  intent.dat from the command line + coredll_launch hand-off) — the same
+  private channel StartHost's next.dat uses. tests/coredll_files_test.c
+  covers all four on the host build.
+
+### Smoothness
+- layout_doc now runs ONCE per doc (static absolute geometry cached in
+  nrect[]) instead of per paint.
+- Touch drag scrolls the list directly (WM_MOVE_ with an 8px threshold)
+  with a proportional scrollbar thumb — the list finally scrolls in the
+  e2e (drag script lines).
+- Icon draws go through the clip-checked GDI path; off-screen rows skip
+  early (unchanged) and the sort-bar/toast repaints stay single-pass.
+
+### e2e v2 (22 -> 27 frames, all green)
+boot / navpane / documents / sortflyout / sortdesc / sortasc /
+overflow-browse / props-root / selectmode / overflow-select / rename
+(typed "movies" on the SIP) / dest-picker / dest-documents / move-done /
+dest-copy / copy-done / scrolled / scrolled-top / edge-open + final.
+verify_fs.py asserts the rename/move/copy physically landed on disk.
+VLM parity vs LIGHT_THEME_this_device.png: ~85-90% (folder tone matched
+to the reference, remaining deltas are icon stroke weight + sample data).

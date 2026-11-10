@@ -147,8 +147,12 @@ NT_IMPORT(int, CopyFileW, (const W16 *, const W16 *, int))
 NT_DEFINE(CopyFileW)
 NT_IMPORT(int, GetDiskFreeSpaceExW, (const W16 *, U64 *, U64 *, U64 *))
 NT_DEFINE(GetDiskFreeSpaceExW)
+NT_IMPORT(U32, CreateProcessW, (const W16 *, const W16 *, void *, void *, int, U32, void *, const W16 *, void *, void *))
+NT_DEFINE(CreateProcessW)
 
 /* ---- palette: W10M light theme (FILEEXPLORER_UI_REFERENCE.md) ---- */
+#include "files_vecicons.h"
+
 #define C_PAGE   RGB_(0xFF, 0xFF, 0xFF) /* PageBackgroundAltHigh      */
 #define C_NAV    RGB_(0xE6, 0xE6, 0xE6) /* NavBar  = ChromeMedium     */
 #define C_PANE   RGB_(0xF2, 0xF2, 0xF2) /* NavPane = ChromeLow        */
@@ -308,17 +312,92 @@ static void r_text(void *dc, int x, int y, const char *s, U32 c, int h)
 }
 static void r_line(void *dc, int x, int y, int xx, int yy, U32 c)
 {
-    fi_line(ifill, dc, x, y, xx, yy, 1, c);
+    if (y == yy) {
+        fill(dc, x < xx ? x : xx, y, (x > xx ? x : xx) + 1, y + 1, c);
+        return;
+    }
+    if (x == xx) {
+        fill(dc, x, y < yy ? y : yy, x + 1, (y > yy ? y : yy) + 1, c);
+        return;
+    }
+    int dx = xx > x ? xx - x : x - xx, sx = x < xx ? 1 : -1;
+    int dy = yy > y ? y - yy : yy - y, sy = y < yy ? 1 : -1, e = dx + dy;
+    for (;;) {
+        fill(dc, x, y, x + 1, y + 1, c);
+        if (x == xx && y == yy)
+            break;
+        int e2 = e * 2;
+        if (e2 >= dy) {
+            e += dy;
+            x += sx;
+        }
+        if (e2 <= dx) {
+            e += dx;
+            y += sy;
+        }
+    }
 }
 static void r_ellipse(void *dc, int cx, int cy, int rx, int ry, U32 c, int thick)
 {
-    (void)ry;
-    (void)thick;
-    fi_dot(ifill, dc, cx, cy, rx, c);
+    /* same integer ellipse as edge_app.c: fill (thick==0) or 1px ring */
+    if (rx < 1 || ry < 1 || rx > 100 || ry > 100)
+        return;
+    int ix = rx - thick, iy = ry - thick;
+    for (int y = -ry; y <= ry; ++y) {
+        int run = -999;
+        for (int x = -rx; x <= rx + 1; ++x) {
+            int in = x <= rx && x * x * ry * ry + y * y * rx * rx <= rx * rx * ry * ry;
+            if (thick > 0 && ix > 0 && iy > 0 &&
+                x * x * iy * iy + y * y * ix * ix < ix * ix * iy * iy)
+                in = 0;
+            if (in && run == -999)
+                run = x;
+            if (!in && run != -999) {
+                fill(dc, cx + run, cy + y, cx + x, cy + y + 1, c);
+                run = -999;
+            }
+        }
+    }
 }
 static void r_polygon(void *dc, const Pt *p, unsigned n, U32 c)
 {
-    (void)p; (void)n; (void)dc; (void)c;
+    /* scanline fill (same algorithm as edge_app.c) — the SVF icon layers
+     * are polygons, so this is what makes the coloured type icons work */
+    if (!p || n < 3 || n > 255)
+        return;
+    int ymin = p[0].y, ymax = ymin;
+    for (unsigned i = 1; i < n; ++i) {
+        if (p[i].y < ymin)
+            ymin = p[i].y;
+        if (p[i].y > ymax)
+            ymax = p[i].y;
+    }
+    if (ymin < clip_rect.top)
+        ymin = clip_rect.top;
+    if (ymax > clip_rect.bottom)
+        ymax = clip_rect.bottom;
+    for (int y = ymin; y < ymax; ++y) {
+        int xs[255];
+        unsigned used = 0;
+        for (unsigned i = 0, j = n - 1; i < n; j = i++)
+            if ((p[i].y <= y && p[j].y > y) || (p[j].y <= y && p[i].y > y)) {
+                int num = (y - p[i].y) * (p[j].x - p[i].x);
+                int den = p[j].y - p[i].y;
+                int vx = p[i].x + num / den;
+                xs[used++] = vx;
+            }
+        for (unsigned i = 1; i < used; ++i) {
+            int v = xs[i];
+            unsigned j = i;
+            while (j && xs[j - 1] > v) {
+                xs[j] = xs[j - 1];
+                --j;
+            }
+            xs[j] = v;
+        }
+        for (unsigned i = 0; i + 1 < used; i += 2)
+            fill(dc, xs[i], y, xs[i + 1] + 1, y + 1, c);
+    }
 }
 static void r_surface(int b) { (void)b; }
 
@@ -404,6 +483,19 @@ static void layout_doc(const UxDoc *d, int bx, int by, int bw, int bh)
 {
     if (!d || d->root == UX_NONE)
         return;
+    /* every page is absolutely positioned, so the layout pass runs ONCE
+     * per doc: repeated paints reuse the cached nrect[] (the single
+     * biggest per-frame cost on the SH4 after text rasterisation) */
+    static const UxDoc *done[UX_MAX_DOCS];
+    static unsigned char done_flag[UX_MAX_DOCS];
+    unsigned di = (unsigned)(d - ux.docs);
+    int cached = di < UX_MAX_DOCS && done_flag[di] && done[di] == d;
+    if (cached && nrect[d->root].w == (short)bw)
+        return;
+    if (di < UX_MAX_DOCS) {
+        done[di] = d;
+        done_flag[di] = 1;
+    }
     unsigned stack[64];
     int sp = 0;
     stack[sp++] = d->root;
@@ -605,8 +697,12 @@ static int item_count;
 static char cur_path[120];      /* device path, e.g. \fls0\Documents */
 static int select_mode, any_selected;
 static int view_list = 1;       /* 1 = List (tile), 0 = Icons (thumbnail) */
-static int sort_mode;           /* 0 Name 1 Date 2 Type 3 Size */
+static int sort_key;            /* 0 Name 1 Date 2 Size (folders first) */
+static int sort_desc;           /* 1 = Z on top / newest / largest first */
+static int sort_open;           /* sort-by flyout visible */
+static int menu_open;           /* "..." overflow open (labels expand)  */
 static int list_scroll;         /* px scrolled inside the item area */
+static int drag_y, dragging;    /* touch scroll state */
 
 /* nav pane */
 typedef struct {
@@ -620,8 +716,8 @@ static int nav_count;
 
 /* modes */
 enum {
-    M_FOLDER = 0, M_NAVPANE, M_COMMANDS, M_RENAME, M_NEWFOLDER,
-    M_CONFIRM, M_PROPERTIES, M_SEARCH, M_PROGRESS, M_DEST
+    M_FOLDER = 0, M_NAVPANE, M_RENAME, M_NEWFOLDER,
+    M_CONFIRM, M_PROPERTIES, M_SEARCH, M_DEST
 };
 
 static int mode = M_FOLDER;
@@ -740,32 +836,58 @@ static int path_parent(char *dst, const char *src, int cap)
     return n;
 }
 
-/* file-kind icon by extension (System.ItemTypeText proxy) */
+/* file-kind icon by extension (System.ItemTypeText proxy) — the
+ * multi-layer coloured VEC icons (files_vecicons.h) */
 static int item_icon(const char *name, int folder)
 {
     if (folder)
-        return FI_FOLDER;
+        return VI_FOLDER;
     int n = xstrlen(name);
     int dot = -1;
     for (int i = n - 1; i >= 0; --i)
         if (name[i] == '.') { dot = i; break; }
     if (dot < 0)
-        return FI_FILE;
+        return VI_FILE;
     const char *e = name + dot + 1;
     if (!xicmp(e, "png") || !xicmp(e, "jpg") || !xicmp(e, "jpeg") ||
         !xicmp(e, "gif") || !xicmp(e, "bmp") || !xicmp(e, "svg"))
-        return FI_IMAGE;
+        return VI_IMAGE;
     if (!xicmp(e, "mp3") || !xicmp(e, "wav") || !xicmp(e, "wma") ||
         !xicmp(e, "m4a") || !xicmp(e, "mid"))
-        return FI_AUDIO;
+        return VI_AUDIO;
     if (!xicmp(e, "mp4") || !xicmp(e, "avi") || !xicmp(e, "wmv") ||
         !xicmp(e, "mov") || !xicmp(e, "m4v"))
-        return FI_VIDEO;
+        return VI_VIDEO;
+    if (!xicmp(e, "html") || !xicmp(e, "htm") || !xicmp(e, "svgz"))
+        return VI_HTML;
     if (!xicmp(e, "txt") || !xicmp(e, "doc") || !xicmp(e, "pdf") ||
         !xicmp(e, "ini") || !xicmp(e, "c") || !xicmp(e, "h") ||
         !xicmp(e, "xml") || !xicmp(e, "md"))
-        return FI_DOC;
-    return FI_FILE;
+        return VI_DOC;
+    return VI_FILE;
+}
+
+/* can Edge open this file type (file:// activation)? */
+static int item_opens_in_edge(const char *name)
+{
+    int n = xstrlen(name);
+    int dot = -1;
+    for (int i = n - 1; i >= 0; --i)
+        if (name[i] == '.') { dot = i; break; }
+    if (dot < 0)
+        return 0;
+    const char *e = name + dot + 1;
+    return !xicmp(e, "html") || !xicmp(e, "htm") || !xicmp(e, "md") ||
+           !xicmp(e, "txt");
+}
+
+/* draw a coloured VEC type icon through the shared SVF engine */
+static void vec_icon(void *dc, int id, int x, int y, int size)
+{
+    if (id < 0 || (unsigned)id >= sizeof(vec_icons) / sizeof(vec_icons[0]))
+        id = VI_FILE;
+    SVFDrawTint(dc, vec_icons[id].data, vec_icons[id].length, x, y, size, size,
+                0xFFFFFFFFu);
 }
 
 /* ---- tiny number writer (no CRT) ---- */
@@ -797,12 +919,12 @@ static U32 ft_to_unix(U32 lo, U32 hi)
     return (U32)(unix_s & 0xFFFFFFFFu);
 }
 
-/* unix seconds -> "M/D/YYYY H:MM" (W10M short format) */
+/* unix seconds -> "M/D/YYYY" (W10M short format, reference rows show
+ * date-only: "11/8/2026", properties "Date modified: 11/8/2026") */
 static void fmt_date(U32 t, char *out, int cap)
 {
     /* days since epoch -> civil (Howard Hinnant's algorithm, integer) */
     long long days = (long long)t / 86400;
-    U32 secs = t % 86400;
     long long z = days + 719468;
     long long era = (z >= 0 ? z : z - 146096) / 146097;
     unsigned doe = (unsigned)(z - era * 146097);
@@ -814,17 +936,12 @@ static void fmt_date(U32 t, char *out, int cap)
     unsigned m = mp < 10 ? mp + 3 : mp - 9;
     if (m <= 2)
         ++y;
-    int hour = (int)(secs / 3600), min = (int)(secs % 3600 / 60);
     /* naive digits */
     char tmp[40];
     int p = 0;
     auto_num(tmp, &p, (int)m); tmp[p++] = '/';
     auto_num(tmp, &p, (int)d); tmp[p++] = '/';
     for (int i3 = 1000; i3 >= 1; i3 /= 10) tmp[p++] = (char)('0' + (y / i3) % 10);
-    tmp[p++] = ' ';
-    auto_num(tmp, &p, hour); tmp[p++] = ':';
-    if (min < 10) tmp[p++] = '0';
-    auto_num(tmp, &p, min);
     tmp[p] = 0;
     int n = p < cap - 1 ? p : cap - 1;
     xcopy(out, tmp, n);
@@ -918,25 +1035,30 @@ static void scan_folder(void)
     } while (NT_CALL(FindNextFileW, (f, &data)));
     NT_CALL(FindClose, (f));
 sort:;
-    /* insertion sort: folders first, then the active sort key */
+    /* insertion sort: folders first, then key asc/desc, name tiebreak */
     for (int i = 1; i < item_count; ++i) {
         Item key = items[i];
         int j = i - 1;
         while (j >= 0) {
             Item *a = &items[j];
             int gt;
-            if (a->folder != key.folder)
+            if (a->folder != key.folder) {
                 gt = !a->folder; /* folders sort first */
-            else if (sort_mode == 1)
-                gt = a->mtime > key.mtime;
-            else if (sort_mode == 2) {
-                int ia = a->icon, ib = key.icon;
-                gt = ia != ib ? ia > ib : xicmp(a->name, key.name) > 0;
+            } else {
+                int r = 0;
+                if (sort_key == 1) { /* Date */
+                    if (a->mtime != key.mtime)
+                        r = a->mtime > key.mtime ? 1 : -1;
+                } else if (sort_key == 2) { /* Size */
+                    if (a->size_lo != key.size_lo)
+                        r = a->size_lo > key.size_lo ? 1 : -1;
+                }
+                if (!r)
+                    r = xicmp(a->name, key.name);
+                if (sort_desc)
+                    r = -r;
+                gt = r > 0;
             }
-            else if (sort_mode == 3)
-                gt = a->size_lo > key.size_lo;
-            else
-                gt = xicmp(a->name, key.name) > 0;
             if (!gt)
                 break;
             items[j + 1] = items[j];
@@ -985,7 +1107,7 @@ static void build_navpane(void)
     };
     nav_locs[nav_count].label = "This device";
     nav_locs[nav_count].path = "\\fls0";
-    nav_locs[nav_count].icon = FI_DEVICE;
+    nav_locs[nav_count].icon = VI_DEVICE;
     nav_locs[nav_count].indent = 0;
     ++nav_count;
     for (unsigned k = 0; k < sizeof(known) / sizeof(known[0]); ++k) {
@@ -995,7 +1117,7 @@ static void build_navpane(void)
             continue;
         nav_locs[nav_count].label = known[k].label;
         nav_locs[nav_count].path = 0; /* filled dynamically (static storage) */
-        nav_locs[nav_count].icon = FI_FOLDER;
+        nav_locs[nav_count].icon = VI_FOLDER;
         nav_locs[nav_count].indent = 1;
         /* stash the path in prop_name-style static slots */
         static char slots[5][80];
@@ -1006,7 +1128,7 @@ static void build_navpane(void)
     if (dir_exists("\\fls0\\SD Card")) {
         nav_locs[nav_count].label = "SD card";
         nav_locs[nav_count].path = "\\fls0\\SD Card";
-        nav_locs[nav_count].icon = FI_SDCARD;
+        nav_locs[nav_count].icon = VI_SDCARD;
         nav_locs[nav_count].indent = 0;
         ++nav_count;
     }
@@ -1135,12 +1257,52 @@ static void paint_crumbs(void *dc)
 #define ROW_H 56
 #define TILE_H 88
 
+/* content area: y84 .. (menu_open ? 460 : 480) — the app bar grows from
+ * 48px (icon-only) to 68px (labels expanded) while the "..." menu is open */
+static NRect items_host(void)
+{
+    NRect r;
+    r.x = 0;
+    r.y = 84;
+    r.w = 320;
+    r.h = (short)((menu_open ? 460 : 480) - 84);
+    return r;
+}
+
+static int items_content_h(void)
+{
+    return view_list ? item_count * ROW_H : ((item_count + 1) / 2) * TILE_H;
+}
+
+static void clamp_scroll(void)
+{
+    NRect host = items_host();
+    int max = items_content_h() - host.h;
+    if (max < 0)
+        max = 0;
+    if (list_scroll > max)
+        list_scroll = max;
+    if (list_scroll < 0)
+        list_scroll = 0;
+}
+
+static void paint_scrollbar(void *dc, NRect host)
+{
+    int content = items_content_h();
+    if (content <= host.h)
+        return;
+    int thumb = host.h * host.h / content;
+    if (thumb < 24)
+        thumb = 24;
+    int track = host.h - thumb;
+    int max_scroll = content - host.h;
+    int y = host.y + (max_scroll ? list_scroll * track / max_scroll : 0);
+    fill(dc, 316, y, 320, y + thumb, RGB_(0xC8, 0xC8, 0xC8));
+}
+
 static void paint_items(void *dc)
 {
-    NRect host = {0, 84, 320, 396};
-    int n = find_node("ItemsHost");
-    if (n >= 0)
-        host = nrect[n];
+    NRect host = items_host();
     clip_set(host.x, host.y, host.x + host.w, host.y + host.h);
     if (view_list) {
         for (int i = 0; i < item_count; ++i) {
@@ -1151,19 +1313,23 @@ static void paint_items(void *dc)
             if (it->selected)
                 fill(dc, 0, y, 320, y + ROW_H, C_SEL);
             int xicon = select_mode ? 38 : 12;
-            if (it->folder)
-                fi_folder(ifill, dc, xicon, y + 10, 36, C_FOL_A, C_FOL_B);
-            else
-                fi_draw(ifill, dc, xicon, y + 10, 36, C_MUT, it->icon);
+            vec_icon(dc, it->icon, xicon, y + 10, 36);
+            /* line 2: folders show the date, files "size date"
+             * (subfolder_downloads_content_icons.png) */
             char line2[80];
             if (it->folder) {
-                line2[0] = 0;
+                fmt_date(it->mtime, line2, 60);
             } else {
-                fmt_size(it->size_lo, line2, 60);
+                char sz[40], dt[40];
+                fmt_size(it->size_lo, sz, 40);
+                fmt_date(it->mtime, dt, 40);
+                xcopy(line2, sz, xstrlen(sz));
+                int p = xstrlen(sz);
+                line2[p++] = ' ';
+                xcopy(line2 + p, dt, xstrlen(dt) + 1);
             }
             draw_text(dc, select_mode ? 64 : 56, y + 10, it->name, C_INK, 18, 0, 0);
-            if (line2[0])
-                draw_text(dc, select_mode ? 64 : 56, y + 34, line2, C_MUT, 12, 0, 0);
+            draw_text(dc, select_mode ? 64 : 56, y + 34, line2, C_MUT, 12, 0, 0);
             if (select_mode) {
                 /* inline checkbox (Tile CheckMode) */
                 int bx = 10, by = y + (ROW_H - 20) / 2;
@@ -1183,8 +1349,6 @@ static void paint_items(void *dc)
                     fill(dc, bx + 18, by, bx + 20, by + 20, C_CHK_E);
                 }
             }
-            if (i + 1 < item_count)
-                fill(dc, select_mode ? 64 : 56, y + ROW_H - 1, 320, y + ROW_H, C_SEP);
         }
     } else {
         for (int i = 0; i < item_count; ++i) {
@@ -1195,11 +1359,7 @@ static void paint_items(void *dc)
             Item *it = &items[i];
             if (it->selected)
                 fill(dc, x, y, x + 160, y + TILE_H, C_SEL);
-            int icx = x + 56;
-            if (it->folder)
-                fi_folder(ifill, dc, icx, y + 6, 48, C_FOL_A, C_FOL_B);
-            else
-                fi_draw(ifill, dc, icx, y + 6, 48, C_MUT, it->icon);
+            vec_icon(dc, it->icon, x + 56, y + 6, 48);
             draw_text(dc, x + 80, y + 58, it->name, C_INK, 11, 1, 0);
             if (select_mode) { /* overlay checkbox top-left */
                 int bx = x + 6, by = y + 6;
@@ -1221,6 +1381,7 @@ static void paint_items(void *dc)
         }
     }
     clip_set(0, 0, 320, 528);
+    paint_scrollbar(dc, host);
 }
 
 /* nav pane rows */
@@ -1232,41 +1393,78 @@ static void paint_navpane_rows(void *dc)
         if (active)
             fill(dc, 0, y, 256, y + 48, C_NAV);
         int ix = 12 + nav_locs[i].indent * 24;
-        fi_draw(ifill, dc, ix, y + 16, 16, C_INK, nav_locs[i].icon);
+        vec_icon(dc, nav_locs[i].icon, ix, y + 16, 16);
         draw_text(dc, ix + 20, y + 15, nav_locs[i].label, C_INK, 18, 0, 0);
     }
 }
 
-/* commands dialog rows (CommandItem: 17.333 SemiLight, ellipsis trim) */
-static const char *CMD_LIST[] = {
-    "Copy to", "Move to", "Delete", "Rename", "Properties",
-    "Share", "Sort by", "View", "Refresh",
+/* sort-by flyout (this_device__sort_by.png): 6 rows, selected one in
+ * accent blue; the active row is what re-sorts the view when tapped */
+static const char *SORT_OPTS[6] = {
+    "Name (A on top)", "Name (Z on top)",
+    "Size (Smallest on top)", "Size (Largest on top)",
+    "Date (Oldest on top)", "Date (Newest on top)",
 };
-static void paint_commands(void *dc)
+static int sort_selected(void)
 {
-    int top = 220;
-    for (unsigned i = 0; i < sizeof(CMD_LIST) / sizeof(CMD_LIST[0]); ++i) {
-        int y = top + (int)i * 36;
-        char label[48];
-        xcopy(label, CMD_LIST[i], xstrlen(CMD_LIST[i]) + 1);
-        if (CMD_LIST[i][0] == 'S' && CMD_LIST[i][1] == 'o') { /* Sort by */
-            static char sb[24];
-            const char *keys[4] = {"Name", "Date", "Type", "Size"};
-            /* "Sort by: Name" (SortDialog_Format) */
-            char tmp[24];
-            xcopy(tmp, "Sort by: ", 10);
-            xcopy(tmp + 9, keys[sort_mode], xstrlen(keys[sort_mode]) + 1);
-            xcopy(sb, tmp, xstrlen(tmp) + 1);
-            xcopy(label, sb, xstrlen(sb) + 1);
-        } else if (CMD_LIST[i][0] == 'V') { /* View mode */
-            const char *v = view_list ? "Icons" : "List";
-            char tmp[24];
-            xcopy(tmp, "View: ", 7);
-            xcopy(tmp + 6, v, xstrlen(v) + 1);
-            xcopy(label, tmp, xstrlen(tmp) + 1);
-        }
-        draw_text(dc, 12, y + 8, label, C_INK, 18, 0, 0);
-        if (i + 1 < sizeof(CMD_LIST) / sizeof(CMD_LIST[0]))
+    if (sort_key == 0)
+        return sort_desc ? 1 : 0;
+    if (sort_key == 2)
+        return sort_desc ? 3 : 2;
+    return sort_desc ? 5 : 4;
+}
+static void paint_sort_flyout(void *dc)
+{
+    /* panel + rows painted over the list (z-order above the items) */
+    fill(dc, 8, 84, 216, 300, C_PAGE);
+    for (int i = 0; i < 6; ++i) {
+        int y = 84 + i * 36;
+        int sel = i == sort_selected();
+        draw_text(dc, 20, y + 9, SORT_OPTS[i], sel ? C_ACC : C_INK, 15, 0, 0);
+        if (i < 5)
+            fill(dc, 8, y + 35, 216, y + 36, C_SEP);
+    }
+}
+
+/* "..." overflow MenuFlyout (bottom_menu_open.png / folder_selected_listview_
+ * menu_open.png): browse = Refresh/Select all/Clear selection/Properties,
+ * select mode swaps Refresh for Rename. Disabled rows dim (#9A9A9A). */
+static const char *OVF_BROWSE[4] = {
+    "Refresh", "Select all", "Clear selection", "Properties",
+};
+static const char *OVF_SELECT[4] = {
+    "Select all", "Clear selection", "Rename", "Properties",
+};
+static int overflow_disabled(int row)
+{
+    if (mode == M_DEST)
+        return 1;
+    if (select_mode) {
+        if (row == 3) /* Properties: needs exactly one selection */
+            return selected_count() != 1;
+        if (row == 2) /* Rename: needs exactly one selection */
+            return selected_count() != 1;
+        return 0;
+    }
+    return row == 2; /* Clear selection with nothing selected */
+}
+static int overflow_top(void)
+{
+    return (menu_open ? 460 : 480) - 144;
+}
+static void paint_overflow(void *dc)
+{
+    const char **rows = select_mode ? OVF_SELECT : OVF_BROWSE;
+    int top = overflow_top();
+    /* scrim dims the content below the navbar, then the menu panel +
+     * rows sit above everything (the W10M MenuFlyout z-order) */
+    fill(dc, 0, 48, 320, top, C_SCRIM);
+    fill(dc, 0, top, 320, top + 144, C_PAGE);
+    for (int i = 0; i < 4; ++i) {
+        int y = top + i * 36;
+        int dis = overflow_disabled(i);
+        draw_text(dc, 12, y + 9, rows[i], dis ? C_DIM : C_INK, 15, 0, 0);
+        if (i < 3)
             fill(dc, 0, y + 35, 320, y + 36, C_SEP);
     }
 }
@@ -1331,6 +1529,20 @@ static void paint_props_rows(void *dc)
         draw_text(dc, 12, y + row * 28, "File size:", C_MUT, 12, 0, 0);
         draw_text(dc, 110, y + row * 28, val, C_INK, 12, 0, 0);
         ++row;
+    }
+    /* Description section (file_property.png): Title / Authors / Comments /
+     * Tags rows, values empty on this build — the layout matches the
+     * reference even though no property handler is registered. */
+    if (!prop_is_root) {
+        ++row;
+        draw_text(dc, 12, y + row * 28, "Description", C_INK, 12, 0, 0);
+        fill(dc, 12, y + row * 28 + 15, 72, y + row * 28 + 16, C_MUT);
+        ++row;
+        static const char *DSCR[4] = {"Title", "Authors", "Comments", "Tags"};
+        for (int d = 0; d < 4; ++d) {
+            draw_text(dc, 12, y + row * 28, DSCR[d], C_MUT, 12, 0, 0);
+            ++row;
+        }
     }
 }
 
@@ -1451,8 +1663,9 @@ static void update_status_bindings(void)
 {
     char buf[80];
     int nsel = selected_count();
-    /* sort / status / empty visibility + text */
-    show_named("SortByText", !select_mode && mode != M_DEST);
+    /* sort bar / status / empty visibility + text (multi_select.png:
+     * the selection counter replaces the sort row) */
+    show_named("SortBar", !select_mode && mode != M_DEST && !sort_open);
     show_named("StatusText", select_mode || mode == M_DEST);
     show_named("EmptyText", item_count == 0 && !select_mode && mode != M_DEST);
     if (mode == M_DEST) {
@@ -1508,11 +1721,7 @@ static void paint_all(void *dc)
                         if (!hit)
                             continue;
                         int y = 84 + shown * ROW_H;
-                        char ic = search_rows[i].icon;
-                        if (ic == FI_FOLDER)
-                            fi_folder(ifill, dc, 12, y + 10, 36, C_FOL_A, C_FOL_B);
-                        else
-                            fi_draw(ifill, dc, 12, y + 10, 36, C_MUT, ic);
+                        vec_icon(dc, search_rows[i].icon, 12, y + 10, 36);
                         draw_text(dc, 56, y + 10, n, C_INK, 18, 0, 0);
                         /* parent folder as the secondary line */
                         const char *pp = search_rows[i].parent;
@@ -1532,25 +1741,54 @@ static void paint_all(void *dc)
             update_status_bindings();
             if ((d = ux_find_doc(&ux, "FolderPage"))) {
                 layout_doc(d, 0, 0, 320, 528);
-                /* the app bar row swaps wholesale: browse / select / dest */
+                /* ---- app bar: browse / select / dest rows swap wholesale,
+                 * and the "..." state expands the bar to show labels ---- */
                 int dest = mode == M_DEST;
                 int selm = select_mode && !dest;
-                show_named("AppBarSelect", !dest && !select_mode);
-                show_named("AppBarNewFolder", !dest && !select_mode);
-                show_named("AppBarSearch", !dest && !select_mode);
-                show_named("AppBarMore", !dest && !select_mode);
-                show_named("AppBarSelectAll", selm);
-                show_named("AppBarCopy", selm);
-                show_named("AppBarMove", selm);
-                show_named("AppBarDelete", selm);
-                show_named("AppBarDestCancel", dest);
-                show_named("AppBarDestGo", dest);
-                if (dest)
-                    dyn_set("DestGoText", dest_op ? "Move here" : "Copy here");
+                int exp = menu_open;
+                show_named("AppBarCollapsed", !exp);
+                show_named("AppBarExpanded", exp);
+                show_named("AbSelect", !exp && !dest && !select_mode);
+                show_named("AbNewFolder", !exp && !dest && !select_mode);
+                show_named("AbView", !exp && !dest && !select_mode);
+                show_named("AbSearch", !exp && !dest && !select_mode);
+                show_named("AbDelete", !exp && selm);
+                show_named("AbMove", !exp && selm);
+                show_named("AbCopy", !exp && selm);
+                show_named("AbShare", !exp && selm);
+                show_named("AbDone", !exp && dest);
+                show_named("AbCancel", !exp && dest);
+                show_named("AbMore", !exp);
+                show_named("XbSelect", exp && !dest && !select_mode);
+                show_named("XbNewFolder", exp && !dest && !select_mode);
+                show_named("XbView", exp && !dest && !select_mode);
+                show_named("XbSearch", exp && !dest && !select_mode);
+                show_named("XbDelete", exp && selm);
+                show_named("XbMove", exp && selm);
+                show_named("XbCopy", exp && selm);
+                show_named("XbShare", exp && selm);
+                show_named("XbDone", exp && dest);
+                show_named("XbCancel", exp && dest);
+                show_named("XbMore", exp);
+                /* the view button shows the mode it switches TO */
+                dyn_set("ViewGlyph", view_list ? "icons" : "list");
+                dyn_set("XViewGlyph", view_list ? "icons" : "list");
+                dyn_set("XViewLabel", view_list ? "Icons" : "List");
+                dyn_set("SortChevron", sort_open ? "chevup" : "chevdown");
+                {
+                    const char *keys[3] = {"Name", "Date", "Size"};
+                    dyn_set("SortByKey", keys[sort_key]);
+                }
+                show_named("SortBar", !dest && !select_mode);
+                show_named("ChooseHeading", dest);
                 paint_node(dc, d->root);
                 build_crumbs();
                 paint_crumbs(dc);
                 paint_items(dc);
+                if (sort_open)
+                    paint_sort_flyout(dc);
+                if (menu_open)
+                    paint_overflow(dc);
             }
         }
         if (mode == M_NAVPANE) {
@@ -1559,19 +1797,6 @@ static void paint_all(void *dc)
                 paint_node(dc, d->root);
                 paint_navpane_rows(dc);
             }
-        }
-    } else if (mode == M_COMMANDS) {
-        if ((d = ux_find_doc(&ux, "FolderPage"))) {
-            layout_doc(d, 0, 0, 320, 528);
-            paint_node(dc, d->root);
-            build_crumbs();
-            paint_crumbs(dc);
-            paint_items(dc);
-        }
-        if ((d = ux_find_doc(&ux, "CommandsDialog"))) {
-            layout_doc(d, 0, 0, 320, 528);
-            paint_node(dc, d->root);
-            paint_commands(dc);
         }
     } else if (mode == M_RENAME || mode == M_NEWFOLDER) {
         const char *docn = mode == M_RENAME ? "RenameDialog" : "NewFolderDialog";
@@ -1633,29 +1858,19 @@ static void paint_all(void *dc)
             }
             layout_doc(d, 0, 0, 320, 528);
             paint_node(dc, d->root);
-            /* header + rows painted over the markup chrome */
+            /* header + rows painted over the markup chrome; the 96px
+             * thumbnail renders the same multi-layer VEC type icon */
             if (prop_is_root)
-                fi_draw(ifill, dc, 12, 72, 96, C_MUT, FI_DEVICE);
+                vec_icon(dc, VI_DEVICE, 12, 72, 96);
             else if (prop_is_folder)
-                fi_folder(ifill, dc, 12, 72, 96, C_FOL_A, C_FOL_B);
-            else {
-                int ic = item_icon(prop_name, 0);
-                fi_draw(ifill, dc, 12, 72, 96, C_MUT, ic);
-            }
+                vec_icon(dc, VI_FOLDER, 12, 72, 96);
+            else
+                vec_icon(dc, item_icon(prop_name, 0), 12, 72, 96);
             /* name may overflow the 200px column: clamp paint */
             clip_set(120, 0, 316, 528);
             draw_text(dc, 120, 76, prop_name, C_INK, 18, 0, 0);
             clip_set(0, 0, 320, 528);
             paint_props_rows(dc);
-        }
-    } else if (mode == M_PROGRESS) {
-        if ((d = ux_find_doc(&ux, "ProgressDialog"))) {
-            layout_doc(d, 0, 0, 320, 528);
-            paint_node(dc, d->root);
-            /* indeterminate W10M progress: 5 dots, first lit */
-            for (int i = 0; i < 5; ++i)
-                fi_dot(ifill, dc, 92 + i * 34, 278, 5,
-                       i == 0 ? C_ACC : C_SEP);
         }
     }
     if (toast_text[0]) {
@@ -1732,8 +1947,23 @@ static void do_command(const char *cmd)
     } else if (xeq(cmd, "search-clear")) {
         edit_len = 0;
         edit_buf[0] = 0;
-    } else if (xeq(cmd, "commands")) {
-        mode = M_COMMANDS;
+    } else if (xeq(cmd, "more")) {
+        /* "..." expands the app bar (labels) + opens the MenuFlyout */
+        menu_open = !menu_open;
+        sort_open = 0;
+        clamp_scroll();
+    } else if (xeq(cmd, "sortbar")) {
+        sort_open = !sort_open;
+        menu_open = 0;
+        clamp_scroll();
+    } else if (xeq(cmd, "view")) {
+        view_list = !view_list;
+        list_scroll = 0;
+        menu_open = 0;
+        clamp_scroll();
+    } else if (xeq(cmd, "refresh")) {
+        scan_folder();
+        menu_open = 0;
     } else if (xeq(cmd, "delete")) {
         begin_op_capture();
         xcopy(ops_dir, cur_path, xstrlen(cur_path) + 1);
@@ -1767,6 +1997,7 @@ static void do_command(const char *cmd)
         xcopy(cur_path, "\\fls0", 7);
         cur_path[6] = 0;
         select_mode = 0;
+        menu_open = sort_open = 0;
         scan_folder();
         mode = M_DEST;
     } else if (xeq(cmd, "dest-go")) {
@@ -1797,6 +2028,7 @@ static void do_command(const char *cmd)
         for (int i = 0; i < item_count; ++i)
             if (items[i].selected)
                 sel = i;
+        menu_open = 0;
         if (sel < 0) {
             mode = M_FOLDER;
             return;
@@ -1831,6 +2063,7 @@ static void do_command(const char *cmd)
         for (int i = 0; i < item_count; ++i)
             if (items[i].selected)
                 sel = i;
+        menu_open = 0;
         if (sel < 0) {
             open_properties(cur_path, 1);
         } else {
@@ -1842,38 +2075,61 @@ static void do_command(const char *cmd)
         mode = M_FOLDER;
     } else if (xeq(cmd, "share")) {
         toast("This item will be shared");
-        mode = M_FOLDER;
-    } else if (xeq(cmd, "refresh")) {
-        scan_folder();
+        menu_open = 0;
         mode = M_FOLDER;
     }
-    /* sort-by / view-mode live in the commands dialog rows */
 }
 
-static void commands_row_tap(int y)
+/* "..." overflow rows (mode-dependent: browse vs select) */
+static void overflow_row_tap(int row)
 {
-    int idx = (y - 220) / 36;
-    if (y < 220 || idx < 0 || idx > 8) {
-        mode = M_FOLDER;
+    if (overflow_disabled(row))
+        return;
+    if (select_mode) {
+        switch (row) {
+        case 0: do_command("selectall"); break;
+        case 1: do_command("clearsel"); break;
+        case 2: do_command("rename"); break;
+        case 3: do_command("properties"); break;
+        }
+    } else {
+        switch (row) {
+        case 0: do_command("refresh"); break;
+        case 1: do_command("select"); do_command("selectall"); break;
+        case 2: do_command("clearsel"); break;
+        case 3: do_command("properties"); break;
+        }
+    }
+}
+
+/* sort flyout rows: key + direction, then re-sort */
+static void sort_row_tap(int row)
+{
+    sort_key = row < 2 ? 0 : (row < 4 ? 2 : 1);
+    sort_desc = (row & 1) != 0;
+    sort_open = 0;
+    scan_folder();
+}
+
+/* launch Edge with a file:// activation argument (the "open in Edge"
+ * story): host runs the target module in-process, device writes the
+ * intent file + hands off through the serial launcher. Either way the
+ * files app quits right after, like the W10M foreground switch. */
+static void open_in_edge(const char *dir, const char *name)
+{
+    static const W16 edge_exe[] = {'\\', 'f', 'l', 's', '0', '\\', 'A', 'p',
+                                   'p', 's', '\\', 'e', 'd', 'g', 'e', '\\',
+                                   'e', 'd', 'g', 'e', '.', 'e', 'x', 'e', 0};
+    char url[200];
+    xcopy(url, "file://", 7);
+    path_join(url + 7, (int)sizeof(url) - 7, dir, name);
+    W16 wurl[200];
+    wide_(wurl, url, 200);
+    if (NT_CALL(CreateProcessW, (edge_exe, wurl, 0, 0, 0, 0, 0, 0, 0, 0))) {
+        NT_CALL(PostQuitMessage, (0));
         return;
     }
-    switch (idx) {
-    case 0: begin_op_capture(); xcopy(ops_dir, cur_path, xstrlen(cur_path) + 1);
-        if (!ops_count) { mode = M_FOLDER; return; }
-        dest_op = 0; xcopy(cur_path, "\\fls0", 7); cur_path[6] = 0;
-        scan_folder(); mode = M_DEST; break;
-    case 1: begin_op_capture(); xcopy(ops_dir, cur_path, xstrlen(cur_path) + 1);
-        if (!ops_count) { mode = M_FOLDER; return; }
-        dest_op = 1; xcopy(cur_path, "\\fls0", 7); cur_path[6] = 0;
-        scan_folder(); mode = M_DEST; break;
-    case 2: do_command("delete"); break;
-    case 3: do_command("rename"); break;
-    case 4: do_command("properties"); break;
-    case 5: do_command("share"); break;
-    case 6: sort_mode = (sort_mode + 1) & 3; scan_folder(); mode = M_FOLDER; break;
-    case 7: view_list = !view_list; list_scroll = 0; mode = M_FOLDER; break;
-    case 8: do_command("refresh"); break;
-    }
+    toast("This file can't be opened on this device");
 }
 
 static void item_tap(int idx, int x, int y)
@@ -1899,6 +2155,8 @@ static void item_tap(int idx, int x, int y)
         char path[160];
         path_join(path, sizeof(path), cur_path, it->name);
         nav_to(path);
+    } else if (item_opens_in_edge(it->name)) {
+        open_in_edge(cur_path, it->name);
     } else {
         toast("This file can't be opened on this device");
     }
@@ -1971,7 +2229,7 @@ static void process_tap(int x, int y)
                     continue;
                 int ry = 84 + shown * ROW_H;
                 if (y >= ry && y < ry + ROW_H) {
-                    if (search_rows[i].icon == FI_FOLDER) {
+                    if (search_rows[i].icon == VI_FOLDER) {
                         /* folder result: navigate into it */
                         char path[160];
                         path_join(path, sizeof(path), search_rows[i].parent,
@@ -2013,18 +2271,6 @@ static void process_tap(int x, int y)
         mode = M_FOLDER;
         return;
     }
-    if (mode == M_COMMANDS) {
-        if (y < 176) {
-            mode = M_FOLDER;
-            return;
-        }
-        if (y >= 220)
-            commands_row_tap(y);
-        else if ((d = ux_find_doc(&ux, "CommandsDialog")) &&
-                 (b = hit_test(d, x, y)))
-            do_command(ux_str(&ux, b, UXA_COMMAND, ""));
-        return;
-    }
     if (mode == M_CONFIRM) {
         if ((d = ux_find_doc(&ux, "ConfirmDialog")) && (b = hit_test(d, x, y)))
             do_command(ux_str(&ux, b, UXA_COMMAND, ""));
@@ -2037,18 +2283,27 @@ static void process_tap(int x, int y)
             do_command(ux_str(&ux, b, UXA_COMMAND, ""));
         return;
     }
-    if (mode == M_PROGRESS) {
-        mode = M_FOLDER;
+    /* folder / dest modes */
+    if (sort_open) {
+        /* flyout rows + light dismiss */
+        if (x >= 8 && x < 216 && y >= 84 && y < 300)
+            sort_row_tap((y - 84) / 36);
+        else
+            sort_open = 0;
         return;
     }
-    /* folder / dest modes */
+    if (menu_open) {
+        int top = overflow_top();
+        if (x >= 0 && x < 320 && y >= top && y < top + 144)
+            overflow_row_tap((y - top) / 36);
+        else
+            menu_open = 0; /* light dismiss (also via the "..." toggle) */
+        return;
+    }
     if (y >= 48 && y < 480) {
         /* breadcrumb strip handled below (needs crumb rects) */
         if (y >= 84) {
-            NRect host = {0, 84, 320, 396};
-            int n = find_node("ItemsHost");
-            if (n >= 0)
-                host = nrect[n];
+            NRect host = items_host();
             if (y >= host.y && y < host.y + host.h) {
                 int idx;
                 if (view_list)
@@ -2173,9 +2428,33 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
         int x = (int)(short)(lp & 0xffff);
         int y = (int)(short)(lp >> 16);
         toast_text[0] = 0;
+        drag_y = y;
+        dragging = 0;
         process_tap(x, y);
         NT_CALL(InvalidateRect, (hwnd, 0, 0));
         NT_CALL(UpdateWindow, (hwnd));
+        return 0;
+    }
+    if (msg == WM_MOVE_) {
+        /* touch drag scrolls the item list (direct manipulation, the
+         * W10M list feel) once the finger moves > 8px vertically */
+        int x = (int)(short)(lp & 0xffff);
+        int y = (int)(short)(lp >> 16);
+        (void)x;
+        if (mode == M_FOLDER && !sort_open && !menu_open && !select_mode) {
+            NRect host = items_host();
+            int dy = drag_y - y;
+            if (dragging || dy > 8 || dy < -8) {
+                if (!dragging)
+                    toast_text[0] = 0; /* the press became a scroll */
+                dragging = 1;
+                list_scroll += dy;
+                clamp_scroll();
+                drag_y = y;
+                NT_CALL(InvalidateRect, (hwnd, 0, 0));
+                NT_CALL(UpdateWindow, (hwnd));
+            }
+        }
         return 0;
     }
     return 0;

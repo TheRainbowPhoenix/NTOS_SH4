@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #define GetLastError nt_test_GetLastError
 #define SetLastError nt_test_SetLastError
 #define CloseHandle nt_test_CloseHandle
@@ -58,6 +59,58 @@ static int test_window_proc(void *hwnd, u32 message, u32 wp, u32 lp)
     }
     return 0;
 }
+
+/* File Explorer service fakes: one shared in-memory "disk" so CopyFileW
+ * and the intent-file channel round-trip without touching the host FS. */
+static char disk[64];
+static u32 disk_len;
+static u32 disk_pos;
+static char launched_path[96];
+static int fake_delete(const char *path)
+{
+    /* model deletion: the intent file's bytes disappear from the disk */
+    (void)path;
+    disk_len = 0;
+    disk_pos = 0;
+    return 0;
+}
+static int open_disk(const char *path, u32 flags)
+{
+    (void)path;
+    (void)flags;
+    disk_pos = 0; /* fresh handle: sequential reads from the start */
+    return 0x20001;
+}
+static int read_disk(int fd, void *p, u32 n)
+{
+    (void)fd;
+    if (n > disk_len - disk_pos)
+        n = disk_len - disk_pos;
+    memcpy(p, disk + disk_pos, n);
+    disk_pos += n;
+    return (int)n;
+}
+static int write_disk(int fd, const void *p, u32 n)
+{
+    (void)fd;
+    if (n > sizeof(disk) - 1)
+        n = sizeof(disk) - 1;
+    memcpy(disk, p, n);
+    disk_len = n;
+    disk[n] = 0;
+    return (int)n;
+}
+static int size_disk(int fd)
+{
+    (void)fd;
+    return (int)disk_len;
+}
+static int fake_launch(const char *path)
+{
+    snprintf(launched_path, sizeof(launched_path), "%s", path);
+    return 1;
+}
+
 int main(void)
 {
     ntos_host_table[11] = (const void *)fake_open;
@@ -131,6 +184,60 @@ int main(void)
     assert(DispatchMessageW(&msg) == 0);
     assert(paint_calls == 3 && lcd_refresh_calls == 3);
     DestroyWindow(hwnd);
+
+    /* ---- File Explorer services: CopyFileW / RemoveDirectoryW and the
+     * CreateProcessW -> intent.dat -> GetCommandLineW activation pair ---- */
+    {
+        /* the exhaustion block above left all 32 file slots busy: free a
+         * few through the tag-encoded handles before the copy tests */
+        for (int i = 0; i < 4; ++i)
+            CloseHandle((void *)(uintptr_t)(NT_HANDLE_TAG + i + 1u));
+        disk_len = 0;
+        disk[0] = 0;
+        launched_path[0] = 0;
+        ntos_host_table[11] = (const void *)open_disk;
+        ntos_host_table[12] = (const void *)read_disk;
+        ntos_host_table[13] = (const void *)write_disk;
+        ntos_host_table[14] = (const void *)fake_close;
+        ntos_host_table[17] = (const void *)size_disk;
+        ntos_host_table[19] = (const void *)fake_delete;
+        /* stage a source through the same fake disk: copy reads it back */
+        u16 src[] = {'\\', 'f', 'l', 's', '0', '\\', 'a', '.', 't', 'x', 't', 0};
+        u16 dst[] = {'\\', 'f', 'l', 's', '0', '\\', 'b', '.', 't', 'x', 't', 0};
+        /* CopyFileW: fake_read serves the staged bytes, fake_write sinks */
+        memcpy(disk, "COPYDATA", 8);
+        disk_len = 8;
+        disk_pos = 0;
+        assert(CopyFileW(src, dst, 0));
+        /* RemoveDirectoryW routes through the kernel unlink slot */
+        u16 dir[] = {'\\', 'f', 'l', 's', '0', '\\', 'e', 'm', 'p', 't', 'y', 0};
+        assert(RemoveDirectoryW(dir));
+        /* CreateProcessW persists the command line for the next process
+         * (through the \fls0\intent.dat channel) and launches the image */
+        ntos_host_table[27] = (const void *)fake_launch;
+        u16 edge[] = {'\\', 'f', 'l', 's', '0', '\\', 'A', 'p', 'p', 's', '\\',
+                      'e', 'd', 'g', 'e', '\\', 'e', 'd', 'g', 'e', '.', 'e',
+                      'x', 'e', 0};
+        u16 arg[] = {'f', 'i', 'l', 'e', ':', '/', '/', '\\', 'f', 'l', 's', '0',
+                     '\\', 'n', 't', 'o', 's', '.', 'h', 't', 'm', 'l', 0};
+        assert(CreateProcessW(edge, arg, 0, 0, 0, 0, 0, 0, 0, 0));
+        assert(!strcmp(launched_path, "\\fls0\\Apps\\edge\\edge.exe"));
+        /* the intent file now holds the URL: the "next process" reads it
+         * once through GetCommandLineW and the channel is consumed */
+        assert(disk_len >= 7 && !strncmp(disk, "file://", 7));
+        g_cmdline_read = 0; /* simulate a fresh process */
+        const u16 *cl = GetCommandLineW();
+        assert(cl && cl[0] == 'f' && cl[1] == 'i' && cl[2] == 'l' && cl[3] == 'e');
+        u32 i;
+        for (i = 0; arg[i]; ++i)
+            assert(cl[i] == arg[i]);
+        assert(cl[i] == 0);
+        g_cmdline_read = 0;
+        ntos_host_table[19] = (const void *)fake_delete; /* delete succeeded */
+        const u16 *cl2 = GetCommandLineW();
+        assert(cl2 && cl2[0] == 0); /* consumed: single-shot activation */
+        ntos_host_table[27] = 0;
+    }
     puts("PASS actual COREDLL: full 32-bit SDK descriptors, simultaneous file handles, "
          "read/size/close, exhaustion");
     return 0;

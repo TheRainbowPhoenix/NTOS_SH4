@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #define MAX_MODULES 32
 static PeModule mods[MAX_MODULES];
@@ -144,6 +145,89 @@ static int script_step(void)
     return 0;
 }
 
+/* ---------------- foreground launch hook (CreateProcessW target) ----------------
+ * Matches a launched image path to one of the loaded modules by basename
+ * ("...\\edge.exe" -> "edge.dll"), stashes the command line for
+ * GetCommandLineW, re-snaps the shared-component IAT slots (fingerkb,
+ * shellchrome, ...) to the new foreground module, and calls its entry —
+ * the host mirror of the device's serial-app hand-off. When the launched
+ * app's loop exits, the foreground (and the shared context) returns to
+ * the caller. */
+static PeModule *g_foreground;
+
+static void repatch_shared(PeModule *fg)
+{
+    for (size_t i = 0; i < mod_count; ++i) {
+        if (&mods[i] == fg)
+            continue;
+        PeModule *ordered[MAX_MODULES];
+        size_t cnt = 0;
+        ordered[cnt++] = fg;
+        for (size_t k = 0; k < mod_count && cnt < MAX_MODULES; ++k)
+            if (&mods[k] != fg && &mods[k] != &mods[i])
+                ordered[cnt++] = &mods[k];
+        pe_patch_iat_slots(&mods[i], ordered, cnt);
+    }
+}
+
+static int launch_target(const char *image, const char *cmdline)
+{
+    const char *base = image, *slash = image;
+    while (*slash) {
+        if (*slash == '/' || *slash == '\\')
+            base = slash + 1;
+        ++slash;
+    }
+    char stem[64];
+    size_t n = 0;
+    while (base[n] && base[n] != '.' && n + 1 < sizeof(stem))
+        ++n;
+    if (!n)
+        return 0;
+    memcpy(stem, base, n);
+    stem[n] = 0;
+    PeModule *target = NULL;
+    for (size_t i = 0; i < mod_count; ++i) {
+        /* module names carry their argv path ("../../edge/app/edge.dll"):
+         * match the basename stem, not the whole string */
+        const char *mn = mods[i].name, *mb = mn, *ms = mn;
+        while (*ms) {
+            if (*ms == '/' || *ms == '\\')
+                mb = ms + 1;
+            ++ms;
+        }
+        size_t k = 0;
+        while (mb[k] && mb[k] != '.')
+            ++k;
+        if (k == n && !strncasecmp(mb, stem, n)) {
+            target = &mods[i];
+            break;
+        }
+    }
+    if (!target) {
+        host_log("launch: no loaded module matches '%s' (image %s)", stem, image);
+        return 0;
+    }
+    void *entry = pe_resolve(target, "RunApplication");
+    if (!entry) {
+        host_log("launch: %s has no RunApplication export", target->name);
+        return 0;
+    }
+    PeModule *caller = g_foreground;
+    g_foreground = target;
+    host_set_launch_cmdline(cmdline);
+    host_log("launch: foreground -> %s (cmdline \"%s\")", target->name, cmdline);
+    repatch_shared(target);
+    typedef MSABI int (*EntryFn)(void);
+    int rc = ((EntryFn)(uintptr_t)entry)();
+    host_log("launch: %s!RunApplication returned %d", target->name, rc);
+    if (caller) {
+        g_foreground = caller;
+        repatch_shared(caller);
+    }
+    return 1;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -180,6 +264,7 @@ int main(int argc, char **argv)
     install_crash_handler();
 
     host_init(argc, argv, fs_root);
+    host_set_launch_hook(launch_target);
 
     for (size_t i = 0; i < npaths; ++i) {
         size_t size;
@@ -207,6 +292,12 @@ int main(int argc, char **argv)
         for (size_t i = 0; i < mod_count; ++i)
             pe_patch_iat_slots(&mods[i], mod_ptrs, mod_count);
 
+    /* the LAST module is the entry app: shared components (keyboard,
+     * chrome) must paint with ITS render context from the first frame,
+     * regardless of which other app modules happen to be loaded */
+    g_foreground = &mods[mod_count - 1];
+    repatch_shared(g_foreground);
+
     for (size_t i = 0; i < mod_count; ++i)
         pe_call_entry(&mods[i], mods[i].base);
 
@@ -222,6 +313,7 @@ int main(int argc, char **argv)
         return 1;
     }
     host_log("calling %s!%s", app->name, entry);
+    g_foreground = app;
 
     if (script) {
         size_t size;

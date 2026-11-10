@@ -18,25 +18,30 @@ control painters — but the W10M **light** theme).
 - `tools/` — reusable analysis tooling
   - `pri_decode.py` (full mrm_pri2 decoder), `pri_dump_all.py`,
     `pri_extract_files.py`, `xbf_dump.py` + `xbf_framework_types.py`
-    (XBF v2 decoder), `ui_strings.py`
+    (XBF v2 decoder), `ui_strings.py`, `vec_icons.py` (multi-layer
+    colour VEC2 type icons -> `app/files_vecicons.h`)
 - `app/` — the POC
-  - `markup/*.xml` — the 9 uXAML pages (compiled by the shared
+  - `markup/*.xml` — the uXAML pages (compiled by the shared
     `edge/app/uxaml_gen.py` into `files.uxaml`)
   - `files_app.c` — app logic + real \fls0\ file operations
-  - `files_icons.c/h` — MDL2-style integer-stroke icon set
-  - `tests/` — e2e script, sample tree builder, shot checker
+  - `files_icons.c/h` — MDL2-style monochrome UI glyphs
+  - `files_vecicons.h` — generated multi-layer colour VEC type icons
+  - `tests/` — e2e script, sample tree builder, shot checker, fs verifier
 
 ## Build + e2e (host, NTOS_SH4_linux)
 
 ```
 make -C edge/ntos_linux          # host env (needed by the e2e)
-make -C files/app all test       # files.dll + fingerkb.dll + 22-frame e2e
+make -C files/app all test       # files.dll + fingerkb.dll + 27-frame e2e
 ```
 
 `make test` builds the sample \fls0\ tree, runs the scripted UI session
-under `edge/ntos_linux/ntos_linux` (browse, nav pane, select mode,
-commands dialog, properties, new-folder typed on the shared SIP,
-recursive search, delete + copy) and pixel-checks every frame.
+under `edge/ntos_linux/ntos_linux` (browse, nav pane, select mode, sort
+flyout, overflow menu, properties, new-folder + rename typed on the
+shared SIP, recursive search, delete, copy AND move through the
+destination picker, drag-scrolling, and the file:// open-in-Edge hand-off)
+and pixel-checks every frame; `tests/verify_fs.py` then asserts the
+rename/move/copy physically landed on disk.
 
 CI: `.forgejo/workflows/files-ci.yml` ships the log + screenshots to the
 `files-ci` branch on every push.

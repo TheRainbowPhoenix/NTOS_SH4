@@ -1,7 +1,7 @@
 <Page name="FolderPage">
   <Canvas>
+    <!-- ================= NavBar: hamburger | breadcrumbs | Up ============ -->
     <Canvas x="0" y="0" w="320" h="48">
-      <!-- NavBar: hamburger | breadcrumbs | Up (Colors.xaml: ChromeMedium) -->
       <Rect x="0" y="0" w="320" h="48" bg="#E6E6E6"/>
       <Button name="HamburgerButton" x="0" y="0" w="48" h="48" command="navpane">
         <Glyph x="16" y="16" w="16" h="16" text="hamburger" color="#000000"/>
@@ -11,54 +11,113 @@
         <Glyph x="12" y="12" w="24" h="24" text="up" color="#000000"/>
       </Button>
     </Canvas>
-    <Canvas x="0" y="48" w="320" h="432">
-      <Rect x="0" y="0" w="320" h="432" bg="#FFFFFF"/>
-      <Text name="SortByText" x="12" y="13" text="Sort by: Name" color="#000000" size="14"/>
-      <Text name="StatusText" x="12" y="13" text="" color="#000000" size="14" visible="false"/>
-      <Text name="EmptyText" x="12" y="13" text="This folder is empty." color="#767676" size="14" visible="false"/>
-      <Rect name="ItemsHost" x="0" y="36" w="320" h="396" bg="#FFFFFF"/>
-    </Canvas>
+
+    <!-- ================= content ========================================== -->
+    <!-- page background under the sort row + list (PageBackgroundAltHigh) -->
+    <Rect x="0" y="48" w="320" h="432" bg="#FFFFFF"/>
+    <!-- browse: "Sort by: <key>" + chevron (light-dismiss sort flyout) -->
+    <Button name="SortBar" x="0" y="48" w="320" h="36" command="sortbar">
+      <Text name="SortByLabel" x="12" y="13" text="Sort by:" color="#000000" size="14"/>
+      <Text name="SortByKey" x="70" y="13" text="Name" color="#0078D7" size="14"/>
+      <Glyph name="SortChevron" x="296" y="12" w="14" h="14" text="chevdown" color="#000000"/>
+    </Button>
+    <!-- picker mode heading (dest): "Choose a folder" replaces the sort row -->
+    <Text name="ChooseHeading" x="12" y="61" text="Choose a folder" color="#000000"
+          size="14" visible="false"/>
+    <Text name="StatusText" x="12" y="61" text="" color="#000000" size="14" visible="false"/>
+    <Text name="EmptyText" x="12" y="61" text="This folder is empty." color="#767676" size="14" visible="false"/>
+    <Rect name="ItemsHost" x="0" y="84" w="320" h="396" bg="#FFFFFF"/>
+
+    <!-- ================= app bar: collapsed (icon-only, 48px) ============ -->
     <Canvas x="0" y="480" w="320" h="48">
-      <Rect x="0" y="0" w="320" h="48" bg="#E6E6E6"/>
-      <Button name="AppBarSelect" x="0" y="0" w="80" h="48" command="select">
-        <Glyph x="31" y="7" w="18" h="18" text="select" color="#000000"/>
-        <Text x="40" y="32" text="Select" color="#000000" size="11" align="1"/>
+      <Rect name="AppBarCollapsed" x="0" y="0" w="320" h="48" bg="#E6E6E6"/>
+      <!-- browse row: Select | New folder | View | Search | ... -->
+      <Button name="AbSelect" x="0" y="0" w="64" h="48" command="select">
+        <Glyph x="23" y="15" w="18" h="18" text="select" color="#000000"/>
       </Button>
-      <Button name="AppBarNewFolder" x="80" y="0" w="80" h="48" command="newfolder">
-        <Glyph x="31" y="7" w="18" h="18" text="newfolder" color="#000000"/>
-        <Text x="40" y="32" text="New folder" color="#000000" size="11" align="1"/>
+      <Button name="AbNewFolder" x="64" y="0" w="64" h="48" command="newfolder">
+        <Glyph x="23" y="15" w="18" h="18" text="newfolder" color="#000000"/>
       </Button>
-      <Button name="AppBarSearch" x="160" y="0" w="80" h="48" command="search">
-        <Glyph x="31" y="7" w="18" h="18" text="search" color="#000000"/>
-        <Text x="40" y="32" text="Search" color="#000000" size="11" align="1"/>
+      <Button name="AbView" x="128" y="0" w="64" h="48" command="view">
+        <Glyph name="ViewGlyph" x="23" y="15" w="18" h="18" text="icons" color="#000000"/>
       </Button>
-      <Button name="AppBarMore" x="240" y="0" w="80" h="48" command="commands">
-        <Glyph x="31" y="7" w="18" h="18" text="more" color="#000000"/>
-        <Text x="40" y="32" text="More" color="#000000" size="11" align="1"/>
+      <Button name="AbSearch" x="192" y="0" w="64" h="48" command="search">
+        <Glyph x="23" y="15" w="18" h="18" text="search" color="#000000"/>
       </Button>
-      <Button name="AppBarSelectAll" x="0" y="0" w="80" h="48" command="selectall" visible="false">
-        <Glyph x="31" y="7" w="18" h="18" text="selectall" color="#000000"/>
-        <Text x="40" y="32" text="Select all" color="#000000" size="11" align="1"/>
+      <Button name="AbMore" x="256" y="0" w="64" h="48" command="more">
+        <Glyph x="23" y="15" w="18" h="18" text="more" color="#000000"/>
       </Button>
-      <Button name="AppBarCopy" x="80" y="0" w="80" h="48" command="copyto" visible="false">
-        <Glyph x="31" y="7" w="18" h="18" text="copy" color="#000000"/>
-        <Text x="40" y="32" text="Copy to" color="#000000" size="11" align="1"/>
+      <!-- select row: Delete | Move to | Copy to | Share | ... -->
+      <Button name="AbDelete" x="0" y="0" w="64" h="48" command="delete" visible="false">
+        <Glyph x="23" y="15" w="18" h="18" text="delete" color="#000000"/>
       </Button>
-      <Button name="AppBarMove" x="160" y="0" w="80" h="48" command="moveto" visible="false">
-        <Glyph x="31" y="7" w="18" h="18" text="move" color="#000000"/>
-        <Text x="40" y="32" text="Move to" color="#000000" size="11" align="1"/>
+      <Button name="AbMove" x="64" y="0" w="64" h="48" command="moveto" visible="false">
+        <Glyph x="23" y="15" w="18" h="18" text="move" color="#000000"/>
       </Button>
-      <Button name="AppBarDelete" x="240" y="0" w="80" h="48" command="delete" visible="false">
-        <Glyph x="31" y="7" w="18" h="18" text="delete" color="#000000"/>
-        <Text x="40" y="32" text="Delete" color="#000000" size="11" align="1"/>
+      <Button name="AbCopy" x="128" y="0" w="64" h="48" command="copyto" visible="false">
+        <Glyph x="23" y="15" w="18" h="18" text="copy" color="#000000"/>
       </Button>
-      <Button name="AppBarDestCancel" x="0" y="0" w="80" h="48" command="dest-cancel" visible="false">
-        <Glyph x="31" y="7" w="18" h="18" text="x" color="#000000"/>
-        <Text x="40" y="32" text="Cancel" color="#000000" size="11" align="1"/>
+      <Button name="AbShare" x="192" y="0" w="64" h="48" command="share" visible="false">
+        <Glyph x="23" y="15" w="18" h="18" text="share" color="#000000"/>
       </Button>
-      <Button name="AppBarDestGo" x="80" y="0" w="240" h="48" command="dest-go" visible="false">
-        <Glyph x="6" y="14" w="20" h="20" text="copy" color="#000000"/>
-        <Text x="34" y="16" name="DestGoText" text="Copy here" color="#000000" size="14"/>
+      <!-- dest picker row: (gap) | Done | Cancel | ... (right-aligned) -->
+      <Button name="AbDone" x="128" y="0" w="64" h="48" command="dest-go" visible="false">
+        <Glyph x="23" y="15" w="18" h="18" text="check" color="#0078D7"/>
+      </Button>
+      <Button name="AbCancel" x="192" y="0" w="64" h="48" command="dest-cancel" visible="false">
+        <Glyph x="23" y="15" w="18" h="18" text="x" color="#000000"/>
+      </Button>
+    </Canvas>
+
+    <!-- ============ app bar: expanded ("..." open: labels shown) ========= -->
+    <Canvas x="0" y="460" w="320" h="68">
+      <Rect name="AppBarExpanded" x="0" y="0" w="320" h="68" bg="#E6E6E6" visible="false"/>
+      <!-- browse row with labels -->
+      <Button name="XbSelect" x="0" y="0" w="64" h="68" command="select" visible="false">
+        <Glyph x="23" y="8" w="18" h="18" text="select" color="#000000"/>
+        <Text x="32" y="40" text="Select" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="XbNewFolder" x="64" y="0" w="64" h="68" command="newfolder" visible="false">
+        <Glyph x="23" y="8" w="18" h="18" text="newfolder" color="#000000"/>
+        <Text x="32" y="40" text="New folder" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="XbView" x="128" y="0" w="64" h="68" command="view" visible="false">
+        <Glyph name="XViewGlyph" x="23" y="8" w="18" h="18" text="icons" color="#000000"/>
+        <Text name="XViewLabel" x="32" y="40" text="Icons" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="XbSearch" x="192" y="0" w="64" h="68" command="search" visible="false">
+        <Glyph x="23" y="8" w="18" h="18" text="search" color="#000000"/>
+        <Text x="32" y="40" text="Search" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="XbMore" x="256" y="0" w="64" h="68" command="more" visible="false">
+        <Glyph x="23" y="8" w="18" h="18" text="more" color="#000000"/>
+        <Text x="32" y="40" text="More" color="#000000" size="11" align="1"/>
+      </Button>
+      <!-- select row with labels -->
+      <Button name="XbDelete" x="0" y="0" w="64" h="68" command="delete" visible="false">
+        <Glyph x="23" y="8" w="18" h="18" text="delete" color="#000000"/>
+        <Text x="32" y="40" text="Delete" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="XbMove" x="64" y="0" w="64" h="68" command="moveto" visible="false">
+        <Glyph x="23" y="8" w="18" h="18" text="move" color="#000000"/>
+        <Text x="32" y="40" text="Move to" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="XbCopy" x="128" y="0" w="64" h="68" command="copyto" visible="false">
+        <Glyph x="23" y="8" w="18" h="18" text="copy" color="#000000"/>
+        <Text x="32" y="40" text="Copy to" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="XbShare" x="192" y="0" w="64" h="68" command="share" visible="false">
+        <Glyph x="23" y="8" w="18" h="18" text="share" color="#000000"/>
+        <Text x="32" y="40" text="Share" color="#000000" size="11" align="1"/>
+      </Button>
+      <!-- dest picker row with labels -->
+      <Button name="XbDone" x="128" y="0" w="64" h="68" command="dest-go" visible="false">
+        <Glyph x="23" y="8" w="18" h="18" text="check" color="#0078D7"/>
+        <Text x="32" y="40" text="Done" color="#000000" size="11" align="1"/>
+      </Button>
+      <Button name="XbCancel" x="192" y="0" w="64" h="68" command="dest-cancel" visible="false">
+        <Glyph x="23" y="8" w="18" h="18" text="x" color="#000000"/>
+        <Text x="32" y="40" text="Cancel" color="#000000" size="11" align="1"/>
       </Button>
     </Canvas>
   </Canvas>

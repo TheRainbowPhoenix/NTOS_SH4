@@ -1341,9 +1341,132 @@ int SipSetInfo(const NT_SIP_INFO *info)
 int coredll_launch(const char *path)
 {
     const void **a = ntapi();
+#ifdef NTOS_CORE_HOST_TEST
+    /* the host test has no mapped API window at 0x08100000: the table
+     * pointer (slot 27) is the whole contract */
+    if (!path || !a || !a[27])
+        return 0;
+#else
     if (!path || !ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 27u) || !a || !a[27])
         return 0;
+#endif
     return ((int (*)(const char *))a[27])(path);
+}
+
+/* ---------------------------------------------------------------------------
+ * File Explorer file-model services (stubs until now): CopyFileW composites
+ * from the CreateFileW/ReadFile/WriteFile services, RemoveDirectoryW reuses
+ * the kernel unlink on the (empty) directory path, and the CreateProcessW /
+ * GetCommandLineW pair carries a launch argument across the foreground
+ * hand-off through the \fls0\intent.dat file — the same private channel
+ * StartHost uses (\fls0\next.dat).
+ * ------------------------------------------------------------------------- */
+static const u16 intent_path[] = {'\\', 'f', 'l', 's', '0', '\\', 'i', 'n',
+                                  't',  'e',  'n', 't', '.', 'd', 'a', 't', 0};
+
+int CopyFileW(const u16 *from, const u16 *to, int fail_if_exists)
+{
+    void *src, *dst;
+    u32 total = 0;
+    if (!from || !to)
+        return 0;
+    if (fail_if_exists) {
+        src = CreateFileW(to, NT_GENERIC_READ, 1, 0, 3, 0, 0);
+        if (src != NT_INVALID_FILE) {
+            CloseHandle(src);
+            return 0;
+        }
+    }
+    src = CreateFileW(from, NT_GENERIC_READ, 1, 0, 3, 0, 0);
+    if (src == NT_INVALID_FILE)
+        return 0;
+    dst = CreateFileW(to, NT_GENERIC_WRITE, 1, 0, 2 /*CREATE_ALWAYS*/, 0, 0);
+    if (dst == NT_INVALID_FILE) {
+        CloseHandle(src);
+        return 0;
+    }
+    u32 srclen = GetFileSize(src, 0);
+    for (;;) {
+        unsigned char buf[512];
+        u32 got = 0, done = 0;
+        if (!ReadFile(src, buf, sizeof(buf), &got, 0))
+            break;
+        if (!got)
+            break;
+        if (!WriteFile(dst, buf, got, &done, 0) || done != got)
+            break;
+        total += done;
+    }
+    CloseHandle(src);
+    CloseHandle(dst);
+    return total == srclen; /* full copy only */
+}
+
+int RemoveDirectoryW(const u16 *name)
+{
+    const void **a = ntapi();
+    char path[96];
+    if (!a || !a[19] || !narrow_path(name, path, sizeof(path)))
+        return 0;
+    /* the kernel unlink service removes an empty directory on this
+     * firmware, exactly like the native shell's folder delete */
+    return ((int (*)(const char *))a[19])(path) == 0;
+}
+
+static u16 g_cmdline[256];
+static int g_cmdline_read;
+
+const u16 *GetCommandLineW(void)
+{
+    if (!g_cmdline_read) {
+        u32 got = 0;
+        g_cmdline_read = 1;
+        g_cmdline[0] = 0;
+        void *h = CreateFileW(intent_path, NT_GENERIC_READ, 1, 0, 3, 0, 0);
+        if (h != NT_INVALID_FILE) {
+            unsigned char buf[200];
+            if (ReadFile(h, buf, sizeof(buf) - 1, &got, 0) && got) {
+                u32 i;
+                for (i = 0; i < got && i < 254; ++i)
+                    g_cmdline[i] = buf[i];
+                g_cmdline[i] = 0;
+            }
+            CloseHandle(h);
+        }
+        DeleteFileW(intent_path); /* consume: one launch, one argument */
+    }
+    return g_cmdline;
+}
+
+int CreateProcessW(const u16 *image, const u16 *cmdline, void *pa, void *ta,
+                   int inherit, u32 flags, void *env, const u16 *cwd,
+                   void *si, void *pi)
+{
+    char narrow[128];
+    u32 i = 0;
+    (void)pa; (void)ta; (void)inherit; (void)flags; (void)env;
+    (void)cwd; (void)si; (void)pi;
+    if (!image || !narrow_path(image, narrow, sizeof(narrow)))
+        return 0;
+    /* persist the launch argument, then hand the foreground over */
+    if (cmdline && cmdline[0]) {
+        void *h = CreateFileW(intent_path, NT_GENERIC_WRITE, 1, 0, 2, 0, 0);
+        if (h != NT_INVALID_FILE) {
+            unsigned char buf[200];
+            u32 n = 0, done = 0;
+            while (cmdline[n] && n < sizeof(buf) - 1) {
+                buf[n] = (unsigned char)cmdline[n];
+                ++n;
+            }
+            WriteFile(h, buf, n, &done, 0);
+            CloseHandle(h);
+        }
+        /* a fresh process reads the intent once at startup */
+        g_cmdline_read = 0;
+        g_cmdline[0] = 0;
+        (void)i;
+    }
+    return coredll_launch(narrow);
 }
 
 /* Legacy WinCE EXEs share the same optional soft keys as UIX apps. */

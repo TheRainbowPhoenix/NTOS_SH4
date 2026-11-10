@@ -14,6 +14,8 @@ enum {
     FI_HAMBURGER,   /* global nav button (E700)     */
     FI_UP,          /* up one level (E752)          */
     FI_CHEVRON,     /* breadcrumb separator (E70E)  */
+    FI_CHEVDOWN,    /* sort bar caret, closed       */
+    FI_CHEVUP,      /* sort bar caret, flyout open  */
     FI_FOLDER,      /* amber folder (E8B7)          */
     FI_FOLDER_ADD,  /* new folder (E8F4)            */
     FI_FILE,        /* generic file page (E7C3)     */

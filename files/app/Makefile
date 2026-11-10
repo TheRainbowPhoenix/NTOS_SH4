@@ -24,8 +24,8 @@ files.uxaml: $(EDGEAPP)/uxaml_gen.py markup/*.xml
 	python3 $(EDGEAPP)/uxaml_gen.py build markup/ -o files.uxaml
 
 files.dll: files_app.c files_icons.c files_icons.h \
-           $(EDGEAPP)/uxaml.c $(EDGEAPP)/uxaml.h $(EDGEAPP)/nt_app.h \
-           $(PHONE)/uixctl.c $(PHONE)/svf.c $(PHONE)/phone.h
+	   $(EDGEAPP)/uxaml.c $(EDGEAPP)/uxaml.h $(EDGEAPP)/nt_app.h \
+	   $(PHONE)/uixctl.c $(PHONE)/svf.c $(PHONE)/phone.h
 	$(ZIG) cc -target x86_64-windows-gnu -shared -O2 -nostdlib \
 	  -Wl,--image-base=0x180310000 -DNTOS_LINUX_BUILD \
 	  -I. -I$(EDGEAPP) -I$(PHONE) -I../../payload -o files.dll \
@@ -42,14 +42,21 @@ fingerkb.dll: $(PHONE)/fingerkb.c $(PHONE)/phone.h $(PHONE)/system_icons.h
 clean:
 	rm -f files.dll fingerkb.dll files.uxaml files-*.png
 
-# e2e: run under NTOS_SH4_linux with the shared keyboard module; markup
-# and the sample tree go into the fake device root
+# e2e: run under NTOS_SH4_linux with the shared keyboard module + the Edge
+# app modules (the file:// open-in-Edge test hands the foreground over to
+# edge.dll in-process); markup and the sample tree go into the fake device root
 test: all
 	rm -rf tests/fs/fls0 && mkdir -p tests/fs/fls0
 	cp files.uxaml tests/fs/fls0/files.uxaml
 	python3 tests/make_tree.py tests/fs/fls0
-	../../edge/ntos_linux/ntos_linux fingerkb.dll files.dll \
-	  --script tests/files.script --shot files --fs tests/fs
+	$(MAKE) -C $(EDGEAPP) ZIG=$(ZIG) edge.dll chakra.dll fingerkb.dll shellchrome.dll edge.uxaml
+	cp $(EDGEAPP)/edge.uxaml tests/fs/fls0/edge.uxaml
+	../../edge/ntos_linux/ntos_linux $(EDGEAPP)/fingerkb.dll $(EDGEAPP)/shellchrome.dll \
+	  $(EDGEAPP)/chakra.dll $(EDGEAPP)/edge.dll files.dll \
+	  --script tests/files.script --shot files --fs tests/fs 2>&1 | tee tests/e2e.log
 	python3 tests/check_files_shots.py files-*.png
+	python3 tests/verify_fs.py tests/fs/fls0
+	grep -q 'launch: foreground -> .*edge.dll (cmdline "file://' tests/e2e.log \
+	  || (echo 'edge was NOT launched with the file:// argument'; exit 1)
 
 .PHONY: all clean test
