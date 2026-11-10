@@ -1,0 +1,234 @@
+\Files\FileExplorer.exe	FileExplorer.exe
+\Files\Microsoft.DesignCore\Themes\DesignCore.xbf	[EmbeddedData 27195b] 584246009a33000095360000020000000100000078000000
+\Files\View\AddressBar.xbf	[EmbeddedData 3636b] 58424600e208000046050000020000000100000078000000
+\Files\View\Colors.xbf	[EmbeddedData 761b] 584246007602000077000000020000000100000078000000
+\Files\View\CommandsDialog.xbf	[EmbeddedData 1139b] 584246000a0300005d010000020000000100000078000000
+\Files\View\ExplorerBrowser.xbf	[EmbeddedData 950b] 584246001e0300008c000000020000000100000078000000
+\Files\View\FolderView.xbf	[EmbeddedData 5252b] 584246002c0e00004c060000020000000100000078000000
+\Files\View\FolderViewPage.xbf	[EmbeddedData 2002b] 58424600be05000008020000020000000100000078000000
+\Files\View\MainFrame.xbf	[EmbeddedData 938b] 584246001e03000080000000020000000100000078000000
+\Files\View\MainPage.xbf	[EmbeddedData 4564b] 58424600ca0a0000fe060000020000000100000078000000
+\Files\View\NavBar.xbf	[EmbeddedData 1599b] 584246001205000021010000020000000100000078000000
+\Files\View\NavPane.xbf	[EmbeddedData 1924b] 58424600f205000086010000020000000100000078000000
+\Files\View\NewFolderDialog.xbf	[EmbeddedData 1046b] 5842460024030000e6000000020000000100000078000000
+\Files\View\PickerPage.xbf	[EmbeddedData 1460b] 584246006e0400003a010000020000000100000078000000
+\Files\View\ProgressBarDialog.xbf	[EmbeddedData 737b] 58424600f2010000e3000000020000000100000078000000
+\Files\View\PropertiesPage.xbf	[EmbeddedData 5683b] 58424600e80c00003f090000020000000100000078000000
+\Files\View\RenameDialog.xbf	[EmbeddedData 1036b] 5842460004030000fc000000020000000100000078000000
+\Files\View\SearchEditBox.xbf	[EmbeddedData 935b] 58424600d8020000c3000000020000000100000078000000
+\Files\app.xbf	[EmbeddedData 1162b] 58424600c8030000b6000000020000000100000078000000
+\Files\assets\BitMDL2.ttf	assets\BitMDL2.ttf
+\resources\Accelerator_Delete	D
+\resources\Accelerator_NewFolder	N
+\resources\Accelerator_Refresh	R
+\resources\Accelerator_Search_E	E
+\resources\Accelerator_Search_F	F
+\resources\Accelerator_SelectAll	A
+\resources\AddressBar_AddressChevron\FontFamily	Segoe MDL2 Assets
+\resources\AddressBar_AddressChevron\FontSize	8
+\resources\AddressBar_AddressChevron\FontWeight	Normal
+\resources\AddressBar_AddressChevron\Text	
+\resources\AddressBar_AddressEllipsis\Text	...
+\resources\AppxManifest_Description	File Explorer application
+\resources\AppxManifest_DisplayName	File Explorer
+\resources\AppxManifest_RemovableStorageDevicesPickerApp_DisplayName	Removable Storage
+\resources\AppxManifest_ShortName	File Explorer
+\resources\Audio_Label	Audio
+\resources\Camera_Label	Camera
+\resources\ClearSelectionCommand_Label	Clear selection
+\resources\CommandItem\FontFamily	Segoe UI
+\resources\CommandItem\FontSize	17.333
+\resources\CommandItem\FontWeight	SemiLight
+\resources\CommandsDialogTitle\FontFamily	Segoe UI
+\resources\CommandsDialogTitle\FontSize	17.333
+\resources\CommandsDialogTitle\FontWeight	Light
+\resources\Content_Label	Content
+\resources\CopyCommand_Error_Message	Something went wrong. Could not copy the file(s) or folder(s).
+\resources\CopyCommand_Error_Title	Copy
+\resources\CopyCommand_Label	Copy to
+\resources\CopyCommand_ProgressBar_Text	Copying files...
+\resources\DateModified\FontFamily	Segoe UI
+\resources\DateModified\FontSize	13
+\resources\DateModified\FontWeight	Normal
+\resources\DateModified\Text	Date modified:
+\resources\DateModified_Display\FontFamily	Segoe UI
+\resources\DateModified_Display\FontSize	13
+\resources\DateModified_Display\FontWeight	Normal
+\resources\DeadShorcutMsgDialogContent	The item '%1!s!' that this shortcut refers to has been deleted. Do you want to delete this shortcut?
+\resources\DeadShorcutMsgDialogTitle	Problem with shortcut
+\resources\DeadShortcutCancelButton	Cancel
+\resources\DeadShortcutDeleteButton	Delete it
+\resources\DeleteCommand_Confirmation_Message	It will be removed permanently. Are you sure you want to delete?
+\resources\DeleteCommand_Confirmation_cancel	Cancel
+\resources\DeleteCommand_Confirmation_ok	OK
+\resources\DeleteCommand_Error_Message	Something went wrong. Could not delete the file(s) or folder(s).
+\resources\DeleteCommand_Error_Title	Delete
+\resources\DeleteCommand_Label	Delete
+\resources\DeleteCommand_ProgressBar_Text	Deleting files...
+\resources\DeleteRecentCommand_Confirmation_Message	This will permanently remove this item from your recent files list. Are you sure you want to do this?
+\resources\DeleteRecentCommand_Confirmation_ok	Remove
+\resources\DeleteRecentCommand_Error_Title	Remove
+\resources\DeleteRecentCommand_Label	Remove from recent
+\resources\Description_Label	Description
+\resources\DiskFull_Error_Message	Free up some space on %1!s! and try again.
+\resources\DiskFull_Error_Title	Not enough space
+\resources\EDP_CommandsDialog_Title	Choose file ownership setting
+\resources\EmptyDefaultPageContent	This folder is empty.
+\resources\EmptyHomePageContent	You haven't opened any files recently.
+\resources\EmptyHomeSearchResultsContent	Your query didn't return anything.
+\resources\Encryption_Indicator_FontSize	17.333
+\resources\Encryption_Indicator_FontWeight	Normal
+\resources\FolderNameTextBox\Text	New folder
+\resources\FolderSize\FontFamily	Segoe UI
+\resources\FolderSize\FontSize	13
+\resources\FolderSize\FontWeight	Normal
+\resources\FolderSize\Text	Folder size:
+\resources\FolderSize\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Folder size
+\resources\FolderSize_Display\FontFamily	Segoe UI
+\resources\FolderSize_Display\FontSize	13
+\resources\FolderSize_Display\FontWeight	Normal
+\resources\FolderViewItem_FontFamily	Segoe UI
+\resources\FreeSpaceFormattedString	 free
+\resources\FreeSpaceText\FontFamily	Segoe UI
+\resources\FreeSpaceText\FontSize	13
+\resources\FreeSpaceText\FontWeight	Normal
+\resources\Header_Text\FontFamily	Segoe UI
+\resources\Header_Text\FontSize	15
+\resources\Header_Text\FontWeight	SemiBold
+\resources\Image_Label	Image
+\resources\ItemCountFormattedString	%1!u! files, %2!u! folders
+\resources\ItemCount\FontFamily	Segoe UI
+\resources\ItemCount\FontSize	13
+\resources\ItemCount\FontWeight	Normal
+\resources\ItemCount\Text	Contains:
+\resources\ItemCount\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Item count
+\resources\ItemCount_Display\FontFamily	Segoe UI
+\resources\ItemCount_Display\FontSize	13
+\resources\ItemCount_Display\FontWeight	Normal
+\resources\ItemName_Display\FontFamily	Segoe UI
+\resources\ItemName_Display\FontSize	18
+\resources\ItemName_Display\FontWeight	Normal
+\resources\ItemSize\FontFamily	Segoe UI
+\resources\ItemSize\FontSize	13
+\resources\ItemSize\FontWeight	Normal
+\resources\ItemSize\Text	File size:
+\resources\ItemSize_Display\FontFamily	Segoe UI
+\resources\ItemSize_Display\FontSize	13
+\resources\ItemSize_Display\FontWeight	Normal
+\resources\ItemTypeText\FontFamily	Segoe UI
+\resources\ItemTypeText\FontSize	13
+\resources\ItemTypeText\FontWeight	Normal
+\resources\ItemTypeText\Text	File type:
+\resources\ItemTypeText_Display\FontFamily	Segoe UI
+\resources\ItemTypeText_Display\FontSize	13
+\resources\ItemTypeText_Display\FontWeight	Normal
+\resources\LaunchFailed_Error_Message	Something went wrong. Could not launch the file.
+\resources\LaunchFailed_Error_Title	Launch file
+\resources\MainPage_AppBar\[using:Windows.UI.Xaml.Automation]AutomationProperties\ItemType	Navigation Control
+\resources\MainPage_AppBar\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Frame App Bar
+\resources\MainPage_ExplorerBrowser\[using:Windows.UI.Xaml.Automation]AutomationProperties\ItemType	Navigation Control
+\resources\MainPage_ExplorerBrowser\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Browser
+\resources\MainPage_NavBar\[using:Windows.UI.Xaml.Automation]AutomationProperties\ItemType	Navigation Control
+\resources\MainPage_NavBar\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Navigation Bar
+\resources\MainPage_NavPane\[using:Windows.UI.Xaml.Automation]AutomationProperties\ItemType	Navigation Control
+\resources\MainPage_NavPane\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Navigation Pane
+\resources\Media_Label	Media
+\resources\MoveCommand_Error_Message	Something went wrong. Could not move the file(s) or folder(s).
+\resources\MoveCommand_Error_Title	Move
+\resources\MoveCommand_Label	Move to
+\resources\MoveCommand_ProgressBar_Text	Moving files...
+\resources\NavBar_AddressBar\[using:Windows.UI.Xaml.Automation]AutomationProperties\ItemType	Navigation Control
+\resources\NavBar_AddressBar\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Address Bar
+\resources\NavBar_MenuButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\ItemType	Navigation Button
+\resources\NavBar_MenuButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Show Navigation Menu
+\resources\NavBar_UpButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\ItemType	Navigation Button
+\resources\NavBar_UpButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Up
+\resources\NavPane_ListView\FontFamily	Segoe UI
+\resources\NavPane_ListView\FontSize	18.666
+\resources\NavPane_ListView\FontWeight	SemiLight
+\resources\NavPane_ListView\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Navigation Pane Folders
+\resources\NavPane_Title\FontFamily	Segoe UI
+\resources\NavPane_Title\FontSize	18.666
+\resources\NavPane_Title\FontWeight	SemiLight
+\resources\NavPane_Title\Text	FILE EXPLORER
+\resources\NavPane_Title\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Navigation Pane Title
+\resources\NewFolderCommand_Error_Message	Something went wrong. Could not create the folder.
+\resources\NewFolderCommand_Error_Message_FolderNameTooLong	The name is too long. Could not create the folder.
+\resources\NewFolderCommand_Error_Message_InvalidName	Folder names can't contain:\n\\ / :  * ? " < > |
+\resources\NewFolderCommand_Error_Title	Create new folder
+\resources\NewFolderCommand_Label	New folder
+\resources\NewFolderDialog\PrimaryButtonText	OK
+\resources\NewFolderDialog\SecondaryButtonText	Cancel
+\resources\NewFolderTextBoxTitle\Text	Folder name
+\resources\NewFolderTitle\FontFamily	Segoe UI
+\resources\NewFolderTitle\Text	Create a new folder
+\resources\Origin_Label	Origin
+\resources\PickerCancelCommand_Label	Cancel
+\resources\PickerDoneCommand_Label	Done
+\resources\PickerSaveCommand_Confirmation_Message	A file with the name '%1!s!' already exists in '%2!s!'. Do you want to overwrite this file?
+\resources\PickerSaveCommand_Confirmation_Title	File already exists
+\resources\PickerSaveCommand_Confirmation_cancel	Cancel
+\resources\PickerSaveCommand_Confirmation_ok	OK
+\resources\ProgressBar_Text\FontFamily	Segoe UI
+\resources\ProgressBar_Text\FontSize	17.333
+\resources\ProgressBar_Text\FontWeight	SemiLight
+\resources\ProgressBar_Text\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Progress bar
+\resources\PropertiesCommand_Label	Properties
+\resources\PropertyLabel\FontFamily	Segoe UI
+\resources\PropertyLabel\FontSize	13
+\resources\PropertyLabel\FontWeight	Normal
+\resources\PropertyLabel_Format	%1!s!:
+\resources\PropertyValue\FontFamily	Segoe UI
+\resources\PropertyValue\FontSize	13
+\resources\PropertyValue\FontWeight	Normal
+\resources\RefreshCommand_Label	Refresh
+\resources\RenameCommand_Error_Message_File	Something went wrong. Could not rename file.
+\resources\RenameCommand_Error_Message_Folder	Something went wrong. Could not rename folder.
+\resources\RenameCommand_Error_Message_InvalidName_File	File names can't contain:\n\\ / :  * ? " < > |
+\resources\RenameCommand_Error_Message_InvalidName_Folder	Folder names can't contain:\n\\ / :  * ? " < > |
+\resources\RenameCommand_Error_Title	Rename
+\resources\RenameCommand_Label	Rename
+\resources\RenameDialog\PrimaryButtonText	OK
+\resources\RenameDialog\SecondaryButtonText	Cancel
+\resources\RenameTextBoxTitle_File	File name
+\resources\RenameTextBoxTitle_Folder	Folder name
+\resources\RenameTitle\FontFamily	Segoe UI
+\resources\RenameTitle_File	Rename file
+\resources\RenameTitle_Folder	Rename folder
+\resources\SearchCommand_Label	Search
+\resources\SearchEditBox\[using:Windows.UI.Xaml.Automation]AutomationProperties\ItemType	Search Text Box Control
+\resources\SearchEditBox\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Search Text Box
+\resources\SearchPlaceholderText	Search...
+\resources\SelectAllCommand_Label	Select all
+\resources\SelectCommand_Glyph	
+\resources\SelectCommand_Label	Select
+\resources\ShareCommand_Glyph	
+\resources\ShareCommand_Label	Share
+\resources\ShareDescriptionText_Multiple	These items will be shared
+\resources\ShareDescriptionText_Single	This item will be shared
+\resources\ShareErrorText	Unable to share
+\resources\ShareTitleText_Multiple	%1!u! items
+\resources\SortByTextFilterButton\Label	Sort by:
+\resources\SortDialog_Format	%1!s! (%2!s!)
+\resources\StatusBarTextBlock\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Status Bar
+\resources\StatusBar_FileOpenPickerMultiple	Choose files
+\resources\StatusBar_FileOpenPickerSingle	Choose a file
+\resources\StatusBar_FileSavePicker	Choose where to save %1!s!
+\resources\StatusBar_FolderPicker	Choose a folder
+\resources\StatusBar_MultipleItemsSelected	%1!u! items selected
+\resources\StatusBar_OneItemSelected	%1!u! item selected
+\resources\StringProperties_Seperator	; 
+\resources\System_Keywords	Keywords
+\resources\ThumbnailViewModeCommand_Label	Icons
+\resources\Thumbnail_Primary_FontSize	12
+\resources\Thumbnail_Primary_FontWeight	Normal
+\resources\TileViewModeCommand_Label	List
+\resources\Tile_Primary_FontSize	17.333
+\resources\Tile_Primary_FontWeight	Normal
+\resources\Tile_Secondary_FontSize	16
+\resources\Tile_Secondary_FontWeight	SemiLight
+\resources\UsedSpaceFormattedString	 used
+\resources\UsedSpaceText\FontFamily	Segoe UI
+\resources\UsedSpaceText\FontSize	13
+\resources\UsedSpaceText\FontWeight	Normal
+\resources\Video_Label	Video

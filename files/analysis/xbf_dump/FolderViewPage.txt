@@ -1,0 +1,52 @@
+using:FileExplorer.View:BasePage
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:FileExplorer.View'
+  .xmlns:utilities = 'using:FileExplorer.View.Utilities'
+  .xmlns:controls = 'using:FileExplorer.View'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'FileExplorer.View.FolderViewPage'
+  .Resources: [
+    Style [Key=SelectedSortDescriptionItemStyle]
+      .TargetType = 'MenuFlyoutItem'
+      Setter
+        .Property = 'Foreground'
+        .Value = '{ThemeResource SystemControlForegroundAccentBrush}'
+    DataTemplate [Key=SearchEditBoxTemplate]
+      .Template:
+        using:FileExplorer.View:SearchEditBox [#conn1]
+          .TextChangedDelayTimerMs = 100
+          .AutomationId = 'SearchEditBox'
+          .Transitions:
+            TransitionCollection
+              PaneThemeTransition
+                .Edge = 'Top'
+    using:FileExplorer.View.Utilities:BooleanToVisibilityConverter [Key=BooleanToVisibilityConverter]
+  ]
+  .Content:
+    Grid [x:Name=m_grid, #conn2]
+      .Background = '{ThemeResource PageBackgroundAltHighBrush}'
+      .ChildrenTransitions:
+        TransitionCollection
+          RepositionThemeTransition
+      .RowDefinitions: [
+        RowDefinition
+          .Height = 'Auto'
+        RowDefinition
+          .Height = '*'
+      ]
+      .Children: [
+        ProgressBar
+          .Row = 1
+          .VerticalAlignment = 'Top'
+          .Visibility:
+            Binding
+              .Path = 'ShouldDisplayProgressBar'
+              .Converter = '{StaticResource BooleanToVisibilityConverter}'
+          .Margin = '0'
+          .IsIndeterminate = True
+        using:FileExplorer.View:FolderView [x:Name=FolderView, #conn3]
+          .Row = 1
+          .Margin = '0'
+      ]

@@ -1,0 +1,2161 @@
+ResourceDictionary
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:elements = 'using:Microsoft.DesignCore.Elements'
+  .xmlns:lists = 'using:Microsoft.DesignCore.Elements.Lists'
+  .ThemeDictionaries: [
+    ResourceDictionary [Key=Default]
+      SolidColorBrush [Key=PageTextBaseMediumLowBrush]
+        .Color = '{StaticResource SystemBaseMediumLowColor}'
+      SolidColorBrush [Key=PageTextBaseHighBrush]
+        .Color = '{StaticResource SystemBaseHighColor}'
+      SolidColorBrush [Key=PageTextBaseMediumBrush]
+        .Color = '{StaticResource SystemBaseMediumColor}'
+      SolidColorBrush [Key=HighlightForegroundBaseMediumLowBrush]
+        .Color = '{StaticResource SystemBaseMediumLowColor}'
+      SolidColorBrush [Key=HighlightForegroundBaseHighBrush]
+        .Color = '{StaticResource SystemBaseHighColor}'
+      SolidColorBrush [Key=HyperlinkAccentBrush]
+        .Color = '{ThemeResource SystemAccentColor}'
+      SolidColorBrush [Key=DisabledBaseLowBrush]
+        .Color = '{StaticResource SystemBaseLowColor}'
+      SolidColorBrush [Key=DisabledBaseMediumLowBrush]
+        .Color = '{StaticResource SystemBaseMediumLowColor}'
+      SolidColorBrush [Key=HighlightForegroundBaseMediumBrush]
+        .Color = '{StaticResource SystemBaseMediumColor}'
+      SolidColorBrush [Key=HighlightForegroundChromeWhiteBrush]
+        .Color = '{StaticResource SystemChromeWhiteColor}'
+      Thickness [Key=HighContrastOnlyLeftBorderThickness]
+        .Value = '0'
+      SolidColorBrush [Key=HighlightBackgroundAccentHighBrush]
+        .Color = '{ThemeResource SystemAccentColor}'
+      Thickness [Key=HighContrastOnlyRightBorderThickness]
+        .Value = '0'
+      SolidColorBrush [Key=HighlightBackgroundTransparentBrush]
+        .Color = '#00FFFFFF'
+      SolidColorBrush [Key=HighlightBackgroundBaseHighBrush]
+        .Color = '{StaticResource SystemBaseHighColor}'
+      SolidColorBrush [Key=ControlForegroundBaseHighBrush]
+        .Color = '{StaticResource SystemBaseHighColor}'
+      SolidColorBrush [Key=HighContrastOnlyBorderTransparentBrush]
+        .Color = '#00FFFFFF'
+      SolidColorBrush [Key=ControlForegroundBaseMediumLowBrush]
+        .Color = '{StaticResource SystemBaseMediumLowColor}'
+      SolidColorBrush [Key=ControlForegroundBaseLowBrush]
+        .Color = '{StaticResource SystemBaseLowColor}'
+      SolidColorBrush [Key=ControlBackgroundAltHighBrush]
+        .Color = '{StaticResource SystemAltHighColor}'
+      SolidColorBrush [Key=ControlBackgroundTransparentBrush]
+        .Color = '#00FFFFFF'
+      SolidColorBrush [Key=PageBackgroundAltHighBrush]
+        .Color = '{StaticResource SystemAltHighColor}'
+      SolidColorBrush [Key=PaneBackgroundChromeLowBrush]
+        .Color = '{StaticResource SystemChromeLowColor}'
+      Thickness [Key=HighContrastOnlyBorderThickness]
+        .Value = '0'
+      Double [Key=HighContrastOnlyStrokeThickness]
+        .Value = 0.0
+      Thickness [Key=HighContrastOnlyTopBorderThickness]
+        .Value = '0'
+      Thickness [Key=HighContrastOnlyBottomBorderThickness]
+        .Value = '0'
+      Style [Key=SecondaryBodyTextBlockStyle]
+        .TargetType = 'TextBlock'
+        .BasedOn = '{StaticResource BodyTextBlockStyle}'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{StaticResource SystemControlForegroundBaseMediumBrush}'
+      Style [Key=SecondaryCaptionAltTextBlockStyle]
+        .TargetType = 'TextBlock'
+        .BasedOn = '{StaticResource CaptionAltTextBlockStyle}'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{StaticResource SystemControlForegroundBaseMediumBrush}'
+    ResourceDictionary [Key=Light]
+      SolidColorBrush [Key=PageTextBaseMediumLowBrush]
+        .Color = '{StaticResource SystemBaseMediumLowColor}'
+      SolidColorBrush [Key=PageTextBaseHighBrush]
+        .Color = '{StaticResource SystemBaseHighColor}'
+      SolidColorBrush [Key=PageTextBaseMediumBrush]
+        .Color = '{StaticResource SystemBaseMediumColor}'
+      SolidColorBrush [Key=HighlightForegroundBaseMediumLowBrush]
+        .Color = '{StaticResource SystemBaseMediumLowColor}'
+      SolidColorBrush [Key=HighlightForegroundBaseHighBrush]
+        .Color = '{StaticResource SystemBaseHighColor}'
+      SolidColorBrush [Key=HyperlinkAccentBrush]
+        .Color = '{ThemeResource SystemAccentColor}'
+      SolidColorBrush [Key=DisabledBaseLowBrush]
+        .Color = '{StaticResource SystemBaseLowColor}'
+      SolidColorBrush [Key=DisabledBaseMediumLowBrush]
+        .Color = '{StaticResource SystemBaseMediumLowColor}'
+      SolidColorBrush [Key=HighlightForegroundBaseMediumBrush]
+        .Color = '{StaticResource SystemBaseMediumColor}'
+      SolidColorBrush [Key=HighlightForegroundChromeWhiteBrush]
+        .Color = '{StaticResource SystemChromeWhiteColor}'
+      Thickness [Key=HighContrastOnlyLeftBorderThickness]
+        .Value = '0'
+      SolidColorBrush [Key=HighlightBackgroundAccentHighBrush]
+        .Color = '{ThemeResource SystemAccentColor}'
+      Thickness [Key=HighContrastOnlyRightBorderThickness]
+        .Value = '0'
+      SolidColorBrush [Key=HighlightBackgroundTransparentBrush]
+        .Color = '#00FFFFFF'
+      SolidColorBrush [Key=HighlightBackgroundBaseHighBrush]
+        .Color = '{StaticResource SystemBaseHighColor}'
+      SolidColorBrush [Key=ControlForegroundBaseHighBrush]
+        .Color = '{StaticResource SystemBaseHighColor}'
+      SolidColorBrush [Key=HighContrastOnlyBorderTransparentBrush]
+        .Color = '#00FFFFFF'
+      SolidColorBrush [Key=ControlForegroundBaseMediumLowBrush]
+        .Color = '{StaticResource SystemBaseMediumLowColor}'
+      SolidColorBrush [Key=ControlForegroundBaseLowBrush]
+        .Color = '{StaticResource SystemBaseLowColor}'
+      SolidColorBrush [Key=ControlBackgroundAltHighBrush]
+        .Color = '{StaticResource SystemAltHighColor}'
+      SolidColorBrush [Key=ControlBackgroundTransparentBrush]
+        .Color = '#00FFFFFF'
+      SolidColorBrush [Key=PageBackgroundAltHighBrush]
+        .Color = '{StaticResource SystemAltHighColor}'
+      SolidColorBrush [Key=PaneBackgroundChromeLowBrush]
+        .Color = '{StaticResource ChromeLowColor}'
+      Thickness [Key=HighContrastOnlyBorderThickness]
+        .Value = '0'
+      Double [Key=HighContrastOnlyStrokeThickness]
+        .Value = 0.0
+      Thickness [Key=HighContrastOnlyTopBorderThickness]
+        .Value = '0'
+      Thickness [Key=HighContrastOnlyBottomBorderThickness]
+        .Value = '0'
+      Style [Key=SecondaryBodyTextBlockStyle]
+        .TargetType = 'TextBlock'
+        .BasedOn = '{StaticResource BodyTextBlockStyle}'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{StaticResource SystemControlForegroundBaseMediumBrush}'
+      Style [Key=SecondaryCaptionAltTextBlockStyle]
+        .TargetType = 'TextBlock'
+        .BasedOn = '{StaticResource CaptionAltTextBlockStyle}'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{StaticResource SystemControlForegroundBaseMediumBrush}'
+    ResourceDictionary [Key=HighContrast]
+      SolidColorBrush [Key=PageTextBaseMediumLowBrush]
+        .Color = '{ThemeResource SystemColorWindowTextColor}'
+      SolidColorBrush [Key=PageTextBaseHighBrush]
+        .Color = '{ThemeResource SystemColorWindowTextColor}'
+      SolidColorBrush [Key=PageTextBaseMediumBrush]
+        .Color = '{ThemeResource SystemColorWindowTextColor}'
+      SolidColorBrush [Key=HighlightForegroundBaseMediumLowBrush]
+        .Color = '{ThemeResource SystemColorHighlightTextColor}'
+      SolidColorBrush [Key=HighlightForegroundBaseHighBrush]
+        .Color = '{ThemeResource SystemColorHighlightTextColor}'
+      SolidColorBrush [Key=HyperlinkAccentBrush]
+        .Color = '{ThemeResource SystemColorHotlightColor}'
+      SolidColorBrush [Key=DisabledBaseLowBrush]
+        .Color = '{ThemeResource SystemColorGrayTextColor}'
+      SolidColorBrush [Key=DisabledBaseMediumLowBrush]
+        .Color = '{ThemeResource SystemColorGrayTextColor}'
+      SolidColorBrush [Key=HighlightForegroundBaseMediumBrush]
+        .Color = '{ThemeResource SystemColorHighlightTextColor}'
+      SolidColorBrush [Key=HighlightForegroundChromeWhiteBrush]
+        .Color = '{ThemeResource SystemColorHighlightTextColor}'
+      Thickness [Key=HighContrastOnlyLeftBorderThickness]
+        .Value = '1,0,0,0'
+      SolidColorBrush [Key=HighlightBackgroundAccentHighBrush]
+        .Color = '{ThemeResource SystemColorHighlightColor}'
+      Thickness [Key=HighContrastOnlyRightBorderThickness]
+        .Value = '0,0,1,0'
+      SolidColorBrush [Key=HighlightBackgroundTransparentBrush]
+        .Color = '{ThemeResource SystemColorHighlightColor}'
+      SolidColorBrush [Key=HighlightBackgroundBaseHighBrush]
+        .Color = '{ThemeResource SystemColorHighlightColor}'
+      SolidColorBrush [Key=ControlForegroundBaseHighBrush]
+        .Color = '{ThemeResource SystemColorButtonTextColor}'
+      SolidColorBrush [Key=HighContrastOnlyBorderTransparentBrush]
+        .Color = '{ThemeResource SystemColorButtonTextColor}'
+      SolidColorBrush [Key=ControlForegroundBaseMediumLowBrush]
+        .Color = '{ThemeResource SystemColorButtonTextColor}'
+      SolidColorBrush [Key=ControlForegroundBaseLowBrush]
+        .Color = '{ThemeResource SystemColorButtonTextColor}'
+      SolidColorBrush [Key=ControlBackgroundAltHighBrush]
+        .Color = '{ThemeResource SystemColorButtonFaceColor}'
+      SolidColorBrush [Key=ControlBackgroundTransparentBrush]
+        .Color = '{ThemeResource SystemColorButtonFaceColor}'
+      SolidColorBrush [Key=PageBackgroundAltHighBrush]
+        .Color = '{ThemeResource SystemColorWindowColor}'
+      SolidColorBrush [Key=PaneBackgroundChromeLowBrush]
+        .Color = '{ThemeResource SystemColorWindowColor}'
+      Thickness [Key=HighContrastOnlyBorderThickness]
+        .Value = '1'
+      Double [Key=HighContrastOnlyStrokeThickness]
+        .Value = 1.0
+      Thickness [Key=HighContrastOnlyTopBorderThickness]
+        .Value = '0,1,0,0'
+      Thickness [Key=HighContrastOnlyBottomBorderThickness]
+        .Value = '0,0,0,1'
+      Style [Key=SecondaryBodyTextBlockStyle]
+        .TargetType = 'TextBlock'
+        .BasedOn = '{StaticResource BodyTextBlockStyle}'
+      Style [Key=SecondaryCaptionAltTextBlockStyle]
+        .TargetType = 'TextBlock'
+        .BasedOn = '{StaticResource CaptionAltTextBlockStyle}'
+  ]
+  Double [Key=CaptionIconSize]
+    .Value = 12.0
+  Thickness [Key=SplitViewIconMargin]
+    .Value = '4,0,16,0'
+  Double [Key=SubtitleAltLineHeight]
+    .Value = 22.0
+  FontFamily [Key=TypeRampFontFamily]
+    .Value = 'Segoe UI'
+  Double [Key=BodyIconSize]
+    .Value = 16.0
+  Style [Key=DefaultDoubleLineStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements.Lists:DoubleLine'
+    Setter
+      .Property = 'IconAlignment'
+      .Value = 'Top'
+    Setter
+      .Property = 'Line1Style'
+      .Value = '{StaticResource BaseTextBlockStyle}'
+    Setter
+      .Property = 'Line1TextWrapping'
+      .Value = 'NoWrap'
+    Setter
+      .Property = 'Line2Style'
+      .Value = '{ThemeResource SecondaryBodyTextBlockStyle}'
+    Setter
+      .Property = 'Line2TextWrapping'
+      .Value = 'Wrap'
+    Setter
+      .Property = 'Line2MaxLines'
+      .Value = '0'
+    Setter
+      .Property = 'ToolStyle'
+      .Value = '{ThemeResource SecondaryCaptionAltTextBlockStyle}'
+  Double [Key=SmallSplitViewOpenPaneLength]
+    .Value = 256.0
+  Double [Key=BaseIconSize]
+    .Value = 16.0
+  Style [Key=TitleTextIconButtonStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements:TextIconButton'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource TitleFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource TitleFontWeight}'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource TitleIconSize}'
+  Double [Key=TitleIconSize]
+    .Value = 24.0
+  Double [Key=SubtitleIconSize]
+    .Value = 20.0
+  Double [Key=HeaderIconSize]
+    .Value = 48.0
+  Double [Key=SubheaderIconSize]
+    .Value = 32.0
+  Double [Key=CaptionFontSize]
+    .Value = 12.0
+  Double [Key=CaptionAltFontSize]
+    .Value = 13.0
+  Double [Key=BodyFontSize]
+    .Value = 15.0
+  Double [Key=BaseFontSize]
+    .Value = 15.0
+  Style [Key=CaptionExpandCollapseButtonStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements:ExpandCollapseButton'
+    Setter
+      .Property = 'Padding'
+      .Value = '4,2,0,0'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource CaptionIconSize}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource CaptionFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource CaptionFontWeight}'
+  Double [Key=BaseAltFontSize]
+    .Value = 15.0
+  Double [Key=SubtitleAltFontSize]
+    .Value = 18.0
+  Double [Key=BaseAltLineHeight]
+    .Value = 20.0
+  Double [Key=BodyLineHeight]
+    .Value = 20.0
+  Double [Key=SubtitleFontSize]
+    .Value = 20.0
+  Double [Key=TitleFontSize]
+    .Value = 24.0
+  Double [Key=SubheaderFontSize]
+    .Value = 34.0
+  Double [Key=HeaderFontSize]
+    .Value = 46.0
+  FontWeight [Key=CaptionFontWeight]
+    .Value = 'Normal'
+  FontWeight [Key=CaptionAltFontWeight]
+    .Value = 'Normal'
+  Style [Key=BaseTextBlockStyle]
+    .TargetType = 'TextBlock'
+    Setter
+      .Property = 'FontFamily'
+      .Value = '{StaticResource TypeRampFontFamily}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource BaseFontWeight}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource BaseFontSize}'
+    Setter
+      .Property = 'TextTrimming'
+      .Value = 'None'
+    Setter
+      .Property = 'TextWrapping'
+      .Value = 'Wrap'
+    Setter
+      .Property = 'LineStackingStrategy'
+      .Value = 'BlockLineHeight'
+    Setter
+      .Property = 'LineHeight'
+      .Value = '{StaticResource BaseLineHeight}'
+    Setter
+      .Property = 'TextLineBounds'
+      .Value = 'Full'
+    Setter
+      .Property = 'OpticalMarginAlignment'
+      .Value = 'TrimSideBearings'
+  FontWeight [Key=HeaderFontWeight]
+    .Value = 'Light'
+  FontWeight [Key=BodyFontWeight]
+    .Value = 'Normal'
+  Style [Key=IconButtonStyle]
+    .TargetType = 'Button'
+    Setter
+      .Property = 'FontFamily'
+      .Value = 'Segoe MDL2 Assets'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource BodyIconSize}'
+    Setter
+      .Property = 'Margin'
+      .Value = '0'
+    Setter
+      .Property = 'HorizontalAlignment'
+      .Value = 'Left'
+    Setter
+      .Property = 'VerticalAlignment'
+      .Value = 'Top'
+    Setter
+      .Property = 'Padding'
+      .Value = '0'
+    Setter
+      .Property = 'HorizontalContentAlignment'
+      .Value = 'Center'
+    Setter
+      .Property = 'VerticalContentAlignment'
+      .Value = 'Center'
+    Setter
+      .Property = 'MinWidth'
+      .Value = 44.0
+    Setter
+      .Property = 'MinHeight'
+      .Value = 44.0
+    Setter
+      .Property = 'Background'
+      .Value = '{ThemeResource ControlBackgroundTransparentBrush}'
+    Setter
+      .Property = 'Foreground'
+      .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+    Setter
+      .Property = 'UseSystemFocusVisuals'
+      .Value = True
+    Setter
+      .Property = 'Template'
+      .Value:
+        ControlTemplate
+          .TargetType = 'Button'
+          .Template:
+            Grid [x:Name=LayoutRoot]
+              .Background = '{TemplateBinding Background}'
+              .VisualStateGroups: [
+              ]
+              .VisualStateGroups: [
+                VisualStateGroup [x:Name=CommonStates]
+                  .States: [
+                    VisualState [x:Name=Normal]
+                    VisualState [x:Name=Pressed]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ContentPlaceholder'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'LayoutRoot'
+                              .TargetProperty = '(Grid.Background)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                              ]
+                          ]
+                    VisualState [x:Name=Disabled]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ContentPlaceholder'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource SystemControlDisabledBaseMediumLowBrush}'
+                              ]
+                          ]
+                    VisualState [x:Name=PointerOver]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ContentPlaceholder'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'LayoutRoot'
+                              .TargetProperty = '(Grid.Background)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                              ]
+                          ]
+                  ]
+              ]
+              .Children: [
+                ContentPresenter [x:Name=ContentPlaceholder]
+                  .AccessibilityView = 'Raw'
+                  .Content = '{TemplateBinding Content}'
+                  .Margin = '{TemplateBinding Padding}'
+                  .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                  .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+              ]
+  Double [Key=SubtitleLineHeight]
+    .Value = 24.0
+  FontWeight [Key=BaseFontWeight]
+    .Value = 'SemiBold'
+  FontWeight [Key=BaseAltFontWeight]
+    .Value = 'Bold'
+  FontWeight [Key=SubtitleAltFontWeight]
+    .Value = 'Normal'
+  FontWeight [Key=SubtitleFontWeight]
+    .Value = 'Normal'
+  Double [Key=CaptionLineHeight]
+    .Value = 14.0
+  FontWeight [Key=TitleFontWeight]
+    .Value = 'SemiLight'
+  Thickness [Key=TitleMarginSplitViewWidth]
+    .Value = '60,0,12,0'
+  FontWeight [Key=SubheaderFontWeight]
+    .Value = 'Light'
+  Style [Key=BaseAltAllCapsTextBlockStyle]
+    .TargetType = 'TextBlock'
+    .BasedOn = '{StaticResource BaseAltTextBlockStyle}'
+    Setter
+      .Property = 'CharacterSpacing'
+      .Value = '{StaticResource BaseAltAllCapsCharacterSpacing}'
+  Double [Key=CaptionAltLineHeight]
+    .Value = 16.0
+  Double [Key=BaseLineHeight]
+    .Value = 20.0
+  Double [Key=TitleLineHeight]
+    .Value = 28.0
+  Style [Key=BaseTextIconButtonStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements:TextIconButton'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource BaseFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource BaseFontWeight}'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource BaseIconSize}'
+  Double [Key=SubheaderLineHeight]
+    .Value = 40.0
+  Style [Key=TitleTextBlockStyle]
+    .TargetType = 'TextBlock'
+    .BasedOn = '{StaticResource BaseTextBlockStyle}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource TitleFontWeight}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource TitleFontSize}'
+    Setter
+      .Property = 'LineHeight'
+      .Value = '{StaticResource TitleLineHeight}'
+    Setter
+      .Property = 'Padding'
+      .Value = '0,3,0,1'
+  Style [Key=SubtitleAltTextBlockStyle]
+    .TargetType = 'TextBlock'
+    .BasedOn = '{StaticResource BaseTextBlockStyle}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource SubtitleAltFontWeight}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource SubtitleAltFontSize}'
+    Setter
+      .Property = 'LineHeight'
+      .Value = '{StaticResource SubtitleAltLineHeight}'
+    Setter
+      .Property = 'Padding'
+      .Value = '0,1'
+  Style [Key=SubtitleTextBlockStyle]
+    .TargetType = 'TextBlock'
+    .BasedOn = '{StaticResource BaseTextBlockStyle}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource SubtitleFontWeight}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource SubtitleFontSize}'
+    Setter
+      .Property = 'LineHeight'
+      .Value = '{StaticResource SubtitleLineHeight}'
+    Setter
+      .Property = 'Padding'
+      .Value = '0,3,0,0'
+  Double [Key=HeaderLineHeight]
+    .Value = 56.0
+  Style [Key=DefaultSingleLineStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements.Lists:SingleLine'
+    Setter
+      .Property = 'IconAlignment'
+      .Value = 'Center'
+    Setter
+      .Property = 'Line1Style'
+      .Value = '{StaticResource BodyTextBlockStyle}'
+    Setter
+      .Property = 'Line1TextWrapping'
+      .Value = 'NoWrap'
+    Setter
+      .Property = 'ToolStyle'
+      .Value = '{ThemeResource SecondaryCaptionAltTextBlockStyle}'
+  Style [Key=BodyTextBlockStyle]
+    .TargetType = 'TextBlock'
+    .BasedOn = '{StaticResource BaseTextBlockStyle}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource BodyFontWeight}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource BodyFontSize}'
+  Int32 [Key=BaseAltAllCapsCharacterSpacing]
+    .Value = 75
+  Style [Key=HeaderTextBlockStyle]
+    .TargetType = 'TextBlock'
+    .BasedOn = '{StaticResource BaseTextBlockStyle}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource HeaderFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource HeaderFontWeight}'
+    Setter
+      .Property = 'LineHeight'
+      .Value = '{StaticResource HeaderLineHeight}'
+    Setter
+      .Property = 'Padding'
+      .Value = '0,5,0,1'
+  Style [Key=BodyTextIconButtonStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements:TextIconButton'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource BodyFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource BodyFontWeight}'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource BodyIconSize}'
+  Style [Key=SubheaderTextBlockStyle]
+    .TargetType = 'TextBlock'
+    .BasedOn = '{StaticResource BaseTextBlockStyle}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource SubheaderFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource SubheaderFontWeight}'
+    Setter
+      .Property = 'LineHeight'
+      .Value = '{StaticResource SubheaderLineHeight}'
+    Setter
+      .Property = 'Padding'
+      .Value = '0,5,0,1'
+  Style [Key=BaseAltTextBlockStyle]
+    .TargetType = 'TextBlock'
+    .BasedOn = '{StaticResource BaseTextBlockStyle}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource BaseAltFontWeight}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource BaseAltFontSize}'
+  Style [Key=CaptionTextBlockStyle]
+    .TargetType = 'TextBlock'
+    .BasedOn = '{StaticResource BaseTextBlockStyle}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource CaptionFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource CaptionFontWeight}'
+    Setter
+      .Property = 'LineHeight'
+      .Value = '{StaticResource CaptionLineHeight}'
+    Setter
+      .Property = 'Padding'
+      .Value = '0,2,0,0'
+  Style [Key=CaptionAltTextBlockStyle]
+    .TargetType = 'TextBlock'
+    .BasedOn = '{StaticResource BaseTextBlockStyle}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource CaptionAltFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource CaptionAltFontWeight}'
+    Setter
+      .Property = 'LineHeight'
+      .Value = '{StaticResource CaptionAltLineHeight}'
+    Setter
+      .Property = 'Padding'
+      .Value = '0,2,0,0'
+  Style [Key=DefaultTripleLineStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements.Lists:TripleLine'
+    Setter
+      .Property = 'IconAlignment'
+      .Value = 'Top'
+    Setter
+      .Property = 'Line1Style'
+      .Value = '{StaticResource BaseTextBlockStyle}'
+    Setter
+      .Property = 'Line1TextWrapping'
+      .Value = 'NoWrap'
+    Setter
+      .Property = 'Line2Style'
+      .Value = '{ThemeResource SecondaryBodyTextBlockStyle}'
+    Setter
+      .Property = 'Line2TextWrapping'
+      .Value = 'NoWrap'
+    Setter
+      .Property = 'Line3Style'
+      .Value = '{ThemeResource SecondaryBodyTextBlockStyle}'
+    Setter
+      .Property = 'Line3TextWrapping'
+      .Value = 'NoWrap'
+    Setter
+      .Property = 'ToolStyle'
+      .Value = '{ThemeResource SecondaryCaptionAltTextBlockStyle}'
+  Thickness [Key=TitleMarginHighWidth]
+    .Value = '24,0'
+  Thickness [Key=TitleMarginLowWidth]
+    .Value = '12,0'
+  Style [Key=CaptionTextIconButtonStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements:TextIconButton'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource CaptionFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource CaptionFontWeight}'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource CaptionIconSize}'
+  Style [Key=SubtitleTextIconButtonStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements:TextIconButton'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource SubtitleFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource SubtitleFontWeight}'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource SubtitleIconSize}'
+  Style [Key=BodyExpandCollapseButtonStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements:ExpandCollapseButton'
+    Setter
+      .Property = 'Padding'
+      .Value = '4,2,0,0'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource BodyIconSize}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource BodyFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource BodyFontWeight}'
+  Style [Key=BaseExpandCollapseButtonStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements:ExpandCollapseButton'
+    Setter
+      .Property = 'Padding'
+      .Value = '4,2,0,0'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource BaseIconSize}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource BaseFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource BaseFontWeight}'
+  Style [Key=SubtitleExpandCollapseButtonStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements:ExpandCollapseButton'
+    Setter
+      .Property = 'Padding'
+      .Value = '8,5,0,0'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource SubtitleIconSize}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource SubtitleFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource SubtitleFontWeight}'
+  Style [Key=TitleExpandCollapseButtonStyle]
+    .TargetType = 'using:Microsoft.DesignCore.Elements:ExpandCollapseButton'
+    Setter
+      .Property = 'Padding'
+      .Value = '8,5,0,0'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource TitleIconSize}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource TitleFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource TitleFontWeight}'
+  Style [Key=HorizontalRuleRectangleStyle]
+    .TargetType = 'Rectangle'
+    Setter
+      .Property = 'HorizontalAlignment'
+      .Value = 'Stretch'
+    Setter
+      .Property = 'Height'
+      .Value = 1.0
+    Setter
+      .Property = 'StrokeThickness'
+      .Value = 0.0
+    Setter
+      .Property = 'Fill'
+      .Value = '{ThemeResource ControlForegroundBaseLowBrush}'
+  Style [Key=VerticalRuleRectangleStyle]
+    .TargetType = 'Rectangle'
+    Setter
+      .Property = 'VerticalAlignment'
+      .Value = 'Stretch'
+    Setter
+      .Property = 'Width'
+      .Value = 1.0
+    Setter
+      .Property = 'StrokeThickness'
+      .Value = 0.0
+    Setter
+      .Property = 'Fill'
+      .Value = '{ThemeResource ControlForegroundBaseLowBrush}'
+  Style [Key=TextButtonStyle]
+    .TargetType = 'Button'
+    Setter
+      .Property = 'MinWidth'
+      .Value = 120.0
+  Style [Key=TextToggleButtonStyle]
+    .TargetType = 'ToggleButton'
+    Setter
+      .Property = 'MinWidth'
+      .Value = 120.0
+  Style [Key=PaddedListViewStyle]
+    .TargetType = 'ListView'
+    Setter
+      .Property = 'FooterTemplate'
+      .Value:
+        DataTemplate
+          .Template:
+            ContentPresenter
+              .Content:
+                Binding
+              .MinHeight = 84.0
+  Style [Key=MenuIconButtonStyle]
+    .TargetType = 'Button'
+    .BasedOn = '{StaticResource IconButtonStyle}'
+    Setter
+      .Property = 'Content'
+      .Value = '\ue700'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource SubtitleIconSize}'
+    Setter
+      .Property = 'MinHeight'
+      .Value = 48.0
+    Setter
+      .Property = 'MinWidth'
+      .Value = 48.0
+  Style [Key=TextBlockButtonStyle]
+    .TargetType = 'ButtonBase'
+    Setter
+      .Property = 'Background'
+      .Value = '#00FFFFFF'
+    Setter
+      .Property = 'Foreground'
+      .Value = '{ThemeResource SystemControlHyperlinkTextBrush}'
+    Setter
+      .Property = 'MinWidth'
+      .Value = 120.0
+    Setter
+      .Property = 'MinHeight'
+      .Value = 32.0
+    Setter
+      .Property = 'UseSystemFocusVisuals'
+      .Value = True
+    Setter
+      .Property = 'Template'
+      .Value:
+        ControlTemplate
+          .TargetType = 'ButtonBase'
+          .Template:
+            Grid
+              .Margin = '{TemplateBinding Padding}'
+              .Background = '{TemplateBinding Background}'
+              .Children: [
+                ContentPresenter [x:Name=Text]
+                  .Content = '{TemplateBinding Content}'
+                  .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                  .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+              ]
+              .VisualStateGroups: [
+              ]
+              .VisualStateGroups: [
+                VisualStateGroup [x:Name=CommonStates]
+                  .States: [
+                    VisualState [x:Name=Normal]
+                    VisualState [x:Name=PointerOver]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'Text'
+                              .TargetProperty = 'Foreground'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource SystemControlHyperlinkBaseMediumBrush}'
+                              ]
+                          ]
+                    VisualState [x:Name=Pressed]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'Text'
+                              .TargetProperty = 'Foreground'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource SystemControlHighlightBaseMediumLowBrush}'
+                              ]
+                          ]
+                    VisualState [x:Name=Disabled]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'Text'
+                              .TargetProperty = 'Foreground'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource SystemControlDisabledBaseLowBrush}'
+                              ]
+                          ]
+                  ]
+              ]
+  Style
+    .TargetType = 'using:Microsoft.DesignCore.Elements:TextFilterButton'
+    Setter
+      .Property = 'MinHeight'
+      .Value = 44.0
+    Setter
+      .Property = 'Padding'
+      .Value = '0,11,0,13'
+    Setter
+      .Property = 'Margin'
+      .Value = '0'
+    Setter
+      .Property = 'Background'
+      .Value = '#00FFFFFF'
+    Setter
+      .Property = 'HorizontalAlignment'
+      .Value = 'Left'
+    Setter
+      .Property = 'VerticalAlignment'
+      .Value = 'Top'
+    Setter
+      .Property = 'VerticalContentAlignment'
+      .Value = 'Center'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource BodyFontSize}'
+    Setter
+      .Property = 'FontFamily'
+      .Value = '{StaticResource TypeRampFontFamily}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource BodyFontWeight}'
+    Setter
+      .Property = 'Template'
+      .Value:
+        ControlTemplate
+          .TargetType = 'using:Microsoft.DesignCore.Elements:TextFilterButton'
+          .Template:
+            Grid [x:Name=LayoutRoot]
+              .Background = '{TemplateBinding Background}'
+              .ColumnDefinitions: [
+                ColumnDefinition
+                  .Width = 'Auto'
+                ColumnDefinition
+                  .Width = 'Auto'
+                ColumnDefinition
+                  .Width = '*'
+              ]
+              .VisualStateGroups: [
+              ]
+              .VisualStateGroups: [
+                VisualStateGroup [x:Name=CommonStates]
+                  .States: [
+                    VisualState [x:Name=Normal]
+                    VisualState [x:Name=PointerOver]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'LabelTextBlock'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseHighBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ContentTextBlock'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'LayoutRoot'
+                              .TargetProperty = '(Grid.Background)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightBackgroundTransparentBrush}'
+                              ]
+                          ]
+                    VisualState [x:Name=Pressed]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'LabelTextBlock'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseHighBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ContentTextBlock'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumLowBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'LayoutRoot'
+                              .TargetProperty = '(Grid.Background)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightBackgroundTransparentBrush}'
+                              ]
+                          ]
+                    VisualState [x:Name=Disabled]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ContentTextBlock'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource DisabledBaseLowBrush}'
+                              ]
+                          ]
+                  ]
+                VisualStateGroup [x:Name=FocusStates]
+                  .States: [
+                    VisualState [x:Name=Unfocused]
+                    VisualState [x:Name=Focused]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            DoubleAnimation
+                              .Duration = '0'
+                              .To = 1.0
+                              .TargetProperty = '(UIElement.Opacity)'
+                              .TargetName = 'FocusVisualWhite'
+                            DoubleAnimation
+                              .Duration = '0'
+                              .To = 1.0
+                              .TargetProperty = '(UIElement.Opacity)'
+                              .TargetName = 'FocusVisualBlack'
+                          ]
+                    VisualState [x:Name=PointerFocused]
+                  ]
+              ]
+              .Children: [
+                TextBlock [x:Name=LabelTextBlock]
+                  .Margin = '{TemplateBinding Padding}'
+                  .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                  .Foreground = '{ThemeResource ControlForegroundBaseHighBrush}'
+                  .Text:
+                    TemplateBinding
+                      .Property = 'Label'
+                TextBlock
+                  .Column = 1
+                  .Inlines: [
+                    Run
+                      .Text = '\xa0'
+                  ]
+                TextBlock [x:Name=ContentTextBlock]
+                  .Column = 2
+                  .Margin = '{TemplateBinding Padding}'
+                  .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                  .Text = '{TemplateBinding Content}'
+                  .Foreground = '{ThemeResource HyperlinkAccentBrush}'
+                Rectangle [x:Name=FocusVisualWhite]
+                  .ColumnSpan = 3
+                  .Opacity = 0.0
+                  .Stroke = '#FFFFFFFF'
+                  .StrokeDashArray = '1 1'
+                  .StrokeDashOffset = 1.5
+                Rectangle [x:Name=FocusVisualBlack]
+                  .ColumnSpan = 3
+                  .Opacity = 0.0
+                  .Stroke = '#FF000000'
+                  .StrokeDashArray = '1 1'
+                  .StrokeDashOffset = 0.5
+              ]
+  Style
+    .TargetType = 'using:Microsoft.DesignCore.Elements:TitleContent'
+    Setter
+      .Property = 'HorizontalContentAlignment'
+      .Value = 'Stretch'
+    Setter
+      .Property = 'VerticalContentAlignment'
+      .Value = 'Stretch'
+    Setter
+      .Property = 'Background'
+      .Value = '{ThemeResource PageBackgroundAltHighBrush}'
+    Setter
+      .Property = 'TitleStyle'
+      .Value = '{StaticResource BaseAltTextBlockStyle}'
+    Setter
+      .Property = 'TitleMargin'
+      .Value = '{StaticResource TitleMarginHighWidth}'
+    Setter
+      .Property = 'Template'
+      .Value:
+        ControlTemplate
+          .TargetType = 'using:Microsoft.DesignCore.Elements:TitleContent'
+          .Template:
+            Grid [x:Name=LayoutRoot]
+              .Background = '{TemplateBinding Background}'
+              .RowDefinitions: [
+                RowDefinition
+                  .MinHeight = 48.0
+                  .Height = 'Auto'
+                RowDefinition
+                  .Height = '*'
+              ]
+              .Children: [
+                TextBlock [x:Name=TitleTextBlock]
+                  .TextLineBounds = 'Tight'
+                  .Padding = '0'
+                  .TextTrimming = 'Clip'
+                  .LineHeight = 0.0
+                  .LineStackingStrategy = 'MaxHeight'
+                  .VerticalAlignment = 'Center'
+                  .Margin:
+                    TemplateBinding
+                      .Property = 'TitleMargin'
+                  .Style:
+                    TemplateBinding
+                      .Property = 'TitleStyle'
+                  .Text:
+                    TemplateBinding
+                      .Property = 'Title'
+              ]
+  Style
+    .TargetType = 'using:Microsoft.DesignCore.Elements:TextIconButton'
+    Setter
+      .Property = 'MinHeight'
+      .Value = 44.0
+    Setter
+      .Property = 'HorizontalAlignment'
+      .Value = 'Left'
+    Setter
+      .Property = 'FontFamily'
+      .Value = '{StaticResource TypeRampFontFamily}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource BodyFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource BodyFontWeight}'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource BodyIconSize}'
+    Setter
+      .Property = 'Foreground'
+      .Value = '{ThemeResource ControlForegroundBaseHighBrush}'
+    Setter
+      .Property = 'Background'
+      .Value = '#00FFFFFF'
+    Setter
+      .Property = 'Template'
+      .Value:
+        ControlTemplate
+          .TargetType = 'using:Microsoft.DesignCore.Elements:TextIconButton'
+          .Template:
+            Grid [x:Name=LayoutRoot]
+              .Background = '{TemplateBinding Background}'
+              .RowDefinitions: [
+                RowDefinition
+                  .Height = 'Auto'
+                RowDefinition
+                  .Height = '*'
+              ]
+              .ColumnDefinitions: [
+                ColumnDefinition
+                  .Width = 'Auto'
+                ColumnDefinition
+                  .Width = '*'
+                ColumnDefinition
+                  .Width = 'Auto'
+              ]
+              .VisualStateGroups: [
+              ]
+              .VisualStateGroups: [
+                VisualStateGroup [x:Name=CommonStates]
+                  .States: [
+                    VisualState [x:Name=Normal]
+                    VisualState [x:Name=Pressed]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ContentPlaceholder'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumLowBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'IconPlaceholder'
+                              .TargetProperty = '(ContentControl.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumLowBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'LayoutRoot'
+                              .TargetProperty = '(Grid.Background)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightBackgroundTransparentBrush}'
+                              ]
+                          ]
+                    VisualState [x:Name=Disabled]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ContentPlaceholder'
+                              .TargetProperty = '(TextBlockr.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource DisabledBaseLowBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'IconPlaceholder'
+                              .TargetProperty = '(ContentControl.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource DisabledBaseLowBrush}'
+                              ]
+                          ]
+                    VisualState [x:Name=PointerOver]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ContentPlaceholder'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'IconPlaceholder'
+                              .TargetProperty = '(ContentControl.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'LayoutRoot'
+                              .TargetProperty = '(Grid.Background)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightBackgroundTransparentBrush}'
+                              ]
+                          ]
+                  ]
+                VisualStateGroup [x:Name=FocusStates]
+                  .States: [
+                    VisualState [x:Name=Unfocused]
+                    VisualState [x:Name=Focused]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            DoubleAnimation
+                              .Duration = '0'
+                              .TargetName = 'FocusVisualWhiteRectangle'
+                              .TargetProperty = '(UIElement.Opacity)'
+                              .To = 1.0
+                            DoubleAnimation
+                              .Duration = '0'
+                              .TargetName = 'FocusVisualBlackRectangle'
+                              .TargetProperty = '(UIElement.Opacity)'
+                              .To = 1.0
+                          ]
+                    VisualState [x:Name=PointerFocused]
+                  ]
+              ]
+              .Children: [
+                TextBlock [x:Name=ContentPlaceholder]
+                  .Row = 1
+                  .Column = 1
+                  .Margin = '8,0'
+                  .VerticalAlignment = 'Center'
+                  .Text = '{TemplateBinding Content}'
+                ContentControl [x:Name=IconPlaceholder]
+                  .Width:
+                    TemplateBinding
+                      .Property = 'IconDimension'
+                  .Height:
+                    TemplateBinding
+                      .Property = 'IconDimension'
+                  .VerticalAlignment = 'Center'
+                  .IsTabStop = False
+                  .Content:
+                    TemplateBinding
+                      .Property = 'Icon'
+                Rectangle [x:Name=FocusVisualBlackRectangle]
+                  .RowSpan = 2
+                  .ColumnSpan = 3
+                  .Opacity = 0.0
+                  .Stroke = '#FF000000'
+                  .StrokeDashArray = '1'
+                  .StrokeDashOffset = 0.0
+                Rectangle [x:Name=FocusVisualWhiteRectangle]
+                  .RowSpan = 2
+                  .ColumnSpan = 3
+                  .Opacity = 0.0
+                  .Stroke = '#FFFFFFFF'
+                  .StrokeDashArray = '1'
+                  .StrokeDashOffset = 0.5
+              ]
+  Style
+    .TargetType = 'using:Microsoft.DesignCore.Elements:ExpandCollapseButton'
+    Setter
+      .Property = 'Background'
+      .Value = '#00FFFFFF'
+    Setter
+      .Property = 'Padding'
+      .Value = '4,2,0,0'
+    Setter
+      .Property = 'Margin'
+      .Value = '0'
+    Setter
+      .Property = 'HorizontalContentAlignment'
+      .Value = 'Right'
+    Setter
+      .Property = 'VerticalContentAlignment'
+      .Value = 'Center'
+    Setter
+      .Property = 'HorizontalAlignment'
+      .Value = 'Right'
+    Setter
+      .Property = 'MinHeight'
+      .Value = 44.0
+    Setter
+      .Property = 'FontFamily'
+      .Value = '{StaticResource TypeRampFontFamily}'
+    Setter
+      .Property = 'FontSize'
+      .Value = '{StaticResource BodyFontSize}'
+    Setter
+      .Property = 'FontWeight'
+      .Value = '{StaticResource BodyFontWeight}'
+    Setter
+      .Property = 'IconDimension'
+      .Value = '{StaticResource BodyIconSize}'
+    Setter
+      .Property = 'Foreground'
+      .Value = '{ThemeResource ControlForegroundBaseHighBrush}'
+    Setter
+      .Property = 'Template'
+      .Value:
+        ControlTemplate
+          .TargetType = 'using:Microsoft.DesignCore.Elements:ExpandCollapseButton'
+          .Template:
+            Grid [x:Name=LayoutRoot]
+              .Background = '{TemplateBinding Background}'
+              .VisualStateGroups: [
+              ]
+              .VisualStateGroups: [
+                VisualStateGroup [x:Name=CommonStates]
+                  .States: [
+                    VisualState [x:Name=Normal]
+                    VisualState [x:Name=PointerOver]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ExpandTextBlock'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'CollapseTextBlock'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ChevronIcon'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'LayoutRoot'
+                              .TargetProperty = '(Grid.Background)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightBackgroundTransparentBrush}'
+                              ]
+                          ]
+                    VisualState [x:Name=Pressed]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ExpandTextBlock'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumLowBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'CollapseTextBlock'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumLowBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ChevronIcon'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightForegroundBaseMediumLowBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'LayoutRoot'
+                              .TargetProperty = '(Grid.Background)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource HighlightBackgroundTransparentBrush}'
+                              ]
+                          ]
+                    VisualState [x:Name=Disabled]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ExpandTextBlock'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource DisabledBaseLowBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'CollapseTextBlock'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource DisabledBaseLowBrush}'
+                              ]
+                            ObjectAnimationUsingKeyFrames
+                              .TargetName = 'ChevronIcon'
+                              .TargetProperty = '(TextBlock.Foreground)'
+                              .KeyFrames: [
+                                DiscreteObjectKeyFrame
+                                  .KeyTime = 0.0
+                                  .Value = '{ThemeResource DisabledBaseLowBrush}'
+                              ]
+                          ]
+                  ]
+                VisualStateGroup [x:Name=ExpandCollapseStates]
+                  .States: [
+                    VisualState [x:Name=Collapsed]
+                    VisualState [x:Name=Expanded]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            DoubleAnimation
+                              .Duration = '0'
+                              .TargetName = 'ChevronIcon'
+                              .TargetProperty = '(UIElement.RenderTransform).(CompositeTransform.Rotation)'
+                              .To = 180.0
+                            DoubleAnimation
+                              .Duration = '0'
+                              .To = 1.0
+                              .TargetProperty = '(UIElement.Opacity)'
+                              .TargetName = 'CollapseTextBlock'
+                            DoubleAnimation
+                              .Duration = '0'
+                              .To = 0.0
+                              .TargetProperty = '(UIElement.Opacity)'
+                              .TargetName = 'ExpandTextBlock'
+                          ]
+                  ]
+                VisualStateGroup [x:Name=FocusStates]
+                  .States: [
+                    VisualState [x:Name=Focused]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            DoubleAnimation
+                              .Duration = '0'
+                              .TargetName = 'FocusVisualWhite'
+                              .TargetProperty = '(UIElement.Opacity)'
+                              .To = 1.0
+                            DoubleAnimation
+                              .Duration = '0'
+                              .TargetName = 'FocusVisualBlack'
+                              .TargetProperty = '(UIElement.Opacity)'
+                              .To = 1.0
+                          ]
+                    VisualState [x:Name=Unfocused]
+                    VisualState [x:Name=PointerFocused]
+                  ]
+              ]
+              .ColumnDefinitions: [
+                ColumnDefinition
+                  .Width = '*'
+                ColumnDefinition
+                  .Width = 'Auto'
+              ]
+              .Children: [
+                TextBlock [x:Name=ExpandTextBlock]
+                  .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                  .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                  .Text:
+                    TemplateBinding
+                      .Property = 'ExpandText'
+                TextBlock [x:Name=CollapseTextBlock]
+                  .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                  .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                  .Text:
+                    TemplateBinding
+                      .Property = 'CollapseText'
+                  .Opacity = 0.0
+                TextBlock [x:Name=ChevronIcon]
+                  .FontFamily = 'Segoe MDL2 Assets'
+                  .FontSize:
+                    TemplateBinding
+                      .Property = 'IconDimension'
+                  .Text = '\ue70d'
+                  .Column = 1
+                  .Margin = '{TemplateBinding Padding}'
+                  .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                  .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                  .RenderTransformOrigin = '0.5,0.5'
+                  .RenderTransform:
+                    CompositeTransform
+                      .Rotation = 0.0
+                Rectangle [x:Name=FocusVisualWhite]
+                  .ColumnSpan = 2
+                  .Opacity = 0.0
+                  .Stroke = '#FFFFFFFF'
+                  .StrokeDashArray = '1 1'
+                  .StrokeDashOffset = 1.5
+                Rectangle [x:Name=FocusVisualBlack]
+                  .ColumnSpan = 2
+                  .Opacity = 0.0
+                  .Stroke = '#FF000000'
+                  .StrokeDashArray = '1 1'
+                  .StrokeDashOffset = 0.5
+              ]
+  Style
+    .TargetType = 'using:Microsoft.DesignCore.Elements:CarouselFlipView'
+    Setter
+      .Property = 'Background'
+      .Value = '{ThemeResource SystemControlPageBackgroundListLowBrush}'
+    Setter
+      .Property = 'BorderThickness'
+      .Value = '0'
+    Setter
+      .Property = 'TabNavigation'
+      .Value = 'Once'
+    Setter
+      .Property = 'IsTabStop'
+      .Value = False
+    Setter
+      .Property = 'HorizontalScrollBarVisibility'
+      .Value = 'Hidden'
+    Setter
+      .Property = 'VerticalScrollBarVisibility'
+      .Value = 'Hidden'
+    Setter
+      .Property = 'IsHorizontalRailEnabled'
+      .Value = False
+    Setter
+      .Property = 'IsVerticalRailEnabled'
+      .Value = False
+    Setter
+      .Property = 'IsHorizontalScrollChainingEnabled'
+      .Value = True
+    Setter
+      .Property = 'IsVerticalScrollChainingEnabled'
+      .Value = True
+    Setter
+      .Property = 'IsDeferredScrollingEnabled'
+      .Value = False
+    Setter
+      .Property = 'BringIntoViewOnFocusChange'
+      .Value = True
+    Setter
+      .Property = 'ItemsPanel'
+      .Value:
+        ItemsPanelTemplate
+          .Template:
+            VirtualizingStackPanel
+              .AreScrollSnapPointsRegular = True
+              .Orientation = 'Horizontal'
+    Setter
+      .Property = 'Template'
+      .Value:
+        ControlTemplate
+          .TargetType = 'using:Microsoft.DesignCore.Elements:CarouselFlipView'
+          .Template:
+            Grid
+              .RowDefinitions: [
+                RowDefinition
+                  .Height = '*'
+                RowDefinition
+                  .Height = 'Auto'
+              ]
+              .VisualStateGroups: [
+              ]
+              .VisualStateGroups: [
+                VisualStateGroup [x:Name=FocusStates]
+                  .States: [
+                    VisualState [x:Name=Focused]
+                      .Storyboard:
+                        Storyboard
+                          .Children: [
+                            DoubleAnimation
+                              .TargetName = 'FocusVisualWhite'
+                              .TargetProperty = 'Opacity'
+                              .To = 1.0
+                              .Duration = '0'
+                            DoubleAnimation
+                              .TargetName = 'FocusVisualBlack'
+                              .TargetProperty = 'Opacity'
+                              .To = 1.0
+                              .Duration = '0'
+                          ]
+                    VisualState [x:Name=Unfocused]
+                    VisualState [x:Name=PointerFocused]
+                  ]
+              ]
+              .Children: [
+                Border
+                  .Background = '{TemplateBinding Background}'
+                  .BorderBrush = '{TemplateBinding BorderBrush}'
+                  .BorderThickness = '{TemplateBinding BorderThickness}'
+                  .Resources: [
+                    ControlTemplate [Key=HorizontalNextTemplate]
+                      .TargetType = 'Button'
+                      .Template:
+                        Border [x:Name=Root]
+                          .Background = '{ThemeResource SystemControlBackgroundBaseMediumLowBrush}'
+                          .BorderThickness = '{ThemeResource FlipViewButtonBorderThemeThickness}'
+                          .BorderBrush = '{ThemeResource SystemControlForegroundTransparentBrush}'
+                          .VisualStateGroups: [
+                          ]
+                          .VisualStateGroups: [
+                            VisualStateGroup [x:Name=CommonStates]
+                              .States: [
+                                VisualState [x:Name=Normal]
+                                VisualState [x:Name=PointerOver]
+                                  .Storyboard:
+                                    Storyboard
+                                      .Children: [
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Root'
+                                          .TargetProperty = 'Background'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightBaseMediumBrush}'
+                                          ]
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Arrow'
+                                          .TargetProperty = 'Foreground'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                                          ]
+                                      ]
+                                VisualState [x:Name=Pressed]
+                                  .Storyboard:
+                                    Storyboard
+                                      .Children: [
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Root'
+                                          .TargetProperty = 'Background'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightBaseMediumHighBrush}'
+                                          ]
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Arrow'
+                                          .TargetProperty = 'Foreground'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                                          ]
+                                      ]
+                              ]
+                          ]
+                          .Child:
+                            FontIcon [x:Name=Arrow]
+                              .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                              .FontSize = 12.0
+                              .Foreground = '{ThemeResource SystemControlForegroundAltMediumHighBrush}'
+                              .Glyph = '\ue0e3'
+                              .HorizontalAlignment = 'Center'
+                              .VerticalAlignment = 'Center'
+                              .MirroredWhenRightToLeft = True
+                              .UseLayoutRounding = False
+                    ControlTemplate [Key=VerticalNextTemplate]
+                      .TargetType = 'Button'
+                      .Template:
+                        Border [x:Name=Root]
+                          .Background = '{ThemeResource SystemControlBackgroundBaseMediumLowBrush}'
+                          .BorderThickness = '{ThemeResource FlipViewButtonBorderThemeThickness}'
+                          .BorderBrush = '{ThemeResource SystemControlForegroundTransparentBrush}'
+                          .VisualStateGroups: [
+                          ]
+                          .VisualStateGroups: [
+                            VisualStateGroup [x:Name=CommonStates]
+                              .States: [
+                                VisualState [x:Name=Normal]
+                                VisualState [x:Name=PointerOver]
+                                  .Storyboard:
+                                    Storyboard
+                                      .Children: [
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Root'
+                                          .TargetProperty = 'Background'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightBaseMediumBrush}'
+                                          ]
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Arrow'
+                                          .TargetProperty = 'Foreground'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                                          ]
+                                      ]
+                                VisualState [x:Name=Pressed]
+                                  .Storyboard:
+                                    Storyboard
+                                      .Children: [
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Root'
+                                          .TargetProperty = 'Background'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightBaseMediumHighBrush}'
+                                          ]
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Arrow'
+                                          .TargetProperty = 'Foreground'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                                          ]
+                                      ]
+                              ]
+                          ]
+                          .Child:
+                            FontIcon [x:Name=Arrow]
+                              .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                              .FontSize = 12.0
+                              .Foreground = '{ThemeResource SystemControlForegroundAltMediumHighBrush}'
+                              .Glyph = '\ue0e5'
+                              .HorizontalAlignment = 'Center'
+                              .VerticalAlignment = 'Center'
+                              .UseLayoutRounding = False
+                    ControlTemplate [Key=HorizontalPreviousTemplate]
+                      .TargetType = 'Button'
+                      .Template:
+                        Border [x:Name=Root]
+                          .Background = '{ThemeResource SystemControlBackgroundBaseMediumLowBrush}'
+                          .BorderThickness = '{ThemeResource FlipViewButtonBorderThemeThickness}'
+                          .BorderBrush = '{ThemeResource SystemControlForegroundTransparentBrush}'
+                          .VisualStateGroups: [
+                          ]
+                          .VisualStateGroups: [
+                            VisualStateGroup [x:Name=CommonStates]
+                              .States: [
+                                VisualState [x:Name=Normal]
+                                VisualState [x:Name=PointerOver]
+                                  .Storyboard:
+                                    Storyboard
+                                      .Children: [
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Root'
+                                          .TargetProperty = 'Background'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightBaseMediumBrush}'
+                                          ]
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Arrow'
+                                          .TargetProperty = 'Foreground'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                                          ]
+                                      ]
+                                VisualState [x:Name=Pressed]
+                                  .Storyboard:
+                                    Storyboard
+                                      .Children: [
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Root'
+                                          .TargetProperty = 'Background'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightBaseMediumHighBrush}'
+                                          ]
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Arrow'
+                                          .TargetProperty = 'Foreground'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                                          ]
+                                      ]
+                              ]
+                          ]
+                          .Child:
+                            FontIcon [x:Name=Arrow]
+                              .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                              .FontSize = 12.0
+                              .Foreground = '{ThemeResource SystemControlForegroundAltMediumHighBrush}'
+                              .Glyph = '\ue0e2'
+                              .HorizontalAlignment = 'Center'
+                              .VerticalAlignment = 'Center'
+                              .MirroredWhenRightToLeft = True
+                              .UseLayoutRounding = False
+                    ControlTemplate [Key=VerticalPreviousTemplate]
+                      .TargetType = 'Button'
+                      .Template:
+                        Border [x:Name=Root]
+                          .Background = '{ThemeResource SystemControlBackgroundBaseMediumLowBrush}'
+                          .BorderThickness = '{ThemeResource FlipViewButtonBorderThemeThickness}'
+                          .BorderBrush = '{ThemeResource SystemControlForegroundTransparentBrush}'
+                          .VisualStateGroups: [
+                          ]
+                          .VisualStateGroups: [
+                            VisualStateGroup [x:Name=CommonStates]
+                              .States: [
+                                VisualState [x:Name=Normal]
+                                VisualState [x:Name=PointerOver]
+                                  .Storyboard:
+                                    Storyboard
+                                      .Children: [
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Root'
+                                          .TargetProperty = 'Background'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightBaseMediumBrush}'
+                                          ]
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Arrow'
+                                          .TargetProperty = 'Foreground'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                                          ]
+                                      ]
+                                VisualState [x:Name=Pressed]
+                                  .Storyboard:
+                                    Storyboard
+                                      .Children: [
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Root'
+                                          .TargetProperty = 'Background'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightBaseMediumHighBrush}'
+                                          ]
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetName = 'Arrow'
+                                          .TargetProperty = 'Foreground'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                                          ]
+                                      ]
+                              ]
+                          ]
+                          .Child:
+                            FontIcon [x:Name=Arrow]
+                              .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                              .FontSize = 12.0
+                              .Foreground = '{ThemeResource SystemControlForegroundAltMediumHighBrush}'
+                              .Glyph = '\ue0e4'
+                              .HorizontalAlignment = 'Center'
+                              .VerticalAlignment = 'Center'
+                              .UseLayoutRounding = False
+                  ]
+                  .Child:
+                    Grid
+                      .Children: [
+                        ScrollViewer [x:Name=ScrollingHost]
+                          .VerticalSnapPointsType = 'MandatorySingle'
+                          .HorizontalSnapPointsType = 'MandatorySingle'
+                          .HorizontalScrollMode = '{TemplateBinding HorizontalScrollMode}'
+                          .HorizontalScrollBarVisibility = '{TemplateBinding HorizontalScrollBarVisibility}'
+                          .VerticalScrollMode = '{TemplateBinding VerticalScrollMode}'
+                          .VerticalScrollBarVisibility = '{TemplateBinding VerticalScrollBarVisibility}'
+                          .IsHorizontalRailEnabled = '{TemplateBinding IsHorizontalRailEnabled}'
+                          .IsVerticalRailEnabled = '{TemplateBinding IsVerticalRailEnabled}'
+                          .IsHorizontalScrollChainingEnabled = '{TemplateBinding IsHorizontalScrollChainingEnabled}'
+                          .IsVerticalScrollChainingEnabled = '{TemplateBinding IsVerticalScrollChainingEnabled}'
+                          .IsDeferredScrollingEnabled = '{TemplateBinding IsDeferredScrollingEnabled}'
+                          .BringIntoViewOnFocusChange = '{TemplateBinding BringIntoViewOnFocusChange}'
+                          .Padding = '{TemplateBinding Padding}'
+                          .ZoomMode = 'Disabled'
+                          .TabNavigation = '{TemplateBinding TabNavigation}'
+                          .IsTabStop = False
+                          .AccessibilityView = 'Raw'
+                          .Content:
+                            ItemsPresenter
+                        Button [x:Name=PreviousButtonHorizontal]
+                          .Template = '{StaticResource HorizontalPreviousTemplate}'
+                          .Width = 20.0
+                          .Height = 36.0
+                          .IsTabStop = False
+                          .UseSystemFocusVisuals = False
+                          .HorizontalAlignment = 'Left'
+                          .VerticalAlignment = 'Center'
+                        Button [x:Name=NextButtonHorizontal]
+                          .Template = '{StaticResource HorizontalNextTemplate}'
+                          .Width = 20.0
+                          .Height = 36.0
+                          .IsTabStop = False
+                          .UseSystemFocusVisuals = False
+                          .HorizontalAlignment = 'Right'
+                          .VerticalAlignment = 'Center'
+                        Button [x:Name=PreviousButtonVertical]
+                          .Template = '{StaticResource VerticalPreviousTemplate}'
+                          .Width = 36.0
+                          .Height = 20.0
+                          .IsTabStop = False
+                          .UseSystemFocusVisuals = False
+                          .HorizontalAlignment = 'Center'
+                          .VerticalAlignment = 'Top'
+                        Button [x:Name=NextButtonVertical]
+                          .Template = '{StaticResource VerticalNextTemplate}'
+                          .Width = 36.0
+                          .Height = 20.0
+                          .IsTabStop = False
+                          .UseSystemFocusVisuals = False
+                          .HorizontalAlignment = 'Center'
+                          .VerticalAlignment = 'Bottom'
+                      ]
+                ListView [x:Name=CarouselIndicators]
+                  .Row = 1
+                  .Margin = '0,8'
+                  .HorizontalAlignment = 'Center'
+                  .IsHitTestVisible = False
+                  .ItemsPanel:
+                    ItemsPanelTemplate
+                      .Template:
+                        StackPanel
+                          .Orientation = 'Horizontal'
+                  .ItemContainerTransitions:
+                    TransitionCollection
+                  .ItemContainerStyle:
+                    Style
+                      .TargetType = 'ListViewItem'
+                      Setter
+                        .Property = 'Margin'
+                        .Value = '4,0'
+                      Setter
+                        .Property = 'MinWidth'
+                        .Value = 0.0
+                      Setter
+                        .Property = 'MinHeight'
+                        .Value = 0.0
+                      Setter
+                        .Property = 'Template'
+                        .Value:
+                          ControlTemplate
+                            .TargetType = 'ListViewItem'
+                            .Template:
+                              Ellipse [x:Name=IndicatorEllipse]
+                                .Fill = '{ThemeResource PageTextBaseMediumLowBrush}'
+                                .Width = 4.0
+                                .Height = 4.0
+                                .VisualStateGroups: [
+                                ]
+                                .VisualStateGroups: [
+                                  VisualStateGroup [x:Name=CommonStates]
+                                    .States: [
+                                      VisualState [x:Name=Normal]
+                                      VisualState [x:Name=PointerOver]
+                                      VisualState [x:Name=Pressed]
+                                      VisualState [x:Name=Selected]
+                                        .Storyboard:
+                                          Storyboard
+                                            .Children: [
+                                              ObjectAnimationUsingKeyFrames
+                                                .TargetName = 'IndicatorEllipse'
+                                                .TargetProperty = 'Fill'
+                                                .KeyFrames: [
+                                                  DiscreteObjectKeyFrame
+                                                    .KeyTime = 0.0
+                                                    .Value = '{ThemeResource HighlightBackgroundBaseHighBrush}'
+                                                ]
+                                            ]
+                                      VisualState [x:Name=PointerOverSelected]
+                                      VisualState [x:Name=PressedSelected]
+                                    ]
+                                  VisualStateGroup [x:Name=DisabledStates]
+                                    .States: [
+                                      VisualState [x:Name=Enabled]
+                                      VisualState [x:Name=Disabled]
+                                    ]
+                                  VisualStateGroup [x:Name=FocusStates]
+                                    .States: [
+                                      VisualState [x:Name=Unfocused]
+                                      VisualState [x:Name=PointerFocused]
+                                      VisualState [x:Name=Focused]
+                                    ]
+                                  VisualStateGroup [x:Name=MultiSelectStates]
+                                    .States: [
+                                      VisualState [x:Name=MultiSelectDisabled]
+                                      VisualState [x:Name=MultiSelectEnabled]
+                                    ]
+                                  VisualStateGroup [x:Name=DataVirtualizationStates]
+                                    .States: [
+                                      VisualState [x:Name=DataAvailable]
+                                      VisualState [x:Name=DataPlaceholder]
+                                    ]
+                                  VisualStateGroup [x:Name=ReorderHintStates]
+                                    .States: [
+                                      VisualState [x:Name=NoReorderHint]
+                                      VisualState [x:Name=BottomReorderHint]
+                                      VisualState [x:Name=TopReorderHint]
+                                      VisualState [x:Name=RightReorderHint]
+                                      VisualState [x:Name=LeftReorderHint]
+                                    ]
+                                  VisualStateGroup [x:Name=DragStates]
+                                    .States: [
+                                      VisualState [x:Name=NotDragging]
+                                      VisualState [x:Name=Dragging]
+                                      VisualState [x:Name=DraggingTarget]
+                                      VisualState [x:Name=MultipleDraggingPrimary]
+                                      VisualState [x:Name=MultipleDraggingSecondary]
+                                    ]
+                                ]
+                Rectangle [x:Name=FocusVisualWhite]
+                  .RowSpan = 2
+                  .IsHitTestVisible = False
+                  .Stroke = '{ThemeResource FocusVisualWhiteStrokeThemeBrush}'
+                  .StrokeEndLineCap = 'Square'
+                  .StrokeDashArray = '1,1'
+                  .Opacity = 0.0
+                  .StrokeDashOffset = 1.5
+                Rectangle [x:Name=FocusVisualBlack]
+                  .RowSpan = 2
+                  .IsHitTestVisible = False
+                  .Stroke = '{ThemeResource FocusVisualBlackStrokeThemeBrush}'
+                  .StrokeEndLineCap = 'Square'
+                  .StrokeDashArray = '1,1'
+                  .Opacity = 0.0
+                  .StrokeDashOffset = 0.5
+              ]
+  Style
+    .TargetType = 'using:Microsoft.DesignCore.Elements:AboutAppBlock'
+    Setter
+      .Property = 'Template'
+      .Value:
+        ControlTemplate
+          .TargetType = 'using:Microsoft.DesignCore.Elements:AboutAppBlock'
+          .Template:
+            StackPanel
+              .Background = '{TemplateBinding Background}'
+              .Children: [
+                TextBlock
+                  .Style = '{StaticResource TitleTextBlockStyle}'
+                  .Text:
+                    TemplateBinding
+                      .Property = 'Title'
+                TextBlock
+                  .Style = '{StaticResource BodyTextBlockStyle}'
+                  .Text:
+                    TemplateBinding
+                      .Property = 'Version'
+                  .Margin = '0,17,0,0'
+                TextBlock
+                  .Style = '{StaticResource BodyTextBlockStyle}'
+                  .Text:
+                    TemplateBinding
+                      .Property = 'Copyright'
+                  .Margin = '0,5,0,17'
+                TextBlock
+                  .TextWrapping = 'Wrap'
+                  .Margin = '0,0,0,12'
+                  .Inlines: [
+                    Hyperlink
+                      .NavigateUri:
+                        Binding
+                          .Path = 'TermsUri'
+                          .RelativeSource:
+                            RelativeSource
+                              .Mode = 'TemplatedParent'
+                      .Inlines: [
+                        Run
+                          .Text:
+                            Binding
+                              .Path = 'Terms'
+                              .RelativeSource:
+                                RelativeSource
+                                  .Mode = 'TemplatedParent'
+                      ]
+                  ]
+                TextBlock
+                  .TextWrapping = 'Wrap'
+                  .Inlines: [
+                    Hyperlink
+                      .NavigateUri:
+                        Binding
+                          .Path = 'PrivacyUri'
+                          .RelativeSource:
+                            RelativeSource
+                              .Mode = 'TemplatedParent'
+                      .Inlines: [
+                        Run
+                          .Text:
+                            Binding
+                              .Path = 'Privacy'
+                              .RelativeSource:
+                                RelativeSource
+                                  .Mode = 'TemplatedParent'
+                      ]
+                  ]
+              ]

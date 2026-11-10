@@ -1,0 +1,144 @@
+=== FileExplorer.exe (2,172,392 bytes) ===
+machine=IMAGE_FILE_MACHINE_I386 subsystem=IMAGE_SUBSYSTEM_WINDOWS_GUI timestamp=1468632665 (2016-07-16T01:31:05+00:00)
+bits=32 entry=0x1338b0 base=0x400000
+dllchars=0xc140 NX DYNAMIC_BASE TERMINAL_SERVER_AWARE
+sections: .text .rdata .data .rsrc .reloc
+
+--- IMPORTS ---
+msvcrt.dll: 78 functions
+    ??0exception@@QAE@ABQBDH@Z
+    _callnewh
+    __dllonexit
+    wcslen
+    memset
+    _unlock
+    _lock
+    ??1type_info@@UAE@XZ
+    realloc
+    __pctype_func
+    __crtLCMapStringW
+    memcpy
+    strchr
+    ??0bad_cast@@QAE@PBD@Z
+    _get_current_locale
+    ... (63 more)
+wincorlib.DLL: 68 functions
+    ?GetActivationFactoryByPCWSTR@@YGJPAXAAVGuid@Platform@@PAPAX@Z
+    ?UninitializeData@Details@Platform@@YGXH@Z
+    ?InitializeData@Details@Platform@@YGJH@Z
+    ??0InvalidArgumentException@Platform@@Q$AAA@XZ
+    ?get@Message@Exception@Platform@@Q$AAAP$AAVString@3@XZ
+    ?GetType@Object@Platform@@Q$AAAP$AAVType@2@XZ
+    ?Equals@Object@Platform@@Q$AAA_NP$AAV12@@Z
+    ?GetIidsFn@@YGJHPAKPBU__s_GUID@@PAPAVGuid@Platform@@@Z
+    ?ToString@uint32@default@@QAAP$AAVString@Platform@@XZ
+    ?ToString@int32@default@@QAAP$AAVString@Platform@@XZ
+    ?ReCreateException@Exception@Platform@@SAP$AAV12@H@Z
+    ??0NotImplementedException@Platform@@Q$AAA@XZ
+    ?CreateException@Exception@Platform@@SAP$AAV12@H@Z
+    ??0Rect@Foundation@Windows@@QAA@VPoint@12@VSize@12@@Z
+    ?GetWeakReference@Details@Platform@@YGPAU__abi_IUnknown@@Q$ADVObject@2@@Z
+    ... (53 more)
+api-ms-win-eventing-provider-l1-1-0.dll: 5 functions
+    EventRegister
+    EventSetInformation
+    EventUnregister
+    EventWriteTransfer
+    EventActivityIdControl
+api-ms-win-core-processthreads-l1-1-2.dll: 4 functions
+    GetCurrentProcessId
+    GetCurrentProcess
+    TerminateProcess
+    GetCurrentThreadId
+api-ms-win-core-synch-l1-2-0.dll: 19 functions
+    CreateMutexExW
+    ResetEvent
+    OpenSemaphoreW
+    WaitForSingleObjectEx
+    SetEvent
+    ReleaseMutex
+    WaitForSingleObject
+    InitializeCriticalSectionEx
+    ReleaseSemaphore
+    EnterCriticalSection
+    CreateEventExW
+    CreateSemaphoreExW
+    DeleteCriticalSection
+    Sleep
+    InitOnceComplete
+    AcquireSRWLockExclusive
+    ReleaseSRWLockExclusive
+    InitOnceBeginInitialize
+    LeaveCriticalSection
+api-ms-win-core-debug-l1-1-1.dll: 1 functions
+    OutputDebugStringW
+api-ms-win-core-localization-l1-2-1.dll: 1 functions
+    FormatMessageW
+api-ms-win-core-heap-l1-2-0.dll: 3 functions
+    HeapAlloc
+    HeapFree
+    GetProcessHeap
+api-ms-win-core-com-l1-1-1.dll: 7 functions
+    CoTaskMemAlloc
+    CoTaskMemFree
+    CoCreateFreeThreadedMarshaler
+    CoGetInterfaceAndReleaseStream
+    CoMarshalInterThreadInterfaceInStream
+    CoGetObjectContext
+    CoGetApartmentType
+api-ms-win-core-winrt-string-l1-1-0.dll: 9 functions
+    WindowsDuplicateString
+    WindowsCreateStringReference
+    WindowsDeleteString
+    WindowsCreateString
+    WindowsConcatString
+    WindowsCompareStringOrdinal
+    WindowsGetStringRawBuffer
+    WindowsGetStringLen
+    WindowsIsStringEmpty
+api-ms-win-core-string-l1-1-0.dll: 5 functions
+    CompareStringOrdinal
+    GetStringTypeW
+    WideCharToMultiByte
+    CompareStringEx
+    MultiByteToWideChar
+api-ms-win-core-errorhandling-l1-1-1.dll: 4 functions
+    UnhandledExceptionFilter
+    SetUnhandledExceptionFilter
+    SetLastError
+    GetLastError
+api-ms-win-core-sysinfo-l1-2-1.dll: 3 functions
+    GetTickCount64
+    GetTickCount
+    GetSystemTimeAsFileTime
+api-ms-win-core-registry-l1-1-0.dll: 1 functions
+    RegGetValueW
+api-ms-win-core-libraryloader-l1-2-0.dll: 5 functions
+    GetProcAddress
+    GetModuleHandleExW
+    LoadLibraryExW
+    GetModuleFileNameA
+    GetModuleHandleA
+api-ms-win-core-handle-l1-1-0.dll: 1 functions
+    CloseHandle
+api-ms-win-core-profile-l1-1-0.dll: 1 functions
+    QueryPerformanceCounter
+api-ms-win-core-util-l1-1-0.dll: 2 functions
+    DecodePointer
+    EncodePointer
+api-ms-win-core-winrt-error-l1-1-1.dll: 4 functions
+    RoReportUnhandledError
+    SetRestrictedErrorInfo
+    RoOriginateError
+    RoFailFastWithErrorContext
+api-ms-win-core-kernel32-legacy-l1-1-1.dll: 1 functions
+    GetStartupInfoA
+DWrite.dll: 1 functions
+    DWriteCreateFactory
+ntdll.dll: 1 functions
+    RtlGetDeviceFamilyInfoEnum
+
+--- EXPORTS ---
+2 exported symbols:
+       1 DllCanUnloadNow
+       2 DllGetActivationFactory

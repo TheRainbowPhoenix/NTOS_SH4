@@ -1,0 +1,27 @@
+ContentDialog [x:Name=NewFolderDialog, x:Uid=NewFolderDialog, #conn1]
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:FileExplorer.View'
+  .x:Class = 'FileExplorer.View.NewFolderDialog'
+  .AutomationId = 'NewFolderDialog'
+  .IsPrimaryButtonEnabled:
+    Binding
+      .ElementName = 'NewFolderDialog'
+      .Path = 'PrimaryButtonEnabled'
+  .Content:
+    StackPanel
+      .Children: [
+        TextBlock [x:Uid=NewFolderTitle]
+          .Margin = '0,12'
+          .Style = '{StaticResource SubtitleTextBlockStyle}'
+          .AutomationId = 'NewFolderTitle'
+        TextBlock [x:Uid=NewFolderTextBoxTitle]
+          .Padding = '0,0,0,8'
+          .Style = '{StaticResource BodyTextBlockStyle}'
+          .HorizontalAlignment = 'Left'
+          .AutomationId = 'NewFolderTextBoxTitle'
+        TextBox [x:Name=FolderNameTextBox, x:Uid=FolderNameTextBox, #conn2]
+          .IsTextPredictionEnabled = False
+          .InputScope = 'Text'
+          .AutomationId = 'FolderNameTextBox'
+      ]

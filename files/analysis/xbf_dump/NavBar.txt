@@ -1,0 +1,41 @@
+UserControl [x:Name=RootUserControl, #conn1]
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:FileExplorer.View'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'FileExplorer.View.NavBar'
+  .Content:
+    Border
+      .Background = '{ThemeResource NavBarBackgroundThemeBrush}'
+      .BorderThickness = '{ThemeResource HighContrastOnlyBottomBorderThickness}'
+      .BorderBrush = '{ThemeResource HighContrastOnlyBorderTransparentBrush}'
+      .Child:
+        Grid
+          .Margin:
+            Binding
+              .Path = 'Padding'
+              .ElementName = 'RootUserControl'
+          .ColumnDefinitions: [
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = 'Auto'
+          ]
+          .Children: [
+            using:FileExplorer.View:AddressBar [x:Uid=NavBar_AddressBar]
+              .Column = 0
+              .HorizontalAlignment = 'Stretch'
+              .DataContext:
+                Binding
+                  .Path = 'AddressBar'
+              .AutomationId = 'NavBar_AddressBar'
+            Button [x:Name=UpButton, x:Uid=NavBar_UpButton, #conn2]
+              .Column = 1
+              .Width = 48.0
+              .Height = 48.0
+              .Style = '{StaticResource IconButtonStyle}'
+              .FontSize = '{StaticResource SubtitleIconSize}'
+              .Content = '\ue752'
+              .AutomationId = 'NavBar_UpButton'
+          ]

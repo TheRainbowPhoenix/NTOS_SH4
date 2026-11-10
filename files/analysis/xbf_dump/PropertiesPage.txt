@@ -1,0 +1,339 @@
+using:FileExplorer.View:BasePage
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:FileExplorer.View'
+  .xmlns:utilities = 'using:FileExplorer.View.Utilities'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'FileExplorer.View.PropertiesPage'
+  .Resources: [
+    using:FileExplorer.View.Utilities:UInt64ToFileSizeConverter [Key=UInt64ToFileSizeConverter]
+    using:FileExplorer.View.Utilities:FileTimeToStringConverter [Key=FileTimeToStringConverter]
+    using:FileExplorer.View.Utilities:FormatItemCountsConverter [Key=FormatItemCountsConverter]
+    using:FileExplorer.View.Utilities:BooleanToVisibilityConverter [Key=BooleanToVisibilityConverter]
+    DataTemplate [Key=RootDrive_BasicPropertiesTemplate]
+      .Template:
+        StackPanel
+          .Children: [
+            Grid
+              .Margin = '12,0,12,1'
+              .Children: [
+                TextBlock [x:Uid=UsedSpaceText]
+                  .HorizontalAlignment = 'Left'
+                  .Text:
+                    Binding
+                      .Path = 'UsedSpace'
+                      .Converter = '{StaticResource UInt64ToFileSizeConverter}'
+                      .ConverterParameter = 'UsedSpace'
+                  .Style = '{StaticResource CaptionAltTextBlockStyle}'
+                  .AutomationId = 'UsedSpaceText'
+                  .Name:
+                    Binding
+                      .Path = 'UsedSpace'
+                      .Converter = '{StaticResource UInt64ToFileSizeConverter}'
+                      .ConverterParameter = 'UsedSpace'
+                TextBlock [x:Uid=FreeSpaceText]
+                  .HorizontalAlignment = 'Right'
+                  .Text:
+                    Binding
+                      .Path = 'FreeSpace'
+                      .Converter = '{StaticResource UInt64ToFileSizeConverter}'
+                      .ConverterParameter = 'FreeSpace'
+                  .Style = '{StaticResource CaptionAltTextBlockStyle}'
+                  .AutomationId = 'FreeSpaceText'
+                  .Name:
+                    Binding
+                      .Path = 'FreeSpace'
+                      .Converter = '{StaticResource UInt64ToFileSizeConverter}'
+                      .ConverterParameter = 'FreeSpace'
+              ]
+            ProgressBar [x:Uid=SpaceUsedProgressBar]
+              .HorizontalAlignment = 'Stretch'
+              .IsIndeterminate = False
+              .Maximum = 1.0
+              .Value:
+                Binding
+                  .Path = 'UsedSpacePercentage'
+              .Width = nan
+              .Height = 6.0
+              .AutomationId = 'SpaceUsedProgressBar'
+          ]
+    using:FileExplorer.View.Utilities:PropertyConverter [Key=PropertyConverter]
+    DataTemplate [Key=OneItemSelection_BasicPropertiesTemplate]
+      .Template:
+        Grid
+          .Margin = '0,31,0,0'
+          .RowDefinitions: [
+            RowDefinition
+            RowDefinition
+            RowDefinition
+          ]
+          .ColumnDefinitions: [
+            ColumnDefinition
+              .Width = '5*'
+            ColumnDefinition
+              .Width = '5*'
+          ]
+          .Children: [
+            TextBlock [x:Uid=DateModified]
+              .Row = 0
+              .Column = 0
+              .AutomationId = 'DateModified'
+              .Margin = '{StaticResource BasicPropertiesMargin}'
+              .Style = '{StaticResource CaptionAltTextBlockStyle}'
+              .Foreground = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+            TextBlock [x:Uid=DateModified_Display]
+              .Row = 0
+              .Column = 1
+              .Text:
+                Binding
+                  .Path = 'System_DateModified'
+                  .Converter = '{StaticResource FileTimeToStringConverter}'
+              .Style = '{StaticResource CaptionAltTextBlockStyle}'
+              .AutomationId = 'DateModified_Display'
+            TextBlock [x:Uid=ItemTypeText]
+              .Row = 1
+              .Column = 0
+              .AutomationId = 'ItemTypeText'
+              .Margin = '{StaticResource BasicPropertiesMargin}'
+              .Style = '{StaticResource CaptionAltTextBlockStyle}'
+              .Foreground = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+            TextBlock [x:Uid=ItemTypeText_Display]
+              .Row = 1
+              .Column = 1
+              .Text:
+                Binding
+                  .Path = 'System_ItemTypeText'
+              .Style = '{StaticResource CaptionAltTextBlockStyle}'
+              .AutomationId = 'ItemTypeText_Display'
+            TextBlock [x:Uid=ItemSize]
+              .Row = 2
+              .Column = 0
+              .Visibility:
+                Binding
+                  .Path = 'System_IsFolder'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+                  .ConverterParameter = 'invert'
+              .AutomationId = 'ItemSize'
+              .Margin = '{StaticResource BasicPropertiesMargin}'
+              .Style = '{StaticResource CaptionAltTextBlockStyle}'
+              .Foreground = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+            TextBlock [x:Uid=ItemSize_Display]
+              .Row = 2
+              .Column = 1
+              .Visibility:
+                Binding
+                  .Path = 'System_IsFolder'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+                  .ConverterParameter = 'invert'
+              .Text:
+                Binding
+                  .Path = 'System_Size'
+                  .Converter = '{StaticResource UInt64ToFileSizeConverter}'
+              .Style = '{StaticResource CaptionAltTextBlockStyle}'
+              .AutomationId = 'ItemSize_Display'
+          ]
+    Thickness [Key=BasicPropertiesMargin]
+      .Value = '0,0,0,11'
+    DataTemplate [Key=PropertiesHeaderTemplate]
+      .Template:
+        Grid
+          .Margin = '0,24,0,0'
+          .ColumnDefinitions: [
+            ColumnDefinition
+              .Width = 'Auto'
+            ColumnDefinition
+              .Width = '*'
+          ]
+          .RowDefinitions: [
+            RowDefinition
+            RowDefinition
+          ]
+          .Children: [
+            Border [x:Name=ThumbnailBorder]
+              .Width = 96.0
+              .Height = 96.0
+              .HorizontalAlignment = 'Center'
+              .VerticalAlignment = 'Center'
+              .Child:
+                Image [x:Name=Thumbnail]
+                  .Width = 96.0
+                  .Height = 96.0
+                  .Margin = '0'
+                  .HorizontalAlignment = 'Center'
+                  .VerticalAlignment = 'Center'
+                  .Stretch = 'UniformToFill'
+                  .UseLayoutRounding = True
+                  .AutomationId = 'Thumbnail'
+            TextBlock [x:Uid=ItemName_Display]
+              .Row = 0
+              .Column = 1
+              .Margin = '12,1,0,0'
+              .Text:
+                Binding
+                  .Path = 'System_ItemNameDisplay'
+              .Style = '{StaticResource SubtitleAltTextBlockStyle}'
+              .TextWrapping = 'Wrap'
+              .MaxLines = 2
+              .AutomationId = 'ItemName_Display'
+          ]
+    CollectionViewSource [x:Name=PropertiesCollectionView, Key=PropertiesCollectionView, #conn1]
+      .ItemsPath = 'PropertiesList'
+      .IsSourceGrouped = True
+      .Source:
+        Binding
+          .Path = 'PropertyGroups'
+  ]
+  .Content:
+    ScrollViewer
+      .Content:
+        StackPanel
+          .Background = '{ThemeResource PageBackgroundAltHighBrush}'
+          .Margin = '12,0'
+          .Children: [
+            ContentPresenter [x:Name=PropertiesHeader, #conn2]
+              .ContentTemplate = '{StaticResource PropertiesHeaderTemplate}'
+              .DataContext:
+                Binding
+                  .Path = 'ObservableItem'
+              .Content:
+                Binding
+            ContentPresenter [x:Name=BasicPropertiesPresenter, #conn3]
+              .Content:
+                Binding
+            ContentPresenter
+              .Visibility:
+                Binding
+                  .Path = 'IsFolder'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+              .Content:
+                Grid
+                  .ColumnDefinitions: [
+                    ColumnDefinition
+                      .Width = '5*'
+                    ColumnDefinition
+                      .Width = '5*'
+                  ]
+                  .RowDefinitions: [
+                    RowDefinition
+                    RowDefinition
+                  ]
+                  .Children: [
+                    TextBlock [x:Uid=FolderSize]
+                      .Row = 0
+                      .Column = 0
+                      .AutomationId = 'FolderSize'
+                      .Margin = '{StaticResource BasicPropertiesMargin}'
+                      .Style = '{StaticResource CaptionAltTextBlockStyle}'
+                      .Foreground = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+                    TextBlock [x:Uid=FolderSize_Display]
+                      .Row = 0
+                      .Column = 1
+                      .Text:
+                        Binding
+                          .Path = 'FolderSize'
+                          .Converter = '{StaticResource UInt64ToFileSizeConverter}'
+                      .Style = '{StaticResource CaptionAltTextBlockStyle}'
+                      .AutomationId = 'FolderSize_Display'
+                      .Name:
+                        Binding
+                          .Path = 'FolderSize'
+                          .Converter = '{StaticResource UInt64ToFileSizeConverter}'
+                    TextBlock [x:Uid=ItemCount]
+                      .Row = 1
+                      .Column = 0
+                      .AutomationId = 'ItemCount'
+                      .Margin = '{StaticResource BasicPropertiesMargin}'
+                      .Style = '{StaticResource CaptionAltTextBlockStyle}'
+                      .Foreground = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+                    TextBlock [x:Uid=ItemCount_Display]
+                      .Row = 1
+                      .Column = 1
+                      .Text:
+                        Binding
+                          .Path = 'ItemCount'
+                          .Converter = '{StaticResource FormatItemCountsConverter}'
+                      .Style = '{StaticResource CaptionAltTextBlockStyle}'
+                      .AutomationId = 'ItemCount_Display'
+                      .Name:
+                        Binding
+                          .Path = 'ItemCount'
+                          .Converter = '{StaticResource FormatItemCountsConverter}'
+                  ]
+            using:FileExplorer.View:PropertiesItemsControl [x:Name=PropertiesGroup, #conn4]
+              .DataContext:
+                Binding
+              .ItemsSource:
+                Binding
+                  .Source = '{StaticResource PropertiesCollectionView}'
+              .HorizontalAlignment = 'Stretch'
+              .HorizontalContentAlignment = 'Stretch'
+              .GroupStyle: [
+                GroupStyle
+                  .HeaderTemplate:
+                    DataTemplate
+                      .Template:
+                        StackPanel
+                          .Margin = '0,21,0,6'
+                          .MinWidth = 400.0
+                          .Children: [
+                            TextBlock [x:Name=HeaderTextBlock, x:Uid=Header_Text]
+                              .Text:
+                                Binding
+                                  .Path = 'HeaderTitle'
+                              .Style = '{StaticResource BaseTextBlockStyle}'
+                              .AutomationId = 'Header_Text'
+                              .Name:
+                                Binding
+                                  .Path = 'HeaderTitle'
+                              .HorizontalAlignment = 'Left'
+                            Border [x:Uid=GroupSeperator]
+                              .BorderThickness = '1'
+                              .Height = 1.0
+                              .Margin = '0,3,0,0'
+                              .BorderBrush = '{ThemeResource SystemControlForegroundBaseLowBrush}'
+                              .AutomationId = 'GroupSeperator'
+                          ]
+              ]
+              .ItemTemplate:
+                DataTemplate
+                  .Template:
+                    Grid
+                      .Margin = '0,0,0,9'
+                      .ColumnDefinitions: [
+                        ColumnDefinition
+                          .Width = '5*'
+                        ColumnDefinition
+                          .Width = '5*'
+                      ]
+                      .Children: [
+                        TextBlock [x:Uid=PropertyLabel]
+                          .Column = 0
+                          .Text:
+                            Binding
+                              .Path = 'PropertyLabel'
+                          .Style = '{StaticResource CaptionAltTextBlockStyle}'
+                          .Foreground = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+                          .AutomationId = 'PropertyLabel'
+                          .Name:
+                            Binding
+                              .Path = 'PropertyLabel'
+                        TextBlock [x:Uid=PropertyValue]
+                          .Column = 1
+                          .TextWrapping = 'Wrap'
+                          .MaxLines = 2
+                          .Text:
+                            Binding
+                              .Path = 'PropertyValue'
+                              .Converter = '{StaticResource PropertyConverter}'
+                          .Style = '{StaticResource CaptionAltTextBlockStyle}'
+                          .AutomationId = 'PropertyValue'
+                          .Name:
+                            Binding
+                              .Path = 'PropertyValue'
+                              .Converter = '{StaticResource PropertyConverter}'
+                      ]
+              .ItemContainerTransitions:
+                TransitionCollection
+                  EntranceThemeTransition
+          ]

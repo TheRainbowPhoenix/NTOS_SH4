@@ -1,0 +1,237 @@
+UserControl
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:FileExplorer.View'
+  .xmlns:utilities = 'using:FileExplorer.View.Utilities'
+  .xmlns:dcElements = 'using:Microsoft.DesignCore.Elements'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'FileExplorer.View.FolderView'
+  .Resources: [
+    DataTemplate [Key=FolderViewItemTemplate]
+      .Template:
+        using:FileExplorer.View:FolderViewItemPanel
+    Style [Key=FolderViewStyle]
+      .TargetType = 'using:FileExplorer.View:FolderViewListView'
+      Setter
+        .Property = 'SelectionMode'
+        .Value = 'None'
+      Setter
+        .Property = 'IsItemClickEnabled'
+        .Value = True
+      Setter
+        .Property = 'AllowDrop'
+        .Value = True
+      Setter
+        .Property = 'HorizontalAlignment'
+        .Value = 'Stretch'
+      Setter
+        .Property = 'ShowsScrollingPlaceholders'
+        .Value = False
+      Setter
+        .Property = 'ItemsPanel'
+        .Value:
+          ItemsPanelTemplate
+            .Template:
+              ItemsWrapGrid
+                .Orientation = 'Horizontal'
+    Style [Key=FolderViewItemThumbnailStyle]
+      .TargetType = 'ListViewItem'
+      Setter
+        .Property = 'Margin'
+        .Value = '0'
+      Setter
+        .Property = 'Padding'
+        .Value = '0'
+      Setter
+        .Property = 'VerticalAlignment'
+        .Value = 'Top'
+      Setter
+        .Property = 'MinWidth'
+        .Value = 0.0
+      Setter
+        .Property = 'Template'
+        .Value:
+          ControlTemplate
+            .TargetType = 'ListViewItem'
+            .Template:
+              ListViewItemPresenter
+                .ContentTransitions = '{TemplateBinding ContentTransitions}'
+                .SelectionCheckMarkVisualEnabled = True
+                .CheckBrush = '{ThemeResource SystemControlForegroundBaseMediumHighBrush}'
+                .CheckBoxBrush = '{ThemeResource SystemControlBackgroundChromeMediumBrush}'
+                .DragBackground = '{ThemeResource ListViewItemDragBackgroundThemeBrush}'
+                .DragForeground = '{ThemeResource ListViewItemDragForegroundThemeBrush}'
+                .FocusBorderBrush = '{ThemeResource SystemControlForegroundAltHighBrush}'
+                .FocusSecondaryBorderBrush = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+                .PlaceholderBackground = '{ThemeResource ListViewItemPlaceholderBackgroundThemeBrush}'
+                .PointerOverBackground = '{ThemeResource SystemControlHighlightListLowBrush}'
+                .PointerOverForeground = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                .SelectedBackground = '{ThemeResource SystemControlHighlightListAccentLowBrush}'
+                .SelectedForeground = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                .SelectedPointerOverBackground = '{ThemeResource SystemControlHighlightListAccentMediumBrush}'
+                .PressedBackground = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                .SelectedPressedBackground = '{ThemeResource SystemControlHighlightListAccentHighBrush}'
+                .DisabledOpacity = '{ThemeResource ListViewItemDisabledThemeOpacity}'
+                .DragOpacity = '{ThemeResource ListViewItemDragThemeOpacity}'
+                .ReorderHintOffset = '{ThemeResource ListViewItemReorderHintThemeOffset}'
+                .HorizontalContentAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                .VerticalContentAlignment = '{TemplateBinding VerticalContentAlignment}'
+                .ContentMargin = '{TemplateBinding Padding}'
+                .CheckMode = 'Overlay'
+    Style [Key=FolderViewItemTileStyle]
+      .TargetType = 'ListViewItem'
+      Setter
+        .Property = 'Margin'
+        .Value = '0'
+      Setter
+        .Property = 'Padding'
+        .Value = '0'
+      Setter
+        .Property = 'VerticalAlignment'
+        .Value = 'Top'
+      Setter
+        .Property = 'MinWidth'
+        .Value = 0.0
+      Setter
+        .Property = 'Template'
+        .Value:
+          ControlTemplate
+            .TargetType = 'ListViewItem'
+            .Template:
+              ListViewItemPresenter
+                .ContentTransitions = '{TemplateBinding ContentTransitions}'
+                .SelectionCheckMarkVisualEnabled = True
+                .CheckBrush = '{ThemeResource SystemControlForegroundBaseMediumHighBrush}'
+                .CheckBoxBrush = '{ThemeResource SystemControlForegroundBaseMediumHighBrush}'
+                .DragBackground = '{ThemeResource ListViewItemDragBackgroundThemeBrush}'
+                .DragForeground = '{ThemeResource ListViewItemDragForegroundThemeBrush}'
+                .FocusBorderBrush = '{ThemeResource SystemControlForegroundAltHighBrush}'
+                .FocusSecondaryBorderBrush = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+                .PlaceholderBackground = '{ThemeResource ListViewItemPlaceholderBackgroundThemeBrush}'
+                .PointerOverBackground = '{ThemeResource SystemControlHighlightListLowBrush}'
+                .PointerOverForeground = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                .SelectedBackground = '{ThemeResource SystemControlHighlightListAccentLowBrush}'
+                .SelectedForeground = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                .SelectedPointerOverBackground = '{ThemeResource SystemControlHighlightListAccentMediumBrush}'
+                .PressedBackground = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                .SelectedPressedBackground = '{ThemeResource SystemControlHighlightListAccentHighBrush}'
+                .DisabledOpacity = '{ThemeResource ListViewItemDisabledThemeOpacity}'
+                .DragOpacity = '{ThemeResource ListViewItemDragThemeOpacity}'
+                .ReorderHintOffset = '{ThemeResource ListViewItemReorderHintThemeOffset}'
+                .HorizontalContentAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                .VerticalContentAlignment = '{TemplateBinding VerticalContentAlignment}'
+                .ContentMargin = '{TemplateBinding Padding}'
+                .CheckMode = 'Inline'
+  ]
+  .Content:
+    using:FileExplorer.View:FolderViewListView [x:Name=FolderViewListView, #conn1]
+      .SingleSelectionFollowsFocus = False
+      .Style = '{StaticResource FolderViewStyle}'
+      .ItemsSource:
+        Binding
+          .Path = 'FolderViewItems'
+      .ItemTemplate = '{StaticResource FolderViewItemTemplate}'
+      .AutomationId = 'FolderViewListView'
+      .Resources: [
+        using:FileExplorer.View.Utilities:FileTimeToStringConverter [Key=FileTimeToStringConverter]
+        using:FileExplorer.View.Utilities:UInt64ToFileSizeConverter [Key=UInt64ToFileSizeConverter]
+        using:FileExplorer.View.Utilities:BooleanToVisibilityConverter [Key=BooleanToVisibilityConverter]
+        using:FileExplorer.View.Utilities:EncryptionToVisibilityConverter [Key=EncryptionToVisibilityConverter]
+        Style [Key=Tile_Primary_Text_Style]
+          .TargetType = 'TextBlock'
+          .BasedOn = '{StaticResource BodyTextBlockStyle}'
+          Setter
+            .Property = 'TextWrapping'
+            .Value = 'NoWrap'
+          Setter
+            .Property = 'AccessibilityView'
+            .Value = 'Raw'
+        Style [Key=Tile_Secondary_Text_Style]
+          .TargetType = 'TextBlock'
+          .BasedOn = '{StaticResource BodyTextBlockStyle}'
+          Setter
+            .Property = 'TextWrapping'
+            .Value = 'NoWrap'
+          Setter
+            .Property = 'Foreground'
+            .Value = '{ThemeResource PageTextBaseMediumBrush}'
+        Style [Key=Thumbnail_Primary_Text_Style]
+          .TargetType = 'TextBlock'
+          .BasedOn = '{StaticResource BodyTextBlockStyle}'
+          Setter
+            .Property = 'TextAlignment'
+            .Value = 'Center'
+          Setter
+            .Property = 'HorizontalAlignment'
+            .Value = 'Center'
+          Setter
+            .Property = 'VerticalAlignment'
+            .Value = 'Top'
+          Setter
+            .Property = 'Padding'
+            .Value = '4'
+          Setter
+            .Property = 'Margin'
+            .Value = '0'
+          Setter
+            .Property = 'TextWrapping'
+            .Value = 'Wrap'
+          Setter
+            .Property = 'MaxLines'
+            .Value = 2
+          Setter
+            .Property = 'Foreground'
+            .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+          Setter
+            .Property = 'AccessibilityView'
+            .Value = 'Raw'
+      ]
+      .Header:
+        Grid
+          .RowDefinitions: [
+            RowDefinition
+              .Height = 'Auto'
+            RowDefinition
+              .Height = 'Auto'
+          ]
+          .Children: [
+            TextBlock [x:Uid=StatusBarTextBlock]
+              .Visibility:
+                Binding
+                  .Path = 'ShouldDisplayStatusBar'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+              .Text:
+                Binding
+                  .Path = 'StatusBarText'
+              .Style = '{StaticResource BodyTextBlockStyle}'
+              .TextWrapping = 'NoWrap'
+              .AutomationId = 'StatusBarTextBlock'
+              .Margin = '12,11,0,13'
+            using:Microsoft.DesignCore.Elements:TextFilterButton [x:Name=SortByTextFilterButton, x:Uid=SortByTextFilterButton, #conn2]
+              .Visibility:
+                Binding
+                  .Path = 'ShouldDisplaySortByField'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+              .Margin = '12,0,0,0'
+              .Content:
+                Binding
+                  .Path = 'SortByField'
+            TextBlock
+              .Row = 1
+              .Margin = '12,11,0,13'
+              .Text:
+                Binding
+                  .Path = 'EmptyPageContent'
+                  .Mode = 'OneWay'
+              .AutomationId = 'EmptyPageContent'
+              .Name:
+                Binding
+                  .Path = 'EmptyPageContent'
+              .Visibility:
+                Binding
+                  .Path = 'AreFolderViewItemsEmpty'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+              .Style = '{StaticResource BodyTextBlockStyle}'
+              .Foreground = '{ThemeResource PageTextBaseMediumBrush}'
+          ]

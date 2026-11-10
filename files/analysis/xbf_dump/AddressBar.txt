@@ -1,0 +1,200 @@
+UserControl [#conn1]
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:FileExplorer.View'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'FileExplorer.View.AddressBar'
+  .Resources: [
+    Style [Key=AddressBarButton]
+      .TargetType = 'Button'
+      Setter
+        .Property = 'MinWidth'
+        .Value = 0.0
+      Setter
+        .Property = 'MinHeight'
+        .Value = 0.0
+      Setter
+        .Property = 'Background'
+        .Value = '#00FFFFFF'
+      Setter
+        .Property = 'Foreground'
+        .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+      Setter
+        .Property = 'Margin'
+        .Value = '0'
+      Setter
+        .Property = 'Template'
+        .Value:
+          ControlTemplate
+            .TargetType = 'Button'
+            .Template:
+              Grid [x:Name=RootGrid]
+                .Background = '{TemplateBinding Background}'
+                .Height = 48.0
+                .Width = '{TemplateBinding Width}'
+                .ColumnDefinitions: [
+                  ColumnDefinition
+                    .Width = 'Auto'
+                  ColumnDefinition
+                    .Width = '*'
+                  ColumnDefinition
+                    .Width = 'Auto'
+                  ColumnDefinition
+                    .Width = 'Auto'
+                  ColumnDefinition
+                    .Width = 'Auto'
+                ]
+                .Children: [
+                  Rectangle [x:Name=AddressBarButtonLeftButtonPadding]
+                    .Column = 0
+                    .Width = 7.0
+                    .HorizontalAlignment = 'Stretch'
+                    .VerticalAlignment = 'Stretch'
+                  Border [x:Name=AddressBarButtonBorder]
+                    .Column = 1
+                    .BorderThickness = '0'
+                    .Padding = '5,0,0,0'
+                    .Child:
+                      ContentControl [x:Name=AddressBarButtonContent]
+                        .Content = '{TemplateBinding Content}'
+                        .HorizontalAlignment = 'Center'
+                        .VerticalAlignment = 'Center'
+                  TextBlock [x:Name=AddressBarEllipsis, x:Uid=AddressBar_AddressEllipsis]
+                    .Style = '{StaticResource BaseTextBlockStyle}'
+                    .Visibility = 'Collapsed'
+                    .HorizontalAlignment = 'Center'
+                    .VerticalAlignment = 'Center'
+                    .Column = 2
+                  TextBlock [x:Name=AddressBarChevron, x:Uid=AddressBar_AddressChevron]
+                    .Padding = '5,3,3,0'
+                    .HorizontalAlignment = 'Center'
+                    .VerticalAlignment = 'Center'
+                    .Column = 3
+                  Rectangle [x:Name=AddressBarButtonRightButtonPadding]
+                    .Column = 4
+                    .Width = 12.0
+                    .HorizontalAlignment = 'Stretch'
+                    .VerticalAlignment = 'Stretch'
+                ]
+                .VisualStateGroups: [
+                ]
+                .VisualStateGroups: [
+                  VisualStateGroup [x:Name=CommonStates]
+                    .States: [
+                      VisualState [x:Name=Normal]
+                      VisualState [x:Name=PointerOver]
+                        .Storyboard:
+                          Storyboard
+                            .Children: [
+                              ObjectAnimationUsingKeyFrames
+                                .TargetName = 'RootGrid'
+                                .TargetProperty = 'Background'
+                                .KeyFrames: [
+                                  DiscreteObjectKeyFrame
+                                    .KeyTime = 0.0
+                                    .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                                ]
+                              ObjectAnimationUsingKeyFrames
+                                .TargetName = 'AddressBarButtonContent'
+                                .TargetProperty = '(ContentControl.Foreground)'
+                                .KeyFrames: [
+                                  DiscreteObjectKeyFrame
+                                    .KeyTime = 0.0
+                                    .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                                ]
+                              ObjectAnimationUsingKeyFrames
+                                .TargetName = 'AddressBarChevron'
+                                .TargetProperty = '(TextBlock.Foreground)'
+                                .KeyFrames: [
+                                  DiscreteObjectKeyFrame
+                                    .KeyTime = 0.0
+                                    .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                                ]
+                            ]
+                      VisualState [x:Name=Pressed]
+                        .Storyboard:
+                          Storyboard
+                            .Children: [
+                              ObjectAnimationUsingKeyFrames
+                                .TargetName = 'RootGrid'
+                                .TargetProperty = 'Background'
+                                .KeyFrames: [
+                                  DiscreteObjectKeyFrame
+                                    .KeyTime = 0.0
+                                    .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                                ]
+                              ObjectAnimationUsingKeyFrames
+                                .TargetName = 'AddressBarButtonContent'
+                                .TargetProperty = '(ContentControl.Foreground)'
+                                .KeyFrames: [
+                                  DiscreteObjectKeyFrame
+                                    .KeyTime = 0.0
+                                    .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                                ]
+                              ObjectAnimationUsingKeyFrames
+                                .TargetName = 'AddressBarChevron'
+                                .TargetProperty = '(TextBlock.Foreground)'
+                                .KeyFrames: [
+                                  DiscreteObjectKeyFrame
+                                    .KeyTime = 0.0
+                                    .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                                ]
+                            ]
+                      VisualState [x:Name=Disabled]
+                        .Storyboard:
+                          Storyboard
+                            .Children: [
+                              ObjectAnimationUsingKeyFrames
+                                .TargetProperty = '(Border.Visibility)'
+                                .TargetName = 'AddressBarButtonBorder'
+                                .KeyFrames: [
+                                  DiscreteObjectKeyFrame
+                                    .KeyTime = 0.0
+                                    .Value:
+                                      Visibility
+                                        .Value = 'Collapsed'
+                                ]
+                              ObjectAnimationUsingKeyFrames
+                                .TargetProperty = 'Visibility'
+                                .TargetName = 'AddressBarEllipsis'
+                                .KeyFrames: [
+                                  DiscreteObjectKeyFrame
+                                    .KeyTime = 0.0
+                                    .Value:
+                                      Visibility
+                                        .Value = 'Visible'
+                                ]
+                            ]
+                    ]
+                ]
+    DataTemplate [x:Name=FolderItemTemplate, Key=FolderItemTemplate, #conn2]
+      .Template:
+        Button [x:Uid=AddressBar_AddressItem, #conn3]
+          .Style = '{StaticResource AddressBarButton}'
+          .Content:
+            TextBlock
+              .Text:
+                Binding
+                  .Path = 'DisplayName'
+              .Style = '{StaticResource BaseTextBlockStyle}'
+              .TextWrapping = 'NoWrap'
+              .TextTrimming = 'CharacterEllipsis'
+  ]
+  .Content:
+    Grid
+      .Clip:
+        RectangleGeometry [x:Name=_clippingRect, #conn4]
+      .Children: [
+        using:FileExplorer.View:AddressBarItemsControl
+          .ItemsSource:
+            Binding
+              .Path = 'Items'
+          .ItemTemplate = '{StaticResource FolderItemTemplate}'
+          .IsTabStop = False
+          .ItemsPanel:
+            ItemsPanelTemplate
+              .Template:
+                using:FileExplorer.View:AddressBarPanel
+                  .Orientation = 'Horizontal'
+      ]

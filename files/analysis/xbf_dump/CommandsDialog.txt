@@ -1,0 +1,36 @@
+ContentDialog
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:FileExplorer.View'
+  .x:Class = 'FileExplorer.View.CommandsDialog'
+  .FullSizeDesired = True
+  .Resources: [
+    DataTemplate [x:Name=CommandItemTemplate, Key=CommandItemTemplate, #conn1]
+      .Template:
+        ListViewItem [x:Uid=CommandItem]
+          .BorderThickness = '0'
+          .HorizontalAlignment = 'Left'
+          .VerticalAlignment = 'Top'
+          .IsEnabled:
+            Binding
+              .Path = 'IsEnabled'
+          .Content:
+            TextBlock
+              .Text:
+                Binding
+                  .Path = 'Label'
+              .TextTrimming = 'CharacterEllipsis'
+  ]
+  .Content:
+    StackPanel
+      .Children: [
+        TextBlock [x:Name=CommandsTitle, x:Uid=CommandsTitle, #conn2]
+          .Margin = '0,12,0,20'
+          .AutomationId = 'CommandsTitle'
+        using:FileExplorer.View:CommandsDialogListView [x:Name=CommandsListView, #conn3]
+          .ItemsSource:
+            Binding
+              .Path = 'Commands'
+          .ItemTemplate = '{StaticResource CommandItemTemplate}'
+          .SelectionMode = 'None'
+      ]

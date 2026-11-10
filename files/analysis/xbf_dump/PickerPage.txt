@@ -1,0 +1,32 @@
+using:FileExplorer.View:BasePage
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:FileExplorer.View'
+  .xmlns:utilities = 'using:FileExplorer.View.Utilities'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'FileExplorer.View.PickerPage'
+  .Background = '{ThemeResource ApplicationPageBackgroundThemeBrush}'
+  .Content:
+    Grid [x:Name=_mainContent, #conn1]
+      .RowDefinitions: [
+        RowDefinition
+          .Height = '48'
+        RowDefinition
+          .Height = '*'
+      ]
+      .Children: [
+        using:FileExplorer.View:NavBar [x:Name=NavBar, x:Uid=MainPage_NavBar, #conn2]
+          .VerticalAlignment = 'Top'
+          .HorizontalAlignment = 'Stretch'
+          .DataContext:
+            Binding
+              .Path = 'NavBar'
+          .AutomationId = 'MainPage_NavBar'
+        using:FileExplorer.View:ExplorerBrowser [x:Uid=MainPage_ExplorerBrowser]
+          .DataContext:
+            Binding
+              .Path = 'ExplorerBrowser'
+          .Row = 1
+          .AutomationId = 'MainPage_ExplorerBrowser'
+      ]

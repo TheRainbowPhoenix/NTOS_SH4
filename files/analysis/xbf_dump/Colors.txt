@@ -1,0 +1,15 @@
+ResourceDictionary
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:TitleBar'
+  .ThemeDictionaries: [
+    ResourceDictionary [Key=Default]
+      SolidColorBrush [Key=NavBarBackgroundThemeBrush]
+        .Color = '{ThemeResource SystemChromeMediumColor}'
+    ResourceDictionary [Key=Light]
+      SolidColorBrush [Key=NavBarBackgroundThemeBrush]
+        .Color = '{ThemeResource SystemChromeMediumColor}'
+    ResourceDictionary [Key=HighContrast]
+      SolidColorBrush [Key=NavBarBackgroundThemeBrush]
+        .Color = '{ThemeResource SystemColorWindowColor}'
+  ]

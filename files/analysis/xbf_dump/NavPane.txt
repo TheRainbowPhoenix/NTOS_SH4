@@ -1,0 +1,50 @@
+UserControl [#conn1]
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:FileExplorer.View'
+  .xmlns:dcLists = 'using:Microsoft.DesignCore.Elements.Lists'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'FileExplorer.View.NavPane'
+  .Resources:
+    ResourceDictionary
+      Style [Key=NavPaneStyle]
+        .TargetType = 'ListViewItem'
+        Setter
+          .Property = 'TabNavigation'
+          .Value = 'Local'
+      DataTemplate [Key=NavPaneItemTemplate]
+        .Template:
+          using:Microsoft.DesignCore.Elements.Lists:SingleLine
+            .PaddingMode = 'TouchOptimized'
+            .Line1Text:
+              Binding
+                .Path = 'DisplayName'
+            .Icon:
+              FontIcon
+                .Margin = '{StaticResource SplitViewIconMargin}'
+                .FontFamily = 'Segoe MDL2 Assets'
+                .FontSize = '{StaticResource BodyIconSize}'
+                .Glyph:
+                  Binding
+                    .Path = 'Icon'
+  .Content:
+    Grid
+      .RowDefinitions: [
+        RowDefinition
+          .Height = '48'
+        RowDefinition
+          .Height = '*'
+      ]
+      .Children: [
+        using:FileExplorer.View:NavPaneListView [x:Name=NavPaneListView, x:Uid=NavPane_ListView, #conn2]
+          .Row = 1
+          .BorderThickness = '0'
+          .IsItemClickEnabled = True
+          .ItemContainerStyle = '{StaticResource NavPaneStyle}'
+          .ItemsSource:
+            Binding
+              .Path = 'Items'
+          .ItemTemplate = '{StaticResource NavPaneItemTemplate}'
+          .AutomationId = 'NavPane_ListView'
+      ]

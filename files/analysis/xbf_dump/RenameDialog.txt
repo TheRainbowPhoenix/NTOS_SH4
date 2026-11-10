@@ -1,0 +1,33 @@
+ContentDialog [x:Name=RenameDialog, x:Uid=RenameDialog, #conn1]
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:FileExplorer.View'
+  .x:Class = 'FileExplorer.View.RenameDialog'
+  .AutomationId = 'RenameDialog'
+  .IsPrimaryButtonEnabled:
+    Binding
+      .ElementName = 'RenameDialog'
+      .Path = 'PrimaryButtonEnabled'
+  .Content:
+    StackPanel
+      .Children: [
+        TextBlock [x:Uid=RenameTitle]
+          .Text:
+            Binding
+              .Path = 'RenameTitle'
+          .Margin = '0,12'
+          .Style = '{StaticResource SubtitleTextBlockStyle}'
+          .AutomationId = 'RenameTitle'
+        TextBlock
+          .Text:
+            Binding
+              .Path = 'RenameTextBoxTitle'
+          .Padding = '0,0,0,8'
+          .Style = '{StaticResource BodyTextBlockStyle}'
+          .HorizontalAlignment = 'Left'
+          .AutomationId = 'RenameTextBoxTitle'
+        TextBox [x:Name=RenameTextBox, x:Uid=RenameTextBox, #conn2]
+          .IsTextPredictionEnabled = False
+          .InputScope = 'Text'
+          .AutomationId = 'RenameTextBox'
+      ]
