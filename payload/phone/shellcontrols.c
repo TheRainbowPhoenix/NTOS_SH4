@@ -167,7 +167,7 @@ static void icon(void *dc, int id, int x, int y, int size, U32 c)
 #undef P
 #undef V
 }
-static const Controls controls = {PROFILE, icon};
+static const Controls controls = {.profile = PROFILE, .icon = icon};
 const Controls *UIXGetSchemaFactory(void)
 {
     return &controls;
