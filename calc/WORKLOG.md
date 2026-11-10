@@ -191,3 +191,24 @@ engine off calc_app.c + host harness) — all green at 16 digits.
   needs the radix keypad + bit panel + base formatting), Date
   calculation (no capture yet), and the nav pane's Programmer/Date
   entries once those exist.
+
+### Programmer mode (same session)
+- Implemented from the four programmer*.png captures: the 6x6 radix
+  keypad (Lsh/Rsh/Or/Xor/Not/And over the 2nd Mod CE C back div row and
+  the A-F letter columns), base lines HEX/DEC/OCT/BIN with the active
+  base in accent (tap to switch; DEC default), the big value rendered
+  in the active base (28px), BIN padded to whole nibbles and grouped 4s,
+  QWORD/DWORD/WORD/BYTE cycling with width masking, A-F/8/9/2-7 keys
+  disabled outside their base in #B5B2B5, "." always disabled, and the
+  16-nibble bit-toggle keyboard (gray 0s / accent 1s, tap flips a bit).
+- Engine: int64 bitwise ops on the mantissa (And/Or/Xor/Lsh/Rsh as
+  binary ops + unary Not); 2nd swaps Lsh/Rsh toward RoL/RoR (the tiny
+  sub-chevron marks under the keys per the capture).
+- The nav pane gained the Programmer row (3 calc modes; the converter
+  band shifted +32 — the e2e coordinates had to move with it; the
+  volume-section taps had silently selected the wrong rows, which is
+  how a stray ProgPage BaseBin tap set the active base to BIN and
+  produced a mysteriously BIN-accented prog-boot).
+- Not done: Date calculation (no capture); the nav pane omits that row
+  until the mode exists. The programmer pivot row omits the two
+  function-page chevrons (nothing to page through yet).

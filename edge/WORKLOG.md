@@ -493,3 +493,11 @@ SIP-up = keyboard through the strip. light-tabs now keeps its reference
 - MDSmokeTest via html.dll: 0x103F (unchanged). edge e2e: all shots
   green incl. new wiki content probes, errorpage, swap-a/b. files-app
   e2e green. ntos_linux sample e2e green. uxaml round-trip green.
+
+## 2026-11-11 — status bar + swap gate
+- SHELLCHROME now paints the launcher-owned system status bar (y0-24)
+  over every hosted app; the swap gate's heading/text regions moved
+  below it: swap.html gained a 34px top margin and the COLORS regions
+  were recalibrated (28..62 / 62..110). The md viewport itself still
+  paints from y0 — its top 24px sit under the bar; a viewport-origin
+  fix belongs to the md engine and is noted as backlog.

@@ -508,16 +508,16 @@ def presence_ok(path, regions):
 COLORS = {
     # swap.html: bg #0000FF, h1 #FF0000 @22px, body #00CC00
     'swap-a': [
-        (10, 4, 310, 44, (0xFF, 0x00, 0x00), 36, 300),  # red 22px heading
-        (10, 44, 310, 95, (0x00, 0xCC, 0x00), 36, 200), # green body text
+        (10, 28, 310, 62, (0xFF, 0x00, 0x00), 36, 300),  # red 22px heading
+        (10, 62, 310, 110, (0x00, 0xCC, 0x00), 36, 200), # green body text
     ],
     # swap2.html (sed-swapped values): bg #FFFFFF, h1 #0000FF @16px,
     # body #CC0000 — smaller heading, different colours, same page
     'swap-b': [
-        (10, 4, 310, 40, (0x00, 0x00, 0xFF), 36, 120),   # blue 16px heading
-        (10, 4, 310, 40, (0x00, 0x00, 0xFF), 36, -400),  # ...far fewer px than 22px (measured: 320 vs 487)
-        (10, 44, 310, 95, (0xCC, 0x00, 0x00), 36, 200),  # dark-red body text
-        (10, 40, 310, 95, (0x00, 0x00, 0xFF), 36, -20),  # heading never reaches the body zone
+        (10, 28, 310, 58, (0x00, 0x00, 0xFF), 36, 120),  # blue 16px heading
+        (10, 28, 310, 58, (0x00, 0x00, 0xFF), 36, -400), # ...far fewer px than 22px (320 vs 487)
+        (10, 62, 310, 110, (0xCC, 0x00, 0x00), 36, 200), # dark-red body text
+        (10, 58, 310, 110, (0x00, 0x00, 0xFF), 36, -20), # heading never reaches the body zone
     ],
 }
 
