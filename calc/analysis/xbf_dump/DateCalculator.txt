@@ -1,0 +1,900 @@
+UserControl [#conn1]
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:converters = 'using:CalculatorApp.Converters'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:local = 'using:CalculatorApp'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .xmlns:controls = 'using:CalculatorApp.Controls'
+  .x:Class = 'CalculatorApp.DateCalculator'
+  .FlowDirection = 'LeftToRight'
+  .Resources: [
+    using:CalculatorApp.Converters:BooleanToVisibilityConverter [Key=BooleanToVisibilityConverter]
+    using:CalculatorApp.Converters:BooleanNegationConverter [Key=BooleanNegationConverter]
+    DataTemplate [Key=ComboBoxItemContentTemplate]
+      .Template:
+        TextBlock
+          .Text:
+            Binding
+          .TextWrapping = 'WrapWholeWords'
+    using:CalculatorApp.Converters:BooleanToVisibilityNegationConverter [Key=BooleanToVisibilityNegationConverter]
+    Style [Key=DateCalculation_ComboStyle]
+      .TargetType = 'ComboBox'
+      Setter
+        .Property = 'Padding'
+        .Value = '0,0,24,0'
+      Setter
+        .Property = 'MinHeight'
+        .Value = 48.0
+      Setter
+        .Property = 'Foreground'
+        .Value = '{ThemeResource SystemControlHighlightAccentBrush}'
+      Setter
+        .Property = 'Background'
+        .Value = '#00FFFFFF'
+      Setter
+        .Property = 'BorderBrush'
+        .Value = '{ThemeResource SystemControlForegroundBaseMediumLowBrush}'
+      Setter
+        .Property = 'BorderThickness'
+        .Value = '0'
+      Setter
+        .Property = 'TabNavigation'
+        .Value = 'Once'
+      Setter
+        .Property = 'HorizontalScrollBarVisibility'
+        .Value = 'Disabled'
+      Setter
+        .Property = 'VerticalScrollBarVisibility'
+        .Value = 'Auto'
+      Setter
+        .Property = 'HorizontalScrollMode'
+        .Value = 'Disabled'
+      Setter
+        .Property = 'VerticalScrollMode'
+        .Value = 'Auto'
+      Setter
+        .Property = 'IsVerticalRailEnabled'
+        .Value = True
+      Setter
+        .Property = 'IsDeferredScrollingEnabled'
+        .Value = False
+      Setter
+        .Property = 'BringIntoViewOnFocusChange'
+        .Value = True
+      Setter
+        .Property = 'HorizontalContentAlignment'
+        .Value = 'Left'
+      Setter
+        .Property = 'HorizontalAlignment'
+        .Value = 'Left'
+      Setter
+        .Property = 'VerticalAlignment'
+        .Value = 'Top'
+      Setter
+        .Property = 'VerticalContentAlignment'
+        .Value = 'Center'
+      Setter
+        .Property = 'IsTextScaleFactorEnabled'
+        .Value = False
+      Setter
+        .Property = 'UseSystemFocusVisuals'
+        .Value = True
+      Setter
+        .Property = 'ItemsPanel'
+        .Value:
+          ItemsPanelTemplate
+            .Template:
+              CarouselPanel
+      Setter
+        .Property = 'Template'
+        .Value:
+          ControlTemplate
+            .TargetType = 'ComboBox'
+            .Template:
+              Grid
+                .VisualStateGroups: [
+                ]
+                .VisualStateGroups: [
+                  VisualStateGroup [x:Name=CommonStates]
+                    .States: [
+                      VisualState [x:Name=Normal]
+                      VisualState [x:Name=PointerOver]
+                        .Setters: [
+                          Setter
+                            .Target = 'BackgroundElement.Background'
+                            .Value = '{ThemeResource SystemControlHighlightTransparentBrush}'
+                          Setter
+                            .Target = 'SelectedContentPresenter.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                          Setter
+                            .Target = 'DropDownGlyph.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                        ]
+                      VisualState [x:Name=Pressed]
+                        .Setters: [
+                          Setter
+                            .Target = 'BackgroundElement.Background'
+                            .Value = '{ThemeResource SystemControlHighlightTransparentBrush}'
+                          Setter
+                            .Target = 'SelectedContentPresenter.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseMediumBrush}'
+                          Setter
+                            .Target = 'DropDownGlyph.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseMediumBrush}'
+                        ]
+                      VisualState [x:Name=Disabled]
+                    ]
+                  VisualStateGroup [x:Name=DropDownStates]
+                    .States: [
+                      VisualState [x:Name=Opened]
+                        .Storyboard:
+                          Storyboard
+                            .Children: [
+                              SplitOpenThemeAnimation
+                                .ClosedTargetName = 'SelectedContentPresenter'
+                                .OffsetFromCenter:
+                                  Binding
+                                    .RelativeSource:
+                                      RelativeSource
+                                        .Mode = 'TemplatedParent'
+                                    .Path = 'TemplateSettings.DropDownOffset'
+                                .OpenedLength:
+                                  Binding
+                                    .RelativeSource:
+                                      RelativeSource
+                                        .Mode = 'TemplatedParent'
+                                    .Path = 'TemplateSettings.DropDownOpenedHeight'
+                                .OpenedTargetName = 'PopupBorder'
+                            ]
+                      VisualState [x:Name=Closed]
+                        .Storyboard:
+                          Storyboard
+                            .Children: [
+                              SplitCloseThemeAnimation
+                                .ClosedTargetName = 'SelectedContentPresenter'
+                                .OffsetFromCenter:
+                                  Binding
+                                    .RelativeSource:
+                                      RelativeSource
+                                        .Mode = 'TemplatedParent'
+                                    .Path = 'TemplateSettings.DropDownOffset'
+                                .OpenedLength:
+                                  Binding
+                                    .RelativeSource:
+                                      RelativeSource
+                                        .Mode = 'TemplatedParent'
+                                    .Path = 'TemplateSettings.DropDownOpenedHeight'
+                                .OpenedTargetName = 'PopupBorder'
+                            ]
+                    ]
+                ]
+                .Children: [
+                  Grid
+                    .RowDefinitions: [
+                      RowDefinition
+                        .Height = 'Auto'
+                      RowDefinition
+                        .Height = '*'
+                    ]
+                    .Children: [
+                      ContentPresenter [x:Name=ContentPresenter]
+                        .Visibility = 'Collapsed'
+                      Popup [x:Name=Popup]
+                        .Child:
+                          Border [x:Name=PopupBorder]
+                            .Margin = '0,-1'
+                            .HorizontalAlignment = 'Stretch'
+                            .Background = '{ThemeResource SystemControlBackgroundChromeMediumLowBrush}'
+                            .BorderBrush = '{ThemeResource SystemControlForegroundChromeHighBrush}'
+                            .BorderThickness = '{ThemeResource ComboBoxDropdownBorderThickness}'
+                            .Child:
+                              ScrollViewer [x:Name=ScrollViewer]
+                                .MinWidth:
+                                  Binding
+                                    .RelativeSource:
+                                      RelativeSource
+                                        .Mode = 'TemplatedParent'
+                                    .Path = 'TemplateSettings.DropDownContentMinWidth'
+                                .AccessibilityView = 'Raw'
+                                .BringIntoViewOnFocusChange = '{TemplateBinding BringIntoViewOnFocusChange}'
+                                .Foreground = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+                                .HorizontalScrollBarVisibility = '{TemplateBinding HorizontalScrollBarVisibility}'
+                                .HorizontalScrollMode = '{TemplateBinding HorizontalScrollMode}'
+                                .IsDeferredScrollingEnabled = '{TemplateBinding IsDeferredScrollingEnabled}'
+                                .IsHorizontalRailEnabled = '{TemplateBinding IsHorizontalRailEnabled}'
+                                .IsVerticalRailEnabled = '{TemplateBinding IsVerticalRailEnabled}'
+                                .VerticalScrollBarVisibility = '{TemplateBinding VerticalScrollBarVisibility}'
+                                .VerticalScrollMode = '{TemplateBinding VerticalScrollMode}'
+                                .VerticalSnapPointsAlignment = 'Near'
+                                .VerticalSnapPointsType = 'OptionalSingle'
+                                .ZoomMode = 'Disabled'
+                                .Content:
+                                  ItemsPresenter
+                      Border [x:Name=BackgroundElement]
+                        .Row = 1
+                        .Background = '{TemplateBinding Background}'
+                        .BorderBrush = '{TemplateBinding BorderBrush}'
+                        .BorderThickness = '{TemplateBinding BorderThickness}'
+                      TextBlock [x:Name=SelectedContentPresenter]
+                        .Row = 1
+                        .Margin = '{TemplateBinding Padding}'
+                        .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                        .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                        .FlowDirection = '{TemplateBinding FlowDirection}'
+                        .FontWeight = 'SemiBold'
+                        .Style = '{ThemeResource BodyTextBlockStyle}'
+                        .Text:
+                          Binding
+                            .RelativeSource:
+                              RelativeSource
+                                .Mode = 'TemplatedParent'
+                            .Path = 'SelectedValue.Content'
+                        .TextWrapping = 'WrapWholeWords'
+                      TextBlock [x:Name=DropDownGlyph]
+                        .Row = 1
+                        .Margin = '0,3,0,0'
+                        .HorizontalAlignment = 'Right'
+                        .VerticalAlignment = 'Center'
+                        .AccessibilityView = 'Raw'
+                        .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                        .FontSize = 12.0
+                        .Foreground = '{ThemeResource SystemControlHighlightAccentBrush}'
+                        .IsHitTestVisible = False
+                        .Text = '\ue0e5'
+                    ]
+                ]
+    Style [Key=DateCalculation_CalendarPickerStyle]
+      .TargetType = 'using:CalculatorApp.Controls:CalendarPicker'
+      Setter
+        .Property = 'Foreground'
+        .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+      Setter
+        .Property = 'Background'
+        .Value = '#00FFFFFF'
+      Setter
+        .Property = 'BorderBrush'
+        .Value = '{ThemeResource SystemControlForegroundBaseMediumLowBrush}'
+      Setter
+        .Property = 'BorderThickness'
+        .Value = '{ThemeResource CalendarDatePickerBorderThemeThickness}'
+      Setter
+        .Property = 'HorizontalAlignment'
+        .Value = 'Left'
+      Setter
+        .Property = 'VerticalAlignment'
+        .Value = 'Center'
+      Setter
+        .Property = 'UseSystemFocusVisuals'
+        .Value = True
+      Setter
+        .Property = 'Template'
+        .Value:
+          ControlTemplate
+            .TargetType = 'CalendarDatePicker'
+            .Template:
+              Grid [x:Name=Root]
+                .ColumnDefinitions: [
+                  ColumnDefinition
+                    .Width = '*'
+                  ColumnDefinition
+                    .Width = '32'
+                ]
+                .RowDefinitions: [
+                  RowDefinition
+                    .Height = 'Auto'
+                  RowDefinition
+                    .Height = '32'
+                ]
+                .VisualStateGroups: [
+                ]
+                .VisualStateGroups: [
+                  VisualStateGroup [x:Name=CommonStates]
+                    .States: [
+                      VisualState [x:Name=Normal]
+                        .Setters: [
+                          Setter
+                            .Target = 'DateText.Foreground'
+                            .Value = '{ThemeResource SystemControlForegroundBaseMediumHighBrush}'
+                          Setter
+                            .Target = 'CalendarGlyph.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAccentBrush}'
+                        ]
+                      VisualState [x:Name=PointerOver]
+                        .Setters: [
+                          Setter
+                            .Target = 'BorderElement.Background'
+                            .Value = '{ThemeResource SystemControlHighlightTransparentBrush}'
+                          Setter
+                            .Target = 'DateText.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                          Setter
+                            .Target = 'CalendarGlyph.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseMediumHighBrush}'
+                        ]
+                      VisualState [x:Name=Pressed]
+                        .Setters: [
+                          Setter
+                            .Target = 'BorderElement.Background'
+                            .Value = '{ThemeResource SystemControlHighlightTransparentBrush}'
+                          Setter
+                            .Target = 'DateText.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseMediumBrush}'
+                          Setter
+                            .Target = 'CalendarGlyph.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseMediumBrush}'
+                        ]
+                      VisualState [x:Name=Disabled]
+                    ]
+                ]
+                .AttachedFlyout:
+                  Flyout
+                    .Placement = 'Full'
+                    .FlyoutPresenterStyle:
+                      Style
+                        .TargetType = 'FlyoutPresenter'
+                        Setter
+                          .Property = 'MaxHeight'
+                          .Value = 9000.0
+                        Setter
+                          .Property = 'MaxWidth'
+                          .Value = 9000.0
+                        Setter
+                          .Property = 'Padding'
+                          .Value = '0'
+                        Setter
+                          .Property = 'BorderThickness'
+                          .Value = '0'
+                        Setter
+                          .Property = 'Template'
+                          .Value:
+                            ControlTemplate
+                              .TargetType = 'FlyoutPresenter'
+                              .Template:
+                                Grid
+                                  .VisualStateGroups: [
+                                  ]
+                                  .VisualStateGroups: [
+                                    VisualStateGroup
+                                      .States: [
+                                        VisualState [x:Name=LeftAlignedLayout]
+                                          .StateTriggers: [
+                                            AdaptiveTrigger
+                                              .MinWindowWidth = 360.0
+                                          ]
+                                          .Setters: [
+                                            Setter
+                                              .Target = 'LeftGutter.Width'
+                                              .Value = '12'
+                                            Setter
+                                              .Target = 'RightGutter.Width'
+                                              .Value = '*'
+                                            Setter
+                                              .Target = 'C0.Width'
+                                              .Value = '336'
+                                          ]
+                                        VisualState [x:Name=DefaultLayout]
+                                          .StateTriggers: [
+                                            AdaptiveTrigger
+                                              .MinWindowWidth = 0.0
+                                          ]
+                                      ]
+                                  ]
+                                  .RowDefinitions: [
+                                    RowDefinition
+                                      .Height = '128'
+                                    RowDefinition
+                                      .Height = 'Auto'
+                                    RowDefinition
+                                      .Height = '*'
+                                  ]
+                                  .ColumnDefinitions: [
+                                    ColumnDefinition [x:Name=LeftGutter]
+                                      .Width = '0'
+                                    ColumnDefinition [x:Name=C0]
+                                      .Width = '*'
+                                    ColumnDefinition [x:Name=RightGutter]
+                                      .Width = '0'
+                                  ]
+                                  .Children: [
+                                    ContentPresenter
+                                      .Row = 1
+                                      .Column = 1
+                                      .Margin = '0'
+                                      .HorizontalAlignment = 'Stretch'
+                                      .VerticalAlignment = 'Top'
+                                      .Background = '{ThemeResource SystemControlBackgroundChromeMediumLowBrush}'
+                                      .BorderBrush = '{ThemeResource SystemControlForegroundChromeHighBrush}'
+                                      .BorderThickness = '{ThemeResource ComboBoxDropdownBorderThickness}'
+                                      .Content = '{TemplateBinding Content}'
+                                      .ContentTemplate = '{TemplateBinding ContentTemplate}'
+                                      .ContentTransitions = '{TemplateBinding ContentTransitions}'
+                                  ]
+                    .Content:
+                      CalendarView [x:Name=CalendarView]
+                        .CalendarIdentifier = '{TemplateBinding CalendarIdentifier}'
+                        .DayOfWeekFormat = '{TemplateBinding DayOfWeekFormat}'
+                        .DisplayMode = '{TemplateBinding DisplayMode}'
+                        .FirstDayOfWeek = '{TemplateBinding FirstDayOfWeek}'
+                        .IsGroupLabelVisible = '{TemplateBinding IsGroupLabelVisible}'
+                        .IsOutOfScopeEnabled = '{TemplateBinding IsOutOfScopeEnabled}'
+                        .IsTodayHighlighted = '{TemplateBinding IsTodayHighlighted}'
+                        .MaxDate = '{TemplateBinding MaxDate}'
+                        .MinDate = '{TemplateBinding MinDate}'
+                        .Style = '{TemplateBinding CalendarViewStyle}'
+                .Children: [
+                  DeferredElement
+                    ContentPresenter [x:Name=HeaderContentPresenter]
+                      .Margin = '{ThemeResource ComboBoxHeaderThemeMargin}'
+                      .Content = '{TemplateBinding Header}'
+                      .ContentTemplate = '{TemplateBinding HeaderTemplate}'
+                      .Visibility = 'Collapsed'
+                  Border [x:Name=BorderElement]
+                    .Row = 1
+                    .ColumnSpan = 2
+                    .Background = '{TemplateBinding Background}'
+                    .BorderThickness = '0'
+                  TextBlock [x:Name=DateText]
+                    .Row = 1
+                    .HorizontalAlignment = 'Right'
+                    .VerticalAlignment = 'Center'
+                    .Foreground = '{ThemeResource SystemControlForegroundBaseMediumBrush}'
+                    .Padding = '0,0,0,2'
+                    .Style = '{ThemeResource BaseTextBlockStyle}'
+                    .Text = '{TemplateBinding PlaceholderText}'
+                  FontIcon [x:Name=CalendarGlyph]
+                    .Row = 1
+                    .Column = 1
+                    .HorizontalAlignment = 'Center'
+                    .VerticalAlignment = 'Center'
+                    .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                    .FontSize = 16.0
+                    .Foreground = '{ThemeResource SystemControlHighlightAccentBrush}'
+                    .Glyph = '\ue787'
+                ]
+    Style [Key=DateCalculation_CalendarViewStyle]
+      .TargetType = 'CalendarView'
+      Setter
+        .Property = 'FocusBorderBrush'
+        .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+      Setter
+        .Property = 'SelectedHoverBorderBrush'
+        .Value = '{ThemeResource SystemControlHighlightListAccentMediumBrush}'
+      Setter
+        .Property = 'SelectedPressedBorderBrush'
+        .Value = '{ThemeResource SystemControlHighlightListAccentHighBrush}'
+      Setter
+        .Property = 'SelectedBorderBrush'
+        .Value = '{ThemeResource SystemControlHighlightAccentBrush}'
+      Setter
+        .Property = 'HoverBorderBrush'
+        .Value = '{ThemeResource SystemControlHighlightBaseMediumLowBrush}'
+      Setter
+        .Property = 'PressedBorderBrush'
+        .Value = '{ThemeResource SystemControlHighlightBaseMediumBrush}'
+      Setter
+        .Property = 'TodayForeground'
+        .Value = '{ThemeResource SystemControlHighlightAltChromeWhiteBrush}'
+      Setter
+        .Property = 'BlackoutForeground'
+        .Value = '{ThemeResource SystemControlDisabledBaseMediumLowBrush}'
+      Setter
+        .Property = 'SelectedForeground'
+        .Value = '{ThemeResource SystemControlHighlightBaseHighBrush}'
+      Setter
+        .Property = 'PressedForeground'
+        .Value = '{ThemeResource SystemControlHighlightBaseHighBrush}'
+      Setter
+        .Property = 'OutOfScopeForeground'
+        .Value = '{ThemeResource SystemControlForegroundBaseMediumLowBrush}'
+      Setter
+        .Property = 'CalendarItemForeground'
+        .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+      Setter
+        .Property = 'OutOfScopeBackground'
+        .Value = '#00FFFFFF'
+      Setter
+        .Property = 'CalendarItemBackground'
+        .Value = '#00FFFFFF'
+      Setter
+        .Property = 'CalendarItemBorderBrush'
+        .Value = '#00FFFFFF'
+      Setter
+        .Property = 'Foreground'
+        .Value = '{ThemeResource SystemControlHyperlinkBaseMediumHighBrush}'
+      Setter
+        .Property = 'Background'
+        .Value = '{ThemeResource SystemControlBackgroundChromeMediumLowBrush}'
+      Setter
+        .Property = 'BorderBrush'
+        .Value = '#00FFFFFF'
+      Setter
+        .Property = 'CalendarItemBorderThickness'
+        .Value = '2'
+      Setter
+        .Property = 'BorderThickness'
+        .Value = '0'
+      Setter
+        .Property = 'DayItemFontSize'
+        .Value = 18.0
+      Setter
+        .Property = 'HorizontalAlignment'
+        .Value = 'Stretch'
+      Setter
+        .Property = 'VerticalAlignment'
+        .Value = 'Center'
+      Setter
+        .Property = 'HorizontalContentAlignment'
+        .Value = 'Stretch'
+      Setter
+        .Property = 'VerticalContentAlignment'
+        .Value = 'Stretch'
+      Setter
+        .Property = 'Margin'
+        .Value = '0,12'
+      Setter
+        .Property = 'IsTabStop'
+        .Value = False
+  ]
+  .Content:
+    Grid [x:Name=DateCalculatorGrid, #conn2]
+      .Margin = '12,52,12,0'
+      .ColumnDefinitions: [
+        ColumnDefinition [x:Name=C0, #conn3]
+          .Width = '*'
+        ColumnDefinition [x:Name=C1, #conn4]
+          .Width = '0'
+      ]
+      .RowDefinitions: [
+        RowDefinition
+          .Height = 'Auto'
+        RowDefinition
+          .Height = 'Auto'
+      ]
+      .VisualStateGroups: [
+      ]
+      .VisualStateGroups: [
+        VisualStateGroup
+          .States: [
+            VisualState [x:Name=LeftAlignedLayout, #conn7]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 480.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'C0.Width'
+                  .Value = '456'
+                Setter
+                  .Target = 'C1.Width'
+                  .Value = '*'
+                Setter
+                  .Target = 'DateDiffAllUnitsResultLabel.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'DateResultLabel.FontSize'
+                  .Value = '24'
+              ]
+            VisualState [x:Name=RegularLayout, #conn8]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 320.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'DateDiffAllUnitsResultLabel.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'DateResultLabel.FontSize'
+                  .Value = '20'
+              ]
+            VisualState [x:Name=DefaultLayout, #conn9]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 0.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'DateDiffAllUnitsResultLabel.FontSize'
+                  .Value = '18'
+                Setter
+                  .Target = 'DateResultLabel.FontSize'
+                  .Value = '18'
+              ]
+          ]
+        VisualStateGroup
+          .States: [
+            VisualState [x:Name=NormalLayoutForDateCalculation, #conn5]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 348.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'YearsLabel.Width'
+                  .Value = 'Auto'
+                Setter
+                  .Target = 'MonthsLabel.Width'
+                  .Value = 'Auto'
+                Setter
+                  .Target = 'DaysLabel.Width'
+                  .Value = 'Auto'
+                Setter
+                  .Target = 'AddOption.MaxWidth'
+                  .Value = '160'
+                Setter
+                  .Target = 'SubtractOption.MaxWidth'
+                  .Value = '160'
+              ]
+            VisualState [x:Name=SmallLayoutForDateCalculation, #conn6]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 0.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'YearsLabel.Width'
+                  .Value = '84'
+                Setter
+                  .Target = 'MonthsLabel.Width'
+                  .Value = '84'
+                Setter
+                  .Target = 'DaysLabel.Width'
+                  .Value = '84'
+                Setter
+                  .Target = 'AddOption.MaxWidth'
+                  .Value = '140'
+                Setter
+                  .Target = 'SubtractOption.MaxWidth'
+                  .Value = '140'
+              ]
+          ]
+      ]
+      .Children: [
+        ComboBox [x:Name=DateCalculationOption, #conn10]
+          .SelectedIndex = 0
+          .Style = '{ThemeResource DateCalculation_ComboStyle}'
+          .Items: [
+            ComboBoxItem [x:Uid=Date_DifferenceOption]
+              .IsSelected:
+                Binding
+                  .Path = 'IsDateDiffMode'
+                  .Mode = 'TwoWay'
+              .ContentTemplate = '{StaticResource ComboBoxItemContentTemplate}'
+              .MinWidth = 276.0
+            ComboBoxItem [x:Uid=Date_AddSubtractOption]
+              .IsSelected:
+                Binding
+                  .Path = 'IsDateDiffMode'
+                  .Converter = '{StaticResource BooleanNegationConverter}'
+                  .Mode = 'TwoWay'
+              .ContentTemplate = '{StaticResource ComboBoxItemContentTemplate}'
+              .MinWidth = 276.0
+          ]
+        Grid [x:Name=DateDiffGrid, #conn11]
+          .Row = 1
+          .Visibility:
+            Binding
+              .Path = 'IsDateDiffMode'
+              .Converter = '{StaticResource BooleanToVisibilityConverter}'
+          .RowDefinitions: [
+            RowDefinition
+              .Height = 'Auto'
+            RowDefinition
+              .Height = 'Auto'
+              .MinHeight = 32.0
+            RowDefinition
+              .Height = 'Auto'
+            RowDefinition
+              .Height = 'Auto'
+              .MinHeight = 32.0
+            RowDefinition
+              .Height = 'Auto'
+            RowDefinition
+              .Height = 'Auto'
+            RowDefinition
+              .Height = 'Auto'
+          ]
+          .Children: [
+            TextBlock [x:Uid=Date_FromLabel]
+              .Margin = '0,17,0,2'
+              .Foreground = '{ThemeResource SystemControlForegroundBaseMediumBrush}'
+              .TextWrapping = 'Wrap'
+            using:CalculatorApp.Controls:CalendarPicker [x:Name=DateDiff_FromDate, #conn24]
+              .Row = 1
+              .CalendarViewStyle = '{StaticResource DateCalculation_CalendarViewStyle}'
+              .Style = '{StaticResource DateCalculation_CalendarPickerStyle}'
+            TextBlock [x:Uid=Date_ToLabel]
+              .Row = 2
+              .Margin = '0,24,0,2'
+              .Foreground = '{ThemeResource SystemControlForegroundBaseMediumBrush}'
+              .TextWrapping = 'Wrap'
+            using:CalculatorApp.Controls:CalendarPicker [x:Name=DateDiff_ToDate, #conn25]
+              .Row = 3
+              .Margin = '0'
+              .CalendarViewStyle = '{StaticResource DateCalculation_CalendarViewStyle}'
+              .Style = '{StaticResource DateCalculation_CalendarPickerStyle}'
+            TextBlock [x:Uid=Date_DifferenceLabel]
+              .Row = 4
+              .Margin = '0,24,0,0'
+              .Foreground = '{ThemeResource SystemControlForegroundBaseMediumBrush}'
+            TextBlock [x:Name=DateDiffAllUnitsResultLabel, #conn26]
+              .Row = 5
+              .Margin = '0,0,0,8'
+              .FontWeight = 'SemiBold'
+              .IsTextSelectionEnabled = True
+              .LiveSetting = 'Polite'
+              .Style = '{ThemeResource SubtitleTextBlockStyle}'
+              .Text:
+                Binding
+                  .Path = 'StrDateDiffResult'
+                  .Mode = 'OneWay'
+            TextBlock [#conn27]
+              .Row = 6
+              .Style = '{ThemeResource BaseTextBlockStyle}'
+              .Foreground = '{ThemeResource SystemControlForegroundBaseMediumBrush}'
+              .IsTextSelectionEnabled = True
+              .Text:
+                Binding
+                  .Path = 'StrDateDiffResultInDays'
+                  .Mode = 'OneWay'
+              .Visibility:
+                Binding
+                  .Path = 'IsDiffInDays'
+                  .Converter = '{StaticResource BooleanToVisibilityNegationConverter}'
+          ]
+        DeferredElement
+          Grid [x:Name=AddSubtractDateGrid, #conn12]
+            .Row = 1
+            .Visibility:
+              Binding
+                .Path = 'IsDateDiffMode'
+                .Converter = '{StaticResource BooleanToVisibilityNegationConverter}'
+            .RowDefinitions: [
+              RowDefinition
+                .Height = 'Auto'
+              RowDefinition
+                .Height = 'Auto'
+                .MinHeight = 32.0
+              RowDefinition
+                .Height = 'Auto'
+              RowDefinition
+                .Height = 'Auto'
+              RowDefinition
+                .Height = 'Auto'
+              RowDefinition
+                .Height = 'Auto'
+            ]
+            .Children: [
+              TextBlock [x:Uid=Date_FromLabel]
+                .Margin = '0,17,0,2'
+                .Foreground = '{ThemeResource SystemControlForegroundBaseMediumBrush}'
+                .Style = '{ThemeResource BodyTextBlockStyle}'
+                .TextWrapping = 'Wrap'
+              using:CalculatorApp.Controls:CalendarPicker [x:Name=AddSubtract_FromDate, #conn13]
+                .Row = 1
+                .Margin = '0'
+                .CalendarViewStyle = '{StaticResource DateCalculation_CalendarViewStyle}'
+                .Style = '{StaticResource DateCalculation_CalendarPickerStyle}'
+              Grid
+                .Row = 2
+                .Margin = '0,23,0,0'
+                .ColumnDefinitions: [
+                  ColumnDefinition
+                    .Width = 'Auto'
+                  ColumnDefinition
+                    .Width = 'Auto'
+                ]
+                .Children: [
+                  RadioButton [x:Name=AddOption, x:Uid=AddOption, #conn22]
+                    .MinWidth = 80.0
+                    .VerticalAlignment = 'Top'
+                    .IsChecked:
+                      Binding
+                        .Path = 'IsAddMode'
+                        .Mode = 'TwoWay'
+                  RadioButton [x:Name=SubtractOption, x:Uid=SubtractOption, #conn23]
+                    .Column = 1
+                    .MinWidth = 80.0
+                    .Margin = '20,0,0,0'
+                    .VerticalAlignment = 'Top'
+                    .IsChecked:
+                      Binding
+                        .Path = 'IsAddMode'
+                        .Converter = '{StaticResource BooleanNegationConverter}'
+                        .Mode = 'TwoWay'
+                ]
+              Grid [x:Name=DateOffsetGrid, #conn14]
+                .Row = 3
+                .Margin = '0,29,0,0'
+                .RowDefinitions: [
+                  RowDefinition
+                    .Height = 'Auto'
+                  RowDefinition
+                    .Height = 'Auto'
+                ]
+                .ColumnDefinitions: [
+                  ColumnDefinition
+                    .Width = 'Auto'
+                  ColumnDefinition
+                    .Width = 'Auto'
+                  ColumnDefinition
+                    .Width = 'Auto'
+                ]
+                .Children: [
+                  TextBlock [x:Name=YearsLabel, x:Uid=YearsLabel, #conn16]
+                    .Margin = '0,0,0,6'
+                    .Foreground = '{ThemeResource SystemControlForegroundBaseMediumBrush}'
+                    .TextWrapping = 'Wrap'
+                  ComboBox [x:Name=YearsValue, #conn17]
+                    .Row = 1
+                    .MinWidth = 84.0
+                    .ItemsSource:
+                      Binding
+                        .Path = 'OffsetValues'
+                        .Mode = 'OneTime'
+                    .SelectedIndex:
+                      Binding
+                        .Path = 'YearsOffset'
+                        .Mode = 'TwoWay'
+                    .LabeledBy:
+                      Binding
+                        .ElementName = 'YearsLabel'
+                  TextBlock [x:Name=MonthsLabel, x:Uid=MonthsLabel, #conn18]
+                    .Column = 1
+                    .Margin = '12,0,12,6'
+                    .Foreground = '{ThemeResource SystemControlForegroundBaseMediumBrush}'
+                    .TextWrapping = 'Wrap'
+                  ComboBox [x:Name=MonthsValue, #conn19]
+                    .Row = 1
+                    .Column = 1
+                    .MinWidth = 84.0
+                    .Margin = '12,0'
+                    .ItemsSource:
+                      Binding
+                        .Path = 'OffsetValues'
+                        .Mode = 'OneTime'
+                    .SelectedIndex:
+                      Binding
+                        .Path = 'MonthsOffset'
+                        .Mode = 'TwoWay'
+                    .LabeledBy:
+                      Binding
+                        .ElementName = 'MonthsLabel'
+                  TextBlock [x:Name=DaysLabel, x:Uid=DaysLabel, #conn20]
+                    .Column = 2
+                    .Margin = '0,0,0,6'
+                    .Foreground = '{ThemeResource SystemControlForegroundBaseMediumBrush}'
+                    .TextWrapping = 'Wrap'
+                  ComboBox [x:Name=DaysValue, #conn21]
+                    .Row = 1
+                    .Column = 2
+                    .MinWidth = 84.0
+                    .ItemsSource:
+                      Binding
+                        .Path = 'OffsetValues'
+                        .Mode = 'OneTime'
+                    .SelectedIndex:
+                      Binding
+                        .Path = 'DaysOffset'
+                        .Mode = 'TwoWay'
+                    .LabeledBy:
+                      Binding
+                        .ElementName = 'DaysLabel'
+                ]
+              TextBlock [x:Uid=DateLabel]
+                .Row = 4
+                .Margin = '0,35,0,0'
+                .Foreground = '{ThemeResource SystemControlForegroundBaseMediumBrush}'
+              TextBlock [x:Name=DateResultLabel, #conn15]
+                .Row = 5
+                .FontWeight = 'SemiBold'
+                .IsTextSelectionEnabled = True
+                .Style = '{ThemeResource SubtitleTextBlockStyle}'
+                .LiveSetting = 'Polite'
+                .Text:
+                  Binding
+                    .Path = 'StrDateResult'
+                    .Mode = 'OneWay'
+            ]
+      ]

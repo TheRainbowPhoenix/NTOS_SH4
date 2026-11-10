@@ -1,0 +1,633 @@
+UserControl [x:Name=ControlRoot]
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:CalculatorApp'
+  .xmlns:controls = 'using:CalculatorApp.Controls'
+  .xmlns:common = 'using:CalculatorApp.Common'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'CalculatorApp.CalculatorStandardOperators'
+  .Content:
+    Grid [x:Name=Root, #conn2]
+      .RowDefinitions: [
+        RowDefinition [x:Name=R0, #conn3]
+          .Height = '*'
+        RowDefinition [x:Name=R1, #conn4]
+          .Height = '*'
+        RowDefinition [x:Name=R2, #conn5]
+          .Height = '*'
+        RowDefinition [x:Name=R3, #conn6]
+          .Height = '*'
+        RowDefinition [x:Name=R4, #conn7]
+          .Height = '*'
+        RowDefinition [x:Name=R5, #conn8]
+          .Height = '*'
+      ]
+      .ColumnDefinitions: [
+        ColumnDefinition [x:Name=GutterLeft, #conn9]
+          .Width = '0'
+        ColumnDefinition [x:Name=C0, #conn10]
+          .Width = '0'
+        ColumnDefinition [x:Name=C1, #conn11]
+          .Width = '*'
+        ColumnDefinition [x:Name=C2, #conn12]
+          .Width = '*'
+        ColumnDefinition [x:Name=C3, #conn13]
+          .Width = '*'
+        ColumnDefinition [x:Name=C4, #conn14]
+          .Width = '*'
+        ColumnDefinition [x:Name=GutterRight, #conn15]
+          .Width = '0'
+      ]
+      .Children: [
+        Border
+          .Row = 1
+          .RowSpan = 5
+          .ColumnSpan = 7
+          .Margin = '-60,0,-60,-60'
+          .Background = '{ThemeResource SystemControlPageBackgroundChromeLowBrush}'
+          .BorderBrush = '{ThemeResource SystemControlForegroundListLowBrush}'
+          .BorderThickness = '{ThemeResource HighContrastThicknessTop}'
+        Rectangle [x:Name=SeperatorLine, #conn16]
+          .ColumnSpan = 7
+          .Fill = '{ThemeResource SystemControlForegroundListLowBrush}'
+          .StrokeThickness = 0.0
+          .Height = 1.0
+          .Margin = '-120,0'
+          .VerticalAlignment = 'Top'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=percentButton, x:Uid=percentButton, #conn17]
+          .Column = 2
+          .ButtonId = 'Percent'
+          .AutomationId = 'percentButton'
+          .Content = '\ue94c'
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=squareRootButton, x:Uid=squareRootButton, #conn18]
+          .Column = 3
+          .ButtonId = 'Sqrt'
+          .AutomationId = 'squareRootButton'
+          .Content = '\ue94b'
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=xpower2Button, x:Uid=xpower2Button, #conn19]
+          .Column = 4
+          .ButtonId = 'XPower2'
+          .AutomationId = 'xpower2Button'
+          .FontSize = 18.0
+          .Content = '\u202a𝑥²\u202c'
+          .HorizontalAlignment = 'Stretch'
+          .VerticalAlignment = 'Stretch'
+          .Style = '{ThemeResource InvertOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=xpower3Button, x:Uid=xpower3Button, #conn20]
+          .Row = 4
+          .Column = 1
+          .ButtonId = 'Cube'
+          .AutomationId = 'xpower3Button'
+          .Content = '\u202a𝑥³'
+          .HorizontalAlignment = 'Stretch'
+          .VerticalAlignment = 'Stretch'
+          .Style = '{ThemeResource InvertOperatorStyle}'
+          .Visibility = 'Collapsed'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=invertButton, x:Uid=invertButton, #conn21]
+          .Column = 5
+          .ButtonId = 'Invert'
+          .AutomationId = 'invertButton'
+          .FontSize = 18.0
+          .Padding = '0'
+          .Content = '¹⁄𝑥'
+          .Style = '{ThemeResource InvertOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=clearEntryButton, x:Uid=clearEntryButton, #conn22]
+          .ButtonId = 'ClearEntry'
+          .AutomationId = 'clearEntryButton'
+          .FontSize = 16.0
+          .Row = 1
+          .Column = 2
+          .Content = 'CE'
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=clearButton, x:Uid=clearButton, #conn23]
+          .ButtonId = 'Clear'
+          .AutomationId = 'clearButton'
+          .FontSize = 16.0
+          .Content = 'C'
+          .Row = 1
+          .Column = 3
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=backSpaceButton, x:Uid=backSpaceButton, #conn24]
+          .ButtonId = 'Backspace'
+          .Content = '\ue94f'
+          .FontSize = 16.0
+          .Padding = '0,0,1,1'
+          .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+          .AutomationId = 'backSpaceButton'
+          .Row = 1
+          .Column = 4
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=divideButton, x:Uid=divideButton, #conn25]
+          .ButtonId = 'Divide'
+          .AutomationId = 'divideButton'
+          .Content = '\ue94a'
+          .Row = 1
+          .Column = 5
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=multiplyButton, x:Uid=multiplyButton, #conn26]
+          .ButtonId = 'Multiply'
+          .AutomationId = 'multiplyButton'
+          .Content = '\ue947'
+          .Padding = '1,0,-1,0'
+          .Column = 5
+          .Row = 2
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=minusButton, x:Uid=minusButton, #conn27]
+          .ButtonId = 'Subtract'
+          .AutomationId = 'minusButton'
+          .Content = '\ue949'
+          .Column = 5
+          .Row = 3
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=plusButton, x:Uid=plusButton, #conn28]
+          .ButtonId = 'Add'
+          .AutomationId = 'plusButton'
+          .Content = '\ue948'
+          .Column = 5
+          .Row = 4
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=equalButton, x:Uid=equalButton, #conn29]
+          .ButtonId = 'Equals'
+          .AutomationId = 'equalButton'
+          .Content = '\ue94e'
+          .Row = 5
+          .Column = 5
+          .Style = '{ThemeResource EqualOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=negateButton, x:Uid=negateButton, #conn30]
+          .Column = 2
+          .Row = 5
+          .ButtonId = 'Negate'
+          .AutomationId = 'negateButton'
+          .Content = '\ue94d'
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp:NumberPad [x:Name=NumberPad, #conn31]
+          .Row = 2
+          .Column = 2
+          .RowSpan = 4
+          .ColumnSpan = 3
+          .ButtonStyle = '{ThemeResource NumericButtonStyle24}'
+      ]
+      .VisualStateGroups: [
+      ]
+      .VisualStateGroups: [
+        VisualStateGroup
+          .States: [
+            VisualState [x:Name=Portrait768x1366, #conn32]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 768.0
+                  .MinWindowHeight = 1366.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'percentButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'squareRootButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower2Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower3Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invertButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'negateButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearEntryButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'backSpaceButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'divideButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'multiplyButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'minusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'plusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'equalButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle46}'
+              ]
+            VisualState [x:Name=Landscape13InchLaptop, #conn33]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 1366.0
+                  .MinWindowHeight = 768.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'C0.Width'
+                  .Value = '1*'
+                Setter
+                  .Target = 'R0.Height'
+                  .Value = '0'
+                Setter
+                  .Target = 'percentButton.(Grid.Row)'
+                  .Value = '1'
+                Setter
+                  .Target = 'percentButton.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'squareRootButton.(Grid.Row)'
+                  .Value = '2'
+                Setter
+                  .Target = 'squareRootButton.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'xpower2Button.(Grid.Row)'
+                  .Value = '3'
+                Setter
+                  .Target = 'xpower2Button.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'xpower3Button.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'invertButton.(Grid.Row)'
+                  .Value = '5'
+                Setter
+                  .Target = 'invertButton.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'negateButton.(Grid.Row)'
+                  .Value = '5'
+                Setter
+                  .Target = 'negateButton.(Grid.Column)'
+                  .Value = '2'
+                Setter
+                  .Target = 'percentButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'squareRootButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower2Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower3Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invertButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'negateButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearEntryButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'backSpaceButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'divideButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'multiplyButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'minusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'plusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'equalButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle34}'
+              ]
+            VisualState [x:Name=Landscape8InchTab, #conn34]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 1024.0
+                  .MinWindowHeight = 640.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'C0.Width'
+                  .Value = '1*'
+                Setter
+                  .Target = 'R0.Height'
+                  .Value = '0'
+                Setter
+                  .Target = 'percentButton.(Grid.Row)'
+                  .Value = '1'
+                Setter
+                  .Target = 'percentButton.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'squareRootButton.(Grid.Row)'
+                  .Value = '2'
+                Setter
+                  .Target = 'squareRootButton.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'xpower2Button.(Grid.Row)'
+                  .Value = '3'
+                Setter
+                  .Target = 'xpower2Button.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'xpower3Button.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'invertButton.(Grid.Row)'
+                  .Value = '5'
+                Setter
+                  .Target = 'invertButton.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'negateButton.(Grid.Row)'
+                  .Value = '5'
+                Setter
+                  .Target = 'negateButton.(Grid.Column)'
+                  .Value = '2'
+                Setter
+                  .Target = 'percentButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'squareRootButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower2Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower3Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invertButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'negateButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearEntryButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'backSpaceButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'divideButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'multiplyButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'minusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'plusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'equalButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle28}'
+              ]
+            VisualState [x:Name=Portrait8InchTab, #conn35]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 640.0
+                  .MinWindowHeight = 1024.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'percentButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'squareRootButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower2Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower3Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invertButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'negateButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearEntryButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'backSpaceButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'divideButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'multiplyButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'minusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'plusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'equalButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle28}'
+              ]
+            VisualState [x:Name=Portrait6InchPhone, #conn36]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 480.0
+                  .MinWindowHeight = 854.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'percentButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'squareRootButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'xpower2Button.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'invertButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'negateButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'clearEntryButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'clearButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'backSpaceButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'divideButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'multiplyButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'minusButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'plusButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'equalButton.FontSize'
+                  .Value = '24'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle34}'
+              ]
+            VisualState [x:Name=Portrait5InchPhone, #conn37]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 360.0
+                  .MinWindowHeight = 640.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'percentButton.FontSize'
+                  .Value = '18'
+                Setter
+                  .Target = 'squareRootButton.FontSize'
+                  .Value = '18'
+                Setter
+                  .Target = 'xpower2Button.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'invertButton.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'negateButton.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'clearEntryButton.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'clearButton.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'backSpaceButton.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'divideButton.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'multiplyButton.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'minusButton.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'plusButton.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'equalButton.FontSize'
+                  .Value = '20'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle28}'
+              ]
+            VisualState [x:Name=Portrait4InchPhone, #conn38]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 320.0
+                  .MinWindowHeight = 569.0
+              ]
+            VisualState [x:Name=MINI, #conn39]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 270.0
+                  .MinWindowHeight = 480.0
+              ]
+            VisualState [x:Name=DefaultLayout, #conn40]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 0.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'percentButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'squareRootButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'xpower2Button.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'xpower3Button.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'invertButton.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'negateButton.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'clearEntryButton.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'clearButton.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'backSpaceButton.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'divideButton.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'multiplyButton.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'minusButton.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'plusButton.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'equalButton.FontSize'
+                  .Value = '14'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle18}'
+              ]
+          ]
+      ]

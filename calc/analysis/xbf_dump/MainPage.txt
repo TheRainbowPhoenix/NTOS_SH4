@@ -1,0 +1,181 @@
+using:CalculatorApp.Common:LayoutAwarePage [x:Name=pageRoot, #conn1]
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:CalculatorApp'
+  .xmlns:controls = 'using:CalculatorApp.Controls'
+  .xmlns:converters = 'using:CalculatorApp.Converters'
+  .xmlns:vm = 'using:CalculatorApp.ViewModel'
+  .xmlns:common = 'using:CalculatorApp.Common'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .xmlns:designdata = 'using:CalculatorApp.DesignData'
+  .x:Class = 'CalculatorApp.MainPage'
+  .Background = '{ThemeResource SystemControlBackgroundAltHighBrush}'
+  .Resources: [
+    Style [x:Name=CalculatorBaseStyle, Key=CalculatorBaseStyle, #conn2]
+      .TargetType = 'using:CalculatorApp:Calculator'
+      Setter
+        .Property = 'Margin'
+        .Value = '0'
+    Style [x:Name=UnitConverterBaseStyle, Key=UnitConverterBaseStyle, #conn3]
+      .TargetType = 'using:CalculatorApp:UnitConverter'
+      Setter
+        .Property = 'Visibility'
+        .Value = 'Collapsed'
+      Setter
+        .Property = 'IsEnabled'
+        .Value = False
+      Setter
+        .Property = 'Margin'
+        .Value = '0'
+  ]
+  .Content:
+    Grid
+      .RowDefinitions: [
+        RowDefinition
+          .Height = 'Auto'
+        RowDefinition
+          .Height = '*'
+      ]
+      .Children: [
+        StackPanel
+          .Visibility = 'Collapsed'
+          .Children: [
+            Button [x:Name=copyButton, x:Uid=copyButton, #conn13]
+            Button [x:Name=pasteButton, x:Uid=pasteButton, #conn14]
+            Button [x:Name=copyButtonAlternate, x:Uid=copyButtonAlternate, #conn15]
+            Button [x:Name=pasteButtonAlternate, x:Uid=pasteButtonAlternate, #conn16]
+          ]
+        Grid [x:Name=CustomTitleBar, #conn4]
+          .Background = '{ThemeResource TitleBarBackgroundTransparentBrush}'
+          .Height = 32.0
+          .FlowDirection = 'LeftToRight'
+          .ColumnDefinitions: [
+            ColumnDefinition
+              .Width = '320*'
+            ColumnDefinition
+              .Width = '240*'
+              .MaxWidth = 320.0
+          ]
+          .Children: [
+            Grid [x:Name=ConverterSplitSeperator, #conn10]
+              .ColumnSpan = 2
+              .Visibility = 'Collapsed'
+              .Opacity = 0.0
+              .ColumnDefinitions: [
+                ColumnDefinition
+                  .Width = '*'
+                ColumnDefinition
+                  .Width = '*'
+              ]
+              .Children: [
+                Rectangle
+                  .Column = 1
+                  .Fill = '{ThemeResource SystemControlPageBackgroundChromeLowBrush}'
+                  .StrokeThickness = 0.0
+              ]
+            Rectangle [x:Name=DockSeperatorline, #conn11]
+              .Column = 1
+              .Fill = '{ThemeResource SystemControlForegroundListLowBrush}'
+              .StrokeThickness = 0.0
+              .Width = 1.0
+              .HorizontalAlignment = 'Left'
+              .Visibility = 'Collapsed'
+            TextBlock [x:Name=AppNameTitle, x:Uid=AppNameTitle, #conn12]
+              .ColumnSpan = 2
+              .FontSize = 12.0
+              .Foreground = '{ThemeResource TitleBarForegroundBaseHighBrush}'
+              .Margin = '12,0,148,0'
+              .VerticalAlignment = 'Center'
+              .HorizontalAlignment = 'Left'
+              .TextAlignment = 'Left'
+              .TextTrimming = 'CharacterEllipsis'
+              .MaxWidth = 320.0
+          ]
+        Border [x:Name=CalcHolder, #conn5]
+          .Row = 1
+        Border [x:Name=DateCalcHolder, #conn6]
+          .Row = 1
+        Border [x:Name=ConverterHolder, #conn7]
+          .Row = 1
+        Button [x:Name=NavButton, #conn8]
+          .Row = 1
+          .Style = '{ThemeResource HamburgerStyle}'
+          .VerticalAlignment = 'Top'
+          .CharacterSpacing = 75
+        Border [x:Name=NavBarHolder, #conn9]
+          .Row = 1
+      ]
+      .VisualStateGroups: [
+      ]
+      .VisualStateGroups: [
+        VisualStateGroup [x:Name=Mode, #conn17]
+          .States: [
+            VisualState [x:Name=ConverterWide, #conn18]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 640.0
+                  .MinWindowHeight = 500.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'ConverterSplitSeperator.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'DockSeperatorline.Visibility'
+                  .Value = 'Visible'
+              ]
+              .Storyboard:
+                Storyboard [#conn24]
+            VisualState [x:Name=DockVisible, #conn19]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 560.0
+                  .MinWindowHeight = 356.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'DockSeperatorline.Visibility'
+                  .Value = 'Visible'
+              ]
+              .Storyboard:
+                Storyboard [#conn23]
+            VisualState [x:Name=NormalLayout, #conn20]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 270.0
+                  .MinWindowHeight = 480.0
+              ]
+            VisualState [x:Name=TitleTruncatePoint, #conn21]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 240.0
+                  .MinWindowHeight = 0.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'NavButton.Width'
+                  .Value = '48'
+                Setter
+                  .Target = 'NavButton.Height'
+                  .Value = '32'
+              ]
+            VisualState [x:Name=DefaultLayout, #conn22]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 0.0
+                  .MinWindowHeight = 0.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'AppNameTitle.MaxWidth'
+                  .Value = '37'
+                Setter
+                  .Target = 'NavButton.Width'
+                  .Value = '48'
+                Setter
+                  .Target = 'NavButton.Height'
+                  .Value = '32'
+              ]
+          ]
+      ]

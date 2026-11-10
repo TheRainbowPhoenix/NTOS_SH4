@@ -1,0 +1,265 @@
+UserControl [x:Name=ControlRoot, #conn1]
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:CalculatorApp'
+  .xmlns:controls = 'using:CalculatorApp.Controls'
+  .xmlns:designdata = 'using:CalculatorApp.DesignData'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .xmlns:common = 'using:CalculatorApp.Common'
+  .x:Class = 'CalculatorApp.CalculatorProgrammerOperators'
+  .Resources: [
+    Style [Key=ProgModeRadioButtonStyle]
+      .TargetType = 'RadioButton'
+      Setter
+        .Property = 'Foreground'
+        .Value = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+      Setter
+        .Property = 'MinHeight'
+        .Value = 12.0
+      Setter
+        .Property = 'MinWidth'
+        .Value = 280.0
+      Setter
+        .Property = 'MaxHeight'
+        .Value = 60.0
+      Setter
+        .Property = 'VerticalAlignment'
+        .Value = 'Stretch'
+      Setter
+        .Property = 'HorizontalAlignment'
+        .Value = 'Stretch'
+      Setter
+        .Property = 'Padding'
+        .Value = '12,2,0,2'
+      Setter
+        .Property = 'NumeralAlignment'
+        .Value = 'Tabular'
+      Setter
+        .Property = 'FontSize'
+        .Value = '{ThemeResource CaptionFontSize}'
+      Setter
+        .Property = 'FontWeight'
+        .Value = 'SemiBold'
+      Setter
+        .Property = 'IsTextScaleFactorEnabled'
+        .Value = False
+      Setter
+        .Property = 'Template'
+        .Value:
+          ControlTemplate
+            .TargetType = 'RadioButton'
+            .Template:
+              Grid [x:Name=ControlRoot]
+                .Background = '#00FFFFFF'
+                .VerticalAlignment = 'Stretch'
+                .VisualStateGroups: [
+                ]
+                .VisualStateGroups: [
+                  VisualStateGroup [x:Name=CommonStates]
+                    .States: [
+                      VisualState [x:Name=Normal]
+                      VisualState [x:Name=PointerOver]
+                        .Setters: [
+                          Setter
+                            .Target = 'ControlRoot.Background'
+                            .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                          Setter
+                            .Target = 'ContentPresenter.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          Setter
+                            .Target = 'LabelPresenter.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                        ]
+                      VisualState [x:Name=Pressed]
+                        .Setters: [
+                          Setter
+                            .Target = 'ControlRoot.Background'
+                            .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                          Setter
+                            .Target = 'ContentPresenter.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          Setter
+                            .Target = 'LabelPresenter.Foreground'
+                            .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                        ]
+                      VisualState [x:Name=Disabled]
+                    ]
+                  VisualStateGroup [x:Name=CheckStates]
+                    .States: [
+                      VisualState [x:Name=Checked]
+                        .Setters: [
+                          Setter
+                            .Target = 'CheckedStatesGrid.Opacity'
+                            .Value = '1'
+                          Setter
+                            .Target = 'NormalStatesGrid.Opacity'
+                            .Value = '0'
+                        ]
+                      VisualState [x:Name=Unchecked]
+                      VisualState [x:Name=Indeterminate]
+                    ]
+                ]
+                .Children: [
+                  Grid [x:Name=NormalStatesGrid]
+                    .ColumnDefinitions: [
+                      ColumnDefinition
+                        .Width = 'Auto'
+                        .MinWidth = 48.0
+                      ColumnDefinition
+                        .Width = '*'
+                    ]
+                    .Children: [
+                      TextBlock [x:Name=ContentPresenter]
+                        .AccessibilityView = 'Raw'
+                        .TextLineBounds = 'TrimToCapHeight'
+                        .Text = '{TemplateBinding Content}'
+                        .FontFamily = '{TemplateBinding FontFamily}'
+                        .FontSize = '{TemplateBinding FontSize}'
+                        .FontWeight = '{TemplateBinding FontWeight}'
+                        .Column = 1
+                        .HorizontalAlignment = 'Left'
+                        .Margin = '0,2,4,-2'
+                        .VerticalAlignment = 'Center'
+                        .TextWrapping = 'Wrap'
+                        .IsTextScaleFactorEnabled = False
+                      TextBlock [x:Name=LabelPresenter]
+                        .AccessibilityView = 'Raw'
+                        .Foreground = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+                        .Text = '{TemplateBinding Tag}'
+                        .HorizontalAlignment = 'Left'
+                        .VerticalAlignment = 'Center'
+                        .FontFamily = '{TemplateBinding FontFamily}'
+                        .FontSize = '{TemplateBinding FontSize}'
+                        .FontWeight = '{TemplateBinding FontWeight}'
+                        .Margin = '{TemplateBinding Padding}'
+                        .IsTextScaleFactorEnabled = False
+                    ]
+                  Grid [x:Name=CheckedStatesGrid]
+                    .Opacity = 0.0
+                    .Background = '{ThemeResource SystemControlHighlightTransparentBrush}'
+                    .ColumnDefinitions: [
+                      ColumnDefinition
+                        .Width = 'Auto'
+                        .MinWidth = 48.0
+                      ColumnDefinition
+                        .Width = '*'
+                    ]
+                    .Children: [
+                      TextBlock [x:Name=CheckedContentPresenter]
+                        .AccessibilityView = 'Raw'
+                        .TextLineBounds = 'TrimToCapHeight'
+                        .Text = '{TemplateBinding Content}'
+                        .Foreground = '{ThemeResource SystemControlHighlightAltAccentBrush}'
+                        .FontFamily = '{TemplateBinding FontFamily}'
+                        .FontSize = '{TemplateBinding FontSize}'
+                        .FontWeight = '{TemplateBinding FontWeight}'
+                        .Column = 1
+                        .HorizontalAlignment = 'Left'
+                        .Margin = '0,2,4,-2'
+                        .VerticalAlignment = 'Center'
+                        .TextWrapping = 'Wrap'
+                        .IsTextScaleFactorEnabled = False
+                      TextBlock [x:Name=CheckedLabelPresenter]
+                        .AccessibilityView = 'Raw'
+                        .Foreground = '{ThemeResource SystemControlHighlightAltAccentBrush}'
+                        .Text = '{TemplateBinding Tag}'
+                        .HorizontalAlignment = 'Left'
+                        .VerticalAlignment = 'Center'
+                        .FontFamily = '{TemplateBinding FontFamily}'
+                        .FontSize = '{TemplateBinding FontSize}'
+                        .FontWeight = '{TemplateBinding FontWeight}'
+                        .Margin = '{TemplateBinding Padding}'
+                        .IsTextScaleFactorEnabled = False
+                    ]
+                ]
+  ]
+  .Content:
+    Grid [x:Name=ProgrammerOperators, #conn2]
+      .MaxHeight = 244.0
+      .RowDefinitions: [
+        RowDefinition
+          .Height = '*'
+          .MinHeight = 0.0
+        RowDefinition
+          .Height = '*'
+          .MinHeight = 0.0
+        RowDefinition
+          .Height = '*'
+          .MinHeight = 0.0
+        RowDefinition
+          .Height = '*'
+          .MinHeight:
+            Binding
+              .Path = 'ActualHeight'
+              .ElementName = 'binaryButton'
+              .FallbackValue = '16'
+              .Mode = 'OneWay'
+        RowDefinition
+          .Height = '4'
+      ]
+      .Children: [
+        using:CalculatorApp.Controls:RadixButton [x:Name=hexButton, x:Uid=hexButton, #conn3]
+          .AutomationId = 'hexButton'
+          .HorizontalAlignment = 'Stretch'
+          .Style = '{ThemeResource ProgModeRadioButtonStyle}'
+          .GroupName = 'BaseConversion'
+        using:CalculatorApp.Controls:RadixButton [x:Name=decimalButton, x:Uid=decimalButton, #conn4]
+          .AutomationId = 'decimalButton'
+          .Row = 1
+          .HorizontalAlignment = 'Stretch'
+          .Style = '{ThemeResource ProgModeRadioButtonStyle}'
+          .IsChecked = True
+          .GroupName = 'BaseConversion'
+        using:CalculatorApp.Controls:RadixButton [x:Name=octButton, x:Uid=octButton, #conn5]
+          .AutomationId = 'octolButton'
+          .Row = 2
+          .HorizontalAlignment = 'Stretch'
+          .Style = '{ThemeResource ProgModeRadioButtonStyle}'
+          .GroupName = 'BaseConversion'
+        using:CalculatorApp.Controls:RadixButton [x:Name=binaryButton, x:Uid=binaryButton, #conn6]
+          .AutomationId = 'binaryButton'
+          .Row = 3
+          .HorizontalAlignment = 'Stretch'
+          .Style = '{ThemeResource ProgModeRadioButtonStyle}'
+          .GroupName = 'BaseConversion'
+      ]
+      .VisualStateGroups: [
+      ]
+      .VisualStateGroups: [
+        VisualStateGroup
+          .States: [
+            VisualState [x:Name=LargeLayout, #conn7]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 1024.0
+                  .MinWindowHeight = 768.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'hexButton.FontSize'
+                  .Value = '{ThemeResource BodyFontSize}'
+                Setter
+                  .Target = 'decimalButton.FontSize'
+                  .Value = '{ThemeResource BodyFontSize}'
+                Setter
+                  .Target = 'octButton.FontSize'
+                  .Value = '{ThemeResource BodyFontSize}'
+                Setter
+                  .Target = 'binaryButton.FontSize'
+                  .Value = '{ThemeResource BodyFontSize}'
+              ]
+            VisualState [x:Name=NormalLayout, #conn8]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 320.0
+                  .MinWindowHeight = 569.0
+              ]
+            VisualState [x:Name=DefaultLayout, #conn9]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 0.0
+                  .MinWindowHeight = 0.0
+              ]
+          ]
+      ]

@@ -1,0 +1,351 @@
+UserControl
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:CalculatorApp'
+  .xmlns:controls = 'using:CalculatorApp.Controls'
+  .xmlns:common = 'using:CalculatorApp.Common'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'CalculatorApp.NavBar'
+  .Resources: [
+    using:CalculatorApp:ModeToCheckedConverter [Key=ModeToCheckedConverter]
+    using:CalculatorApp.Common:ValidSelectedIndexConverter [Key=ValidSelectedIndexConverter]
+    CollectionViewSource [x:Name=cvsCategories, Key=cvsCategories, #conn1]
+      .IsSourceGrouped = True
+      .ItemsPath = 'Categories'
+      .Source:
+        Binding
+          .Path = 'Categories'
+    Style [Key=SettingsFlyoutPresenterStyle]
+      .TargetType = 'FlyoutPresenter'
+      Setter
+        .Property = 'HorizontalContentAlignment'
+        .Value = 'Stretch'
+      Setter
+        .Property = 'VerticalContentAlignment'
+        .Value = 'Stretch'
+      Setter
+        .Property = 'IsTabStop'
+        .Value = False
+      Setter
+        .Property = 'Padding'
+        .Value = '0'
+      Setter
+        .Property = 'MaxWidth'
+        .Value = 10000.0
+      Setter
+        .Property = 'MaxHeight'
+        .Value = 10000.0
+      Setter
+        .Property = 'HorizontalScrollMode'
+        .Value = 'Auto'
+      Setter
+        .Property = 'HorizontalScrollBarVisibility'
+        .Value = 'Disabled'
+      Setter
+        .Property = 'VerticalScrollMode'
+        .Value = 'Auto'
+      Setter
+        .Property = 'VerticalScrollBarVisibility'
+        .Value = 'Auto'
+      Setter
+        .Property = 'ZoomMode'
+        .Value = 'Disabled'
+      Setter
+        .Property = 'Template'
+        .Value:
+          ControlTemplate
+            .TargetType = 'FlyoutPresenter'
+            .Template:
+              Grid [x:Name=ContentBorder, #conn2]
+                .BorderThickness = '{ThemeResource HighContrastThicknessRight}'
+                .BorderBrush = '{ThemeResource SystemControlForegroundListLowBrush}'
+                .Width = 256.0
+                .HorizontalAlignment = 'Left'
+                .VerticalAlignment = 'Stretch'
+                .VisualStateGroups: [
+                ]
+                .VisualStateGroups: [
+                  VisualStateGroup
+                    .States: [
+                      VisualState [x:Name=NormalLayout]
+                        .StateTriggers: [
+                          AdaptiveTrigger
+                            .MinWindowWidth = 270.0
+                            .MinWindowHeight = 480.0
+                        ]
+                      VisualState [x:Name=DefaultLayout]
+                        .StateTriggers: [
+                          AdaptiveTrigger
+                            .MinWindowWidth = 0.0
+                            .MinWindowHeight = 0.0
+                        ]
+                        .Setters: [
+                          Setter
+                            .Target = 'ContentBorder.Width'
+                            .Value = '200'
+                        ]
+                    ]
+                ]
+                .RowDefinitions: [
+                  RowDefinition
+                    .Height = 'Auto'
+                  RowDefinition
+                    .Height = '*'
+                ]
+                .Children: [
+                  Rectangle [#conn3]
+                    .Height = 32.0
+                  ScrollViewer [x:Name=ScrollViewer]
+                    .Row = 1
+                    .Background = '{ThemeResource SystemControlBackgroundChromeMediumLowBrush}'
+                    .ZoomMode = '{TemplateBinding ZoomMode}'
+                    .HorizontalScrollMode = '{TemplateBinding HorizontalScrollMode}'
+                    .HorizontalScrollBarVisibility = '{TemplateBinding HorizontalScrollBarVisibility}'
+                    .VerticalScrollMode = '{TemplateBinding VerticalScrollMode}'
+                    .VerticalScrollBarVisibility = '{TemplateBinding VerticalScrollBarVisibility}'
+                    .AccessibilityView = 'Raw'
+                    .Content:
+                      ContentPresenter
+                        .Content = '{TemplateBinding Content}'
+                        .ContentTemplate = '{TemplateBinding ContentTemplate}'
+                        .ContentTransitions = '{TemplateBinding ContentTransitions}'
+                        .Margin = '{TemplateBinding Padding}'
+                        .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                        .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                ]
+  ]
+  .Content:
+    SplitView [x:Name=splitView, #conn4]
+      .HorizontalAlignment = 'Left'
+      .IsTabStop = False
+      .Pane:
+        Grid [x:Name=NavGrid, #conn5]
+          .Background = '{ThemeResource SystemControlBackgroundChromeMediumLowBrush}'
+          .RowDefinitions: [
+            RowDefinition
+              .Height = '*'
+            RowDefinition
+              .Height = 'Auto'
+          ]
+          .Children: [
+            ListView [x:Name=FlyoutNav, x:Uid=FlyoutNav, #conn6]
+              .Margin = '0'
+              .Padding = '0,0,0,24'
+              .SelectedIndex:
+                Binding
+                  .Path = 'Mode'
+                  .Mode = 'OneWay'
+                  .Converter = '{StaticResource ValidSelectedIndexConverter}'
+              .ItemsSource:
+                Binding
+                  .Source = '{StaticResource cvsCategories}'
+              .IsItemClickEnabled = True
+              .ItemTemplate:
+                DataTemplate
+                  .Template:
+                    UserControl
+                      .Content:
+                        Grid [x:Name=LayoutRoot]
+                          .MinHeight = 48.0
+                          .VisualStateGroups: [
+                          ]
+                          .VisualStateGroups: [
+                            VisualStateGroup
+                              .States: [
+                                VisualState [x:Name=NormalLayout]
+                                  .StateTriggers: [
+                                    AdaptiveTrigger
+                                      .MinWindowWidth = 270.0
+                                      .MinWindowHeight = 480.0
+                                  ]
+                                VisualState [x:Name=DefaultLayout]
+                                  .StateTriggers: [
+                                    AdaptiveTrigger
+                                      .MinWindowWidth = 0.0
+                                      .MinWindowHeight = 0.0
+                                  ]
+                                  .Storyboard:
+                                    Storyboard
+                                      .Children: [
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetProperty = 'MinHeight'
+                                          .TargetName = 'LayoutRoot'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '32'
+                                          ]
+                                        ObjectAnimationUsingKeyFrames
+                                          .TargetProperty = 'Style'
+                                          .TargetName = 'ContentTextBlock'
+                                          .KeyFrames: [
+                                            DiscreteObjectKeyFrame
+                                              .KeyTime = 0.0
+                                              .Value = '{ThemeResource CaptionTextBlockStyle}'
+                                          ]
+                                      ]
+                              ]
+                          ]
+                          .Children: [
+                            TextBlock [x:Name=ContentTextBlock]
+                              .Text:
+                                Binding
+                                  .Path = 'Name'
+                              .TextWrapping = 'Wrap'
+                              .Margin = '48,0,0,0'
+                              .VerticalAlignment = 'Center'
+                              .Style = '{ThemeResource BodyTextBlockStyle}'
+                              .AccessibilityView = 'Raw'
+                          ]
+              .ItemContainerStyle:
+                Style
+                  .TargetType = 'ListViewItem'
+                  Setter
+                    .Property = 'Margin'
+                    .Value = '0'
+                  Setter
+                    .Property = 'MinHeight'
+                    .Value = 32.0
+              .GroupStyle: [
+                GroupStyle
+                  .HeaderTemplate:
+                    DataTemplate
+                      .Template:
+                        TextBlock
+                          .Text:
+                            Binding
+                              .Path = 'Name'
+                          .VerticalAlignment = 'Center'
+                          .Margin = '48,0,0,0'
+                          .Style = '{ThemeResource BodyTextBlockStyle}'
+                          .CharacterSpacing = 75
+                          .FontWeight = 'Bold'
+                          .Foreground = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+                          .TextWrapping = 'NoWrap'
+                          .TextTrimming = 'CharacterEllipsis'
+                          .IsTextScaleFactorEnabled = False
+                  .HeaderContainerStyle:
+                    Style
+                      .TargetType = 'ListViewHeaderItem'
+                      Setter
+                        .Property = 'IsTabStop'
+                        .Value = False
+                      Setter
+                        .Property = 'Background'
+                        .Value = '#00FFFFFF'
+                      Setter
+                        .Property = 'Padding'
+                        .Value = '12,1,12,-1'
+                      Setter
+                        .Property = 'Margin'
+                        .Value = '0'
+                      Setter
+                        .Property = 'MinHeight'
+                        .Value = 32.0
+                      Setter
+                        .Property = 'Template'
+                        .Value:
+                          ControlTemplate
+                            .TargetType = 'ListViewHeaderItem'
+                            .Template:
+                              Grid [x:Name=LayoutRoot]
+                                .Height = 48.0
+                                .VisualStateGroups: [
+                                ]
+                                .VisualStateGroups: [
+                                  VisualStateGroup
+                                    .States: [
+                                      VisualState [x:Name=NormalLayout]
+                                        .StateTriggers: [
+                                          AdaptiveTrigger
+                                            .MinWindowWidth = 270.0
+                                            .MinWindowHeight = 480.0
+                                        ]
+                                      VisualState [x:Name=DefaultLayout]
+                                        .StateTriggers: [
+                                          AdaptiveTrigger
+                                            .MinWindowWidth = 0.0
+                                            .MinWindowHeight = 0.0
+                                        ]
+                                        .Storyboard:
+                                          Storyboard
+                                            .Children: [
+                                              ObjectAnimationUsingKeyFrames
+                                                .TargetProperty = 'Height'
+                                                .TargetName = 'LayoutRoot'
+                                                .KeyFrames: [
+                                                  DiscreteObjectKeyFrame
+                                                    .KeyTime = 0.0
+                                                    .Value = '32'
+                                                ]
+                                            ]
+                                    ]
+                                ]
+                                .Children: [
+                                  ContentPresenter
+                                    .Margin = '{TemplateBinding Padding}'
+                                    .VerticalAlignment = 'Center'
+                                ]
+              ]
+              .ItemContainerTransitions:
+                TransitionCollection
+            Button [x:Name=SettingsButton, x:Uid=SettingsButton, #conn7]
+              .Row = 1
+              .Margin = '0'
+              .Padding = '12,-1,12,1'
+              .Height = 48.0
+              .Tag = '\ue115'
+              .Style = '{ThemeResource SettingsButtonStyle}'
+              .FontWeight = 'Normal'
+              .HorizontalAlignment = 'Stretch'
+              .AttachedFlyout:
+                Flyout [x:Name=AboutPageFlyout, x:Uid=AboutPageFlyout, #conn10]
+                  .Placement = 'Full'
+                  .FlyoutPresenterStyle = '{ThemeResource SettingsFlyoutPresenterStyle}'
+            Rectangle [x:Name=SeperatorLine, #conn8]
+              .Row = 1
+              .Fill = '{ThemeResource SystemControlForegroundListLowBrush}'
+              .StrokeThickness = 0.0
+              .Height = 1.0
+              .Margin = '12,0'
+              .VerticalAlignment = 'Top'
+            Button [x:Name=NavCloseButton, #conn9]
+              .Style = '{ThemeResource HamburgerStyle}'
+              .BorderBrush = '{ThemeResource SystemControlBackgroundChromeMediumLowBrush}'
+              .HorizontalAlignment = 'Stretch'
+              .VerticalAlignment = 'Top'
+          ]
+      .VisualStateGroups: [
+      ]
+      .VisualStateGroups: [
+        VisualStateGroup
+          .States: [
+            VisualState [x:Name=NormalLayout, #conn11]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 270.0
+                  .MinWindowHeight = 480.0
+              ]
+              .Storyboard:
+                Storyboard [#conn14]
+            VisualState [x:Name=DefaultLayout, #conn12]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 0.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'NavCloseButton.Height'
+                  .Value = '32'
+                Setter
+                  .Target = 'SettingsButton.Height'
+                  .Value = '32'
+                Setter
+                  .Target = 'SettingsButton.FontSize'
+                  .Value = '12'
+              ]
+              .Storyboard:
+                Storyboard [#conn13]
+          ]
+      ]

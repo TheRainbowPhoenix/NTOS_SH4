@@ -1,0 +1,108 @@
+UserControl
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:CalculatorApp.Common'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'CalculatorApp.AboutFlyout'
+  .IsTabStop = True
+  .Content:
+    Grid
+      .RowDefinitions: [
+        RowDefinition
+          .Height = 'Auto'
+        RowDefinition
+          .Height = 'Auto'
+        RowDefinition
+          .Height = 'Auto'
+        RowDefinition
+          .Height = '*'
+      ]
+      .Children: [
+        Button [x:Name=NavButton, #conn1]
+          .Style = '{ThemeResource HamburgerStyle}'
+          .VerticalAlignment = 'Top'
+          .HorizontalAlignment = 'Left'
+          .Content = 'SETTINGS'
+          .CharacterSpacing = 75
+          .Margin = '0,0,0,12'
+        TextBlock [x:Name=AboutTitle, x:Uid=AboutTitle, #conn2]
+          .Row = 1
+          .Style = '{ThemeResource TitleTextBlockStyle}'
+          .Margin = '12,0,0,17'
+          .IsTextScaleFactorEnabled = False
+        RichTextBlock [x:Name=AboutContentBody, #conn3]
+          .Row = 2
+          .MaxWidth = 292.0
+          .HorizontalAlignment = 'Left'
+          .FontSize = '{ThemeResource BodyFontSize}'
+          .Foreground = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+          .Blocks: [
+            Paragraph
+              .Margin = '12,0,0,24'
+              .Inlines: [
+                Run [x:Uid=AppNameTitle]
+                LineBreak
+                Run [x:Name=AboutFlyoutVersion, #conn5]
+                LineBreak
+                Run [x:Uid=AboutControlCopyright]
+              ]
+            Paragraph
+              .Margin = '12,0,0,24'
+              .Inlines: [
+                Hyperlink
+                  .NavigateUri = 'http://go.microsoft.com/fwlink/?LinkID=529064'
+                  .Inlines: [
+                    Run [x:Uid=AboutFlyoutEULA]
+                  ]
+              ]
+            Paragraph
+              .Margin = '12,0,0,24'
+              .Inlines: [
+                Hyperlink
+                  .NavigateUri = 'http://go.microsoft.com/fwlink/?LinkID=521839'
+                  .Inlines: [
+                    Run [x:Uid=AboutControlPrivacyStatement]
+                  ]
+              ]
+          ]
+        Button [x:Name=FeedbackButton, x:Uid=FeedbackButton, #conn4]
+          .Row = 3
+          .Margin = '12,20,12,12'
+          .MinWidth = 120.0
+          .HorizontalAlignment = 'Left'
+          .VerticalAlignment = 'Top'
+      ]
+      .VisualStateGroups: [
+      ]
+      .VisualStateGroups: [
+        VisualStateGroup
+          .States: [
+            VisualState [x:Name=NormalLayout, #conn6]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 270.0
+                  .MinWindowHeight = 480.0
+              ]
+            VisualState [x:Name=DefaultLayout, #conn7]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 0.0
+                  .MinWindowHeight = 0.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'AboutTitle.Style'
+                  .Value = '{ThemeResource SubtitleTextBlockStyle}'
+                Setter
+                  .Target = 'AboutTitle.Margin'
+                  .Value = '12,0,0,9'
+                Setter
+                  .Target = 'AboutContentBody.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'NavButton.Height'
+                  .Value = '32'
+              ]
+          ]
+      ]

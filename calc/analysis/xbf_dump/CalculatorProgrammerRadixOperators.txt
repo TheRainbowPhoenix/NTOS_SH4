@@ -1,0 +1,412 @@
+UserControl [x:Name=ControlRoot, #conn1]
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:CalculatorApp'
+  .xmlns:controls = 'using:CalculatorApp.Controls'
+  .xmlns:common = 'using:CalculatorApp.Common'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'CalculatorApp.CalculatorProgrammerRadixOperators'
+  .Resources: [
+    Style [Key=FontIconStyle]
+      .TargetType = 'FontIcon'
+      Setter
+        .Property = 'Glyph'
+        .Value = '\ue752'
+      Setter
+        .Property = 'FontFamily'
+        .Value = '{ThemeResource SymbolThemeFontFamily}'
+      Setter
+        .Property = 'IsTextScaleFactorEnabled'
+        .Value = False
+      Setter
+        .Property = 'VerticalAlignment'
+        .Value = 'Bottom'
+      Setter
+        .Property = 'HorizontalAlignment'
+        .Value = 'Center'
+      Setter
+        .Property = 'Margin'
+        .Value = '0,0,0,4'
+      Setter
+        .Property = 'IsHitTestVisible'
+        .Value = False
+      Setter
+        .Property = 'Foreground'
+        .Value = '{ThemeResource SystemControlForegroundBaseMediumLowBrush}'
+  ]
+  .Content:
+    Grid [x:Name=ProgRadixOps, #conn2]
+      .RowDefinitions: [
+        RowDefinition
+          .Height = '*'
+        RowDefinition
+          .Height = '*'
+        RowDefinition
+          .Height = '*'
+        RowDefinition
+          .Height = '*'
+        RowDefinition
+          .Height = '*'
+        RowDefinition
+          .Height = '*'
+      ]
+      .ColumnDefinitions: [
+        ColumnDefinition [x:Name=GutterLeft, #conn3]
+          .Width = '0'
+        ColumnDefinition [x:Name=C0, #conn4]
+          .Width = '*'
+        ColumnDefinition [x:Name=C1, #conn5]
+          .Width = '*'
+        ColumnDefinition [x:Name=C2, #conn6]
+          .Width = '*'
+        ColumnDefinition [x:Name=C3, #conn7]
+          .Width = '*'
+        ColumnDefinition [x:Name=C4, #conn8]
+          .Width = '*'
+        ColumnDefinition [x:Name=C5, #conn9]
+          .Width = '*'
+        ColumnDefinition [x:Name=GutterRight, #conn10]
+          .Width = '0'
+      ]
+      .Children: [
+        Rectangle
+          .Row = 1
+          .RowSpan = 5
+          .ColumnSpan = 8
+          .Margin = '-60,0,-60,-60'
+          .Fill = '{ThemeResource SystemControlPageBackgroundChromeLowBrush}'
+          .Stroke = '{ThemeResource SystemControlForegroundChromeHighBrush}'
+          .StrokeThickness = '{ThemeResource HighContrastThicknessTop}'
+        Rectangle
+          .ColumnSpan = 8
+          .Fill = '{ThemeResource SystemControlForegroundListLowBrush}'
+          .StrokeThickness = 0.0
+          .Height = 1.0
+          .Margin = '-120,0'
+          .VerticalAlignment = 'Top'
+        FontIcon [x:Name=Glyph01Button, #conn11]
+          .Column = 1
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        FontIcon [x:Name=Glyph02Button, #conn12]
+          .Column = 2
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        DeferredElement
+          using:CalculatorApp.Controls:CalculatorButton [x:Name=rolButton, x:Uid=rolButton, #conn13]
+            .Column = 1
+            .Visibility = 'Collapsed'
+            .ButtonId = 'Rol'
+            .AutomationId = 'rolButton'
+            .Content = 'RoL'
+            .FontSize = 12.0
+            .Style = '{ThemeResource ClearOperatorStyle}'
+        DeferredElement
+          using:CalculatorApp.Controls:CalculatorButton [x:Name=rorButton, x:Uid=rorButton, #conn14]
+            .Column = 2
+            .Visibility = 'Collapsed'
+            .ButtonId = 'Ror'
+            .AutomationId = 'rorButton'
+            .Content = 'RoR'
+            .FontSize = 12.0
+            .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=lshButton, x:Uid=lshButton, #conn15]
+          .Column = 1
+          .ButtonId = 'Lsh'
+          .AutomationId = 'lshButton'
+          .Content = 'Lsh'
+          .FontSize = 12.0
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=rshButton, x:Uid=rshButton, #conn16]
+          .Column = 2
+          .ButtonId = 'Rsh'
+          .AutomationId = 'rshButton'
+          .Content = 'Rsh'
+          .FontSize = 12.0
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Uid=orButton]
+          .Column = 3
+          .ButtonId = 'Or'
+          .AutomationId = 'orButton'
+          .Content = 'Or'
+          .FontSize = 12.0
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Uid=xorButton]
+          .Column = 4
+          .ButtonId = 'Xor'
+          .AutomationId = 'xorButton'
+          .Content = 'Xor'
+          .FontSize = 12.0
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Uid=notButton]
+          .Column = 5
+          .ButtonId = 'Not'
+          .AutomationId = 'notButton'
+          .Content = 'Not'
+          .FontSize = 12.0
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Uid=andButton]
+          .Column = 6
+          .ButtonId = 'And'
+          .AutomationId = 'andButton'
+          .Content = 'And'
+          .FontSize = 12.0
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        ToggleButton [x:Name=shiftButton, x:Uid=shiftButton, #conn17]
+          .AutomationId = 'shiftButton'
+          .Content = '\ue752'
+          .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+          .FontSize = 16.0
+          .Foreground = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+          .Style = '{ThemeResource CaptionToggleButtonStyle}'
+          .Column = 1
+          .Row = 1
+          .HorizontalAlignment = 'Stretch'
+          .VerticalAlignment = 'Stretch'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=modButton, x:Uid=modButton, #conn18]
+          .ButtonId = 'Mod'
+          .AutomationId = 'modButton'
+          .Content = 'Mod'
+          .FontSize = 12.0
+          .Column = 2
+          .Row = 1
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=clearEntryButton, x:Uid=clearEntryButton, #conn19]
+          .ButtonId = 'ClearEntry'
+          .AutomationId = 'clearEntryButton'
+          .FontSize = 12.0
+          .FontWeight = 'SemiBold'
+          .Row = 1
+          .Column = 3
+          .Content = 'CE'
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=clearButton, x:Uid=clearButton, #conn20]
+          .ButtonId = 'Clear'
+          .AutomationId = 'clearButton'
+          .FontSize = 12.0
+          .FontWeight = 'SemiBold'
+          .Content = 'C'
+          .Row = 1
+          .Column = 4
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=backSpaceButton, x:Uid=backSpaceButton, #conn21]
+          .ButtonId = 'Backspace'
+          .Content = '\ue94f'
+          .FontSize = 12.0
+          .Padding = '-2,-1,2,1'
+          .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+          .AutomationId = 'backSpaceButton'
+          .Row = 1
+          .Column = 5
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=divideButton, x:Uid=divideButton, #conn22]
+          .ButtonId = 'Divide'
+          .AutomationId = 'divideButton'
+          .Content = '\ue94a'
+          .FontSize = 12.0
+          .Row = 1
+          .Column = 6
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=multiplyButton, x:Uid=multiplyButton, #conn23]
+          .ButtonId = 'Multiply'
+          .AutomationId = 'multiplyButton'
+          .Content = '\ue947'
+          .FontSize = 12.0
+          .Column = 6
+          .Row = 2
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=minusButton, x:Uid=minusButton, #conn24]
+          .ButtonId = 'Subtract'
+          .AutomationId = 'minusButton'
+          .Content = '\ue949'
+          .FontSize = 12.0
+          .Column = 6
+          .Row = 3
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=plusButton, x:Uid=plusButton, #conn25]
+          .ButtonId = 'Add'
+          .AutomationId = 'plusButton'
+          .Content = '\ue948'
+          .FontSize = 12.0
+          .Column = 6
+          .Row = 4
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=equalButton, x:Uid=equalButton, #conn26]
+          .ButtonId = 'Equals'
+          .AutomationId = 'equalButton'
+          .Content = '\ue94e'
+          .FontSize = 12.0
+          .Row = 5
+          .Column = 6
+          .Style = '{ThemeResource EqualOperatorStyle}'
+        using:CalculatorApp:NumberPad [x:Name=NumberPad, #conn27]
+          .Row = 2
+          .Column = 3
+          .RowSpan = 4
+          .ColumnSpan = 3
+          .ButtonStyle = '{ThemeResource NumericButtonStyle18}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=aButton, x:Uid=aButton, #conn28]
+          .ButtonId = 'A'
+          .AutomationId = 'aButton'
+          .Content = 'A'
+          .Column = 1
+          .Row = 2
+          .Foreground = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+          .Style = '{ThemeResource NumericButtonStyle18}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=bButton, x:Uid=bButton, #conn29]
+          .ButtonId = 'B'
+          .AutomationId = 'bButton'
+          .Content = 'B'
+          .Column = 2
+          .Row = 2
+          .Foreground = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+          .Style = '{ThemeResource NumericButtonStyle18}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=cButton, x:Uid=cButton, #conn30]
+          .ButtonId = 'C'
+          .AutomationId = 'cButton'
+          .Content = 'C'
+          .Column = 1
+          .Row = 3
+          .Foreground = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+          .Style = '{ThemeResource NumericButtonStyle18}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=dButton, x:Uid=dButton, #conn31]
+          .ButtonId = 'D'
+          .AutomationId = 'dButton'
+          .Content = 'D'
+          .Column = 2
+          .Row = 3
+          .Foreground = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+          .Style = '{ThemeResource NumericButtonStyle18}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=eButton, x:Uid=eButton, #conn32]
+          .ButtonId = 'E'
+          .AutomationId = 'eButton'
+          .Content = 'E'
+          .Column = 1
+          .Row = 4
+          .Foreground = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+          .Style = '{ThemeResource NumericButtonStyle18}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=fButton, x:Uid=fButton, #conn33]
+          .ButtonId = 'F'
+          .AutomationId = 'fButton'
+          .Content = 'F'
+          .Column = 2
+          .Row = 4
+          .Foreground = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+          .Style = '{ThemeResource NumericButtonStyle18}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=openParanthesisButton, x:Uid=openParanthesisButton, #conn34]
+          .ButtonId = 'OpenParanthesis'
+          .AutomationId = 'openParanthesisButton'
+          .Name:
+            Binding
+              .Path = 'LeftParenthesisAutomationName'
+          .Content = '('
+          .Column = 1
+          .Row = 5
+          .FontSize = 18.0
+          .Padding = '0,-2,0,2'
+          .HorizontalAlignment = 'Stretch'
+          .VerticalAlignment = 'Stretch'
+          .Style = '{ThemeResource ParenthesisCalcButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=closeParanthesisButton, x:Uid=closeParanthesisButton, #conn35]
+          .ButtonId = 'CloseParanthesis'
+          .AutomationId = 'closeParanthesisButton'
+          .Content = ')'
+          .Column = 2
+          .Row = 5
+          .FontSize = 18.0
+          .Padding = '0,-2,0,2'
+          .HorizontalAlignment = 'Stretch'
+          .VerticalAlignment = 'Stretch'
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=negateButton, x:Uid=negateButton, #conn36]
+          .Row = 5
+          .Column = 3
+          .ButtonId = 'Negate'
+          .AutomationId = 'negateButton'
+          .Content = '\ue94d'
+          .FontSize = 12.0
+          .Style = '{ThemeResource OperatorButtonStyle}'
+      ]
+      .VisualStateGroups: [
+      ]
+      .VisualStateGroups: [
+        VisualStateGroup
+          .States: [
+            VisualState [x:Name=Portrait768x1366, #conn37]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 768.0
+                  .MinWindowHeight = 1366.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'clearEntryButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorSnappedCaptionSize}'
+                Setter
+                  .Target = 'clearButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorSnappedCaptionSize}'
+                Setter
+                  .Target = 'backSpaceButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorSnappedCaptionSize}'
+                Setter
+                  .Target = 'divideButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorSnappedCaptionSize}'
+                Setter
+                  .Target = 'multiplyButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorSnappedCaptionSize}'
+                Setter
+                  .Target = 'minusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorSnappedCaptionSize}'
+                Setter
+                  .Target = 'plusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorSnappedCaptionSize}'
+                Setter
+                  .Target = 'equalButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorSnappedCaptionSize}'
+                Setter
+                  .Target = 'aButton.FontSize'
+                  .Value = '{ThemeResource TitleFontSize}'
+                Setter
+                  .Target = 'bButton.FontSize'
+                  .Value = '{ThemeResource TitleFontSize}'
+                Setter
+                  .Target = 'cButton.FontSize'
+                  .Value = '{ThemeResource TitleFontSize}'
+                Setter
+                  .Target = 'dButton.FontSize'
+                  .Value = '{ThemeResource TitleFontSize}'
+                Setter
+                  .Target = 'eButton.FontSize'
+                  .Value = '{ThemeResource TitleFontSize}'
+                Setter
+                  .Target = 'fButton.FontSize'
+                  .Value = '{ThemeResource TitleFontSize}'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle24}'
+              ]
+            VisualState [x:Name=FullLayout, #conn38]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 1024.0
+                  .MinWindowHeight = 768.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'GutterLeft.Width'
+                  .Value = '0.25*'
+                Setter
+                  .Target = 'GutterRight.Width'
+                  .Value = '0.25*'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle24}'
+              ]
+            VisualState [x:Name=DefaultLayout, #conn39]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 0.0
+              ]
+          ]
+      ]

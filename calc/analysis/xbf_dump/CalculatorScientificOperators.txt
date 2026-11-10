@@ -1,0 +1,1454 @@
+UserControl [x:Name=ControlRoot, #conn1]
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:CalculatorApp'
+  .xmlns:controls = 'using:CalculatorApp.Controls'
+  .xmlns:designdata = 'using:CalculatorApp.DesignData'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .xmlns:common = 'using:CalculatorApp.Common'
+  .xmlns:converters = 'using:CalculatorApp.Converters'
+  .x:Class = 'CalculatorApp.CalculatorScientificOperators'
+  .Resources: [
+    using:CalculatorApp.Converters:BooleanToVisibilityConverter [Key=BooleanToVisibilityConverter]
+    using:CalculatorApp.Converters:BooleanNegationConverter [Key=BooleanNegationConverter]
+    using:CalculatorApp.Converters:BooleanToVisibilityNegationConverter [Key=BooleanToVisibilityNegationConverter]
+    Style [Key=FontIconStyle]
+      .TargetType = 'FontIcon'
+      Setter
+        .Property = 'Glyph'
+        .Value = '\ue752'
+      Setter
+        .Property = 'FontFamily'
+        .Value = '{ThemeResource SymbolThemeFontFamily}'
+      Setter
+        .Property = 'IsTextScaleFactorEnabled'
+        .Value = False
+      Setter
+        .Property = 'VerticalAlignment'
+        .Value = 'Bottom'
+      Setter
+        .Property = 'HorizontalAlignment'
+        .Value = 'Center'
+      Setter
+        .Property = 'Margin'
+        .Value = '0,0,0,4'
+      Setter
+        .Property = 'Foreground'
+        .Value = '{ThemeResource SystemControlForegroundBaseMediumLowBrush}'
+    Style [Key=ScientificClearOperatorStyle]
+      .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+      .BasedOn = '{StaticResource ClearOperatorStyle}'
+      Setter
+        .Property = 'HorizontalAlignment'
+        .Value = 'Stretch'
+      Setter
+        .Property = 'VerticalAlignment'
+        .Value = 'Stretch'
+  ]
+  .Content:
+    Grid [x:Name=ScientificOperators, #conn2]
+      .RowDefinitions: [
+        RowDefinition [x:Name=R0, #conn3]
+          .Height = '*'
+        RowDefinition [x:Name=R1, #conn4]
+          .Height = '0'
+        RowDefinition [x:Name=R2, #conn5]
+          .Height = '*'
+        RowDefinition [x:Name=R3, #conn6]
+          .Height = '0'
+        RowDefinition
+          .Height = '*'
+        RowDefinition
+          .Height = '*'
+        RowDefinition
+          .Height = '*'
+        RowDefinition
+          .Height = '*'
+        RowDefinition
+          .Height = '*'
+      ]
+      .ColumnDefinitions: [
+        ColumnDefinition [x:Name=GutterLeft, #conn7]
+          .Width = '0'
+        ColumnDefinition [x:Name=C0, #conn8]
+          .Width = '0'
+        ColumnDefinition [x:Name=C1, #conn9]
+          .Width = '0'
+        ColumnDefinition [x:Name=C2, #conn10]
+          .Width = '0'
+        ColumnDefinition [x:Name=C3, #conn11]
+          .Width = '0'
+        ColumnDefinition [x:Name=C4, #conn12]
+          .Width = '*'
+        ColumnDefinition [x:Name=C5, #conn13]
+          .Width = '*'
+        ColumnDefinition [x:Name=C6, #conn14]
+          .Width = '*'
+        ColumnDefinition [x:Name=C7, #conn15]
+          .Width = '*'
+        ColumnDefinition [x:Name=C8, #conn16]
+          .Width = '*'
+        ColumnDefinition [x:Name=GutterRight, #conn17]
+          .Width = '0'
+      ]
+      .Children: [
+        Border
+          .Row = 4
+          .RowSpan = 5
+          .ColumnSpan = 11
+          .Margin = '-60,0,-60,-60'
+          .Background = '{ThemeResource SystemControlPageBackgroundChromeLowBrush}'
+          .BorderBrush = '{ThemeResource SystemControlForegroundListLowBrush}'
+          .BorderThickness = '{ThemeResource HighContrastThicknessTop}'
+        Rectangle
+          .ColumnSpan = 11
+          .Fill = '{ThemeResource SystemControlForegroundListLowBrush}'
+          .StrokeThickness = 0.0
+          .Height = 1.0
+          .Margin = '-120,0'
+          .VerticalAlignment = 'Top'
+        FontIcon [x:Name=Glyph10, #conn18]
+          .Column = 5
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        FontIcon [x:Name=Glyph11, #conn19]
+          .Column = 6
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        FontIcon [x:Name=Glyph12, #conn20]
+          .Column = 7
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        FontIcon [x:Name=Glyph13, #conn21]
+          .Column = 8
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        FontIcon [x:Name=Glyph14, #conn22]
+          .Column = 9
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        FontIcon [x:Name=Glyph15, #conn23]
+          .Row = 2
+          .Column = 5
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        FontIcon [x:Name=Glyph16, #conn24]
+          .Row = 2
+          .Column = 6
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        FontIcon [x:Name=Glyph17, #conn25]
+          .Row = 2
+          .Column = 7
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        FontIcon [x:Name=Glyph18, #conn26]
+          .Row = 2
+          .Column = 8
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        FontIcon [x:Name=Glyph19, #conn27]
+          .Row = 2
+          .Column = 9
+          .Style = '{ThemeResource FontIconStyle}'
+          .FontSize = 8.0
+        Grid [x:Name=Row1, #conn28]
+          .Column = 5
+          .ColumnSpan = 5
+          .ColumnDefinitions: [
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+          ]
+          .Children: [
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=xpower2Button, x:Uid=xpower2Button, #conn70]
+              .ButtonId = 'XPower2'
+              .AutomationId = 'xpower2Button'
+              .Content = '\u202a𝑥²\u202c'
+              .Padding = '0,-2,0,2'
+              .HorizontalAlignment = 'Stretch'
+              .VerticalAlignment = 'Stretch'
+              .Style = '{ThemeResource InvertOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=powerButton, x:Uid=powerButton, #conn71]
+              .ButtonId = 'XPowerY'
+              .AutomationId = 'powerButton'
+              .Content = '\u202a𝑥\uf011\u202c'
+              .Padding = '0,-2,0,2'
+              .Column = 1
+              .HorizontalAlignment = 'Stretch'
+              .VerticalAlignment = 'Stretch'
+              .Style = '{ThemeResource SymbolOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=sinButton, x:Uid=sinButton, #conn72]
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityNegationConverter}'
+              .ButtonId = 'Sin'
+              .AutomationId = 'sinButton'
+              .Content = 'sin'
+              .Column = 2
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=cosButton, x:Uid=cosButton, #conn73]
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityNegationConverter}'
+              .ButtonId = 'Cos'
+              .AutomationId = 'cosButton'
+              .Content = 'cos'
+              .Column = 3
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=tanButton, x:Uid=tanButton, #conn74]
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityNegationConverter}'
+              .ButtonId = 'Tan'
+              .AutomationId = 'tanButton'
+              .Content = 'tan'
+              .Column = 4
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=sinhButton, x:Uid=sinhButton, #conn75]
+              .ButtonId = 'Sinh'
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+              .AutomationId = 'sinhButton'
+              .Content = 'sinh'
+              .Column = 2
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=coshButton, x:Uid=coshButton, #conn76]
+              .ButtonId = 'Cosh'
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+              .AutomationId = 'coshButton'
+              .Content = 'cosh'
+              .Column = 3
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=tanhButton, x:Uid=tanhButton, #conn77]
+              .ButtonId = 'Tanh'
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+              .AutomationId = 'tanhButton'
+              .Content = 'tanh'
+              .Column = 4
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+          ]
+        Grid [x:Name=InvRow1, #conn29]
+          .Column = 5
+          .ColumnSpan = 5
+          .Visibility = 'Collapsed'
+          .ColumnDefinitions: [
+            ColumnDefinition [x:Name=CX0, #conn57]
+              .Width = '*'
+            ColumnDefinition [x:Name=CX1, #conn58]
+              .Width = '*'
+            ColumnDefinition [x:Name=CX2, #conn59]
+              .Width = '*'
+            ColumnDefinition [x:Name=Cx3, #conn60]
+              .Width = '*'
+            ColumnDefinition [x:Name=CX4, #conn61]
+              .Width = '*'
+          ]
+          .Children: [
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=xpower3Button, x:Uid=xpower3Button, #conn62]
+              .ButtonId = 'Cube'
+              .AutomationId = 'xpower3Button'
+              .Content = '\u202a𝑥³'
+              .Padding = '0,-2,0,2'
+              .HorizontalAlignment = 'Stretch'
+              .VerticalAlignment = 'Stretch'
+              .Style = '{ThemeResource InvertOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=ySquareRootButton, x:Uid=ySquareRootButton, #conn63]
+              .ButtonId = 'YRootX'
+              .AutomationId = 'ySquareRootButton'
+              .Content = '\u202a\uf012𝑥\u202c'
+              .Padding = '0,-2,0,2'
+              .Column = 1
+              .HorizontalAlignment = 'Stretch'
+              .VerticalAlignment = 'Stretch'
+              .Style = '{ThemeResource SymbolOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=invsinButton, x:Uid=invsinButton, #conn64]
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityNegationConverter}'
+              .ButtonId = 'InvSin'
+              .AutomationId = 'invsinButton'
+              .Content = 'sin⁻¹'
+              .Padding = '5.5,-2,-5.5,2'
+              .Column = 2
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=invcosButton, x:Uid=invcosButton, #conn65]
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityNegationConverter}'
+              .ButtonId = 'InvCos'
+              .AutomationId = 'invcosButton'
+              .Content = 'cos⁻¹'
+              .Padding = '5.5,-2,-5.5,2'
+              .Column = 3
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=invtanButton, x:Uid=invtanButton, #conn66]
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityNegationConverter}'
+              .ButtonId = 'InvTan'
+              .AutomationId = 'invtanButton'
+              .Content = 'tan⁻¹'
+              .Padding = '5.5,-2,-5.5,2'
+              .Column = 4
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=invsinhButton, x:Uid=invsinhButton, #conn67]
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+              .ButtonId = 'InvSinh'
+              .AutomationId = 'invsinhButton'
+              .Content = 'sinh⁻¹'
+              .Column = 2
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=invcoshButton, x:Uid=invcoshButton, #conn68]
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+              .ButtonId = 'InvCosh'
+              .AutomationId = 'invcoshButton'
+              .Content = 'cosh⁻¹'
+              .Column = 3
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=invtanhButton, x:Uid=invtanhButton, #conn69]
+              .Visibility:
+                Binding
+                  .Path = 'IsHyperbolicChecked'
+                  .Converter = '{StaticResource BooleanToVisibilityConverter}'
+              .ButtonId = 'InvTanh'
+              .AutomationId = 'invtanhButton'
+              .Content = 'tanh⁻¹'
+              .Column = 4
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+          ]
+        Grid [x:Name=Row2, #conn30]
+          .Row = 2
+          .Column = 5
+          .ColumnSpan = 5
+          .ColumnDefinitions: [
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+          ]
+          .Children: [
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=squareRootButton, x:Uid=squareRootButton, #conn52]
+              .ButtonId = 'Sqrt'
+              .AutomationId = 'squareRootButton'
+              .Content = '\ue94b'
+              .Padding = '0,-1,0,1'
+              .Style = '{ThemeResource OperatorButtonStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=powerOf10Button, x:Uid=powerOf10Button, #conn53]
+              .ButtonId = 'TenPowerX'
+              .AutomationId = 'powerOf10Button'
+              .Padding = '0,-2,0,2'
+              .Content = '10\uf006'
+              .Column = 1
+              .HorizontalAlignment = 'Stretch'
+              .VerticalAlignment = 'Stretch'
+              .Style = '{ThemeResource SymbolOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=logBase10Button, x:Uid=logBase10Button, #conn54]
+              .ButtonId = 'LogBase10'
+              .AutomationId = 'logBase10Button'
+              .Content = 'log'
+              .Column = 2
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=expButton, x:Uid=expButton, #conn55]
+              .Content = 'Exp'
+              .ButtonId = 'Exp'
+              .AutomationId = 'expButton'
+              .Column = 3
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=modButton, x:Uid=modButton, #conn56]
+              .Content = 'Mod'
+              .ButtonId = 'Mod'
+              .AutomationId = 'modButton'
+              .Column = 4
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+          ]
+        Grid [x:Name=InvRow2, #conn31]
+          .Row = 2
+          .Column = 5
+          .ColumnSpan = 5
+          .Visibility = 'Collapsed'
+          .ColumnDefinitions: [
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+            ColumnDefinition
+              .Width = '*'
+          ]
+          .Children: [
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=invertButton, x:Uid=invertButton, #conn47]
+              .ButtonId = 'Invert'
+              .AutomationId = 'invertButton'
+              .Content = '¹⁄𝑥'
+              .Padding = '0,-2,0,2'
+              .Style = '{ThemeResource InvertOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=powerOfEButton, x:Uid=powerOfEButton, #conn48]
+              .ButtonId = 'EPowerX'
+              .AutomationId = 'powerOfEButton'
+              .Content = 'e\uf006'
+              .Padding = '0,-2,0,2'
+              .Column = 1
+              .HorizontalAlignment = 'Stretch'
+              .VerticalAlignment = 'Stretch'
+              .Style = '{ThemeResource SymbolOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=logBaseEButton, x:Uid=logBaseEButton, #conn49]
+              .ButtonId = 'LogBaseE'
+              .AutomationId = 'logBaseEButton'
+              .Content = 'ln'
+              .Column = 2
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=dmsButton, x:Uid=dmsButton, #conn50]
+              .ButtonId = 'DMS'
+              .Content = 'dms'
+              .AutomationId = 'dmsButton'
+              .Column = 3
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+            using:CalculatorApp.Controls:CalculatorButton [x:Name=degreesButton, x:Uid=degreesButton, #conn51]
+              .ButtonId = 'Degrees'
+              .Content = 'deg'
+              .AutomationId = 'degreesButton'
+              .Column = 4
+              .Style = '{ThemeResource ScientificClearOperatorStyle}'
+          ]
+        ToggleButton [x:Name=shiftButton, x:Uid=shiftButton, #conn32]
+          .Row = 4
+          .Column = 5
+          .AutomationId = 'shiftButton'
+          .Content = '\ue752'
+          .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+          .FontSize = 20.0
+          .Padding = '0,0,0,1'
+          .Foreground = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+          .Style = '{ThemeResource CaptionToggleButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=clearEntryButton, x:Uid=clearEntryButton, #conn33]
+          .ButtonId = 'ClearEntry'
+          .AutomationId = 'clearEntryButton'
+          .FontSize = 16.0
+          .Row = 4
+          .Column = 6
+          .Content = 'CE'
+          .Style = '{ThemeResource ScientificClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=clearButton, x:Uid=clearButton, #conn34]
+          .ButtonId = 'Clear'
+          .AutomationId = 'clearButton'
+          .FontSize = 16.0
+          .Content = 'C'
+          .Row = 4
+          .Column = 7
+          .Style = '{ThemeResource ScientificClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=backSpaceButton, x:Uid=backSpaceButton, #conn35]
+          .ButtonId = 'Backspace'
+          .Content = '\ue94f'
+          .FontSize = 16.0
+          .Padding = '-1,0,1,1'
+          .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+          .AutomationId = 'backSpaceButton'
+          .Row = 4
+          .Column = 8
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=divideButton, x:Uid=divideButton, #conn36]
+          .ButtonId = 'Divide'
+          .AutomationId = 'divideButton'
+          .Content = '\ue94a'
+          .Row = 4
+          .Column = 9
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=multiplyButton, x:Uid=multiplyButton, #conn37]
+          .ButtonId = 'Multiply'
+          .AutomationId = 'multiplyButton'
+          .Content = '\ue947'
+          .Padding = '1,1,-1,-1'
+          .Column = 9
+          .Row = 5
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=minusButton, x:Uid=minusButton, #conn38]
+          .ButtonId = 'Subtract'
+          .AutomationId = 'minusButton'
+          .Content = '\ue949'
+          .Column = 9
+          .Row = 6
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=plusButton, x:Uid=plusButton, #conn39]
+          .ButtonId = 'Add'
+          .AutomationId = 'plusButton'
+          .Content = '\ue948'
+          .Padding = '0,1,0,0'
+          .Column = 9
+          .Row = 7
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=equalButton, x:Uid=equalButton, #conn40]
+          .ButtonId = 'Equals'
+          .AutomationId = 'equalButton'
+          .Content = '\ue94e'
+          .Padding = '0,1,0,0'
+          .Row = 8
+          .Column = 9
+          .Style = '{ThemeResource EqualOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=piButton, x:Uid=piButton, #conn41]
+          .ButtonId = 'Pi'
+          .AutomationId = 'piButton'
+          .FontSize = 20.0
+          .FontWeight = 'SemiLight'
+          .Padding = '1,-3,-1,4'
+          .Content = 'π'
+          .Column = 5
+          .Row = 5
+          .Style = '{ThemeResource ScientificClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=factorialButton, x:Uid=factorialButton, #conn42]
+          .ButtonId = 'Factorial'
+          .AutomationId = 'factorialButton'
+          .FontSize = 18.0
+          .Padding = '2,-2,-1,2'
+          .FontWeight = 'SemiLight'
+          .Content = 'n!'
+          .Column = 5
+          .Row = 6
+          .Style = '{ThemeResource ScientificClearOperatorStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=negateButton, x:Uid=negateButton, #conn43]
+          .Column = 5
+          .Row = 7
+          .ButtonId = 'Negate'
+          .AutomationId = 'negateButton'
+          .Content = '\ue94d'
+          .Padding = '0,1,0,0'
+          .FontSize = 16.0
+          .Style = '{ThemeResource OperatorButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=openParanthesisButton, x:Uid=openParanthesisButton, #conn44]
+          .ButtonId = 'OpenParanthesis'
+          .AutomationId = 'openParanthesisButton'
+          .Name:
+            Binding
+              .Path = 'LeftParenthesisAutomationName'
+          .Content = '('
+          .FontSize = 19.0
+          .Padding = '0,-3,0,3'
+          .Row = 8
+          .Column = 5
+          .HorizontalAlignment = 'Stretch'
+          .VerticalAlignment = 'Stretch'
+          .Style = '{ThemeResource ParenthesisCalcButtonStyle}'
+        using:CalculatorApp.Controls:CalculatorButton [x:Name=closeParanthesisButton, x:Uid=closeParanthesisButton, #conn45]
+          .ButtonId = 'CloseParanthesis'
+          .AutomationId = 'closeParanthesisButton'
+          .Content = ')'
+          .FontSize = 19.0
+          .Padding = '0,-3,0,3'
+          .Row = 8
+          .Column = 6
+          .HorizontalAlignment = 'Stretch'
+          .VerticalAlignment = 'Stretch'
+          .Style = '{ThemeResource ClearOperatorStyle}'
+        using:CalculatorApp:NumberPad [x:Name=NumberPad, #conn46]
+          .Row = 5
+          .Column = 6
+          .RowSpan = 4
+          .ColumnSpan = 3
+          .ButtonStyle = '{ThemeResource NumericButtonStyle24}'
+      ]
+      .VisualStateGroups: [
+      ]
+      .VisualStateGroups: [
+        VisualStateGroup
+          .States: [
+            VisualState [x:Name=Portrait, #conn78]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 768.0
+                  .MinWindowHeight = 1366.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'R1.Height'
+                  .Value = '1*'
+                Setter
+                  .Target = 'R3.Height'
+                  .Value = '1*'
+                Setter
+                  .Target = 'Row1.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'Row2.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'InvRow1.(Grid.Row)'
+                  .Value = '1'
+                Setter
+                  .Target = 'InvRow2.(Grid.Row)'
+                  .Value = '3'
+                Setter
+                  .Target = 'InvRow1.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'InvRow2.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'shiftButton.IsEnabled'
+                  .Value = 'False'
+                Setter
+                  .Target = 'Glyph10.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph11.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph12.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph13.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph14.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph15.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph16.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph17.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph18.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph19.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'negateButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'piButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'factorialButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'openParanthesisButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'closeParanthesisButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'sinButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'cosButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'tanButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'sinhButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'coshButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'tanhButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invsinButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invcosButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invtanButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invsinhButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invcoshButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invtanhButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'powerButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'powerOf10Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'logBase10Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'expButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'modButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'ySquareRootButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'powerOfEButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'logBaseEButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'dmsButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'degreesButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower2Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower3Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'squareRootButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invertButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearEntryButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'backSpaceButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'divideButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'multiplyButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'minusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'plusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'equalButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle34}'
+              ]
+            VisualState [x:Name=WideL, #conn79]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 1200.0
+                  .MinWindowHeight = 768.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'R0.Height'
+                  .Value = '0'
+                Setter
+                  .Target = 'R2.Height'
+                  .Value = '0'
+                Setter
+                  .Target = 'C0.Width'
+                  .Value = '1*'
+                Setter
+                  .Target = 'C1.Width'
+                  .Value = '1*'
+                Setter
+                  .Target = 'C2.Width'
+                  .Value = '1*'
+                Setter
+                  .Target = 'C3.Width'
+                  .Value = '1*'
+                Setter
+                  .Target = 'shiftButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'shiftButton.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'shiftButton.IsEnabled'
+                  .Value = 'False'
+                Setter
+                  .Target = 'Row1.(Grid.Row)'
+                  .Value = '4'
+                Setter
+                  .Target = 'Row1.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'InvRow1.(Grid.Row)'
+                  .Value = '5'
+                Setter
+                  .Target = 'InvRow1.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'Row2.(Grid.Row)'
+                  .Value = '6'
+                Setter
+                  .Target = 'Row2.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'InvRow2.(Grid.Row)'
+                  .Value = '7'
+                Setter
+                  .Target = 'InvRow2.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'Row1.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'Row2.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'InvRow1.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'InvRow2.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'Glyph10.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph11.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph12.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph13.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph14.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph15.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph16.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph17.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph18.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph19.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'negateButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'negateButton.(Grid.Column)'
+                  .Value = '6'
+                Setter
+                  .Target = 'piButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'piButton.(Grid.Column)'
+                  .Value = '2'
+                Setter
+                  .Target = 'factorialButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'factorialButton.(Grid.Column)'
+                  .Value = '3'
+                Setter
+                  .Target = 'openParanthesisButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'openParanthesisButton.(Grid.Column)'
+                  .Value = '4'
+                Setter
+                  .Target = 'closeParanthesisButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'closeParanthesisButton.(Grid.Column)'
+                  .Value = '5'
+                Setter
+                  .Target = 'negateButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'piButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'factorialButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'openParanthesisButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'closeParanthesisButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'sinButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'cosButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'tanButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'sinhButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'coshButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'tanhButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invsinButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invcosButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invtanButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invsinhButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invcoshButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invtanhButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'powerButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'powerOf10Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'logBase10Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'expButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'modButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'ySquareRootButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'powerOfEButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'logBaseEButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'dmsButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'degreesButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower2Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'xpower3Button.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'squareRootButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'invertButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearEntryButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'clearButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'backSpaceButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'divideButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'multiplyButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'minusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'plusButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'equalButton.FontSize'
+                  .Value = '{ThemeResource CalcStandardOperatorCaptionSize}'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle34}'
+              ]
+            VisualState [x:Name=WideMINI, #conn80]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 1024.0
+                  .MinWindowHeight = 500.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'R0.Height'
+                  .Value = '0'
+                Setter
+                  .Target = 'R2.Height'
+                  .Value = '0'
+                Setter
+                  .Target = 'C0.Width'
+                  .Value = '1*'
+                Setter
+                  .Target = 'C1.Width'
+                  .Value = '1*'
+                Setter
+                  .Target = 'C2.Width'
+                  .Value = '1*'
+                Setter
+                  .Target = 'C3.Width'
+                  .Value = '1*'
+                Setter
+                  .Target = 'shiftButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'shiftButton.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'shiftButton.IsEnabled'
+                  .Value = 'False'
+                Setter
+                  .Target = 'Row1.(Grid.Row)'
+                  .Value = '4'
+                Setter
+                  .Target = 'Row1.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'InvRow1.(Grid.Row)'
+                  .Value = '5'
+                Setter
+                  .Target = 'InvRow1.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'Row2.(Grid.Row)'
+                  .Value = '6'
+                Setter
+                  .Target = 'Row2.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'InvRow2.(Grid.Row)'
+                  .Value = '7'
+                Setter
+                  .Target = 'InvRow2.(Grid.Column)'
+                  .Value = '1'
+                Setter
+                  .Target = 'Row1.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'Row2.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'InvRow1.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'InvRow2.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'Glyph10.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph11.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph12.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph13.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph14.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph15.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph16.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph17.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph18.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph19.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'negateButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'negateButton.(Grid.Column)'
+                  .Value = '6'
+                Setter
+                  .Target = 'piButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'piButton.(Grid.Column)'
+                  .Value = '2'
+                Setter
+                  .Target = 'factorialButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'factorialButton.(Grid.Column)'
+                  .Value = '3'
+                Setter
+                  .Target = 'openParanthesisButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'openParanthesisButton.(Grid.Column)'
+                  .Value = '4'
+                Setter
+                  .Target = 'closeParanthesisButton.(Grid.Row)'
+                  .Value = '8'
+                Setter
+                  .Target = 'closeParanthesisButton.(Grid.Column)'
+                  .Value = '5'
+              ]
+            VisualState [x:Name=Fill640x800, #conn81]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 640.0
+                  .MinWindowHeight = 800.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'R1.Height'
+                  .Value = '1*'
+                Setter
+                  .Target = 'R3.Height'
+                  .Value = '1*'
+                Setter
+                  .Target = 'Row1.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'Row2.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'InvRow1.(Grid.Row)'
+                  .Value = '1'
+                Setter
+                  .Target = 'InvRow2.(Grid.Row)'
+                  .Value = '3'
+                Setter
+                  .Target = 'InvRow1.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'InvRow2.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'shiftButton.IsEnabled'
+                  .Value = 'False'
+                Setter
+                  .Target = 'Glyph10.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph11.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph12.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph13.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph14.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph15.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph16.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph17.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph18.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph19.Visibility'
+                  .Value = 'Collapsed'
+              ]
+            VisualState [x:Name=Fill640x528, #conn82]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 640.0
+                  .MinWindowHeight = 544.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'shiftButton.IsEnabled'
+                  .Value = 'True'
+              ]
+              .Storyboard:
+                Storyboard [#conn88]
+            VisualState [x:Name=Snap320x800, #conn83]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 320.0
+                  .MinWindowHeight = 800.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'R1.Height'
+                  .Value = '1*'
+                Setter
+                  .Target = 'R3.Height'
+                  .Value = '1*'
+                Setter
+                  .Target = 'Row1.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'Row2.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'InvRow1.(Grid.Row)'
+                  .Value = '1'
+                Setter
+                  .Target = 'InvRow2.(Grid.Row)'
+                  .Value = '3'
+                Setter
+                  .Target = 'InvRow1.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'InvRow2.Visibility'
+                  .Value = 'Visible'
+                Setter
+                  .Target = 'shiftButton.IsEnabled'
+                  .Value = 'False'
+                Setter
+                  .Target = 'Glyph10.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph11.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph12.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph13.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph14.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph15.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph16.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph17.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph18.Visibility'
+                  .Value = 'Collapsed'
+                Setter
+                  .Target = 'Glyph19.Visibility'
+                  .Value = 'Collapsed'
+              ]
+            VisualState [x:Name=NormalLayout, #conn84]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 320.0
+                  .MinWindowHeight = 544.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'shiftButton.IsEnabled'
+                  .Value = 'True'
+              ]
+              .Storyboard:
+                Storyboard [#conn87]
+            VisualState [x:Name=DefaultLayout, #conn85]
+              .StateTriggers: [
+                AdaptiveTrigger
+                  .MinWindowWidth = 0.0
+                  .MinWindowHeight = 0.0
+              ]
+              .Setters: [
+                Setter
+                  .Target = 'shiftButton.IsEnabled'
+                  .Value = 'True'
+                Setter
+                  .Target = 'negateButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'piButton.FontSize'
+                  .Value = '16'
+                Setter
+                  .Target = 'factorialButton.FontSize'
+                  .Value = '15'
+                Setter
+                  .Target = 'openParanthesisButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'closeParanthesisButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'sinButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'cosButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'tanButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'sinhButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'coshButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'tanhButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'invsinButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'invcosButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'invtanButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'invsinhButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'invcoshButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'invtanhButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'powerButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'powerOf10Button.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'logBase10Button.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'expButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'modButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'ySquareRootButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'powerOfEButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'logBaseEButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'dmsButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'degreesButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'xpower2Button.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'xpower3Button.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'squareRootButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'invertButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'clearEntryButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'clearButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'backSpaceButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'divideButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'multiplyButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'minusButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'plusButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'equalButton.FontSize'
+                  .Value = '12'
+                Setter
+                  .Target = 'clearEntryButton.FontWeight'
+                  .Value = 'SemiBold'
+                Setter
+                  .Target = 'clearButton.FontWeight'
+                  .Value = 'SemiBold'
+                Setter
+                  .Target = 'NumberPad.ButtonStyle'
+                  .Value = '{ThemeResource NumericButtonStyle18}'
+              ]
+              .Storyboard:
+                Storyboard [#conn86]
+          ]
+      ]

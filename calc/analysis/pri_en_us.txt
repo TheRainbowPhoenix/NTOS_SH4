@@ -1,0 +1,837 @@
+\CEngineStrings\10	Rsh
+\CEngineStrings\100	Invalid input
+\CEngineStrings\101	Result is undefined
+\CEngineStrings\105	Not enough memory
+\CEngineStrings\107	Overflow
+\CEngineStrings\108	Result not defined
+\CEngineStrings\11	÷
+\CEngineStrings\118	Result not defined
+\CEngineStrings\119	Overflow
+\CEngineStrings\12	×
+\CEngineStrings\120	Overflow
+\CEngineStrings\13	+
+\CEngineStrings\14	-
+\CEngineStrings\15	Mod
+\CEngineStrings\16	yroot
+\CEngineStrings\17	^
+\CEngineStrings\18	Int
+\CEngineStrings\19	RoL
+\CEngineStrings\2	CE
+\CEngineStrings\20	RoR
+\CEngineStrings\21	Not
+\CEngineStrings\22	sin
+\CEngineStrings\23	cis
+\CEngineStrings\24	tan
+\CEngineStrings\25	sinh
+\CEngineStrings\26	cosh
+\CEngineStrings\27	tanh
+\CEngineStrings\28	ln
+\CEngineStrings\29	log
+\CEngineStrings\30	√
+\CEngineStrings\35	dms
+\CEngineStrings\37	10^
+\CEngineStrings\38	%
+\CEngineStrings\4	.
+\CEngineStrings\40	Pi
+\CEngineStrings\41	=
+\CEngineStrings\47	Exp
+\CEngineStrings\48	(
+\CEngineStrings\49	)
+\CEngineStrings\6	And
+\CEngineStrings\66	frac
+\CEngineStrings\67	sin₀
+\CEngineStrings\68	cos₀
+\CEngineStrings\69	tan₀
+\CEngineStrings\7	OR
+\CEngineStrings\70	sin₀⁻¹
+\CEngineStrings\71	cos₀⁻¹
+\CEngineStrings\72	tan₀⁻¹
+\CEngineStrings\73	sinᵣ
+\CEngineStrings\74	cosᵣ
+\CEngineStrings\75	tanᵣ
+\CEngineStrings\76	sinᵣ⁻¹
+\CEngineStrings\77	cosᵣ⁻¹
+\CEngineStrings\78	tanᵣ⁻¹
+\CEngineStrings\79	sin₉
+\CEngineStrings\8	Xor
+\CEngineStrings\80	cos₉
+\CEngineStrings\81	tan₉
+\CEngineStrings\82	sin₉⁻¹
+\CEngineStrings\83	cos₉⁻¹
+\CEngineStrings\84	tan₉⁻¹
+\CEngineStrings\85	sinh⁻¹
+\CEngineStrings\86	cosh⁻¹
+\CEngineStrings\87	tanh⁻¹
+\CEngineStrings\88	e^
+\CEngineStrings\89	10^
+\CEngineStrings\9	Lsh
+\CEngineStrings\90	√
+\CEngineStrings\91	sqr
+\CEngineStrings\92	cube
+\CEngineStrings\94	fact
+\CEngineStrings\95	1/
+\CEngineStrings\96	degrees
+\CEngineStrings\97	negate
+\CEngineStrings\99	Cannot divide by zero
+\Files\AboutFlyout.xbf	[EmbeddedData 2647b] 58424600b806000093030000020000000100000078000000
+\Files\App.xbf	[EmbeddedData 23266b] 584246000a250000cc350000020000000100000078000000
+\Files\Views\Calculator.xbf	[EmbeddedData 18575b] 584246006022000023260000020000000100000078000000
+\Files\Views\CalculatorProgrammerBitFlipPanel.xbf	[EmbeddedData 15387b] 58424600ee13000021280000020000000100000078000000
+\Files\Views\CalculatorProgrammerDisplayPanel.xbf	[EmbeddedData 7587b] 584246000205000095180000020000000100000078000000
+\Files\Views\CalculatorProgrammerOperators.xbf	[EmbeddedData 5071b] 58424600220c0000a1070000020000000100000078000000
+\Files\Views\CalculatorProgrammerRadixOperators.xbf	[EmbeddedData 8034b] 584246004c1200000a0d0000020000000100000078000000
+\Files\Views\CalculatorScientificAngleButtons.xbf	[EmbeddedData 3576b] 5842460032090000ba040000020000000100000078000000
+\Files\Views\CalculatorScientificOperators.xbf	[EmbeddedData 21084b] 58424600bc260000942b0000020000000100000078000000
+\Files\Views\CalculatorStandardOperators.xbf	[EmbeddedData 9622b] 584246007e1200000c130000020000000100000078000000
+\Files\Views\DateCalculator.xbf	[EmbeddedData 12888b] 58424600541a0000f8170000020000000100000078000000
+\Files\Views\DelighterUnitStyles.xbf	[EmbeddedData 3013b] 584246004405000075060000020000000100000078000000
+\Files\Views\HistoryList.xbf	[EmbeddedData 5048b] 58424600c20c0000ea060000020000000100000078000000
+\Files\Views\MainPage.xbf	[EmbeddedData 4374b] 58424600de0a00002c060000020000000100000078000000
+\Files\Views\Memory.xbf	[EmbeddedData 5678b] 58424600cc0c000056090000020000000100000078000000
+\Files\Views\NavBar.xbf	[EmbeddedData 4849b] 584246005009000095090000020000000100000078000000
+\Files\Views\NumberPad.xbf	[EmbeddedData 2665b] 58424600220700003b030000020000000100000078000000
+\Files\Views\SupplementaryResults.xbf	[EmbeddedData 3441b] 58424600280900003d040000020000000100000078000000
+\Files\Views\UnitConverter.xbf	[EmbeddedData 15006b] 58424600be1e0000d41b0000020000000100000078000000
+\Resources\0	0th 
+\Resources\1	1st 
+\Resources\10	10th 
+\Resources\11	11th 
+\Resources\12	12th 
+\Resources\13	13th 
+\Resources\14	14th 
+\Resources\15	15th 
+\Resources\16	16th 
+\Resources\17	17th 
+\Resources\18	18th 
+\Resources\19	19th 
+\Resources\2	2nd 
+\Resources\20	20th 
+\Resources\21	21st 
+\Resources\22	22nd 
+\Resources\23	23rd 
+\Resources\24	24th 
+\Resources\25	25th 
+\Resources\26	26th 
+\Resources\27	27th 
+\Resources\28	28th 
+\Resources\29	29th 
+\Resources\3	3rd 
+\Resources\30	30th 
+\Resources\31	31st 
+\Resources\32	32nd 
+\Resources\33	33rd 
+\Resources\34	34th 
+\Resources\35	35th 
+\Resources\36	36th 
+\Resources\37	37th 
+\Resources\38	38th 
+\Resources\39	39th 
+\Resources\4	4th 
+\Resources\40	40th 
+\Resources\41	41st 
+\Resources\42	42nd 
+\Resources\43	43rd 
+\Resources\44	44th 
+\Resources\45	45th 
+\Resources\46	46th 
+\Resources\47	47th 
+\Resources\48	48th 
+\Resources\49	49th 
+\Resources\5	5th 
+\Resources\50	50th 
+\Resources\51	51st 
+\Resources\52	52nd 
+\Resources\53	53rd 
+\Resources\54	54th 
+\Resources\55	55th 
+\Resources\56	56th 
+\Resources\57	57th 
+\Resources\58	58th 
+\Resources\59	59th 
+\Resources\6	6th 
+\Resources\60	60th 
+\Resources\61	61st 
+\Resources\62	62nd 
+\Resources\63	63rd 
+\Resources\7	7th 
+\Resources\8	8th 
+\Resources\9	9th 
+\Resources\AboutControlAppPublisher\Text	By Microsoft Corporation
+\Resources\AboutControlBackButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Back
+\Resources\AboutControlBackButton\[using:Windows.UI.Xaml.Controls]ToolTipService\ToolTip	Back
+\Resources\AboutControlCopyright\Text	Copyright 2016 Microsoft Corporation. All rights reserved.
+\Resources\AboutControlPrivacyStatement\Text	Privacy Statement
+\Resources\AboutControlVersionFormat	Version %1!u!.%2!u!.%3!u!.%4!u!
+\Resources\AboutFlyoutEULA\Text	Terms of Use
+\Resources\AboutTitle\Text	About
+\Resources\AddOption\Content	Add
+\Resources\AppDescription	Calculator
+\Resources\AppName	Calculator
+\Resources\AppNameTitle\Text	Calculator
+\Resources\AppStoreName	Windows Calculator
+\Resources\AppUpdateResource	AppUpdate2
+\Resources\Bin	BIN
+\Resources\BinaryOneValueAutomationName	One
+\Resources\BinaryOne\Text	1
+\Resources\BinaryZeroValueAutomationName	Zero
+\Resources\BinaryZero\Text	0
+\Resources\BitAutomationName	Bit 
+\Resources\CalculatorModeText	Calculator
+\Resources\CalculatorModeTextCaps	CALCULATOR
+\Resources\CalculatorResults	Display is 
+\Resources\CannotPaste	This expression cannot be pasted
+\Resources\Categories\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Categories DropDown
+\Resources\CategoryName_Angle	Angle
+\Resources\CategoryName_Area	Area
+\Resources\CategoryName_Data	Data
+\Resources\CategoryName_Energy	Energy
+\Resources\CategoryName_Length	Length
+\Resources\CategoryName_Power	Power
+\Resources\CategoryName_Pressure	Pressure
+\Resources\CategoryName_Speed	Speed
+\Resources\CategoryName_Time	Time
+\Resources\CategoryName_Volume	Volume
+\Resources\CategoryName_Weight	Weight and Mass
+\Resources\ClearHistory\Name	Clear
+\Resources\ClearHistory\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlShiftChord	D
+\Resources\ClearHistory\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Clear History
+\Resources\ClearMemoryButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	L
+\Resources\ClearMemoryButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Clear Memory
+\Resources\ClearMemory\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	L
+\Resources\ClearMemory\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Clear memory
+\Resources\ConverterModeText	Converter
+\Resources\ConverterModeTextCaps	CONVERTER
+\Resources\DateCalulationModeText	Date calculation
+\Resources\DateLabel\Text	Date
+\Resources\Date_AddSubtractOption\Content	Add or subtract days
+\Resources\Date_Day	day
+\Resources\Date_Days	days
+\Resources\Date_DifferenceLabel\Text	Difference
+\Resources\Date_DifferenceOption\Content	Difference between dates
+\Resources\Date_DifferenceResultAutomationName	Difference %1
+\Resources\Date_FromLabel\Text	From
+\Resources\Date_Month	month
+\Resources\Date_Months	months
+\Resources\Date_OutOfBoundMessage	Date out of Bound
+\Resources\Date_ResultingDateAutomationName	Resulting date %1
+\Resources\Date_SameDates	Same dates
+\Resources\Date_ToLabel\Text	To
+\Resources\Date_Week	week
+\Resources\Date_Weeks	weeks
+\Resources\Date_Year	year
+\Resources\Date_Years	years
+\Resources\DaysLabel\Text	Days
+\Resources\Dec	DEC
+\Resources\FeedbackButton\Content	Send feedback
+\Resources\FlyoutNav\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Mode DropDown
+\Resources\HelpTitle\Text	Help
+\Resources\Hex	HEX
+\Resources\HideHistory\Name	Hide
+\Resources\HideHistory\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Hide History
+\Resources\HistoryButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	H
+\Resources\HistoryButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	History
+\Resources\HistoryButton\[using:Windows.UI.Xaml.Controls]ToolTipService\ToolTip	History
+\Resources\HistoryEmpty\Text	There's no history yet
+\Resources\HistoryLabel\Header	History
+\Resources\HistoryPane	History
+\Resources\LeftChevron\Text	<<
+\Resources\LocalizedFontFamilyOverride	RESERVED_FOR_FONTLOC
+\Resources\LocalizedFontWeightOverride	RESERVED_FOR_FONTLOC
+\Resources\LocalizedUICaptionFontSizeFactorOverride	RESERVED_FOR_FONTLOC
+\Resources\LocalizedUITextFontSizeFactorOverride	RESERVED_FOR_FONTLOC
+\Resources\MemMinus\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	Q
+\Resources\MemMinus\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Memory Subtract
+\Resources\MemPlus\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	P
+\Resources\MemPlus\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Memory Add
+\Resources\MemRecall\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	R
+\Resources\MemRecall\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Memory Recall
+\Resources\MemoryButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Memory
+\Resources\MemoryButton\[using:Windows.UI.Xaml.Controls]ToolTipService\ToolTip	Memory
+\Resources\MemoryFlyout\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Memory
+\Resources\MemoryItemHelpText	Memory Item
+\Resources\MemoryLabel\Header	Memory
+\Resources\MemoryPane	Memory
+\Resources\MemoryPaneEmpty\Text	There's nothing saved in memory
+\Resources\MonthsLabel\Text	Months
+\Resources\NavButtonAutomationName_Calculator	Menu, %1 Calculator mode selected
+\Resources\NavButtonAutomationName_Converter	Menu, %1 Converter mode selected
+\Resources\NavButtonAutomationName_Date	Menu, Date Calculation mode selected
+\Resources\Oct	OCT
+\Resources\OpenParenthesisAutomationNamePrefix	Left parenthesis, open parenthesis count 
+\Resources\ProgrammerModeText	Programmer
+\Resources\RadixType_DisplayValue	%1 %2
+\Resources\ScientificModeText	Scientific
+\Resources\SettingsButton\Content	Settings
+\Resources\StandardModeText	Standard
+\Resources\SubtractOption\Content	Subtract
+\Resources\SupplementaryResultsHeader\Text	About equal to
+\Resources\SupplementaryUnit_AutomationName	%1 %2
+\Resources\UnitAbbreviation_Acre	ac
+\Resources\UnitAbbreviation_Atmosphere	atm
+\Resources\UnitAbbreviation_BTUPerMinute	BTU/min
+\Resources\UnitAbbreviation_Banana	bananas
+\Resources\UnitAbbreviation_Bar	ba
+\Resources\UnitAbbreviation_Bathtub	bathtubs
+\Resources\UnitAbbreviation_Battery	batteries
+\Resources\UnitAbbreviation_Bit	b
+\Resources\UnitAbbreviation_BritishThermalUnit	BTU
+\Resources\UnitAbbreviation_Byte	B
+\Resources\UnitAbbreviation_CD	CDs
+\Resources\UnitAbbreviation_Calorie	cal
+\Resources\UnitAbbreviation_Carat	CD
+\Resources\UnitAbbreviation_Castle	castles
+\Resources\UnitAbbreviation_Centigram	cg
+\Resources\UnitAbbreviation_Centimeter	cm
+\Resources\UnitAbbreviation_CentimetersPerSecond	cm/s
+\Resources\UnitAbbreviation_CoffeeCup	coffee cups
+\Resources\UnitAbbreviation_CubicCentimeter	cm³
+\Resources\UnitAbbreviation_CubicFoot	ft³
+\Resources\UnitAbbreviation_CubicInch	in³
+\Resources\UnitAbbreviation_CubicMeter	m³
+\Resources\UnitAbbreviation_CubicYard	yd³
+\Resources\UnitAbbreviation_CupUS	cup (US)
+\Resources\UnitAbbreviation_DVD	DVDs
+\Resources\UnitAbbreviation_Day	d
+\Resources\UnitAbbreviation_Decagram	dag
+\Resources\UnitAbbreviation_Decigram	dg
+\Resources\UnitAbbreviation_Degree	deg
+\Resources\UnitAbbreviation_DegreesCelsius	°C
+\Resources\UnitAbbreviation_DegreesFahrenheit	°F
+\Resources\UnitAbbreviation_Electron-Volt	eV
+\Resources\UnitAbbreviation_Elephant	elephants
+\Resources\UnitAbbreviation_Exabits	E
+\Resources\UnitAbbreviation_Exabytes	EB
+\Resources\UnitAbbreviation_Exbibits	Ei
+\Resources\UnitAbbreviation_Exbibytes	EiB
+\Resources\UnitAbbreviation_FeetPerSecond	ft/s
+\Resources\UnitAbbreviation_FloppyDisk	floppy disks
+\Resources\UnitAbbreviation_FluidOunceUK	fl oz (UK)
+\Resources\UnitAbbreviation_FluidOunceUS	fl oz (US)
+\Resources\UnitAbbreviation_Foot	ft
+\Resources\UnitAbbreviation_Foot-Pound	ft•lb
+\Resources\UnitAbbreviation_Foot-PoundPerMinute	ft•lb/min
+\Resources\UnitAbbreviation_GallonUK	gal (UK)
+\Resources\UnitAbbreviation_GallonUS	gal (US)
+\Resources\UnitAbbreviation_Gibibits	Gi
+\Resources\UnitAbbreviation_Gibibytes	GiB
+\Resources\UnitAbbreviation_Gigabit	Gb
+\Resources\UnitAbbreviation_Gigabyte	GB
+\Resources\UnitAbbreviation_Gradian	grad
+\Resources\UnitAbbreviation_Gram	g
+\Resources\UnitAbbreviation_Hand	hands
+\Resources\UnitAbbreviation_Hectare	ha
+\Resources\UnitAbbreviation_Hectogram	hg
+\Resources\UnitAbbreviation_Horse	horses
+\Resources\UnitAbbreviation_Horsepower	hp (US)
+\Resources\UnitAbbreviation_Hour	hr
+\Resources\UnitAbbreviation_Inch	in
+\Resources\UnitAbbreviation_Jet	jets
+\Resources\UnitAbbreviation_Joule	J
+\Resources\UnitAbbreviation_JumboJet	jumbo jets
+\Resources\UnitAbbreviation_Kelvin	K
+\Resources\UnitAbbreviation_Kibibits	Ki
+\Resources\UnitAbbreviation_Kibibytes	KiB
+\Resources\UnitAbbreviation_KiloPascal	kPa
+\Resources\UnitAbbreviation_Kilobit	Kb
+\Resources\UnitAbbreviation_Kilobyte	KB
+\Resources\UnitAbbreviation_Kilocalorie	kcal
+\Resources\UnitAbbreviation_Kilogram	kg
+\Resources\UnitAbbreviation_Kilojoule	kJ
+\Resources\UnitAbbreviation_Kilometer	km
+\Resources\UnitAbbreviation_KilometersPerHour	km/h
+\Resources\UnitAbbreviation_Kilowatt	kW
+\Resources\UnitAbbreviation_Knot	kn
+\Resources\UnitAbbreviation_LightBulb	light bulbs
+\Resources\UnitAbbreviation_Liter	L
+\Resources\UnitAbbreviation_LongTon	ton (UK)
+\Resources\UnitAbbreviation_Mach	M
+\Resources\UnitAbbreviation_Mebibits	Mi
+\Resources\UnitAbbreviation_Mebibytes	MiB
+\Resources\UnitAbbreviation_Megabit	Mb
+\Resources\UnitAbbreviation_Megabyte	MB
+\Resources\UnitAbbreviation_Meter	m
+\Resources\UnitAbbreviation_MetersPerSecond	m/s
+\Resources\UnitAbbreviation_Micron	µm
+\Resources\UnitAbbreviation_Microsecond	µs
+\Resources\UnitAbbreviation_Mile	mi
+\Resources\UnitAbbreviation_MilesPerHour	mph
+\Resources\UnitAbbreviation_Milligram	mg
+\Resources\UnitAbbreviation_Milliliter	mL
+\Resources\UnitAbbreviation_Millimeter	mm
+\Resources\UnitAbbreviation_MillimeterOfMercury	mmHg
+\Resources\UnitAbbreviation_Millisecond	ms
+\Resources\UnitAbbreviation_Minute	min
+\Resources\UnitAbbreviation_Nanometer	nm
+\Resources\UnitAbbreviation_NauticalMile	nmi
+\Resources\UnitAbbreviation_Ounce	oz
+\Resources\UnitAbbreviation_PSI	psi
+\Resources\UnitAbbreviation_Paper	sheets of paper
+\Resources\UnitAbbreviation_Paperclip	paperclips
+\Resources\UnitAbbreviation_Pascal	Pa
+\Resources\UnitAbbreviation_Pebibits	Pi
+\Resources\UnitAbbreviation_Pebibytes	PiB
+\Resources\UnitAbbreviation_Petabit	Pb
+\Resources\UnitAbbreviation_Petabyte	PB
+\Resources\UnitAbbreviation_PintUK	pt (UK)
+\Resources\UnitAbbreviation_PintUS	pt (US)
+\Resources\UnitAbbreviation_Pound	lb
+\Resources\UnitAbbreviation_QuartUK	qt (UK)
+\Resources\UnitAbbreviation_QuartUS	qt (US)
+\Resources\UnitAbbreviation_Radian	rad
+\Resources\UnitAbbreviation_Second	s
+\Resources\UnitAbbreviation_ShortTon	ton (US)
+\Resources\UnitAbbreviation_SliceOfCake	slices of cake
+\Resources\UnitAbbreviation_Snowflake	snowflakes
+\Resources\UnitAbbreviation_SoccerBall	soccer balls
+\Resources\UnitAbbreviation_SoccerField	soccer fields
+\Resources\UnitAbbreviation_SquareCentimeter	cm²
+\Resources\UnitAbbreviation_SquareFoot	ft²
+\Resources\UnitAbbreviation_SquareInch	in²
+\Resources\UnitAbbreviation_SquareKilometer	km²
+\Resources\UnitAbbreviation_SquareMeter	m²
+\Resources\UnitAbbreviation_SquareMile	mi²
+\Resources\UnitAbbreviation_SquareMillimeter	mm²
+\Resources\UnitAbbreviation_SquareYard	yd²
+\Resources\UnitAbbreviation_Stone	st
+\Resources\UnitAbbreviation_SwimmingPool	swimming pools
+\Resources\UnitAbbreviation_TablespoonUK	tbsp. (UK)
+\Resources\UnitAbbreviation_TablespoonUS	tbsp. (US)
+\Resources\UnitAbbreviation_TeaspoonUK	tsp. (UK)
+\Resources\UnitAbbreviation_TeaspoonUS	tsp. (US)
+\Resources\UnitAbbreviation_Tebibits	Ti
+\Resources\UnitAbbreviation_Tebibytes	TiB
+\Resources\UnitAbbreviation_Terabit	Tb
+\Resources\UnitAbbreviation_Terabyte	TB
+\Resources\UnitAbbreviation_Tonne	t
+\Resources\UnitAbbreviation_TrainEngine	train engines
+\Resources\UnitAbbreviation_Turtle	turtles
+\Resources\UnitAbbreviation_Watt	W
+\Resources\UnitAbbreviation_Week	wk
+\Resources\UnitAbbreviation_Whale	whales
+\Resources\UnitAbbreviation_Yard	yd
+\Resources\UnitAbbreviation_Year	yr
+\Resources\UnitAbbreviation_Yobibits	Yi
+\Resources\UnitAbbreviation_Yobibytes	YiB
+\Resources\UnitAbbreviation_Yottabit	Y
+\Resources\UnitAbbreviation_Yottabyte	YB
+\Resources\UnitAbbreviation_Zebibits	Zi
+\Resources\UnitAbbreviation_Zebibytes	ZiB
+\Resources\UnitAbbreviation_Zetabits	Z
+\Resources\UnitAbbreviation_Zetabytes	ZB
+\Resources\UnitCategory_Temperature	Temperature
+\Resources\UnitName_Acre	Acres
+\Resources\UnitName_Atmosphere	Atmospheres
+\Resources\UnitName_BTUPerMinute	BTUs/minute
+\Resources\UnitName_Banana	bananas
+\Resources\UnitName_Bar	Bars
+\Resources\UnitName_Bathtub	bathtubs
+\Resources\UnitName_Battery	batteries
+\Resources\UnitName_Bit	Bits
+\Resources\UnitName_BritishThermalUnit	British thermal units
+\Resources\UnitName_Byte	Bytes
+\Resources\UnitName_CD	CDs
+\Resources\UnitName_Calorie	Thermal calories
+\Resources\UnitName_Carat	Carats
+\Resources\UnitName_Castle	castles
+\Resources\UnitName_Centigram	Centigrams
+\Resources\UnitName_Centimeter	Centimeters
+\Resources\UnitName_CentimetersPerSecond	Centimeters per second
+\Resources\UnitName_CoffeeCup	coffee cups
+\Resources\UnitName_CubicCentimeter	Cubic centimeters
+\Resources\UnitName_CubicFoot	Cubic feet
+\Resources\UnitName_CubicInch	Cubic inches
+\Resources\UnitName_CubicMeter	Cubic meters
+\Resources\UnitName_CubicYard	Cubic yards
+\Resources\UnitName_CupUS	Cups (US)
+\Resources\UnitName_DVD	DVDs
+\Resources\UnitName_Day	Days
+\Resources\UnitName_Decagram	Dekagrams
+\Resources\UnitName_Decigram	Decigrams
+\Resources\UnitName_Degree	Degrees
+\Resources\UnitName_DegreesCelsius	Celsius
+\Resources\UnitName_DegreesFahrenheit	Fahrenheit
+\Resources\UnitName_Electron-Volt	Electron volts
+\Resources\UnitName_Elephant	elephants
+\Resources\UnitName_Exabits	Exabits
+\Resources\UnitName_Exabytes	Exabytes
+\Resources\UnitName_Exbibits	Exbibits
+\Resources\UnitName_Exbibytes	Exbibytes
+\Resources\UnitName_FeetPerSecond	Feet per second
+\Resources\UnitName_FloppyDisk	floppy disks
+\Resources\UnitName_FluidOunceUK	Fluid ounces (UK)
+\Resources\UnitName_FluidOunceUS	Fluid ounces (US)
+\Resources\UnitName_Foot	Feet
+\Resources\UnitName_Foot-Pound	Foot-pounds
+\Resources\UnitName_Foot-PoundPerMinute	Foot-pounds/minute
+\Resources\UnitName_GallonUK	Gallons (UK)
+\Resources\UnitName_GallonUS	Gallons (US)
+\Resources\UnitName_Gibibits	Gibibits
+\Resources\UnitName_Gibibytes	Gibibytes
+\Resources\UnitName_Gigabit	Gigabits
+\Resources\UnitName_Gigabyte	Gigabytes
+\Resources\UnitName_Gradian	Gradians
+\Resources\UnitName_Gram	Grams
+\Resources\UnitName_Hand	hands
+\Resources\UnitName_Hectare	Hectares
+\Resources\UnitName_Hectogram	Hectograms
+\Resources\UnitName_Horse	horses
+\Resources\UnitName_Horsepower	Horsepower (US)
+\Resources\UnitName_Hour	Hours
+\Resources\UnitName_Inch	Inches
+\Resources\UnitName_Jet	jets
+\Resources\UnitName_Joule	Joules
+\Resources\UnitName_JumboJet	jumbo jets
+\Resources\UnitName_Kelvin	Kelvin
+\Resources\UnitName_Kibibits	Kibibits
+\Resources\UnitName_Kibibytes	Kibibytes
+\Resources\UnitName_KiloPascal	Kilopascals
+\Resources\UnitName_Kilobit	Kilobits
+\Resources\UnitName_Kilobyte	Kilobytes
+\Resources\UnitName_Kilocalorie	Food calories
+\Resources\UnitName_Kilogram	Kilograms
+\Resources\UnitName_Kilojoule	Kilojoules
+\Resources\UnitName_Kilometer	Kilometers
+\Resources\UnitName_KilometersPerHour	Kilometers per hour
+\Resources\UnitName_Kilowatt	Kilowatts
+\Resources\UnitName_Knot	Knots
+\Resources\UnitName_LightBulb	light bulbs
+\Resources\UnitName_Liter	Liters
+\Resources\UnitName_LongTon	Long tons (UK)
+\Resources\UnitName_Mach	Mach
+\Resources\UnitName_Mebibits	Mebibits
+\Resources\UnitName_Mebibytes	Mebibytes
+\Resources\UnitName_Megabit	Megabits
+\Resources\UnitName_Megabyte	Megabytes
+\Resources\UnitName_Meter	Meters
+\Resources\UnitName_MetersPerSecond	Meters per second
+\Resources\UnitName_Micron	Microns
+\Resources\UnitName_Microsecond	Microseconds
+\Resources\UnitName_Mile	Miles
+\Resources\UnitName_MilesPerHour	Miles per hour
+\Resources\UnitName_Milligram	Milligrams
+\Resources\UnitName_Milliliter	Milliliters
+\Resources\UnitName_Millimeter	Millimeters
+\Resources\UnitName_MillimeterOfMercury	Millimeters of mercury 
+\Resources\UnitName_Millisecond	Milliseconds
+\Resources\UnitName_Minute	Minutes
+\Resources\UnitName_Nanometer	Nanometers
+\Resources\UnitName_NauticalMile	Nautical Miles
+\Resources\UnitName_Ounce	Ounces
+\Resources\UnitName_PSI	Pounds per square inch
+\Resources\UnitName_Paper	sheets of paper
+\Resources\UnitName_Paperclip	paperclips
+\Resources\UnitName_Pascal	Pascals
+\Resources\UnitName_Pebibits	Pebibits
+\Resources\UnitName_Pebibytes	Pebibytes
+\Resources\UnitName_Petabit	Petabits
+\Resources\UnitName_Petabyte	Petabytes
+\Resources\UnitName_PintUK	Pints (UK)
+\Resources\UnitName_PintUS	Pints (US)
+\Resources\UnitName_Pound	Pounds
+\Resources\UnitName_QuartUK	Quarts (UK)
+\Resources\UnitName_QuartUS	Quarts (US)
+\Resources\UnitName_Radian	Radians
+\Resources\UnitName_Second	Seconds
+\Resources\UnitName_ShortTon	Short tons (US)
+\Resources\UnitName_SliceOfCake	slices of cake
+\Resources\UnitName_Snowflake	snowflakes
+\Resources\UnitName_SoccerBall	soccer balls
+\Resources\UnitName_SoccerField	soccer fields
+\Resources\UnitName_SquareCentimeter	Square centimeters
+\Resources\UnitName_SquareFoot	Square feet
+\Resources\UnitName_SquareInch	Square inches
+\Resources\UnitName_SquareKilometer	Square kilometers
+\Resources\UnitName_SquareMeter	Square meters
+\Resources\UnitName_SquareMile	Square miles
+\Resources\UnitName_SquareMillimeter	Square millimeters
+\Resources\UnitName_SquareYard	Square yards
+\Resources\UnitName_Stone	Stone
+\Resources\UnitName_SwimmingPool	swimming pools
+\Resources\UnitName_TablespoonUK	Tablespoons (UK)
+\Resources\UnitName_TablespoonUS	Tablespoons (US)
+\Resources\UnitName_TeaspoonUK	Teaspoons (UK)
+\Resources\UnitName_TeaspoonUS	Teaspoons (US)
+\Resources\UnitName_Tebibits	Tebibits
+\Resources\UnitName_Tebibytes	Tebibytes
+\Resources\UnitName_Terabit	Terabits
+\Resources\UnitName_Terabyte	Terabytes
+\Resources\UnitName_Tonne	Metric tonnes
+\Resources\UnitName_TrainEngine	train engines
+\Resources\UnitName_Turtle	turtles
+\Resources\UnitName_Watt	Watts
+\Resources\UnitName_Week	Weeks
+\Resources\UnitName_Whale	whales
+\Resources\UnitName_Yard	Yards
+\Resources\UnitName_Year	Years
+\Resources\UnitName_Yobibits	Yobibits
+\Resources\UnitName_Yobibytes	Yobibytes
+\Resources\UnitName_Yottabit	Yottabit
+\Resources\UnitName_Yottabyte	Yottabyte
+\Resources\UnitName_Zebibits	Zebibits
+\Resources\UnitName_Zebibytes	Zebibytes
+\Resources\UnitName_Zetabits	Zetabits
+\Resources\UnitName_Zetabytes	Zetabytes
+\Resources\Units1\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Top Units field
+\Resources\Units2\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Bottom Units field
+\Resources\Value1	Top Number field is 
+\Resources\Value1Active	Top Number field is Active. 
+\Resources\Value2	Bottom Number field is 
+\Resources\Value2Active	Bottom Number field is Active. 
+\Resources\ValueAutomationName	Value 
+\Resources\ValueName_DisplayValue_UnitName	%1 %2 %3
+\Resources\YearsLabel\Text	Years
+\Resources\aButton\Content	A
+\Resources\aButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	A
+\Resources\aButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyShiftChord	A
+\Resources\aButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	A
+\Resources\andButton\Content	And
+\Resources\andButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	&
+\Resources\andButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	And
+\Resources\bButton\Content	B
+\Resources\bButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	B
+\Resources\bButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyShiftChord	B
+\Resources\bButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	B
+\Resources\backSpaceButton\Content	
+\Resources\backSpaceButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	\b
+\Resources\backSpaceButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Backspace
+\Resources\binButtonValue	Binary
+\Resources\binaryButton\Tag	BIN
+\Resources\binaryButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F8
+\Resources\bitFlip\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Bit toggling keypad
+\Resources\bitFlip\[using:Windows.UI.Xaml.Controls]ToolTipService\ToolTip	Bit toggling keypad
+\Resources\byteButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F12
+\Resources\byteButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Byte
+\Resources\cButton\Content	C
+\Resources\cButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	C
+\Resources\cButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyShiftChord	C
+\Resources\cButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	C
+\Resources\clearButton\Content	C
+\Resources\clearButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	Escape
+\Resources\clearButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Clear
+\Resources\clearEntryButton\Content	CE
+\Resources\clearEntryButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	Delete
+\Resources\clearEntryButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Clear entry
+\Resources\closeParanthesisButton\Content	‪)‬
+\Resources\closeParanthesisButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	)
+\Resources\closeParanthesisButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Right paranthesis
+\Resources\converterModeButton\Content	Converter
+\Resources\converterModeButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Converter Mode
+\Resources\converterNegateButton\Content	
+\Resources\converterNegateButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	-
+\Resources\converterNegateButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F9
+\Resources\converterNegateButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Positive, Negative
+\Resources\copyButtonAlternate\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	Insert
+\Resources\copyButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	C
+\Resources\copyMenuItem	Copy
+\Resources\cosButton\Content	cos
+\Resources\cosButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	O
+\Resources\cosButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Cosine
+\Resources\coshButton\Content	cosh
+\Resources\coshButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	O
+\Resources\coshButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Hyperbolic Cosine
+\Resources\dButton\Content	D
+\Resources\dButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	D
+\Resources\dButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyShiftChord	D
+\Resources\dButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	D
+\Resources\decButtonValue	Decimal
+\Resources\decimalButton\Tag	DEC
+\Resources\decimalButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F6
+\Resources\decimalSeparatorButton\Content	.
+\Resources\decimalSeparatorButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	Decimal
+\Resources\decimalSeparatorButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Decimal Separator
+\Resources\degButton\Content	DEG
+\Resources\degButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F4
+\Resources\degButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Degrees
+\Resources\degreeButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	D
+\Resources\degreesButton\Content	deg
+\Resources\degreesButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Degrees
+\Resources\divideButton\Content	
+\Resources\divideButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	/
+\Resources\divideButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Divide by
+\Resources\dmsButton\Content	dms
+\Resources\dmsButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	M
+\Resources\dmsButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Degree Minute Second
+\Resources\dwordButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F3
+\Resources\dwordButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Double Word
+\Resources\eButton\Content	E
+\Resources\eButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	E
+\Resources\eButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyShiftChord	E
+\Resources\eButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	E
+\Resources\equalButton\Content	
+\Resources\equalButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	=
+\Resources\equalButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	Enter
+\Resources\equalButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Equals
+\Resources\expButton\Content	Exp
+\Resources\expButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	X
+\Resources\expButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Exponential
+\Resources\fButton\Content	F
+\Resources\fButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F
+\Resources\fButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyShiftChord	F
+\Resources\fButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	F
+\Resources\factorialButton\Content	n!
+\Resources\factorialButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	!
+\Resources\factorialButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Factorial
+\Resources\fractButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Fractional part
+\Resources\ftoeButton\Content	F-E
+\Resources\ftoeButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	V
+\Resources\ftoeButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Scientific notation
+\Resources\gradButton\Content	GRAD
+\Resources\gradButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F3
+\Resources\gradButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Gradians
+\Resources\hexButtonValue	HexaDecimal
+\Resources\hexButton\Tag	HEX
+\Resources\hexButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F5
+\Resources\hyperbolicButton\Content	HYP
+\Resources\hyperbolicButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Hyperbolic function
+\Resources\intButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Integer part
+\Resources\invcosButton\Content	cos⁻¹
+\Resources\invcosButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyInverseChord	O
+\Resources\invcosButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyShiftChord	O
+\Resources\invcosButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Arc cosine
+\Resources\invcoshButton\Content	cosh⁻¹
+\Resources\invcoshButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlInverseChord	O
+\Resources\invcoshButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlShiftChord	O
+\Resources\invcoshButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Hyperbolic arc cosine
+\Resources\invertButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	R
+\Resources\invertButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Reciprocal
+\Resources\invsinButton\Content	sin⁻¹
+\Resources\invsinButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyInverseChord	S
+\Resources\invsinButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyShiftChord	S
+\Resources\invsinButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Arc sine
+\Resources\invsinhButton\Content	sinh⁻¹
+\Resources\invsinhButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlInverseChord	S
+\Resources\invsinhButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlShiftChord	S
+\Resources\invsinhButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Hyperbolic arc sine
+\Resources\invtanButton\Content	tan⁻¹
+\Resources\invtanButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyInverseChord	T
+\Resources\invtanButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyShiftChord	T
+\Resources\invtanButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Arc tangent
+\Resources\invtanhButton\Content	tanh⁻¹
+\Resources\invtanhButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlInverseChord	T
+\Resources\invtanhButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlShiftChord	T
+\Resources\invtanhButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Hyperbolic arc tangent
+\Resources\logBase10Button\Content	log
+\Resources\logBase10Button\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	L
+\Resources\logBase10Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Log
+\Resources\logBaseEButton\Content	ln
+\Resources\logBaseEButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	N
+\Resources\logBaseEButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Natural log
+\Resources\lshButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	<
+\Resources\lshButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Left shift
+\Resources\memButton\Content	MS
+\Resources\memButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	M
+\Resources\memButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Memory Store
+\Resources\minus	Minus
+\Resources\minusButton\Content	
+\Resources\minusButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	-
+\Resources\minusButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Minus
+\Resources\modButton\Content	Mod
+\Resources\modButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	%
+\Resources\modButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Modulo
+\Resources\multiplyButton\Content	
+\Resources\multiplyButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	*
+\Resources\multiplyButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Multiply by
+\Resources\negateButton\Content	
+\Resources\negateButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F9
+\Resources\negateButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Positive, Negative
+\Resources\notButton\Content	Not
+\Resources\notButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	~
+\Resources\notButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Not
+\Resources\num0Button\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	0
+\Resources\num0Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Zero
+\Resources\num1Button\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	1
+\Resources\num1Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	One
+\Resources\num2Button\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	2
+\Resources\num2Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Two
+\Resources\num3Button\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	3
+\Resources\num3Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Three
+\Resources\num4Button\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	4
+\Resources\num4Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Four
+\Resources\num5Button\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	5
+\Resources\num5Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Five
+\Resources\num6Button\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	6
+\Resources\num6Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Six
+\Resources\num7Button\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	7
+\Resources\num7Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Seven
+\Resources\num8Button\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	8
+\Resources\num8Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Eight
+\Resources\num9Button\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	9
+\Resources\num9Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Nine
+\Resources\numberPad\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Full keypad
+\Resources\numberPad\[using:Windows.UI.Xaml.Controls]ToolTipService\ToolTip	Full keypad
+\Resources\octButtonValue	Octal
+\Resources\octButton\Tag	OCT
+\Resources\octButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F7
+\Resources\openParanthesisButton\Content	‪(‬
+\Resources\openParanthesisButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	(
+\Resources\openParanthesisButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Left paranthesis
+\Resources\orButton\Content	Or
+\Resources\orButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	|
+\Resources\orButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Or
+\Resources\pasteButtonAlternate\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyShiftChord	Insert
+\Resources\pasteButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	V
+\Resources\pasteMenuItem	Paste
+\Resources\percentButton\Content	
+\Resources\percentButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	%
+\Resources\percentButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Percent
+\Resources\piButton\Content	π
+\Resources\piButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	P
+\Resources\piButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Pi
+\Resources\plusButton\Content	
+\Resources\plusButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	+
+\Resources\plusButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Plus
+\Resources\powerButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	^
+\Resources\powerButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	Y
+\Resources\powerButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	'X' to the exponent
+\Resources\powerOf10Button\Content	‪10‬
+\Resources\powerOf10Button\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	G
+\Resources\powerOf10Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Ten to the exponent
+\Resources\powerOfEButton\Content	‪e‬
+\Resources\powerOfEButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	N
+\Resources\powerOfEButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	'e' to the exponent
+\Resources\qwordButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F2
+\Resources\qwordButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Quadruple Word
+\Resources\radButton\Content	RAD
+\Resources\radButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F5
+\Resources\radButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Radians
+\Resources\rolButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	J
+\Resources\rolButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Rotate on left
+\Resources\rorButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	K
+\Resources\rorButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Rotate on right
+\Resources\rshButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	>
+\Resources\rshButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Right shift
+\Resources\scientificModeButton\Content	Scientific
+\Resources\scientificModeButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Scientific Mode
+\Resources\shiftButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Inverse Function
+\Resources\sinButton\Content	sin
+\Resources\sinButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	S
+\Resources\sinButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Sine
+\Resources\sinhButton\Content	sinh
+\Resources\sinhButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	S
+\Resources\sinhButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Hyperbolic Sine
+\Resources\squareRootButton\Content	
+\Resources\squareRootButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	@
+\Resources\squareRootButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Square root
+\Resources\standardModeButton\Content	Standard
+\Resources\standardModeButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Standard Mode
+\Resources\tanButton\Content	tan
+\Resources\tanButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	T
+\Resources\tanButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Tangent
+\Resources\tanhButton\Content	tanh
+\Resources\tanhButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	T
+\Resources\tanhButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Hyperbolic Tangent
+\Resources\wordButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	F4
+\Resources\wordButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Word
+\Resources\xorButton\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	^
+\Resources\xorButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Exclusive or
+\Resources\xpower2Button\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKey	Q
+\Resources\xpower2Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Squared
+\Resources\xpower3Button\[using:CalculatorApp.Common]KeyboardShortcutManager\Character	#
+\Resources\xpower3Button\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	Cubed
+\Resources\ySquareRootButton\[using:CalculatorApp.Common]KeyboardShortcutManager\VirtualKeyControlChord	Y
+\Resources\ySquareRootButton\[using:Windows.UI.Xaml.Automation]AutomationProperties\Name	'y' root of 'x'
+\StoreRatingPromotion\Resources\MessageDialogText	Please visit the Store to rate it and provide a review. You can also send us direct feedback at any time using the Windows Feedback app.
+\StoreRatingPromotion\Resources\MessageDialogTitle	Enjoying this app?
+\StoreRatingPromotion\Resources\NoThanks	No, thanks
+\StoreRatingPromotion\Resources\RateIt	Rate it
+\VersionInfo\FileVersion\Text	10.1605.1606.06002

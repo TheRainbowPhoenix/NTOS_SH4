@@ -1,0 +1,111 @@
+UserControl
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:CalculatorApp'
+  .xmlns:controls = 'using:CalculatorApp.Controls'
+  .xmlns:vm = 'using:CalculatorApp.ViewModel'
+  .xmlns:common = 'using:CalculatorApp.Common'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .xmlns:designdata = 'using:CalculatorApp.DesignData'
+  .x:Class = 'CalculatorApp.SupplementaryResults'
+  .Resources: [
+    DataTemplate [x:Name=SupplementaryValueTemplate, Key=SupplementaryValueTemplate, #conn1]
+      .Template:
+        StackPanel [#conn6]
+          .Orientation = 'Horizontal'
+          .Margin = '0'
+          .Children: [
+            TextBlock [#conn7]
+              .AutomationId = 'SupplementaryResultValue'
+              .Style = '{ThemeResource BaseTextBlockStyle}'
+              .Foreground = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+              .VerticalAlignment = 'Bottom'
+              .Padding = '0'
+              .Margin = '0,0,4,0'
+              .IsTextScaleFactorEnabled = False
+            TextBlock [#conn8]
+              .AutomationId = 'SupplementaryResultUnit'
+              .Style = '{ThemeResource BodyTextBlockStyle}'
+              .Foreground = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+              .VerticalAlignment = 'Bottom'
+              .Padding = '0'
+              .Margin = '0,0,16,0'
+              .IsTextScaleFactorEnabled = False
+          ]
+    using:CalculatorApp:DelighterUnitToStyleConverter [Key=DelighterUnitStyleConverter]
+    DataTemplate [x:Name=DelighterValueTemplate, Key=DelighterValueTemplate, #conn2]
+      .Template:
+        StackPanel [#conn3]
+          .Orientation = 'Horizontal'
+          .Margin = '0'
+          .Children: [
+            TextBlock
+              .AutomationId = 'DelighterResultGlyph'
+              .Style:
+                Binding
+                  .Path = 'Unit'
+                  .Converter = '{StaticResource DelighterUnitStyleConverter}'
+                  .Mode = 'OneTime'
+              .VerticalAlignment = 'Bottom'
+            TextBlock [#conn4]
+              .AutomationId = 'DelighterResultValue'
+              .Style = '{ThemeResource BaseTextBlockStyle}'
+              .Foreground = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+              .VerticalAlignment = 'Bottom'
+              .Padding = '0'
+              .Margin = '-2,0,4,0'
+              .IsTextScaleFactorEnabled = False
+            TextBlock [#conn5]
+              .AutomationId = 'DelighterResultUnit'
+              .Style = '{ThemeResource BodyTextBlockStyle}'
+              .Foreground = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+              .VerticalAlignment = 'Bottom'
+              .Padding = '0'
+              .Margin = '0'
+              .IsTextScaleFactorEnabled = False
+          ]
+    using:CalculatorApp:SupplementaryResultDataTemplateSelector [Key=ResultTemplateSelector]
+      .RegularTemplate = '{StaticResource SupplementaryValueTemplate}'
+      .DelighterTemplate = '{StaticResource DelighterValueTemplate}'
+    Style [Key=SupplementaryValuesStyle]
+      .TargetType = 'using:CalculatorApp.Controls:SupplementaryItemsControl'
+      Setter
+        .Property = 'IsTabStop'
+        .Value = False
+      Setter
+        .Property = 'Template'
+        .Value:
+          ControlTemplate
+            .TargetType = 'using:CalculatorApp.Controls:SupplementaryItemsControl'
+            .Template:
+              ItemsPresenter
+      Setter
+        .Property = 'ItemContainerTransitions'
+        .Value:
+          TransitionCollection
+      Setter
+        .Property = 'ItemsPanel'
+        .Value:
+          ItemsPanelTemplate
+            .Template:
+              StackPanel
+                .Orientation = 'Horizontal'
+  ]
+  .Content:
+    StackPanel
+      .Children: [
+        TextBlock [x:Uid=SupplementaryResultsHeader]
+          .Text = 'Also equal to'
+          .Style = '{ThemeResource CaptionTextBlockStyle}'
+          .Foreground = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+          .HorizontalAlignment = 'Left'
+          .Margin = '0,0,0,-6'
+          .IsTextScaleFactorEnabled = False
+        using:CalculatorApp.Controls:SupplementaryItemsControl [x:Name=SupplementaryValues, #conn9]
+          .IsTextScaleFactorEnabled = False
+          .HorizontalAlignment = 'Left'
+          .MinHeight = 27.0
+          .ItemTemplateSelector = '{StaticResource ResultTemplateSelector}'
+          .Style = '{ThemeResource SupplementaryValuesStyle}'
+      ]

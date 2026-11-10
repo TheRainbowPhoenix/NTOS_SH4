@@ -1,0 +1,2085 @@
+Application
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:CalculatorApp'
+  .xmlns:Controls = 'using:CalculatorApp.Controls'
+  .xmlns:converters = 'using:CalculatorApp.Converters'
+  .xmlns:common = 'using:CalculatorApp.Common'
+  .x:Class = 'CalculatorApp.App'
+  .Resources:
+    ResourceDictionary
+      .ThemeDictionaries: [
+        ResourceDictionary [Key=Default]
+          Thickness [Key=HighContrastThicknessTop]
+            .Value = '0'
+          Thickness [Key=HighContrastThicknessLeft]
+            .Value = '0'
+          Color [Key=ChromeLowColor]
+            .Value = '#FF1F1F1F'
+          SolidColorBrush [Key=SystemControlPageBackgroundChromeLowBrush]
+            .Color = '{ThemeResource ChromeLowColor}'
+          Thickness [Key=HighContrastThicknessRight]
+            .Value = '0'
+          Double [Key=HighContrastStrokeThickness]
+            .Value = 0.0
+          Color [Key=AltHighColor]
+            .Value = '#FF000000'
+          SolidColorBrush [Key=SystemControlBackgroundAltHighBrush]
+            .Color = '{ThemeResource AltHighColor}'
+          Color [Key=ChromeMediumLowColor]
+            .Value = '#FF2B2B2B'
+          SolidColorBrush [Key=SystemControlBackgroundChromeMediumLowBrush]
+            .Color = '{ThemeResource ChromeMediumLowColor}'
+          SolidColorBrush [Key=TitleBarBackgroundTransparentBrush]
+            .Color = '#00FFFFFF'
+          SolidColorBrush [Key=TitleBarForegroundBaseHighBrush]
+            .Color = '{ThemeResource SystemBaseHighColor}'
+          SolidColorBrush [Key=TitleBarInactiveForegroundBaseHighBrush]
+            .Color = '{ThemeResource SystemBaseLowColor}'
+          SolidColorBrush [Key=SRPControlBackgroundChromeMediumLowBrush]
+            .Color = '{ThemeResource ChromeMediumLowColor}'
+        ResourceDictionary [Key=Light]
+          Thickness [Key=HighContrastThicknessTop]
+            .Value = '0'
+          Thickness [Key=HighContrastThicknessLeft]
+            .Value = '0'
+          Color [Key=ChromeLowColor]
+            .Value = '#FFE6E6E6'
+          SolidColorBrush [Key=SystemControlPageBackgroundChromeLowBrush]
+            .Color = '{ThemeResource ChromeLowColor}'
+          Thickness [Key=HighContrastThicknessRight]
+            .Value = '0'
+          Double [Key=HighContrastStrokeThickness]
+            .Value = 0.0
+          Color [Key=AltHighColor]
+            .Value = '#FFF2F2F2'
+          SolidColorBrush [Key=SystemControlBackgroundAltHighBrush]
+            .Color = '{ThemeResource AltHighColor}'
+          Color [Key=ChromeMediumLowColor]
+            .Value = '#FFDCDCDC'
+          SolidColorBrush [Key=SystemControlBackgroundChromeMediumLowBrush]
+            .Color = '{ThemeResource ChromeMediumLowColor}'
+          SolidColorBrush [Key=TitleBarBackgroundTransparentBrush]
+            .Color = '#00FFFFFF'
+          SolidColorBrush [Key=TitleBarForegroundBaseHighBrush]
+            .Color = '{ThemeResource SystemBaseHighColor}'
+          SolidColorBrush [Key=TitleBarInactiveForegroundBaseHighBrush]
+            .Color = '{ThemeResource SystemBaseLowColor}'
+          SolidColorBrush [Key=SRPControlBackgroundChromeMediumLowBrush]
+            .Color = '{ThemeResource AltHighColor}'
+        ResourceDictionary [Key=HighContrast]
+          SolidColorBrush [Key=TitleBarBackgroundTransparentBrush]
+            .Color = '{ThemeResource SystemColorActiveCaptionColor}'
+          Thickness [Key=HighContrastThicknessTop]
+            .Value = '0,1,0,0'
+          Thickness [Key=HighContrastThicknessLeft]
+            .Value = '1,0,0,0'
+          SolidColorBrush [Key=TitleBarForegroundBaseHighBrush]
+            .Color = '{ThemeResource SystemColorCaptionTextColor}'
+          SolidColorBrush [Key=SystemControlPageBackgroundChromeLowBrush]
+            .Color = '{ThemeResource SystemColorWindowColor}'
+          Thickness [Key=HighContrastThicknessRight]
+            .Value = '0,0,1,0'
+          Double [Key=HighContrastStrokeThickness]
+            .Value = 2.0
+          SolidColorBrush [Key=SystemControlBackgroundAltHighBrush]
+            .Color = '{ThemeResource SystemColorButtonFaceColor}'
+          SolidColorBrush [Key=SystemControlBackgroundChromeMediumLowBrush]
+            .Color = '{ThemeResource SystemColorButtonFaceColor}'
+          SolidColorBrush [Key=TitleBarInactiveForegroundBaseHighBrush]
+            .Color = '{ThemeResource SystemColorCaptionTextColor}'
+          SolidColorBrush [Key=SRPControlBackgroundChromeMediumLowBrush]
+            .Color = '{ThemeResource SystemColorButtonFaceColor}'
+      ]
+      Double [Key=SplitViewOpenPaneThemeLength]
+        .Value = 256.0
+      Thickness [Key=ContentDialogButton2HostMargin]
+        .Value = '0,0,12,0'
+      Style [Key=NumericButtonStyle24]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        .BasedOn = '{StaticResource CalcButtonStyle}'
+        Setter
+          .Property = 'FontSize'
+          .Value = 24.0
+      Thickness [Key=PivotPortraitThemePadding]
+        .Value = '0,1,0,0'
+      Style [Key=HistoryMemoryItemContainerStyle]
+        .TargetType = 'ListViewItem'
+        Setter
+          .Property = 'Background'
+          .Value = '#00FFFFFF'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+        Setter
+          .Property = 'TabNavigation'
+          .Value = 'Local'
+        Setter
+          .Property = 'Padding'
+          .Value = '12,0'
+        Setter
+          .Property = 'HorizontalContentAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'VerticalContentAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'MinWidth'
+          .Value = '{ThemeResource ListViewItemMinWidth}'
+        Setter
+          .Property = 'MinHeight'
+          .Value = '{ThemeResource ListViewItemMinHeight}'
+        Setter
+          .Property = 'UseSystemFocusVisuals'
+          .Value = False
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'ListViewItem'
+              .Template:
+                Grid [x:Name=ContentBorder]
+                  .Background = '{TemplateBinding Background}'
+                  .BorderBrush = '{TemplateBinding BorderBrush}'
+                  .BorderThickness = '{TemplateBinding BorderThickness}'
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=CommonStates]
+                      .States: [
+                        VisualState [x:Name=Normal]
+                        VisualState [x:Name=PointerOver]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                DoubleAnimation
+                                  .TargetName = 'BorderBackground'
+                                  .TargetProperty = 'Opacity'
+                                  .Duration = '0'
+                                  .To = 1.0
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetName = 'BorderBackground'
+                                  .TargetProperty = 'Fill'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value = '{ThemeResource SystemControlBackgroundListLowBrush}'
+                                  ]
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetName = 'BorderBackground'
+                                  .TargetProperty = 'Stroke'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                                  ]
+                              ]
+                        VisualState [x:Name=Pressed]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                DoubleAnimation
+                                  .TargetName = 'BorderBackground'
+                                  .TargetProperty = 'Opacity'
+                                  .Duration = '0'
+                                  .To = 1.0
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetName = 'BorderBackground'
+                                  .TargetProperty = 'Fill'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value = '{ThemeResource SystemControlBackgroundListMediumBrush}'
+                                  ]
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetName = 'BorderBackground'
+                                  .TargetProperty = 'Stroke'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                                  ]
+                                PointerDownThemeAnimation
+                                  .TargetName = 'ContentPresenter'
+                              ]
+                        VisualState [x:Name=Selected]
+                        VisualState [x:Name=PointerOverSelected]
+                        VisualState [x:Name=PressedSelected]
+                      ]
+                      .Transitions: [
+                        VisualTransition
+                          .From = 'Pressed'
+                          .To = 'Normal'
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                PointerUpThemeAnimation
+                                  .TargetName = 'ContentPresenter'
+                              ]
+                        VisualTransition
+                          .From = 'Pressed'
+                          .To = 'PointerOverSelected'
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                PointerUpThemeAnimation
+                                  .TargetName = 'ContentPresenter'
+                              ]
+                      ]
+                    VisualStateGroup [x:Name=FocusStates]
+                      .States: [
+                        VisualState [x:Name=Focused]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                DoubleAnimation
+                                  .Duration = '0'
+                                  .To = 1.0
+                                  .TargetProperty = 'Opacity'
+                                  .TargetName = 'FocusVisualWhite'
+                                DoubleAnimation
+                                  .Duration = '0'
+                                  .To = 1.0
+                                  .TargetProperty = 'Opacity'
+                                  .TargetName = 'FocusVisualBlack'
+                              ]
+                        VisualState [x:Name=Unfocused]
+                      ]
+                  ]
+                  .Children: [
+                    Rectangle [x:Name=BorderBackground]
+                      .IsHitTestVisible = False
+                      .Fill = '#00FFFFFF'
+                      .Opacity = 0.0
+                      .StrokeThickness = '{ThemeResource HighContrastStrokeThickness}'
+                      .IsTemplateFocusTarget = True
+                    Grid [x:Name=ContentPresenterGrid]
+                      .Background = '#00FFFFFF'
+                      .Margin = '0'
+                      .RenderTransform:
+                        TranslateTransform [x:Name=ContentPresenterTranslateTransform]
+                      .Children: [
+                        ContentPresenter [x:Name=ContentPresenter]
+                          .ContentTransitions = '{TemplateBinding ContentTransitions}'
+                          .ContentTemplate = '{TemplateBinding ContentTemplate}'
+                          .Content = '{TemplateBinding Content}'
+                          .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                          .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                          .Margin = '{TemplateBinding Padding}'
+                      ]
+                    Rectangle [x:Name=FocusVisualWhite]
+                      .IsHitTestVisible = False
+                      .Opacity = 0.0
+                      .RowSpan = 3
+                      .StrokeDashOffset = 1.5
+                      .StrokeEndLineCap = 'Square'
+                      .Stroke = '{ThemeResource FocusVisualWhiteStrokeThemeBrush}'
+                      .StrokeDashArray = '1,1'
+                    Rectangle [x:Name=FocusVisualBlack]
+                      .IsHitTestVisible = False
+                      .Opacity = 0.0
+                      .RowSpan = 3
+                      .StrokeDashOffset = 0.5
+                      .StrokeEndLineCap = 'Square'
+                      .Stroke = '{ThemeResource FocusVisualBlackStrokeThemeBrush}'
+                      .StrokeDashArray = '1,1'
+                  ]
+      Thickness [Key=ContentDialogContentScrollViewerMargin]
+        .Value = '0,0,0,16'
+      Double [Key=TitleFontSize]
+        .Value = 24.0
+      Thickness [Key=ContentDialogButton1HostMargin]
+        .Value = '12,0,0,0'
+      Double [Key=PivotHeaderItemFontSize]
+        .Value = 15.0
+      FontWeight [Key=PivotHeaderItemThemeFontWeight]
+        .Value = 'SemiBold'
+      Double [Key=CaptionFontSize]
+        .Value = 12.0
+      Double [Key=BodyFontSize]
+        .Value = 15.0
+      Thickness [Key=ContentDialogContentMargin]
+        .Value = '12,0'
+      Thickness [Key=ContentDialogTitleMargin]
+        .Value = '12,32,12,20'
+      Style [Key=NumericButtonStyle46]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        .BasedOn = '{StaticResource CalcButtonStyle}'
+        Setter
+          .Property = 'FontSize'
+          .Value = 46.0
+      Style [Key=CalcButtonStyle]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        Setter
+          .Property = 'MinWidth'
+          .Value = 24.0
+        Setter
+          .Property = 'MinHeight'
+          .Value = 12.0
+        Setter
+          .Property = 'Background'
+          .Value = '#00FFFFFF'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+        Setter
+          .Property = 'HoverBackground'
+          .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+        Setter
+          .Property = 'HoverForeground'
+          .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+        Setter
+          .Property = 'PressBackground'
+          .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+        Setter
+          .Property = 'PressForeground'
+          .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+        Setter
+          .Property = 'BorderThickness'
+          .Value = '0'
+        Setter
+          .Property = 'HorizontalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'VerticalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'FontSize'
+          .Value = '{ThemeResource CalcButtonCaptionSize}'
+        Setter
+          .Property = 'FontWeight'
+          .Value = 'SemiBold'
+        Setter
+          .Property = 'Padding'
+          .Value = '1,-1,-1,1'
+        Setter
+          .Property = 'HorizontalContentAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'VerticalContentAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'IsTextScaleFactorEnabled'
+          .Value = False
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+              .Template:
+                Grid [x:Name=RootGrid]
+                  .Background = '{TemplateBinding Background}'
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=CommonStates]
+                      .Transitions: [
+                        VisualTransition
+                          .GeneratedDuration = '0'
+                        VisualTransition
+                          .From = 'Normal'
+                          .GeneratedDuration = '0:0:0.1'
+                          .To = 'KeyBoardEntry'
+                      ]
+                      .States: [
+                        VisualState [x:Name=Normal]
+                        VisualState [x:Name=PointerOver]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetProperty = 'Background'
+                                  .TargetName = 'RootGrid'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value:
+                                        Binding
+                                          .Path = 'HoverBackground'
+                                          .RelativeSource:
+                                            RelativeSource
+                                              .Mode = 'TemplatedParent'
+                                  ]
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetProperty = '(ContentPresenter.Foreground)'
+                                  .TargetName = 'ContentPresenter'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value:
+                                        Binding
+                                          .Path = 'HoverForeground'
+                                          .RelativeSource:
+                                            RelativeSource
+                                              .Mode = 'TemplatedParent'
+                                  ]
+                              ]
+                        VisualState [x:Name=Pressed]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetProperty = 'Background'
+                                  .TargetName = 'RootGrid'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value:
+                                        Binding
+                                          .Path = 'PressBackground'
+                                          .RelativeSource:
+                                            RelativeSource
+                                              .Mode = 'TemplatedParent'
+                                  ]
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetProperty = 'Foreground'
+                                  .TargetName = 'ContentPresenter'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value:
+                                        Binding
+                                          .Path = 'PressForeground'
+                                          .RelativeSource:
+                                            RelativeSource
+                                              .Mode = 'TemplatedParent'
+                                  ]
+                                PointerDownThemeAnimation
+                                  .TargetName = 'RootGrid'
+                              ]
+                        VisualState [x:Name=Disabled]
+                          .Setters: [
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlDisabledBaseLowBrush}'
+                          ]
+                        VisualState [x:Name=KeyBoardEntry]
+                      ]
+                  ]
+                  .Children: [
+                    ContentPresenter [x:Name=ContentPresenter]
+                      .ContentTemplate = '{TemplateBinding ContentTemplate}'
+                      .ContentTransitions = '{TemplateBinding ContentTransitions}'
+                      .Content = '{TemplateBinding Content}'
+                      .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                      .Margin = '{TemplateBinding Padding}'
+                      .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                      .AccessibilityView = 'Raw'
+                  ]
+      Double [Key=CalcButtonCaptionSize]
+        .Value = 34.0
+      Double [Key=CalcButtonFocusRectThickness]
+        .Value = 1.0
+      Double [Key=MemoryFlyOutGridProgrammerR1]
+        .Value = 5.0
+      Double [Key=CalcStandardOperatorCaptionSize]
+        .Value = 20.0
+      Double [Key=MemoryFlyOutGridR0]
+        .Value = 3.3499999046325684
+      Double [Key=CalcStandardOperatorSnappedCaptionSize]
+        .Value = 16.0
+      Double [Key=CalcClearOperatorCaptionSize]
+        .Value = 20.0
+      Double [Key=CalcClearOperatorSnappedCaptionSize]
+        .Value = 15.0
+      Double [Key=CalcInvOperatorSnappedCaptionSize]
+        .Value = 16.0
+      Style [Key=PathFakeToggleButtonStyle]
+        .TargetType = 'ToggleButton'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+        Setter
+          .Property = 'Background'
+          .Value = '#00FFFFFF'
+        Setter
+          .Property = 'Padding'
+          .Value = '0'
+        Setter
+          .Property = 'MinWidth'
+          .Value = 32.0
+        Setter
+          .Property = 'MinHeight'
+          .Value = 24.0
+        Setter
+          .Property = 'HorizontalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'VerticalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'HorizontalContentAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'VerticalContentAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'FontSize'
+          .Value = 12.0
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'ToggleButton'
+              .Template:
+                Grid
+                  .Background = '#00FFFFFF'
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=CommonStates]
+                      .States: [
+                        VisualState [x:Name=Normal]
+                        VisualState [x:Name=PointerOver]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                        VisualState [x:Name=Pressed]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                PointerDownThemeAnimation
+                                  .TargetName = 'BackgroundElement'
+                              ]
+                        VisualState [x:Name=Disabled]
+                          .Setters: [
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlDisabledBaseLowBrush}'
+                          ]
+                        VisualState [x:Name=Checked]
+                        VisualState [x:Name=CheckedPointerOver]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightAltAccentBrush}'
+                          ]
+                        VisualState [x:Name=CheckedPressed]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightAltAccentBrush}'
+                          ]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                PointerDownThemeAnimation
+                                  .TargetName = 'BackgroundElement'
+                              ]
+                        VisualState [x:Name=CheckedDisabled]
+                          .Setters: [
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlDisabledBaseLowBrush}'
+                          ]
+                      ]
+                  ]
+                  .Children: [
+                    Border [x:Name=BackgroundElement]
+                      .Background = '{TemplateBinding Background}'
+                      .Child:
+                        Path [x:Name=ContentPresenter]
+                          .Data = '{TemplateBinding Content}'
+                          .Margin = '{TemplateBinding Padding}'
+                          .Width = '{TemplateBinding MinWidth}'
+                          .Height = '{TemplateBinding MinHeight}'
+                          .Stretch = 'None'
+                          .Fill = '{TemplateBinding Foreground}'
+                          .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                          .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                          .AccessibilityView = 'Raw'
+                  ]
+      Style [Key=ResultsScroller]
+        .TargetType = 'ScrollViewer'
+        Setter
+          .Property = 'HorizontalScrollMode'
+          .Value = 'Disabled'
+        Setter
+          .Property = 'VerticalScrollMode'
+          .Value = 'Disabled'
+        Setter
+          .Property = 'VerticalScrollBarVisibility'
+          .Value = 'Disabled'
+        Setter
+          .Property = 'HorizontalScrollBarVisibility'
+          .Value = 'Disabled'
+        Setter
+          .Property = 'IsHitTestVisible'
+          .Value = True
+        Setter
+          .Property = 'HorizontalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'HorizontalContentAlignment'
+          .Value = 'Right'
+      Double [Key=CalcScientificSymbolSnappedCaptionSize]
+        .Value = 15.0
+      Style [Key=NumericButtonStyle18]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        .BasedOn = '{StaticResource CalcButtonStyle}'
+        Setter
+          .Property = 'FontSize'
+          .Value = 18.0
+      Double [Key=CalcResultFontSize]
+        .Value = 62.0
+      Style [Key=CaptionToggleButtonStyle]
+        .TargetType = 'ToggleButton'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+        Setter
+          .Property = 'Background'
+          .Value = '#00FFFFFF'
+        Setter
+          .Property = 'BorderThickness'
+          .Value = '{ThemeResource HyperlinkButtonBorderThemeThickness}'
+        Setter
+          .Property = 'Padding'
+          .Value = '0'
+        Setter
+          .Property = 'MinWidth'
+          .Value = 32.0
+        Setter
+          .Property = 'MinHeight'
+          .Value = 24.0
+        Setter
+          .Property = 'HorizontalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'VerticalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'HorizontalContentAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'VerticalContentAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'FontSize'
+          .Value = 12.0
+        Setter
+          .Property = 'IsTextScaleFactorEnabled'
+          .Value = False
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'ToggleButton'
+              .Template:
+                Border [x:Name=BackgroundElement]
+                  .Background = '{TemplateBinding Background}'
+                  .BorderBrush = '{TemplateBinding BorderBrush}'
+                  .BorderThickness = '{TemplateBinding BorderThickness}'
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=CommonStates]
+                      .States: [
+                        VisualState [x:Name=Normal]
+                        VisualState [x:Name=PointerOver]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                        VisualState [x:Name=Pressed]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                PointerDownThemeAnimation
+                                  .TargetName = 'BackgroundElement'
+                              ]
+                        VisualState [x:Name=Disabled]
+                          .Setters: [
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlDisabledBaseLowBrush}'
+                          ]
+                        VisualState [x:Name=Checked]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightTransparentBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltAccentBrush}'
+                          ]
+                        VisualState [x:Name=CheckedPointerOver]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltAccentBrush}'
+                          ]
+                        VisualState [x:Name=CheckedPressed]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltAccentBrush}'
+                          ]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                PointerDownThemeAnimation
+                                  .TargetName = 'BackgroundElement'
+                              ]
+                        VisualState [x:Name=CheckedDisabled]
+                          .Setters: [
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlDisabledBaseLowBrush}'
+                          ]
+                      ]
+                  ]
+                  .Child:
+                    ContentPresenter [x:Name=ContentPresenter]
+                      .Content = '{TemplateBinding Content}'
+                      .ContentTransitions = '{TemplateBinding ContentTransitions}'
+                      .ContentTemplate = '{TemplateBinding ContentTemplate}'
+                      .Margin = '{TemplateBinding Padding}'
+                      .FontSize = '{TemplateBinding FontSize}'
+                      .FontWeight = 'SemiBold'
+                      .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                      .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                      .AccessibilityView = 'Raw'
+      Double [Key=CalcResultSnappedFontSize]
+        .Value = 46.0
+      Style [Key=ResultsScrollerSnapped]
+        .BasedOn = '{StaticResource ResultsScroller}'
+        .TargetType = 'ScrollViewer'
+        Setter
+          .Property = 'HorizontalScrollMode'
+          .Value = 'Enabled'
+        Setter
+          .Property = 'HorizontalScrollBarVisibility'
+          .Value = 'Hidden'
+        Setter
+          .Property = 'IsHitTestVisible'
+          .Value = True
+        Setter
+          .Property = 'ZoomMode'
+          .Value = 'Disabled'
+      Style [Key=EqualOperatorStyle]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        .BasedOn = '{StaticResource OperatorButtonStyle}'
+        Setter
+          .Property = 'HoverBackground'
+          .Value = '{ThemeResource SystemControlHighlightAccentBrush}'
+        Setter
+          .Property = 'HoverForeground'
+          .Value = '{ThemeResource SystemControlHighlightAltAltHighBrush}'
+        Setter
+          .Property = 'PressBackground'
+          .Value = '{ThemeResource SystemControlHighlightListAccentHighBrush}'
+        Setter
+          .Property = 'PressForeground'
+          .Value = '{ThemeResource SystemControlHighlightAltAltHighBrush}'
+      Double [Key=MemoryFlyOutGridR1]
+        .Value = 6.650000095367432
+      Double [Key=MemoryFlyOutGridProgrammerR0]
+        .Value = 5.0
+      Style [Key=ParenthesisCalcButtonStyle]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        .BasedOn = '{StaticResource CalcButtonStyle}'
+        Setter
+          .Property = 'Padding'
+          .Value = '0,-2,0,2'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+        Setter
+          .Property = 'FontWeight'
+          .Value = 'Normal'
+        Setter
+          .Property = 'FontSize'
+          .Value = '{ThemeResource CalcClearOperatorSnappedCaptionSize}'
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+              .Template:
+                Grid [x:Name=RootGrid]
+                  .Background = '{TemplateBinding Background}'
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=CommonStates]
+                      .Transitions: [
+                        VisualTransition
+                          .GeneratedDuration = '0'
+                        VisualTransition
+                          .From = 'Normal'
+                          .GeneratedDuration = '0:0:0.1'
+                          .To = 'KeyBoardEntry'
+                      ]
+                      .States: [
+                        VisualState [x:Name=Normal]
+                        VisualState [x:Name=PointerOver]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetProperty = 'Background'
+                                  .TargetName = 'RootGrid'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value:
+                                        Binding
+                                          .Path = 'HoverBackground'
+                                          .RelativeSource:
+                                            RelativeSource
+                                              .Mode = 'TemplatedParent'
+                                  ]
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetProperty = '(ContentPresenter.Foreground)'
+                                  .TargetName = 'ContentPresenter'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value:
+                                        Binding
+                                          .Path = 'HoverForeground'
+                                          .RelativeSource:
+                                            RelativeSource
+                                              .Mode = 'TemplatedParent'
+                                  ]
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetProperty = 'Foreground'
+                                  .TargetName = 'ParanthesisCount'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value:
+                                        Binding
+                                          .Path = 'HoverForeground'
+                                          .RelativeSource:
+                                            RelativeSource
+                                              .Mode = 'TemplatedParent'
+                                  ]
+                              ]
+                        VisualState [x:Name=Pressed]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetProperty = 'Background'
+                                  .TargetName = 'RootGrid'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value:
+                                        Binding
+                                          .Path = 'PressBackground'
+                                          .RelativeSource:
+                                            RelativeSource
+                                              .Mode = 'TemplatedParent'
+                                  ]
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetProperty = 'Foreground'
+                                  .TargetName = 'ContentPresenter'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value:
+                                        Binding
+                                          .Path = 'PressForeground'
+                                          .RelativeSource:
+                                            RelativeSource
+                                              .Mode = 'TemplatedParent'
+                                  ]
+                                ObjectAnimationUsingKeyFrames
+                                  .TargetProperty = 'Foreground'
+                                  .TargetName = 'ParanthesisCount'
+                                  .KeyFrames: [
+                                    DiscreteObjectKeyFrame
+                                      .KeyTime = 0.0
+                                      .Value:
+                                        Binding
+                                          .Path = 'PressForeground'
+                                          .RelativeSource:
+                                            RelativeSource
+                                              .Mode = 'TemplatedParent'
+                                  ]
+                                PointerDownThemeAnimation
+                                  .TargetName = 'RootGrid'
+                              ]
+                        VisualState [x:Name=Disabled]
+                          .Setters: [
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlDisabledBaseLowBrush}'
+                            Setter
+                              .Target = 'ParanthesisCount.Foreground'
+                              .Value = '{ThemeResource SystemControlDisabledBaseLowBrush}'
+                          ]
+                        VisualState [x:Name=KeyBoardEntry]
+                      ]
+                  ]
+                  .Children: [
+                    ContentPresenter [x:Name=ContentPresenter]
+                      .ContentTemplate = '{TemplateBinding ContentTemplate}'
+                      .ContentTransitions = '{TemplateBinding ContentTransitions}'
+                      .Content = '{TemplateBinding Content}'
+                      .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                      .Margin = '{TemplateBinding Padding}'
+                      .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                      .AccessibilityView = 'Raw'
+                    TextBlock [x:Name=ParanthesisCount]
+                      .Text = '{TemplateBinding Tag}'
+                      .FontWeight = 'SemiBold'
+                      .Margin = '18,8,0,-8'
+                      .Foreground = '{ThemeResource SystemControlHighlightAccentBrush}'
+                      .FontSize = '{TemplateBinding MinHeight}'
+                      .HorizontalAlignment = 'Center'
+                      .VerticalAlignment = 'Center'
+                      .AccessibilityView = 'Raw'
+                  ]
+      Style [Key=NumericButtonStyle28]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        .BasedOn = '{StaticResource CalcButtonStyle}'
+        Setter
+          .Property = 'FontSize'
+          .Value = 28.0
+        Setter
+          .Property = 'Padding'
+          .Value = '0,-1,0,1'
+      Style [Key=NumericButtonStyle34]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        .BasedOn = '{StaticResource CalcButtonStyle}'
+        Setter
+          .Property = 'FontSize'
+          .Value = 34.0
+      Style [Key=OperatorButtonStyle]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        .BasedOn = '{StaticResource CalcButtonStyle}'
+        Setter
+          .Property = 'Padding'
+          .Value = '0'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+        Setter
+          .Property = 'FontFamily'
+          .Value = '{ThemeResource SymbolThemeFontFamily}'
+        Setter
+          .Property = 'FontSize'
+          .Value = '{ThemeResource CalcStandardOperatorSnappedCaptionSize}'
+      Style [Key=ClearOperatorStyle]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        .BasedOn = '{StaticResource CalcButtonStyle}'
+        Setter
+          .Property = 'Padding'
+          .Value = '0,-2,0,2'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+        Setter
+          .Property = 'FontWeight'
+          .Value = 'Normal'
+        Setter
+          .Property = 'FontSize'
+          .Value = '{ThemeResource CalcClearOperatorSnappedCaptionSize}'
+      Style [Key=InvertOperatorStyle]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        .BasedOn = '{StaticResource CalcButtonStyle}'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+        Setter
+          .Property = 'FontFamily'
+          .Value = 'Segoe UI Symbol'
+        Setter
+          .Property = 'FontSize'
+          .Value = '{ThemeResource CalcInvOperatorSnappedCaptionSize}'
+        Setter
+          .Property = 'Padding'
+          .Value = '0'
+        Setter
+          .Property = 'FontWeight'
+          .Value = 'Normal'
+      Style [Key=SymbolOperatorStyle]
+        .TargetType = 'using:CalculatorApp.Controls:CalculatorButton'
+        .BasedOn = '{StaticResource CalcButtonStyle}'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlForegroundBaseHighBrush}'
+        Setter
+          .Property = 'FontFamily'
+          .Value = 'Segoe UI Symbol'
+        Setter
+          .Property = 'FontSize'
+          .Value = '{ThemeResource CalcScientificSymbolSnappedCaptionSize}'
+        Setter
+          .Property = 'FontWeight'
+          .Value = 'SemiLight'
+        Setter
+          .Property = 'Padding'
+          .Value = '0'
+      Style [Key=CalculationResultStyleL]
+        .TargetType = 'using:CalculatorApp.Controls:CalculationResult'
+        Setter
+          .Property = 'Background'
+          .Value = '#00FFFFFF'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+        Setter
+          .Property = 'HorizontalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'VerticalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'HorizontalContentAlignment'
+          .Value = 'Right'
+        Setter
+          .Property = 'VerticalContentAlignment'
+          .Value = 'Top'
+        Setter
+          .Property = 'IsTextScaleFactorEnabled'
+          .Value = False
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'using:CalculatorApp.Controls:CalculationResult'
+              .Template:
+                Grid
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=ActiveStates]
+                      .States: [
+                        VisualState [x:Name=Active]
+                        VisualState [x:Name=Normal]
+                          .Setters: [
+                            Setter
+                              .Target = 'normalOutput.FontWeight'
+                              .Value = 'Light'
+                          ]
+                      ]
+                    VisualStateGroup [x:Name=FocusStates]
+                      .States: [
+                        VisualState [x:Name=Focused]
+                          .Setters: [
+                            Setter
+                              .Target = 'FocusVisualWhite.Opacity'
+                              .Value = '1'
+                            Setter
+                              .Target = 'FocusVisualBlack.Opacity'
+                              .Value = '1'
+                          ]
+                        VisualState [x:Name=Unfocused]
+                        VisualState [x:Name=PointerFocused]
+                      ]
+                  ]
+                  .Children: [
+                    Border [x:Name=border]
+                      .Background = '{TemplateBinding Background}'
+                      .Child:
+                        Grid
+                          .ColumnDefinitions: [
+                            ColumnDefinition
+                              .Width = '12'
+                            ColumnDefinition
+                            ColumnDefinition
+                              .Width = '12'
+                          ]
+                          .Children: [
+                            ScrollViewer [x:Name=textContainer]
+                              .Padding = '0'
+                              .Style = '{ThemeResource ResultsScrollerSnapped}'
+                              .Column = 1
+                              .AccessibilityView = 'Raw'
+                              .Content:
+                                TextBlock [x:Name=normalOutput]
+                                  .TextWrapping = 'NoWrap'
+                                  .Text:
+                                    TemplateBinding
+                                      .Property = 'DisplayValue'
+                                  .Foreground = '{TemplateBinding Foreground}'
+                                  .TextAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                                  .Margin:
+                                    TemplateBinding
+                                      .Property = 'DisplayMargin'
+                                  .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                                  .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                                  .FontWeight = 'SemiBold'
+                                  .FontSize = '{TemplateBinding FontSize}'
+                            HyperlinkButton [x:Name=scrollLeft]
+                              .BorderThickness = '0'
+                              .Padding = '0,-3,0,4'
+                              .VerticalAlignment = 'Top'
+                              .VerticalContentAlignment = 'Center'
+                              .HorizontalContentAlignment = 'Center'
+                              .Margin = '-4,0'
+                              .Width = 20.0
+                              .MinHeight = 24.0
+                              .MinWidth = 20.0
+                              .Column = 0
+                              .Foreground = '{ThemeResource SystemControlForegroundAccentBrush}'
+                              .Visibility = 'Collapsed'
+                              .Content:
+                                FontIcon [x:Name=scrollLeftText]
+                                  .Glyph = '\ue26c'
+                                  .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                                  .FontSize = 12.0
+                            HyperlinkButton [x:Name=scrollRight]
+                              .BorderThickness = '0'
+                              .Padding = '0,-3,0,4'
+                              .VerticalAlignment = 'Top'
+                              .VerticalContentAlignment = 'Center'
+                              .HorizontalContentAlignment = 'Center'
+                              .Margin = '-4,0'
+                              .Width = 20.0
+                              .MinHeight = 24.0
+                              .MinWidth = 20.0
+                              .Column = 2
+                              .Foreground = '{ThemeResource SystemControlForegroundAccentBrush}'
+                              .Visibility = 'Collapsed'
+                              .Content:
+                                FontIcon [x:Name=scrollRightText]
+                                  .Glyph = '\ue26b'
+                                  .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                                  .FontSize = 12.0
+                          ]
+                    Rectangle [x:Name=FocusVisualWhite]
+                      .IsHitTestVisible = False
+                      .Opacity = 0.0
+                      .StrokeDashOffset = 1.5
+                      .StrokeEndLineCap = 'Square'
+                      .Stroke = '{ThemeResource SystemControlForegroundChromeWhiteBrush}'
+                      .StrokeThickness = '{ThemeResource CalcButtonFocusRectThickness}'
+                      .StrokeDashArray = '1,1'
+                    Rectangle [x:Name=FocusVisualBlack]
+                      .IsHitTestVisible = False
+                      .Opacity = 0.0
+                      .StrokeDashOffset = 0.5
+                      .StrokeEndLineCap = 'Square'
+                      .Stroke = '{ThemeResource SystemControlBackgroundChromeBlackHighBrush}'
+                      .StrokeThickness = '{ThemeResource CalcButtonFocusRectThickness}'
+                      .StrokeDashArray = '1,1'
+                  ]
+      Style [Key=CalculationResultStyleM]
+        .TargetType = 'using:CalculatorApp.Controls:CalculationResult'
+        Setter
+          .Property = 'Background'
+          .Value = '#00FFFFFF'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+        Setter
+          .Property = 'HorizontalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'VerticalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'HorizontalContentAlignment'
+          .Value = 'Right'
+        Setter
+          .Property = 'VerticalContentAlignment'
+          .Value = 'Top'
+        Setter
+          .Property = 'IsTextScaleFactorEnabled'
+          .Value = False
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'using:CalculatorApp.Controls:CalculationResult'
+              .Template:
+                Grid
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=ActiveStates]
+                      .States: [
+                        VisualState [x:Name=Active]
+                        VisualState [x:Name=Normal]
+                          .Setters: [
+                            Setter
+                              .Target = 'normalOutput.FontWeight'
+                              .Value = 'Light'
+                          ]
+                      ]
+                    VisualStateGroup [x:Name=FocusStates]
+                      .States: [
+                        VisualState [x:Name=Focused]
+                          .Setters: [
+                            Setter
+                              .Target = 'FocusVisualWhite.Opacity'
+                              .Value = '1'
+                            Setter
+                              .Target = 'FocusVisualBlack.Opacity'
+                              .Value = '1'
+                          ]
+                        VisualState [x:Name=Unfocused]
+                        VisualState [x:Name=PointerFocused]
+                      ]
+                  ]
+                  .Children: [
+                    Border [x:Name=border]
+                      .Background = '{TemplateBinding Background}'
+                      .Child:
+                        Grid
+                          .ColumnDefinitions: [
+                            ColumnDefinition
+                              .Width = '12'
+                            ColumnDefinition
+                            ColumnDefinition
+                              .Width = '12'
+                          ]
+                          .Children: [
+                            ScrollViewer [x:Name=textContainer]
+                              .Padding = '0'
+                              .Style = '{ThemeResource ResultsScrollerSnapped}'
+                              .Column = 1
+                              .AccessibilityView = 'Raw'
+                              .Content:
+                                TextBlock [x:Name=normalOutput]
+                                  .TextWrapping = 'NoWrap'
+                                  .Text:
+                                    TemplateBinding
+                                      .Property = 'DisplayValue'
+                                  .Foreground = '{TemplateBinding Foreground}'
+                                  .TextAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                                  .Margin:
+                                    TemplateBinding
+                                      .Property = 'DisplayMargin'
+                                  .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                                  .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                                  .FontWeight = 'SemiBold'
+                                  .FontSize = '{TemplateBinding FontSize}'
+                            HyperlinkButton [x:Name=scrollLeft]
+                              .BorderThickness = '0'
+                              .Padding = '0,-3,0,4'
+                              .VerticalAlignment = 'Top'
+                              .VerticalContentAlignment = 'Center'
+                              .HorizontalContentAlignment = 'Center'
+                              .Margin = '-4,0'
+                              .Width = 20.0
+                              .MinHeight = 24.0
+                              .MinWidth = 20.0
+                              .Column = 0
+                              .Foreground = '{ThemeResource SystemControlForegroundAccentBrush}'
+                              .Visibility = 'Collapsed'
+                              .Content:
+                                FontIcon [x:Name=scrollLeftText]
+                                  .Glyph = '\ue26c'
+                                  .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                                  .FontSize = 12.0
+                            HyperlinkButton [x:Name=scrollRight]
+                              .BorderThickness = '0'
+                              .Padding = '0,-3,0,4'
+                              .VerticalAlignment = 'Top'
+                              .VerticalContentAlignment = 'Center'
+                              .HorizontalContentAlignment = 'Center'
+                              .Margin = '-4,0'
+                              .Width = 20.0
+                              .MinHeight = 24.0
+                              .MinWidth = 20.0
+                              .Column = 2
+                              .Foreground = '{ThemeResource SystemControlForegroundAccentBrush}'
+                              .Visibility = 'Collapsed'
+                              .Content:
+                                FontIcon [x:Name=scrollRightText]
+                                  .Glyph = '\ue26b'
+                                  .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                                  .FontSize = 12.0
+                          ]
+                    Rectangle [x:Name=FocusVisualWhite]
+                      .IsHitTestVisible = False
+                      .Opacity = 0.0
+                      .StrokeDashOffset = 1.5
+                      .StrokeEndLineCap = 'Square'
+                      .Stroke = '{ThemeResource SystemControlForegroundChromeWhiteBrush}'
+                      .StrokeThickness = '{ThemeResource CalcButtonFocusRectThickness}'
+                      .StrokeDashArray = '1,1'
+                    Rectangle [x:Name=FocusVisualBlack]
+                      .IsHitTestVisible = False
+                      .Opacity = 0.0
+                      .StrokeDashOffset = 0.5
+                      .StrokeEndLineCap = 'Square'
+                      .Stroke = '{ThemeResource SystemControlBackgroundChromeBlackHighBrush}'
+                      .StrokeThickness = '{ThemeResource CalcButtonFocusRectThickness}'
+                      .StrokeDashArray = '1,1'
+                  ]
+      Style [Key=CalculationResultStyleS]
+        .TargetType = 'using:CalculatorApp.Controls:CalculationResult'
+        Setter
+          .Property = 'Background'
+          .Value = '#00FFFFFF'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+        Setter
+          .Property = 'HorizontalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'VerticalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'HorizontalContentAlignment'
+          .Value = 'Right'
+        Setter
+          .Property = 'VerticalContentAlignment'
+          .Value = 'Top'
+        Setter
+          .Property = 'MinHeight'
+          .Value = 12.0
+        Setter
+          .Property = 'IsTextScaleFactorEnabled'
+          .Value = False
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'using:CalculatorApp.Controls:CalculationResult'
+              .Template:
+                Grid
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=ActiveStates]
+                      .States: [
+                        VisualState [x:Name=Active]
+                        VisualState [x:Name=Normal]
+                          .Setters: [
+                            Setter
+                              .Target = 'normalOutput.FontWeight'
+                              .Value = 'Light'
+                          ]
+                      ]
+                    VisualStateGroup [x:Name=FocusStates]
+                      .States: [
+                        VisualState [x:Name=Focused]
+                          .Setters: [
+                            Setter
+                              .Target = 'FocusVisualWhite.Opacity'
+                              .Value = '1'
+                            Setter
+                              .Target = 'FocusVisualBlack.Opacity'
+                              .Value = '1'
+                          ]
+                        VisualState [x:Name=Unfocused]
+                        VisualState [x:Name=PointerFocused]
+                      ]
+                  ]
+                  .Children: [
+                    Border [x:Name=border]
+                      .Background = '{TemplateBinding Background}'
+                      .Child:
+                        Grid
+                          .ColumnDefinitions: [
+                            ColumnDefinition
+                              .Width = '12'
+                            ColumnDefinition
+                            ColumnDefinition
+                              .Width = '12'
+                          ]
+                          .Children: [
+                            ScrollViewer [x:Name=textContainer]
+                              .Padding = '0'
+                              .Style = '{ThemeResource ResultsScrollerSnapped}'
+                              .Column = 1
+                              .AccessibilityView = 'Raw'
+                              .Content:
+                                TextBlock [x:Name=normalOutput]
+                                  .TextWrapping = 'NoWrap'
+                                  .Text:
+                                    TemplateBinding
+                                      .Property = 'DisplayValue'
+                                  .Foreground = '{TemplateBinding Foreground}'
+                                  .TextAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                                  .Margin:
+                                    TemplateBinding
+                                      .Property = 'DisplayMargin'
+                                  .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                                  .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                                  .FontWeight = 'SemiBold'
+                                  .FontSize = '{TemplateBinding FontSize}'
+                            HyperlinkButton [x:Name=scrollLeft]
+                              .BorderThickness = '0'
+                              .Padding = '0,-3,0,4'
+                              .VerticalAlignment = 'Top'
+                              .VerticalContentAlignment = 'Center'
+                              .HorizontalContentAlignment = 'Center'
+                              .Margin = '-4,0'
+                              .Width = 20.0
+                              .MinHeight = 24.0
+                              .MinWidth = 20.0
+                              .Column = 0
+                              .Foreground = '{ThemeResource SystemControlForegroundAccentBrush}'
+                              .Visibility = 'Collapsed'
+                              .Content:
+                                FontIcon [x:Name=scrollLeftText]
+                                  .Glyph = '\ue26c'
+                                  .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                                  .FontSize = 12.0
+                            HyperlinkButton [x:Name=scrollRight]
+                              .BorderThickness = '0'
+                              .Padding = '0,-3,0,4'
+                              .VerticalAlignment = 'Top'
+                              .VerticalContentAlignment = 'Center'
+                              .HorizontalContentAlignment = 'Center'
+                              .Margin = '-4,0'
+                              .Width = 20.0
+                              .MinHeight = 24.0
+                              .MinWidth = 20.0
+                              .Column = 2
+                              .Foreground = '{ThemeResource SystemControlForegroundAccentBrush}'
+                              .Visibility = 'Collapsed'
+                              .Content:
+                                FontIcon [x:Name=scrollRightText]
+                                  .Glyph = '\ue26b'
+                                  .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                                  .FontSize = 12.0
+                          ]
+                    Rectangle [x:Name=FocusVisualWhite]
+                      .IsHitTestVisible = False
+                      .Opacity = 0.0
+                      .StrokeDashOffset = 1.5
+                      .StrokeEndLineCap = 'Square'
+                      .Stroke = '{ThemeResource SystemControlForegroundChromeWhiteBrush}'
+                      .StrokeThickness = '{ThemeResource CalcButtonFocusRectThickness}'
+                      .StrokeDashArray = '1,1'
+                    Rectangle [x:Name=FocusVisualBlack]
+                      .IsHitTestVisible = False
+                      .Opacity = 0.0
+                      .StrokeDashOffset = 0.5
+                      .StrokeEndLineCap = 'Square'
+                      .Stroke = '{ThemeResource SystemControlBackgroundChromeBlackHighBrush}'
+                      .StrokeThickness = '{ThemeResource CalcButtonFocusRectThickness}'
+                      .StrokeDashArray = '1,1'
+                  ]
+      Style [Key=CaptionButtonStyle]
+        .TargetType = 'Button'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+        Setter
+          .Property = 'Background'
+          .Value = '#00FFFFFF'
+        Setter
+          .Property = 'BorderThickness'
+          .Value = '{ThemeResource HyperlinkButtonBorderThemeThickness}'
+        Setter
+          .Property = 'Padding'
+          .Value = '0'
+        Setter
+          .Property = 'MinWidth'
+          .Value = 32.0
+        Setter
+          .Property = 'MinHeight'
+          .Value = 24.0
+        Setter
+          .Property = 'HorizontalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'VerticalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'HorizontalContentAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'VerticalContentAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'FontSize'
+          .Value = 12.0
+        Setter
+          .Property = 'IsTextScaleFactorEnabled'
+          .Value = False
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'Button'
+              .Template:
+                Border [x:Name=BackgroundElement]
+                  .Background = '{TemplateBinding Background}'
+                  .BorderBrush = '{TemplateBinding BorderBrush}'
+                  .BorderThickness = '{TemplateBinding BorderThickness}'
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=CommonStates]
+                      .States: [
+                        VisualState [x:Name=Normal]
+                        VisualState [x:Name=PointerOver]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                        VisualState [x:Name=Pressed]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                PointerDownThemeAnimation
+                                  .TargetName = 'BackgroundElement'
+                              ]
+                        VisualState [x:Name=Disabled]
+                          .Setters: [
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlDisabledBaseLowBrush}'
+                          ]
+                      ]
+                  ]
+                  .Child:
+                    ContentPresenter [x:Name=ContentPresenter]
+                      .Content = '{TemplateBinding Content}'
+                      .ContentTransitions = '{TemplateBinding ContentTransitions}'
+                      .ContentTemplate = '{TemplateBinding ContentTemplate}'
+                      .Margin = '{TemplateBinding Padding}'
+                      .FontSize = '{TemplateBinding FontSize}'
+                      .FontWeight = 'SemiBold'
+                      .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                      .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                      .AccessibilityView = 'Raw'
+      Style [Key=HamburgerStyle]
+        .TargetType = 'Button'
+        Setter
+          .Property = 'Background'
+          .Value = '{ThemeResource SystemControlBackgroundChromeMediumLowBrush}'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+        Setter
+          .Property = 'BorderBrush'
+          .Value = '#00FFFFFF'
+        Setter
+          .Property = 'FontWeight'
+          .Value = 'Bold'
+        Setter
+          .Property = 'FontSize'
+          .Value = 20.0
+        Setter
+          .Property = 'Padding'
+          .Value = '12,1,12,-1'
+        Setter
+          .Property = 'MinWidth'
+          .Value = 48.0
+        Setter
+          .Property = 'Height'
+          .Value = 48.0
+        Setter
+          .Property = 'Tag'
+          .Value = '\ue700'
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'Button'
+              .Template:
+                Grid [x:Name=ButtonRoot]
+                  .Background = '#00FFFFFF'
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=CommonStates]
+                      .States: [
+                        VisualState [x:Name=Normal]
+                        VisualState [x:Name=PointerOver]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                            Setter
+                              .Target = 'IconGlyph.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                        VisualState [x:Name=Pressed]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                            Setter
+                              .Target = 'IconGlyph.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                        VisualState [x:Name=Disabled]
+                      ]
+                  ]
+                  .ColumnDefinitions: [
+                    ColumnDefinition
+                      .Width = '48'
+                      .MinWidth = 48.0
+                    ColumnDefinition
+                      .Width = '*'
+                  ]
+                  .Children: [
+                    Rectangle [x:Name=BackgroundElement]
+                      .ColumnSpan = 2
+                      .HorizontalAlignment = 'Left'
+                      .Width = '{TemplateBinding MinWidth}'
+                      .Fill = '#00FFFFFF'
+                    Grid
+                      .Height = '{TemplateBinding Height}'
+                      .Width = 48.0
+                      .Children: [
+                        FontIcon [x:Name=IconGlyph]
+                          .Glyph = '{TemplateBinding Tag}'
+                          .FontSize = '{TemplateBinding FontSize}'
+                          .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                          .HorizontalAlignment = 'Center'
+                          .VerticalAlignment = 'Center'
+                          .Margin = '0,0,1,0'
+                          .AccessibilityView = 'Raw'
+                          .IsTextScaleFactorEnabled = False
+                      ]
+                    TextBlock [x:Name=ContentPresenter]
+                      .Column = 1
+                      .FontSize = 15.0
+                      .Text = '{TemplateBinding Content}'
+                      .CharacterSpacing = '{TemplateBinding CharacterSpacing}'
+                      .Margin = '{TemplateBinding Padding}'
+                      .HorizontalAlignment = 'Left'
+                      .VerticalAlignment = 'Center'
+                      .IsTextScaleFactorEnabled = False
+                  ]
+      Style [Key=PathRadioButtonStyle]
+        .TargetType = 'RadioButton'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlPageTextBaseMediumBrush}'
+        Setter
+          .Property = 'Background'
+          .Value = '#00FFFFFF'
+        Setter
+          .Property = 'BorderThickness'
+          .Value = '{ThemeResource HyperlinkButtonBorderThemeThickness}'
+        Setter
+          .Property = 'Padding'
+          .Value = '0'
+        Setter
+          .Property = 'MinWidth'
+          .Value = 32.0
+        Setter
+          .Property = 'MinHeight'
+          .Value = 24.0
+        Setter
+          .Property = 'HorizontalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'VerticalAlignment'
+          .Value = 'Stretch'
+        Setter
+          .Property = 'HorizontalContentAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'VerticalContentAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'FontSize'
+          .Value = 12.0
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'RadioButton'
+              .Template:
+                Grid
+                  .Background = '#00FFFFFF'
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=CommonStates]
+                      .States: [
+                        VisualState [x:Name=Normal]
+                        VisualState [x:Name=PointerOver]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                        VisualState [x:Name=Pressed]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                        VisualState [x:Name=Disabled]
+                          .Setters: [
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlDisabledBaseLowBrush}'
+                          ]
+                        VisualState [x:Name=Checked]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightTransparentBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightAltAccentBrush}'
+                            Setter
+                              .Target = 'Carrot.Visibility'
+                              .Value = 'Visible'
+                          ]
+                        VisualState [x:Name=CheckedPointerOver]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightAltAccentBrush}'
+                            Setter
+                              .Target = 'Carrot.Visibility'
+                              .Value = 'Visible'
+                          ]
+                        VisualState [x:Name=CheckedPressed]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightAltAccentBrush}'
+                            Setter
+                              .Target = 'Carrot.Visibility'
+                              .Value = 'Visible'
+                          ]
+                        VisualState [x:Name=CheckedDisabled]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Background'
+                              .Value = '{ThemeResource SystemControlHighlightTransparentBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightAltAccentBrush}'
+                            Setter
+                              .Target = 'Carrot.Visibility'
+                              .Value = 'Visible'
+                          ]
+                      ]
+                  ]
+                  .Children: [
+                    Border [x:Name=BackgroundElement]
+                      .Background = '{TemplateBinding Background}'
+                      .BorderBrush = '{TemplateBinding BorderBrush}'
+                      .BorderThickness = '{TemplateBinding BorderThickness}'
+                      .Child:
+                        Path [x:Name=ContentPresenter]
+                          .Data = '{TemplateBinding Content}'
+                          .Margin = '{TemplateBinding Padding}'
+                          .Width = '{TemplateBinding MinWidth}'
+                          .Height = '{TemplateBinding MinHeight}'
+                          .Stretch = 'Fill'
+                          .Fill = '{TemplateBinding Foreground}'
+                          .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                          .VerticalAlignment = '{TemplateBinding VerticalContentAlignment}'
+                          .AccessibilityView = 'Raw'
+                    Rectangle [x:Name=Carrot]
+                      .Fill = '{ThemeResource SystemControlHighlightAccentBrush}'
+                      .StrokeThickness = 0.0
+                      .Height = 2.0
+                      .VerticalAlignment = 'Bottom'
+                      .Visibility = 'Collapsed'
+                  ]
+      Style [Key=SettingsButtonStyle]
+        .TargetType = 'Button'
+        Setter
+          .Property = 'Background'
+          .Value = '{ThemeResource SystemControlBackgroundChromeMediumLowBrush}'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+        Setter
+          .Property = 'FontSize'
+          .Value = '{ThemeResource BodyFontSize}'
+        Setter
+          .Property = 'Padding'
+          .Value = '12,2,12,-2'
+        Setter
+          .Property = 'MinWidth'
+          .Value = 48.0
+        Setter
+          .Property = 'Height'
+          .Value = 48.0
+        Setter
+          .Property = 'FontSize'
+          .Value = 15.0
+        Setter
+          .Property = 'Tag'
+          .Value = '\ue700'
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'Button'
+              .Template:
+                Grid [x:Name=ButtonRoot]
+                  .Background = '#00FFFFFF'
+                  .VisualStateGroups: [
+                  ]
+                  .VisualStateGroups: [
+                    VisualStateGroup [x:Name=CommonStates]
+                      .States: [
+                        VisualState [x:Name=Normal]
+                        VisualState [x:Name=PointerOver]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightListLowBrush}'
+                            Setter
+                              .Target = 'IconGlyph.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                        VisualState [x:Name=Pressed]
+                          .Setters: [
+                            Setter
+                              .Target = 'BackgroundElement.Fill'
+                              .Value = '{ThemeResource SystemControlHighlightListMediumBrush}'
+                            Setter
+                              .Target = 'IconGlyph.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                            Setter
+                              .Target = 'ContentPresenter.Foreground'
+                              .Value = '{ThemeResource SystemControlHighlightAltBaseHighBrush}'
+                          ]
+                          .Storyboard:
+                            Storyboard
+                              .Children: [
+                                PointerDownThemeAnimation
+                                  .TargetName = 'ButtonRoot'
+                              ]
+                        VisualState [x:Name=Disabled]
+                      ]
+                  ]
+                  .ColumnDefinitions: [
+                    ColumnDefinition
+                      .Width = '48'
+                      .MinWidth = 48.0
+                    ColumnDefinition
+                      .Width = '*'
+                  ]
+                  .Children: [
+                    Rectangle [x:Name=BackgroundElement]
+                      .ColumnSpan = 2
+                      .Fill = '#00FFFFFF'
+                    Grid
+                      .Height = '{TemplateBinding Height}'
+                      .Width = 48.0
+                      .Children: [
+                        FontIcon [x:Name=IconGlyph]
+                          .Glyph = '{TemplateBinding Tag}'
+                          .FontSize = 20.0
+                          .FontFamily = '{ThemeResource SymbolThemeFontFamily}'
+                          .HorizontalAlignment = 'Center'
+                          .VerticalAlignment = 'Center'
+                          .AccessibilityView = 'Raw'
+                          .IsTextScaleFactorEnabled = False
+                      ]
+                    ContentPresenter [x:Name=ContentPresenter]
+                      .Column = 1
+                      .Content = '{TemplateBinding Content}'
+                      .Margin = '{TemplateBinding Padding}'
+                      .FontSize = '{TemplateBinding FontSize}'
+                      .HorizontalAlignment = 'Left'
+                      .VerticalAlignment = 'Center'
+                      .IsTextScaleFactorEnabled = False
+                  ]
+      Style
+        .TargetType = 'ContentDialog'
+        Setter
+          .Property = 'Foreground'
+          .Value = '{ThemeResource SystemControlPageTextBaseHighBrush}'
+        Setter
+          .Property = 'Background'
+          .Value = '{ThemeResource SRPControlBackgroundChromeMediumLowBrush}'
+        Setter
+          .Property = 'HorizontalAlignment'
+          .Value = 'Center'
+        Setter
+          .Property = 'VerticalAlignment'
+          .Value = 'Top'
+        Setter
+          .Property = 'IsTabStop'
+          .Value = False
+        Setter
+          .Property = 'MaxHeight'
+          .Value = '{ThemeResource ContentDialogMaxHeight}'
+        Setter
+          .Property = 'MinHeight'
+          .Value = '{ThemeResource ContentDialogMinHeight}'
+        Setter
+          .Property = 'MaxWidth'
+          .Value = '{ThemeResource ContentDialogMaxWidth}'
+        Setter
+          .Property = 'MinWidth'
+          .Value = 180.0
+        Setter
+          .Property = 'Template'
+          .Value:
+            ControlTemplate
+              .TargetType = 'ContentDialog'
+              .Template:
+                Border [x:Name=Container]
+                  .Child:
+                    Grid [x:Name=LayoutRoot]
+                      .RowDefinitions: [
+                        RowDefinition
+                          .Height = 'Auto'
+                        RowDefinition
+                          .Height = '*'
+                      ]
+                      .ColumnDefinitions: [
+                        ColumnDefinition
+                          .Width = 'Auto'
+                      ]
+                      .Children: [
+                        Border [x:Name=BackgroundElement]
+                          .Row = 0
+                          .Background = '{TemplateBinding Background}'
+                          .FlowDirection = '{TemplateBinding FlowDirection}'
+                          .BorderThickness = '{ThemeResource ContentDialogBorderWidth}'
+                          .BorderBrush = '{ThemeResource SystemControlForegroundAccentBrush}'
+                          .MaxWidth = '{TemplateBinding MaxWidth}'
+                          .MaxHeight = '{TemplateBinding MaxHeight}'
+                          .MinWidth = '{TemplateBinding MinWidth}'
+                          .MinHeight = '{TemplateBinding MinHeight}'
+                          .Child:
+                            Grid [x:Name=DialogSpace]
+                              .VerticalAlignment = 'Stretch'
+                              .RowDefinitions: [
+                                RowDefinition
+                                  .Height = 'Auto'
+                                RowDefinition
+                                  .Height = 'Auto'
+                                RowDefinition
+                                  .Height = 'Auto'
+                                RowDefinition
+                                  .Height = '20'
+                              ]
+                              .Children: [
+                                ScrollViewer [x:Name=ContentScrollViewer]
+                                  .HorizontalScrollBarVisibility = 'Disabled'
+                                  .VerticalScrollBarVisibility = 'Disabled'
+                                  .ZoomMode = 'Disabled'
+                                  .Margin = '{ThemeResource ContentDialogContentScrollViewerMargin}'
+                                  .IsTabStop = False
+                                  .Content:
+                                    Grid
+                                      .RowDefinitions: [
+                                        RowDefinition
+                                          .Height = 'Auto'
+                                        RowDefinition
+                                          .Height = 'Auto'
+                                      ]
+                                      .Children: [
+                                        ContentControl [x:Name=Title]
+                                          .Margin = '{ThemeResource ContentDialogTitleMargin}'
+                                          .Content = '{TemplateBinding Title}'
+                                          .ContentTemplate = '{TemplateBinding TitleTemplate}'
+                                          .FontSize = 20.0
+                                          .FontFamily = 'XamlAutoFontFamily'
+                                          .FontWeight = 'Normal'
+                                          .Foreground = '{TemplateBinding Foreground}'
+                                          .HorizontalAlignment = 'Left'
+                                          .VerticalAlignment = 'Top'
+                                          .IsTabStop = False
+                                          .MaxHeight = '{ThemeResource ContentDialogTitleMaxHeight}'
+                                          .Template:
+                                            ControlTemplate
+                                              .TargetType = 'ContentControl'
+                                              .Template:
+                                                ContentPresenter
+                                                  .Content = '{TemplateBinding Content}'
+                                                  .MaxLines = 2
+                                                  .TextWrapping = 'Wrap'
+                                                  .ContentTemplate = '{TemplateBinding ContentTemplate}'
+                                                  .Margin = '{TemplateBinding Padding}'
+                                                  .ContentTransitions = '{TemplateBinding ContentTransitions}'
+                                                  .HorizontalAlignment = '{TemplateBinding HorizontalContentAlignment}'
+                                                  .VerticalAlignment = 'Center'
+                                        ContentPresenter [x:Name=Content]
+                                          .ContentTemplate = '{TemplateBinding ContentTemplate}'
+                                          .Content = '{TemplateBinding Content}'
+                                          .FontSize = '{ThemeResource ControlContentThemeFontSize}'
+                                          .FontFamily = '{ThemeResource ContentControlThemeFontFamily}'
+                                          .Margin = '{ThemeResource ContentDialogContentMargin}'
+                                          .Foreground = '{TemplateBinding Foreground}'
+                                          .Row = 1
+                                          .TextWrapping = 'Wrap'
+                                      ]
+                                Grid [x:Name=CommandSpace]
+                                  .Row = 1
+                                  .Margin = '0,10,0,0'
+                                  .ColumnDefinitions: [
+                                    ColumnDefinition
+                                    ColumnDefinition
+                                      .Width = '12'
+                                    ColumnDefinition
+                                  ]
+                                  .Children: [
+                                    Border [x:Name=Button1Host]
+                                      .Margin = '{ThemeResource ContentDialogButton1HostMargin}'
+                                      .HorizontalAlignment = 'Stretch'
+                                    Border [x:Name=Button2Host]
+                                      .Margin = '{ThemeResource ContentDialogButton2HostMargin}'
+                                      .Column = 2
+                                      .HorizontalAlignment = 'Stretch'
+                                  ]
+                              ]
+                      ]

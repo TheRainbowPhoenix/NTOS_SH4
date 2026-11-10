@@ -1,0 +1,88 @@
+UserControl
+  .xmlns = 'http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+  .xmlns:x = 'http://schemas.microsoft.com/winfx/2006/xaml'
+  .xmlns:local = 'using:CalculatorApp'
+  .xmlns:controls = 'using:CalculatorApp.Controls'
+  .xmlns:common = 'using:CalculatorApp.Common'
+  .xmlns:d = 'http://schemas.microsoft.com/expression/blend/2008'
+  .xmlns:mc = 'http://schemas.openxmlformats.org/markup-compatibility/2006'
+  .x:Class = 'CalculatorApp.CalculatorProgrammerDisplayPanel'
+  .Resources: [
+    Style [Key=WordSizeButtonStyle]
+      .TargetType = 'ToggleButton'
+      .BasedOn = '{StaticResource CaptionToggleButtonStyle}'
+      Setter
+        .Property = 'ColumnSpan'
+        .Value = 7
+      Setter
+        .Property = 'HorizontalAlignment'
+        .Value = 'Center'
+      Setter
+        .Property = 'Padding'
+        .Value = '12,0'
+      Setter
+        .Property = 'Foreground'
+        .Value = '{ThemeResource SystemControlForegroundAccentBrush}'
+  ]
+  .Content:
+    Grid [x:Name=ProgrammerDisplay, #conn1]
+      .ColumnDefinitions: [
+        ColumnDefinition
+          .Width = '*'
+          .MaxWidth = 80.0
+        ColumnDefinition
+          .Width = '*'
+          .MaxWidth = 80.0
+        ColumnDefinition
+          .Width = '0.01*'
+        ColumnDefinition
+          .Width = '*'
+          .MaxWidth = 80.0
+        ColumnDefinition
+          .Width = '*'
+          .MaxWidth = 80.0
+        ColumnDefinition
+          .Width = '*'
+          .MaxWidth = 80.0
+        ColumnDefinition
+          .Width = '*'
+          .MaxWidth = 80.0
+      ]
+      .Children: [
+        RadioButton [x:Name=numberPad, x:Uid=numberPad, #conn2]
+          .AutomationId = 'numberPad'
+          .Style = '{ThemeResource PathRadioButtonStyle}'
+          .MinWidth = 10.0
+          .MinHeight = 14.0
+          .Content = 'F1M182.3872,306.1782L180.3872,306.1782L180.3872,304.1782L182.3872,304.1782L182.3872,306.1782L182.3872,306.1782 M186.3872,306.1782L184.3872,306.1782L184.3872,304.1782L186.3872,304.1782L186.3872,306.1782L186.3872,306.1782 M190.3872,306.1782L188.3872,306.1782L188.3872,304.1782L190.3872,304.1782L190.3872,306.1782L190.3872,306.1782 M182.3872,310.1782L180.3872,310.1782L180.3872,308.1782L182.3872,308.1782L182.3872,310.1782L182.3872,310.1782 M186.3872,310.1782L184.3872,310.1782L184.3872,308.1782L186.3872,308.1782L186.3872,310.1782L186.3872,310.1782 M190.3872,310.1782L188.3872,310.1782L188.3872,308.1782L190.3872,308.1782L190.3872,310.1782L190.3872,310.1782 M182.3872,314.1782L180.3872,314.1782L180.3872,312.1782L182.3872,312.1782L182.3872,314.1782L182.3872,314.1782 M186.3872,314.1782L184.3872,314.1782L184.3872,312.1782L186.3872,312.1782L186.3872,314.1782L186.3872,314.1782 M186.3872,318.1782L184.3872,318.1782L184.3872,316.1782L186.3872,316.1782L186.3872,318.1782L186.3872,318.1782 M190.3872,314.1782L188.3872,314.1782L188.3872,312.1782L190.3872,312.1782L190.3872,314.1782L190.3872,314.1782'
+        RadioButton [x:Name=bitFlip, x:Uid=bitFlip, #conn3]
+          .Column = 1
+          .AutomationId = 'bitFlip'
+          .Style = '{ThemeResource PathRadioButtonStyle}'
+          .MinWidth = 10.0
+          .MinHeight = 14.0
+          .Content = 'M5.0274935,11.045013 C4.4666481,11.045013 4.0119934,11.499892 4.0119934,12.061013 C4.0119934,12.622135 4.4666481,13.077013 5.0274935,13.077013 C5.5883384,13.077013 6.0429935,12.622135 6.0429935,12.061013 C6.0429935,11.499892 5.5883384,11.045013 5.0274935,11.045013 z M5,10.062012 C6.1045694,10.062012 7,10.957442 7,12.062012 C7,13.166581 6.1045694,14.062012 5,14.062012 C3.8954306,14.062012 3,13.166581 2.9999998,12.062012 C3,10.957442 3.8954306,10.062012 5,10.062012 z M2.0115023,6.1700134 C1.450657,6.1700134 0.9960022,6.6248922 0.9960022,7.1860132 C0.9960022,7.7471347 1.450657,8.202013 2.0115023,8.202013 C2.5723472,8.202013 3.0270021,7.7471347 3.0270021,7.1860132 C3.0270021,6.6248922 2.5723472,6.1700134 2.0115023,6.1700134 z M8,5.1870117 C9.1045694,5.1870117 10,6.0824423 10,7.1870117 C10,8.2915812 9.1045694,9.1870117 8,9.1870117 C6.8954306,9.1870117 6,8.2915812 6,7.1870117 C6,6.0824423 6.8954306,5.1870117 8,5.1870117 z M2,5.1870117 C3.1045694,5.1870117 4,6.0824423 4,7.1870117 C4,8.2915812 3.1045694,9.1870117 2,9.1870117 C0.89543056,9.1870117 0,8.2915812 0,7.1870117 C0,6.0824423 0.89543056,5.1870117 2,5.1870117 z M7.9954958,0.99798584 C7.4346504,0.99798584 6.9799957,1.4528646 6.9799957,2.0139856 C6.9799957,2.5751071 7.4346504,3.0299859 7.9954958,3.0299859 C8.5563412,3.0299859 9.0109959,2.5751071 9.0109959,2.0139856 C9.0109959,1.4528646 8.5563412,0.99798584 7.9954958,0.99798584 z M8,0 C9.1045694,0 10,0.89543056 10,2 C10,3.1045694 9.1045694,4 8,4 C6.8954306,4 6,3.1045694 6,2 C6,0.89543056 6.8954306,0 8,0 z M2,0 C3.1045694,0 4,0.89543056 4,2 C4,3.1045694 3.1045694,4 2,4 C0.89543056,4 0,3.1045694 0,2 C0,0.89543056 0.89543056,0 2,0 z'
+        ToggleButton [x:Name=qwordButton, x:Uid=qwordButton, #conn4]
+          .Content = 'QWORD'
+          .Style = '{ThemeResource WordSizeButtonStyle}'
+          .CommandParameter = '0'
+          .AutomationId = 'qwordButton'
+        ToggleButton [x:Name=dwordButton, x:Uid=dwordButton, #conn5]
+          .Content = 'DWORD'
+          .Style = '{ThemeResource WordSizeButtonStyle}'
+          .CommandParameter = '1'
+          .AutomationId = 'dwordButton'
+          .Visibility = 'Collapsed'
+        ToggleButton [x:Name=wordButton, x:Uid=wordButton, #conn6]
+          .Content = 'WORD'
+          .Style = '{ThemeResource WordSizeButtonStyle}'
+          .CommandParameter = '2'
+          .AutomationId = 'wordButton'
+          .Visibility = 'Collapsed'
+        ToggleButton [x:Name=byteButton, x:Uid=byteButton, #conn7]
+          .Content = 'BYTE'
+          .Style = '{ThemeResource WordSizeButtonStyle}'
+          .CommandParameter = '3'
+          .AutomationId = 'byteButton'
+          .Visibility = 'Collapsed'
+      ]
