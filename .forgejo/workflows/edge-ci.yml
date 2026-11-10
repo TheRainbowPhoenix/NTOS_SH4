@@ -40,6 +40,7 @@ jobs:
               rm -rf "$OUT"; mkdir -p "$OUT"
               cp "$LOG" "$OUT/edge-ci.log"
               cp edge/ntos_linux/*.png "$OUT/" 2>/dev/null || true
+              cp edge/app/edge-*.png "$OUT/" 2>/dev/null || true
               export GIT_INDEX_FILE="$GITHUB_WORKSPACE/ci.index"
               rm -f "$GIT_INDEX_FILE"
               git read-tree --empty
@@ -91,9 +92,9 @@ jobs:
 
           # -- build + e2e the NTOS_SH4_linux env with the sample payload --
           make -C edge/ntos_linux ZIG=$(command -v zig) clean all
-          ./edge/ntos_linux/ntos_linux edge/ntos_linux/sample.dll \
-            --script edge/ntos_linux/tests/sample.script --shot ci --fs edge/ntos_linux/tests/fs
-          python3 edge/ntos_linux/tests/check_shots.py edge/ntos_linux/ci-*.png
+          (cd edge/ntos_linux && ./ntos_linux sample.dll \
+            --script tests/sample.script --shot ci --fs tests/fs && \
+            python3 tests/check_shots.py ci-*.png && rm -f ci-*.png)
 
           # -- Edge POC: uXAML markup -> edge.dll -> scripted UI e2e --
           make -C edge/app ZIG=$(command -v zig) clean all test
