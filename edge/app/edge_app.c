@@ -113,6 +113,8 @@ NT_IMPORT(void, md_paint, (const MdHost *, int, int, int, int))
 NT_IMPORT(void, md_size, (int *, int *))
 NT_IMPORT(const char *, md_title, (int *))
 NT_IMPORT(int, md_find, (const char *, int *, int *, int *, int))
+NT_IMPORT(const char *, md_find_text, (int, int *))
+
 NT_IMPORT(int, md_link_at, (int, int, const char **, int *))
 NT_IMPORT(int, md_anchor_scroll, (int))
 NT_DEFINE(md_set_host)
@@ -124,6 +126,8 @@ NT_DEFINE(md_paint)
 NT_DEFINE(md_size)
 NT_DEFINE(md_title)
 NT_DEFINE(md_find)
+NT_DEFINE(md_find_text)
+
 NT_DEFINE(md_link_at)
 NT_DEFINE(md_anchor_scroll)
 /* nav-bar chrome: imported from SHELLCHROME.DLL (UIXChromeFactory is the
@@ -517,7 +521,7 @@ static const U32 edge_theme_dark[] = {
     RGB_(0xCC, 0xCC, 0xCC), /* 9 CTRL_EDGE  unchecked border       */
     RGB_(0xFF, 0xFF, 0xFF), /* 10 FIELD_EDGE input border/hint     */
     RGB_(0x00, 0x00, 0x00), /* 11 NAV_BG    nav bar strip (black)  */
-    RGB_(0xFF, 0xFF, 0xFF), /* 12 NAV_INK   nav bar glyphs (white) */
+    RGB_(0xBD, 0xBE, 0xBD), /* 12 NAV_INK   nav bar glyphs (grey, settings_1.png) */
 };
 static const U32 edge_theme_light[] = {
     RGB_(0xF7, 0xF3, 0xF7), /* 0 SURFACE   keyboard backdrop        */
@@ -710,6 +714,10 @@ static int mdh_text_w(const char *s, int len, int h)
 static void mdh_svf(void *dc, const unsigned char *data, unsigned len,
                     int x, int y, int w, int h)
 {
+    /* SVF recolouring is pigment-aware: neutral (near-white) art —
+     * VEC assets authored for dark tiles, like logo.svf — takes the
+     * black tint so it stays visible on the white page, while real
+     * colour illustrations keep their palette (svf.c ink()). */
     SVFDrawTint(dc, data, len, x, y, w, h, RGB_(0x00, 0x00, 0x00));
 }
 static void mdh_ellipse(void *dc, int l, int t, int r, int b, unsigned c,
@@ -758,13 +766,20 @@ static void find_run(void)
 }
 static void paint_find_highlights(void *dc, int clip_bottom)
 {
+    /* no alpha blending on this display: draw the highlight box, then
+     * repaint the matched text on top (original case from the engine,
+     * falling back to the typed query) so matches stay readable */
     for (int i = 0; i < find_nmatch; ++i) {
         int y = fm_y[i] - web_scroll_y;
         int x = fm_x[i] - web_scroll_x;
         if (y + 14 > clip_bottom || y < 0)
             continue;
         U32 c = i == find_active ? RGB_(0xFF, 0x8C, 0x00) : RGB_(0xFF, 0xD7, 0x00);
-        fill(dc, x - 2, y - 2, x + fm_w[i] + 2, y + 13, c);
+        fill(dc, x - 2, y, x + fm_w[i] + 2, y + 15, c);
+        const char *mt = NT_CALL(md_find_text, (i, 0));
+        if (!mt)
+            mt = find_query;
+        draw_text(dc, x, y + 2, mt, RGB_(0x00, 0x00, 0x00), 14, 0, 0);
     }
 }
 
@@ -1401,15 +1416,16 @@ static void paint_settings_page(void *dc)
         max_scroll = 0;
     if (set_scroll > max_scroll)
         set_scroll = max_scroll;
-    clip_set(0, 0, 320, 487);
+    clip_set(0, 0, 320, 480);
     layout_doc(d, 0, -set_scroll, 320, 528);
     paint_node(dc, d->root);
     clip_set(0, 0, 320, 528);
     /* scrollbar per settings_2_advanced_scolled.png: 2px track at the
-     * right edge, proportional thumb, chevrons at both ends */
+     * right edge, proportional thumb, chevrons at both ends; the bar
+     * stops at y477 — the nav bar owns everything from y480 down */
     if (max_scroll > 0 && set_scroll > 0) { /* W10M fades the bar at rest */
-        fill(dc, 316, 4, 318, 483, RGB_(0x1A, 0x1A, 0x1A));
-        int track_h = 479 - 2 * 12; /* leave room for the chevrons */
+        fill(dc, 316, 4, 318, 477, RGB_(0x1A, 0x1A, 0x1A));
+        int track_h = 446; /* y16..462, between the two chevrons */
         int thumb_h = SET_VIEW_H * track_h / total;
         if (thumb_h < 24)
             thumb_h = 24;
@@ -1418,7 +1434,7 @@ static void paint_settings_page(void *dc)
         int ty = 16 + set_scroll * (track_h - thumb_h) / max_scroll;
         fill(dc, 316, ty, 318, ty + thumb_h, RGB_(0x76, 0x76, 0x76));
         ic_draw(ifill, dc, 310, 2, 10, C_MUT, IC_CHEVD);
-        ic_draw(ifill, dc, 310, 477, 10, C_MUT, IC_CHEVU);
+        ic_draw(ifill, dc, 310, 464, 10, C_MUT, IC_CHEVU);
     }
     /* open flyout over the dropdown box (selected row aligned on the box) */
     if (dd_open) {

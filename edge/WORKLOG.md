@@ -299,3 +299,51 @@ called out (settings/toggles/dropdowns/nav bar, keyboard context, md pages):
 
 States in CI: 27 shots, 21 against device references, all >= 80% blocks
 (16x16/48 tol) + presence probes. Next: FileExplorer port reuse of UXCTL.
+
+## Session 6 — the 8px nav gap, md layout quality, find repaint
+
+User-driven quality pass (every light-mode screen had an 8px glitch band;
+md pages regressed on margins/lists/images; find highlight hid the text):
+
+- **Nav bar owns the full strip** (shellchrome.c): navigation_paint covered
+  only y488..528 (40px) while the system bar is y480..528 — the 8px slice
+  y480..487 was never repainted, so the last keyboard frame bled through
+  under every light-mode toolbar (light-inpriv's black bar, md-reader's
+  clipped SIP). Now fills y480..528 and the icons are re-centred on the
+  reference captures: back arrow (2px shaft y503-504 + 3px chevron), the
+  W10 window-flag home glyph (right pane taller, 1px centre split), 2px
+  magnifier ring + handle — measured from light/inprivate.png and
+  settings_1.png. Dark NAV_INK is the reference grey #BDBEBD, not white.
+  Hit zones y>=480, navheight 48.
+- **MARKDOWN engine layout fixes** (payload/phone/markdown.c):
+  - UA body margin 4px (browser default): applied at the root for md /
+    body-less html, via TG_BODY UA margins when a real <body> exists —
+  text never touches the screen edge; author CSS still overrides.
+  - tall inline images grow the line box BEFORE anchoring: a 64px svf
+  used to anchor its top 47px above the line start, overlaying the
+  blocks above (edge-mdpage svf-over-text bug).
+  - ordered-list markers right-align against the content box (text_w
+  measured); "1." used to sit at x=-2 and clip.
+  - raw <script>/<style> inside markdown: forwarded to the CHAKRA hook /
+  CSS parser and never rendered (the alert() body used to paint as
+  text); raw <hr> lines open a real HR block; [ref]: definitions no
+  longer leak ": url" into paragraphs.
+  - bare http(s) URLs linkify: the plain-run scanner now stops before a
+  URL (it used to swallow it into black text), and the bare-url/
+  autolink branches carry a depth guard — a URL as link text re-entered
+  the branch with identical input and blew the stack (ASan-confirmed).
+  - md_find_text(idx): new export returning the matched source text
+  (original case) so hosts can repaint it over the opaque highlight.
+- **find-in-page repaint** (edge_app.c): the yellow/orange boxes are
+  opaque, so the matched text is redrawn on top in black — matches stay
+  readable (no alpha on this display).
+- svf page art: black-tinted through the pigment-aware ink() (white VEC
+  art becomes visible black; coloured art keeps its palette).
+- settings scrollbar stops at y477 (above the nav bar); nav-glyph probes
+  re-centred on the new icon geometry with the grey-ink threshold.
+- MDSmokeTest: the find check could never pass (zeroed host has no
+  text_w — silent since day one); it now runs with a metric hook and
+  also verifies md_find_text. 0x100F = all four.
+
+States in CI: 44 shots, all reference-matched states >= 94.5% blocks,
+probes green. Local: chakra + markdown smoke entries pass.

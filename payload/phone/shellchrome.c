@@ -24,17 +24,32 @@ static void navigation_paint(void *dc, const Render *r)
 {
     U32 bg = nav_th(r, UIX_TH_NAV_BG, PANEL);
     U32 ink = nav_th(r, UIX_TH_NAV_INK, INK);
-    r->clip(0, 488, 320, 528);
-    r->fill(dc, 0, 488, 320, 528, bg);
-    r->line(dc, 55, 508, 75, 508, ink);
-    r->line(dc, 55, 508, 63, 500, ink);
-    r->line(dc, 55, 508, 63, 516, ink);
-    r->fill(dc, 151, 499, 159, 507, ink);
-    r->fill(dc, 161, 499, 169, 507, ink);
-    r->fill(dc, 151, 509, 159, 517, ink);
-    r->fill(dc, 161, 509, 169, 517, ink);
-    r->ellipse(dc, 258, 504, 7, 7, ink, 1);
-    r->line(dc, 253, 510, 246, 518, ink);
+    /* the system nav bar owns the full 48px strip y480..528 (light
+     * refs: toolbar e7e7e7 ends at y479, bar cecfce starts at y480);
+     * painting the whole strip also erases any stale SIP pixels left
+     * in the gap when the keyboard hid (the old 488..528 bar left an
+     * 8px keyboard sliver visible under the toolbar). */
+    r->clip(0, 480, 320, 528);
+    r->fill(dc, 0, 480, 320, 528, bg);
+    /* back: left-pointing arrow, 2px shaft + 3px chevron, centred on
+     * the strip (settings_1.png: tip x54, shaft y503-504, arms to y495/512) */
+    r->fill(dc, 55, 503, 75, 505, ink);
+    for (int i = 0; i < 8; ++i) {
+        r->fill(dc, 62 - i, 495 + i, 65 - i, 496 + i, ink);
+        r->fill(dc, 55 + i, 505 + i, 58 + i, 506 + i, ink);
+    }
+    /* home: the W10 window flag — right pane taller than the left,
+     * 1px centre split, diagonal corner cuts (settings_1.png) */
+    r->fill(dc, 159, 495, 169, 512, ink); /* right pane  */
+    r->fill(dc, 164, 494, 169, 495, ink); /* top corner  */
+    r->fill(dc, 166, 512, 169, 513, ink); /* bottom edge */
+    r->fill(dc, 150, 496, 158, 511, ink); /* left pane   */
+    r->fill(dc, 150, 501, 158, 502, bg);  /* centre split */
+    r->fill(dc, 159, 501, 169, 502, bg);
+    /* search: magnifier — 2px ring + diagonal handle */
+    r->ellipse(dc, 259, 500, 6, 6, ink, 2);
+    r->line(dc, 252, 507, 246, 513, ink);
+    r->line(dc, 253, 507, 247, 513, ink);
     r->clip(0, 0, 320, 528);
 }
 
@@ -127,7 +142,7 @@ static int input(U32 msg, U32 wp, U32 lp)
         }
         return 1;
     }
-    if (!panel && nav && msg == WM_DOWN_ && y >= 488) {
+    if (!panel && nav && msg == WM_DOWN_ && y >= 480) {
         nav_touch = 1;
         nav_x = x;
         nav_y = y;
@@ -235,7 +250,7 @@ static int expanded(void)
 }
 static int navheight(void)
 {
-    return nav ? 40 : 0;
+    return nav ? 48 : 0;
 }
 static const Chrome chrome = {PROFILE,  paint,     input,
                               expanded, navheight, SetIsNavigationBarVisible};
@@ -275,7 +290,7 @@ static int hosted_input(U32 msg, U32 wp, U32 lp)
         }
         return 1;
     }
-    if (nav && msg == WM_DOWN_ && y >= 488) {
+    if (nav && msg == WM_DOWN_ && y >= 480) {
         nav_touch = 1;
         nav_x = x;
         nav_y = y;
@@ -321,7 +336,7 @@ int SetSipVisibility(int visible)
 }
 int GetNavigationBarHeight(void)
 {
-    return nav ? 40 : 0;
+    return nav ? 48 : 0;
 }
 int GetIsNavigationBarVisible(void)
 {

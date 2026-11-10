@@ -69,6 +69,9 @@ void MD_API md_paint(const MdHost *h, int sx, int sy, int vw, int vh);
 void MD_API md_size(int *w, int *h); /* laid-out page extent */
 const MD_API char *md_title(int *len); /* <title> / first h1 / frontmatter */
 int MD_API md_find(const char *query, int *x, int *y, int *w, int cap);
+/* source text of match idx (original case): the host repaints it over
+ * the opaque highlight box since the platform has no alpha blending */
+const MD_API char *md_find_text(int idx, int *len);
 /* returns 1 + fills href when (x,y) page coords hit a laid-out link */
 int MD_API md_link_at(int x, int y, const char **href, int *len);
 int MD_API md_anchor_scroll(int y); /* clamp a scroll target, returns it */

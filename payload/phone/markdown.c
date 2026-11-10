@@ -1425,6 +1425,51 @@ static const char *html_inline_tag(HParser *ps, const char *p, const char *end)
         lname[i] = (char)xlow((unsigned char)tg[i]);
     lname[tl] = 0;
 #define TG_IS(s) (tl == xlen(s) && xeq(lname, s, tl))
+    /* raw <script>/<style> blocks inside markdown: never visible; the
+     * script body goes to the CHAKRA host hook, the style body to the
+     * CSS parser (same policy as the html dialect). */
+    if (TG_IS("script") && !close) {
+        const char *b = tagend + 1;
+        const char *q = b;
+        while (q + 7 < end &&
+               !(q[0] == '<' && q[1] == '/' && xlow((unsigned char)q[2]) == 's' &&
+                 xlow((unsigned char)q[3]) == 'c'))
+            ++q;
+        if (g_host && g_host->chakra && q > b) {
+            int n = (int)(q - b);
+            if (n > 400)
+                n = 400;
+            static char sbuf[404];
+            for (int i = 0; i < n; ++i)
+                sbuf[i] = b[i];
+            sbuf[n] = 0;
+            g_host->chakra(sbuf);
+        }
+        while (q < end && *q != '>')
+            ++q;
+        return q < end ? q + 1 : end;
+    }
+    if (TG_IS("style") && !close) {
+        const char *b = tagend + 1;
+        const char *q = b;
+        while (q + 8 < end &&
+               !(q[0] == '<' && q[1] == '/' && xlow((unsigned char)q[2]) == 's' &&
+                 xlow((unsigned char)q[3]) == 't' && xlow((unsigned char)q[4]) == 'y'))
+            ++q;
+        if (q > b) {
+            int n = (int)(q - b);
+            if (n > 900)
+                n = 900;
+            static char cbuf[904];
+            for (int i = 0; i < n; ++i)
+                cbuf[i] = b[i];
+            cbuf[n] = 0;
+            css_parse(cbuf);
+        }
+        while (q < end && *q != '>')
+            ++q;
+        return q < end ? q + 1 : end;
+    }
     if (!close) {
         if (TG_IS("br")) {
             add_inl(ps, T_BR);
@@ -2003,20 +2048,24 @@ static void md_inline(HParser *ps, const char *s, int len, int depth)
             ++i;
             continue;
         }
-        /* autolink <http://x> */
+        /* autolink <http://x> — depth guard: inside link text the url
+         * would re-match as a bare url and recurse forever */
         if (c == '<' && i + 1 < len && (s[i + 1] == 'h' || s[i + 1] == 'w')) {
             int j = i + 1;
             while (j < len && s[j] != '>' && s[j] != ' ' && s[j] != '<')
                 ++j;
-            if (j < len && s[j] == '>' && j - i > 8) {
+            if (j < len && s[j] == '>' && j - i > 8 && depth == 0) {
                 md_link_core(ps, s, i + 1, j, s + i + 1, j - i - 1);
                 i = j + 1;
                 continue;
             }
         }
-        /* bare url */
-        if ((c == 'h' && i + 7 <= len && xeq(s + i, "http://", 7) != 0) ||
-            (c == 'h' && i + 8 <= len && xeq(s + i, "https://", 8) != 0)) {
+        /* bare url — same depth guard: a bare url as link text
+         * (md_link_core re-parses the label) re-entered this branch
+         * with identical input and blew the stack */
+        if (depth == 0 &&
+            ((c == 'h' && i + 7 <= len && xeq(s + i, "http://", 7) != 0) ||
+             (c == 'h' && i + 8 <= len && xeq(s + i, "https://", 8) != 0))) {
             int j = i;
             while (j < len && s[j] != ' ' && s[j] != ')' && s[j] != '<' &&
                    s[j] != '"' && s[j] != '\'' && s[j] != ',' && s[j] != ';')
@@ -2107,9 +2156,15 @@ static void md_inline(HParser *ps, const char *s, int len, int depth)
         int j = i + 1;
         while (j < len && s[j] != '*' && s[j] != '_' && s[j] != '`' &&
                s[j] != '[' && s[j] != '!' && s[j] != '~' && s[j] != '<' &&
-               s[j] != '\\')
+               s[j] != '\\') {
+            /* stop before a bare url so the branch above can link it
+             * (the run scanner used to swallow urls into plain text) */
+            if (depth == 0 && s[j] == 'h' &&
+                ((j + 7 <= len && xeq(s + j, "http://", 7)) ||
+                 (j + 8 <= len && xeq(s + j, "https://", 8))))
+                break;
             ++j;
-        /* include a bare http run start */
+        }
         emit_escaped(ps, s + i, j - i);
         i = j;
     }
@@ -2140,6 +2195,44 @@ static int line_is_hr(const char *p, int len)
             return 0;
     }
     return n >= 3;
+}
+
+/* a line that is just a raw <hr> / <hr/> / <hr attr..> tag */
+static int line_is_html_hr(const char *p, int len)
+{
+    int i = 0;
+    while (i < len && (p[i] == ' ' || p[i] == '\t'))
+        ++i;
+    if (i + 4 > len || p[i] != '<' ||
+        xlow((unsigned char)p[i + 1]) != 'h' ||
+        xlow((unsigned char)p[i + 2]) != 'r')
+        return 0;
+    i += 3;
+    while (i < len && p[i] != '>')
+        ++i;
+    if (i >= len)
+        return 0;
+    ++i;
+    while (i < len && (p[i] == ' ' || p[i] == '\t' || p[i] == '\r'))
+        ++i;
+    return i == len;
+}
+
+/* a reference-definition line: [id]: url — collected by md_collect_refs,
+ * must not render (it used to leak ": url" into the paragraph text) */
+static int line_is_ref_def(const char *p, int len)
+{
+    if (len < 4 || p[0] != '[')
+        return 0;
+    int i = 1;
+    while (i < len && p[i] != ']')
+        ++i;
+    if (i >= len || i == 1 || p[i + 1] != ':')
+        return 0;
+    int j = i + 2;
+    while (j < len && (p[j] == ' ' || p[j] == '\t'))
+        ++j;
+    return j < len;
 }
 
 static int li_marker(const char *p, int len, int *content_at, int *ordered,
@@ -2312,8 +2405,10 @@ static void md_blocks(HParser *ps, const char *p, const char *end, MdLists *ls)
                 continue;
             }
         }
-        /* hr */
-        if (line_is_hr(s, len)) {
+        /* hr: markdown dashes-stars-underscores rule, or a raw <hr>
+         * line (common in real-world md; the inline path cannot open
+         * blocks) */
+        if (line_is_hr(s, len) || line_is_html_hr(s, len)) {
             if (para_open) { ps_close_block(ps, TG_P); para_open = 0; }
             md_close_lists(ps, ls, 0);
             quote_blk = -1;
@@ -2503,6 +2598,12 @@ static void md_blocks(HParser *ps, const char *p, const char *end, MdLists *ls)
         if (blank_seen && ls->list_lvl > 0 && indent < 2) {
             md_close_lists(ps, ls, 0);
         }
+        /* reference definition lines are consumed by md_collect_refs;
+         * they close any open paragraph and render nothing */
+        if (line_is_ref_def(s, len)) {
+            if (para_open) { ps_close_block(ps, TG_P); para_open = 0; }
+            continue;
+        }
         blank_seen = 0;
         /* paragraph continuation / start */
         if (!para_open) {
@@ -2604,6 +2705,7 @@ static void resolve_style(int bi, int cw, const RSt *par, RSt *r)
     case TG_DD: r->m[0] = 2; r->p[3] = 22; break;
     case TG_A: r->fg = 0xAD4506; break; /* #0645AD */
     case TG_FORM: r->m[0] = r->m[2] = 2; break;
+    case TG_BODY: r->m[0] = r->m[1] = r->m[2] = r->m[3] = 4; break;
     case TG_ADDRESS: r->fstyle = 1; break;
     case TG_SMALL: r->fs = (short)(base_fs - 2); break;
     case TG_BIG: r->fs = (short)(base_fs + 2); break;
@@ -2922,7 +3024,16 @@ static void emit_marker(int bi, RSt *r, int bx, int by)
     if (r->mark) {
         int n = blks[bi].level;
         const char *t = marker_text(n);
-        op_text(bx - 22, by, t, xlen(t), r->fg, r->fh, 0, -1);
+        /* right-align the number so it hugs the content box (the
+         * browser marker box); a fixed -22 offset pushed "1." to
+         * x<0 where it clipped at the screen edge */
+        int tl = xlen(t);
+        int tw = g_host && g_host->text_w
+                     ? g_host->text_w(t, tl, r->fh)
+                     : tl * r->fh / 2;
+        if (tw > 18)
+            tw = 18;
+        op_text(bx - 6 - tw, by, t, tl, r->fg, r->fh, 0, -1);
     } else {
         op_fill(bx - 12, by + r->fh / 2 - 1, 4, 5, r->fg);
     }
@@ -3186,6 +3297,14 @@ int layout_inline(int bi, int cx, int cy, int cw)
                 float_band(y, y + lh, cx, cx + cw, &ln.a0, &ln.a1);
                 x = ln.a0;
             }
+            /* grow the line BEFORE placing: a tall image extends the
+             * line box downward (CSS line-box growth). The old code
+             * computed iy first, so a 64px image anchored its top 47px
+             * ABOVE the line start and overlapped the blocks above. */
+            if (ih > lh) {
+                lh = ih + 2;
+                float_band(y, y + lh, cx, cx + cw, &ln.a0, &ln.a1);
+            }
             int iy = y + lh - ih;
             if (it->kind == T_IMG) {
                 if (nops < NOPS && it->img >= 0) {
@@ -3204,10 +3323,6 @@ int layout_inline(int bi, int cx, int cy, int cw)
                          it->h, fh);
                 if (nops > 0 && ln.n < 30)
                     ln.ops_idx[ln.n++] = nops - 1;
-            }
-            if (ih > lh) {
-                lh = ih + 1;
-                float_band(y, y + lh, cx, cx + cw, &ln.a0, &ln.a1);
             }
             x += iw + 3;
             ln.w = x - ln.a0;
@@ -3361,6 +3476,15 @@ void md_paint(const MdHost *h, int sx, int sy, int vw, int vh)
 }
 
 /* =============== find-in-page =============== */
+/* matched substrings (original case) for highlight repaints: the host
+ * has no alpha blending, so it draws the yellow box and then redraws
+ * this text on top — it needs the exact source spelling, not the
+ * typed query ("exam" may have matched "Exam"). */
+#define MD_FIND_MAX 24
+#define MD_FIND_TXT 44
+static char find_txt[MD_FIND_MAX][MD_FIND_TXT];
+static int find_txt_n;
+
 int md_find(const char *query, int *x, int *y, int *w, int cap)
 {
     if (!query || !g_host || !g_host->text_w)
@@ -3369,6 +3493,7 @@ int md_find(const char *query, int *x, int *y, int *w, int cap)
     if (ql <= 0)
         return 0;
     int n = 0;
+    find_txt_n = 0;
     int i = 0;
     static char linebuf[192];
     while (i < nops && n < cap) {
@@ -3421,12 +3546,29 @@ int md_find(const char *query, int *x, int *y, int *w, int cap)
                 x[n] = px + ops[start].x;
                 y[n] = ops[start].y - 2;
                 w[n] = wl;
+                if (n < MD_FIND_MAX) {
+                    int cp = ql < MD_FIND_TXT - 1 ? ql : MD_FIND_TXT - 1;
+                    for (int k = 0; k < cp; ++k)
+                        find_txt[n][k] = linebuf[q + k];
+                    find_txt[n][cp] = 0;
+                }
                 ++n;
                 q += ql - 1;
             }
         }
     }
+    find_txt_n = n < MD_FIND_MAX ? n : MD_FIND_MAX;
     return n;
+}
+
+/* the source text of match idx (for highlight repaint; see above) */
+const MD_API char *md_find_text(int idx, int *len)
+{
+    if (idx < 0 || idx >= find_txt_n || idx >= MD_FIND_MAX)
+        return 0;
+    if (len)
+        *len = xlen(find_txt[idx]);
+    return find_txt[idx];
 }
 
 /* =============== link hit-test =============== */
@@ -3680,7 +3822,25 @@ void md_layout(int view_w)
     RSt rootrs;
     resolve_style(0, view_w, 0, &rootrs);
     rs_[0] = rootrs;
-    layout_children(0, 0, 0, view_w, 0);
+    /* browser-default body inset (UA body { margin: 4px }): when the
+     * document has a real <body> element its own UA margin (see
+     * resolve_style) provides the inset; md dialects and body-less
+     * html get it applied at the root instead, so text never touches
+     * the screen edge. Author CSS on body still overrides. */
+    int has_body = 0;
+    for (int c = blks[0].first_child; c >= 0 && !has_body; c = blks[c].next_sib)
+        if (blks[c].tag == TG_BODY)
+            has_body = 1;
+        else /* <html><body>: body can sit one level under an <html> child */
+            for (int g = blks[c].first_child; g >= 0; g = blks[g].next_sib)
+                if (blks[g].tag == TG_BODY) {
+                    has_body = 1;
+                    break;
+                }
+    if (has_body)
+        layout_children(0, 0, 0, view_w, 0);
+    else
+        layout_children(0, 4, 4, view_w - 8, 0);
     /* canvas colour: html/body bg or white (reader: warm paper) */
     unsigned canvas = 0xFFFFFF;
     if (g_reader) {
@@ -3768,6 +3928,11 @@ int md_anchor_scroll(int y)
 /* self-test entry (host: ntos_linux markdown.dll --entry MDSmokeTest).
  * Loads a markdown + an html source, lays out both, and returns a packed
  * pass code so CI catches engine regressions without any UI. */
+static int sm_text_w(const char *s, int len, int h)
+{
+    return len * (h * 11 / 20); /* crude monospace metric, layout-only */
+}
+
 MD_API int MDSmokeTest(void)
 {
     static const char MD[] = "# Hello\n\nSome **bold** text and "
@@ -3796,12 +3961,21 @@ MD_API int MDSmokeTest(void)
         if (nflt >= 1 && nblk > 4)
             ok |= 2;
     }
-    /* find-in-page over the md doc */
+    /* find-in-page over the md doc (needs a text_w in the host: the
+     * match offsets are measured with it; the old zeroed host made
+     * this check fail silently since day one) */
     if (md_load(MD_SRC_MD, MD, xlen(MD))) {
         md_layout(300);
         int fx[4], fy[4], fw[4];
-        if (md_find("bold", fx, fy, fw, 4) == 1)
+        g_host = &h;
+        h.text_w = sm_text_w;
+        if (md_find("bold", fx, fy, fw, 4) == 1) {
             ok |= 4;
+            int tl = 0;
+            const char *mt = md_find_text(0, &tl);
+            if (mt && tl == 4 && mt[0] == 'b' && mt[3] == 'd')
+                ok |= 8; /* matched source text for the repaint */
+        }
     }
-    return 0x1000 | ok; /* 0x1007 = all three */
+    return 0x1000 | ok; /* 0x100F = all four */
 }

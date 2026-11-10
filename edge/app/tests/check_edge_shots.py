@@ -248,9 +248,9 @@ PRESENCE = {
     # screen carries probes for content ONLY that page can show.
     'settings': [
         (12, 12, 100, 32, 15, 200, 0),      # SETTINGS title (white)
-        (53, 496, 77, 518, 8, 200, 0),      # nav bar back arrow
-        (149, 497, 170, 518, 30, 200, 0),   # nav bar home squares
-        (244, 496, 268, 518, 8, 200, 0),    # nav bar search
+        (53, 494, 77, 514, 8, 150, 0),      # nav bar back arrow (grey #BDBEBD)
+        (149, 494, 170, 515, 30, 150, 0),   # nav bar home flag
+        (244, 494, 268, 515, 8, 150, 0),    # nav bar search
         (10, 320, 60, 350, 25, 60, 0),      # disabled Sync pill (#4A4A4A)
         (12, 390, 310, 445, 30, 150, 0),    # orange account warning
     ],
@@ -261,12 +261,12 @@ PRESENCE = {
     'settings-scrolled': [
         (12, 132, 170, 172, 10, 200, 0),    # Reading section header
         (12, 36, 310, 76, 30, 150, 0),      # orange warning (top of fold)
-        (53, 496, 77, 518, 8, 200, 0),      # nav bar back
+        (53, 494, 77, 514, 8, 150, 0),      # nav bar back
     ],
     'settings-scrolled-more': [
         (12, 350, 170, 400, 8, 180, 2),     # blue Terms/Privacy links
         (12, 300, 210, 335, 8, 200, 0),     # (c) 2016 Microsoft row
-        (53, 496, 77, 518, 8, 200, 0),      # nav bar back
+        (53, 494, 77, 514, 8, 150, 0),      # nav bar back
     ],
     'advanced': [
         (12, 110, 300, 142, 20, 200, 0),    # "Ask me what to do with each download"
@@ -282,7 +282,7 @@ PRESENCE = {
     'advanced-bottom': [
         (12, 350, 300, 385, 15, 200, 0),    # SmartScreen label
         (10, 410, 60, 435, 30, 180, 2),     # SmartScreen ON pill
-        (53, 496, 77, 518, 8, 200, 0),      # nav bar back
+        (53, 494, 77, 514, 8, 150, 0),      # nav bar back
     ],
     'advanced-cookies-dd': [
         (14, 0, 300, 145, 300, 180, 2),     # selected blue flyout row
@@ -292,7 +292,7 @@ PRESENCE = {
         (12, 250, 320, 292, 15, 200, 0),    # section header
         (12, 176, 184, 212, 15, 200, 0),    # "Report site issue" button label
         (12, 450, 310, 470, 8, 200, 0),     # bottom note
-        (53, 496, 77, 518, 8, 200, 0),      # nav bar back
+        (53, 494, 77, 514, 8, 150, 0),      # nav bar back
     ],
     # markdown "web pages" (no device reference: our own text-page engine)
     'mdpage': [
