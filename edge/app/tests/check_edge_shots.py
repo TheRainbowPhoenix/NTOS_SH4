@@ -274,6 +274,14 @@ ANCHORS = {
         (80, 240, (0xB8, 0xB8, 0xB8)),   # the 27x26 zone flashes #B8B8B8
         (50, 240, (0xE7, 0xE7, 0xE7)),   # the rest of the strip stays #E7E7E7
     ],
+    'edge-search-connect': [
+        (160, 300, (0xFF, 0xFF, 0xFF)),    # white page
+        (100, 510, (0xCE, 0xCF, 0xCE)),    # nav bar
+    ],
+    'edge-search-edge': [
+        (160, 300, (0xFF, 0xFF, 0xFF)),
+        (100, 510, (0xCE, 0xCF, 0xCE)),
+    ],
     'edge-light-find-next': [
         (160, 209, (0x00, 0x79, 0xD6)),  # blue focus underline
         (160, 215, (0xCE, 0xCF, 0xCE)),  # separator
@@ -496,6 +504,18 @@ PRESENCE = {
     ],
     'light-tabs-close-press': [
         (76, 226, 92, 244, 6, -200, 0),   # the X still visible on #B8B8B8
+    ],
+    # search flow: bing.com/search?q=... -> the engine-rendered
+    # "You're not connected" page (search_connect.png copy)
+    'search-connect': [
+        (14, 30, 306, 60, 300, -100, 0),   # "You're not connected" h3
+        (10, 62, 310, 100, 200, -100, 0),  # intro + the query line
+        (10, 100, 310, 130, 150, -100, 0), # the two bullet tips
+        (10, 130, 310, 175, 20, 150, 2),   # the Wireless Settings button (blue)
+    ],
+    'search-edge': [
+        (14, 30, 306, 60, 300, -100, 0),   # heading again
+        (10, 62, 310, 100, 200, -100, 0),  # the query echoed in the intro
     ],
     'light-hub-favorites': [
         (44, 120, 300, 145, 30, -100, 0),  # first favorites row title

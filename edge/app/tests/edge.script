@@ -341,6 +341,36 @@ char 116
 key 13
 shot errorpage
 
+# ---- search flow: a non-URL query (space, or no dot) searches Bing ----
+# the POC is offline, so bing.com/search?q= renders the engine-built
+# "You're not connected" page (fixes_1/search_connect.png)
+tap 158 455
+char 104
+char 111
+char 119
+char 32
+char 116
+char 111
+char 32
+char 102
+char 105
+char 120
+char 32
+char 116
+char 104
+char 105
+char 115
+key 13
+shot search-connect
+# single word without a dot is a query too
+tap 158 455
+char 101
+char 100
+char 103
+char 101
+key 13
+shot search-edge
+
 # ---- render-from-content gate: swap.html vs swap2.html --------------
 # the two files differ ONLY in CSS colour/size values; the renders must
 # differ exactly there (probes in check_edge_shots.py)

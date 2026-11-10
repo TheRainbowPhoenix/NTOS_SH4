@@ -1682,6 +1682,53 @@ static int web_serve(const char *host, const char *url)
          * capture, tests/assets/wiki_cp300.md) — rendered by the engine
          * from the actual content, never procedurally painted */
         body = MW_WIKI_CP300;
+    } else if (xstr_contains(url, "bing.com/search")) {
+        /* offline search results: "You're not connected" (fixes_1/
+         * search_connect.png), engine-rendered from real HTML like the
+         * unknown-host page. The broken-heart art is the one piece the
+         * CSS1 subset can't draw (no border-radius) — the copy, bullets
+         * and the settings button match the capture. */
+        static char spage[1500];
+        int sl = 0;
+        static const char *const SP[] = {
+            "<!DOCTYPE html><html><head><title>You're not connected"
+            "</title></head><body style=\"margin:0;background-color:"
+            "#FFFFFF\"><div style=\"margin:16px 10px;padding:14px 12px;"
+            "border:1px solid #A2A9B1\">"
+            "<h3 style=\"font-size:17px;color:#1A1A1A;margin:0\">"
+            "You're not connected</h3>"
+            "<p style=\"font-size:12px;color:#54595D;margin:10px 0 0\">"
+            "Give the internet a jab while we see what's up. In the"
+            " meantime, try these tips:</p>"
+            "<p style=\"font-size:12px;color:#54595D;margin:6px 0 0\">",
+            "</p>"
+            "<p style=\"font-size:12px;color:#54595D;margin:6px 0 0\">"
+            "&bull; Make sure your device is in airplane mode<br>"
+            "&bull; See if your wireless switch is turned on</p>"
+            "<p style=\"font-size:13px;color:#0078D7;margin:14px 0 0;"
+            "border:1px solid #A2A9B1;padding:9px 6px\">"
+            "Go to Wireless Settings</p>"
+            "</div></body></html>",
+        };
+        for (int e = 0; e < 2; ++e) {
+            const char *q = SP[e];
+            while (*q && sl < (int)sizeof spage - 1)
+                spage[sl++] = *q++;
+            if (!e) { /* the query between the intro and the bullets */
+                const char *qm = xstr_contains(url, "?q=") ? url : 0;
+                if (qm) {
+                    qm += 3;
+                    while (*qm && *qm != '&' && sl < (int)sizeof spage - 1) {
+                        char c = (*qm == '+') ? ' ' : *qm;
+                        spage[sl++] = c;
+                        ++qm;
+                    }
+                }
+            }
+        }
+        spage[sl] = 0;
+        dialect = MD_SRC_HTML;
+        body = spage;
     } else {
         return 0;
     }
@@ -1873,6 +1920,33 @@ static void nav_url(const char *url)
         }
         set_lock_flag();
         return;
+    }
+    /* non-URL text (a space anywhere, or no dot): it's a search query —
+     * navigate to bing.com/search?q=... like W10M's "Search or browse".
+     * The POC is offline, so the results page renders the engine-built
+     * "You're not connected" page; the address bar and the tab keep the
+     * real search URL. */
+    {
+        int dots = 0, spaces = 0;
+        for (const char *q = p; *q; ++q) {
+            if (*q == '.')
+                ++dots;
+            else if (*q == ' ')
+                ++spaces;
+        }
+        if ((spaces || !dots) &&
+            !(p[0] == 'h' && p[1] == 't' && p[2] == 't' && p[3] == 'p')) {
+            static char surl[MAX_URL + 24];
+            int sn = 0;
+            const char *pre = "bing.com/search?q=";
+            while (*pre && sn < (int)sizeof surl - 1)
+                surl[sn++] = *pre++;
+            for (const char *q = p; *q && sn < (int)sizeof surl - 1; ++q)
+                surl[sn++] = (*q == ' ') ? '+' : *q;
+            surl[sn] = 0;
+            p = surl;
+            url = surl;
+        }
     }
     if (p[0] == 'h' && p[1] == 't' && p[2] == 't' && p[3] == 'p') {
         while (*p && *p != '/')
