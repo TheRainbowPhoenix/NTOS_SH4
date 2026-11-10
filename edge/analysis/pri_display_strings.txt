@@ -1,0 +1,1180 @@
+do de seguridad de este sitio web. Esto podr
+a significar que alguien intenta enga
+arte o robar la informaci
+n que env
+as al servidor.
+Microsoft Edge ha bloqueado un elemento emergente.
+RESERVED_FOR_FONTLOC
+En pausa
+Ajustar a la p
+gina
+Cortana
+Pausa
+Configuraci
+n del proxy
+Borrar historial de b
+squedas de Bing
+Direcci
+n en idioma original
+Se interrumpi
+ la descarga.
+No se puede mostrar en vista de lectura
+Para agregar una p
+gina web a tus favoritos, pulsa "..." y, a continuaci
+n, "Agregar a favoritos".
+Notificar como seguro
+Normal
+Tama
+o de fuente
+%1!d!%% de %2 descargado de %3
+Agregar
+Las notas web no est
+n disponibles
+No hay nada que transmitir en esta p
+gina. Prueba una p
+gina con v
+deo, audio o im
+genes m
+s grandes.
+Notificar como seguro
+InPrivate
+Almac
+Ajustar al ancho (Ctrl+Shift+W)
+Agrega p
+ginas a la barra de favoritos seleccionando 
+ u obteni
+ndolos de otro explorador.
+Guardar audio como
+Buscar o escribir direcci
+n web
+Nombre de usuario
+Pegar
+Al usar las pesta
+as de InPrivate, los datos de exploraci
+n (como las cookies, el historial o los archivos temporales) no se guardan en el dispositivo al acabar. Microsoft Edge elimina los datos temporales del dispositivo cuando se cierran todas las pesta
+as de InPrivate.
+Se agreg
+ a la carpeta Im
+genes guardadas.
+LISTA DE LECTURA
+Enviar comentarios
+Versi
+n de escritorio
+Enviar comentarios
+Mostrar iconos y nombres
+Escribir una direcci
+n URL
+Borrar datos de exploraci
+Men
+ de acciones de PDF
+Borrar datos que Cortana guarda en la nube
+No se pudo establecer %s como su motor de b
+squeda predeterminado.
+Internet Explorer
+Lista de lectura
+Pesta
+CONFIGURACI
+Leer la declaraci
+n de privacidad de Microsoft Edge
+Esperando la respuesta de %s
+%1 quiere usar tu ubicaci
+n, pero primero debes ir a Configuraci
+n y activar Ubicaci
+Nota nueva
+Notificaciones
+Aceptar
+Volver a intentarlo
+Seleccionar contenido
+Semana pasada
+Borrar todo el historial
+Copiar
+Para agregar una p
+gina web a tus favoritos, selecciona M
+s y, a continuaci
+n, selecciona Agregar a favoritos.
+Enviaremos la direcci
+n URL de este sitio a Microsoft.
+Microsoft Edge bloque
+ el contenido restringido en este sitio.
+Cambiar
+%d%%
+El sitio contiene amenazas, como software malintencionado, o est
+ suplantando a otro sitio para robar informaci
+n personal.
+Mover a %1
+Escribe el texto que quieres buscar
+Nombre de elemento de Lista de lectura
+Guardar
+Deber
+a confiar en este sitio?
+Ver origen
+Algunos sitios web malintencionados o potencialmente perjudiciales suplantan la direcci
+n URL o el contenido de sitios leg
+timos.
+Crees que esta direcci
+n es correcta?
+Nueva pesta
+%s seleccionado
+Informaci
+n de Cortana
+Sitios principales
+Est
+s explorando InPrivate
+Cancelar
+Reactivar audio
+Quitar
+La semana pasada el %2 de %1 al %4 de %3
+Digitalizando
+Hub
+Permisos de pantalla completa
+Importado de %1
+Buscar en la p
+gina
+No volver a preguntarme acerca de esta aplicaci
+Abrir sitio en una nueva pesta
+URL
+Chrome
+ltima sesi
+No se puede obtener acceso al directorio de descargas.
+Cortana dice "[CortanaText]" (Alt+C)
+Inicio
+Abrir en una nueva pesta
+%1 sugerencia
+Sitio web potencialmente no seguro
+Permitir
+Se descarg
+ el contenido Flash porque usa demasiada memoria.
+Activar de todos modos
+Enviar solicitudes de Do Not Track
+Cerrar pesta
+a (Ctrl+W)
+InPrivate
+No se pudieron importar los favoritos
+Nota web de: 
+Veamos...
+Escribir una direcci
+n URL
+Permitir que %1 use tu micr
+fono?
+Claro
+La semana pasada: del %1 al %2
+Leer la declaraci
+n de privacidad de Microsoft
+Volver a enviar el formulario?
+Panel Almac
+n abierto, elemento de la pesta
+a de rellenos autom
+ticos
+Microsoft Edge
+Activada
+Historial
+Compartir
+Cambiar el valor predeterminado
+Cambiar motor de b
+squeda
+Se eliminar
+ esta carpeta y todo su contenido: 
+Permitir que %1 use tu c
+mara web?
+No se pueden usar las extensiones mientras se examina InPrivate.
+Bloquear todas las cookies
+Ejemplo: 1-3
+Agregar
+Crear nueva carpeta
+No bloquear cookies
+Anterior
+Acercar
+ riesgo existe?
+Contenido no seguro
+Agregar a favoritos o a la lista de lectura
+Detalles de las credenciales web
+Tu organizaci
+n no permite extensiones.
+Predeterminado
+mero total de p
+ginas
+Problema con un sitio web
+Panel Almac
+n abierto, elemento de la pesta
+a de contrase
+No se pudo establecer %s como motor de b
+squeda predeterminado. Int
+ntalo de nuevo m
+s tarde.
+Notificar como no seguro
+Elemento de pesta
+a Lista de lectura
+Pegar
+Crear carpeta
+Todo est
+ listo importar favoritos.
+Experto
+Este sitio web lo administra %1
+s informaci
+Recortar una regi
+Configuraci
+Informar de los comentarios del sitio
+%1 (No responde)
+Esperando para descargar
+Copiar contrase
+DESCARGAS
+Almac
+gina de inicio
+Favoritos
+ (detectado)
+Preguntarme qu
+ hacer con cada descarga
+Pesta
+a InPrivate nueva
+Notas web de Microsoft Edge en %1
+Las notas web no est
+n disponibles
+Permanecer en esta p
+gina
+Bloquear los elementos emergentes
+ Elemento de pesta
+a Favoritos
+Descargas
+Ajustar a la p
+gina
+Pesta
+a nueva (Ctrl+T)
+es-ES\assets\ErrorPages\ErrorPages.html
+es-ES\assets\ErrorPages\PhishSiteEdge.htm
+[mrm_dataitem] 
+4 "
+X a
+0!*
+,"%
+P$8
+x%5
+|&%
+0(.
+x(-
+<)7
+,*.
+l,8
+<-7
+,..
+x._
+(/R
+h0 
+$1$
+ 4m
+D5 
+ 6+
+P8p
+<9)
+x9*
+L<>
+LCf
+PDB
+<FV
+8GI
+,IZ
+@J,
+tJ*
+XKP
+pL6
+lNO
+xO?
+dXW
+(YD
+xY!
+8Z,
+d[2
+p]B
+H^8
+,_i
+,`h
+\cX
+xe 
+$f&
+Lf2
+,h.
+\h8
+0k)
+\k%
+(m'
+Do&
+loC
+,r*
+Xr3
+Importing
+Something went wrong with your extensions, so we had to reinstall them. You'll need to turn them on again.
+Greeting
+Always allow
+Top sites and suggested content
+Let %1 use your webcam and microphone?
+Selected text: 
+%1!ls!
+Identified by %2!ls!
+Click for more information
+Hi, I'm Cortana
+New InPrivate window
+Reopen closed tabs
+Resuming...
+The publisher of this program couldn
+t be verified.
+Off
+We couldn't clear some data because you're not connected to the web. Go online and try again.
+%1, Go back
+Let %1 turn off your mouse pointer?
+Choose a theme
+Web Notes - %1
+%1, Current page
+Open in new tab
+Account settings
+Medium
+Scroll tab list forward
+Save
+4.0
+Feedback & reporting
+Favorite Name
+The signature of this file is corrupt or invalid.
+Continue reading
+Delete
+Privacy and services
+Tab history
+Save Web Note
+Vault pane opened, notes tab item
+Save
+Add
+Notifications permissions
+Favorites
+Large
+Full screen
+But wait, there's more
+%1 is not responding.
+Match Kashida
+Dark
+Move to new window
+Platform controls
+Web Note mode, %1 tab
+Delete
+Show icons only
+Internet Explorer
+Ctrl
+Scanning %1 from %2.
+Won't take long...
+Add to reading list
+You're only seeing secure content
+Add to favorites
+Cancel
+Privacy Statement
+RESERVED_FOR_FONTLOC
+Close tab
+Close
+Delete group %1
+Exit
+Select 
+ in the address bar to add favorites.
+Show the home button
+Run
+Yes
+Unpin
+Unknown
+Don't ask me again when I press F7
+Report unsafe site
+Close
+Include my email
+These let you do things like watch movies and play games.
+%1/sec
+Refresh
+Select 
+ in the address bar to add favorites.
+Small
+The %1 download is paused.
+F12 Developer Tools
+Security Report
+      <div name="images" class="snippet-images-div">
+        <img class="snippet-image-main" width="200" src="%1" />
+        %2%3%4%5
+      </div>
+      <div name="spacer" class="snippet-spacer-div">
+      </div>
+    
+Reading list
+from
+Image for article
+This tab is playing media
+Let %1 show notifications?
+Copied!
+Turn on caret browsing?
+%1 downloaded
+Collapse all
+This warning is incorrect
+Bing Lookup
+What do you want to do with %1 from %2?
+%1 %2 %3
+Back
+Match whole word
+This website was reported to Microsoft because it might contain threats to your PC, your personal data, or your financial info.
+We recommend that you don't visit sites that have been reported for having unsafe content.
+Microsoft Edge reset your default search provider because the default search provider setting was corrupt.
+2.0
+You've reached the limit
+Account
+0.5
+What's new and tips
+Retry
+Microsoft Edge can't open a new tab right now. Please close existing tabs and try again.
+%1 visited %2 %3
+No, this isn't the URL of the site I want to visit.
+Feedback
+Match AlefHamza
+Close anyway
+Do more with Microsoft Edge 
+ the fast, new browser built for Windows 10.
+Delete
+Open in new window
+Pin this page to Start
+Save video as
+%1 wants to send you notifications, but first you need to go to Settings and turn on Notifications.
+Refresh all
+Import favorites
+Delete all visits to %1
+Running security scan
+Delete
+Go forward
+Fit to width (Ctrl+Shift+W)
+No Data to Share.
+added
+%1 of %2, %3 %4
+Close all InPrivate tabs
+Copy link
+Start with
+%1, tab preview
+Save as
+Pan
+Zoom
+Password
+unknown host
+Blocked content
+Share
+Close tab
+Services
+Moderate
+Clear browsing data
+Manage my saved passwords
+%1 (%2)    %3
+Show content
+This tab is recording
+Change account settings
+Close tabs to the right
+Delete
+Unsafe website
+Hey, your files are still downloading...
+Some settings are managed by your organization
+%1 might have been moved or deleted.
+About this app
+hosted by
+Encoded address
+Add new page
+Forward
+Delete credential
+If this is on, you won't be able to open the browser with your previous tabs.
+Expand all
+Extra Large
+Website identification
+Greater than 12 hours
+Favorite root
+Website preference
+%1 has turned off your mouse pointer. Press ESC to turn it back on.
+Pause
+Get your favorites from another browser.
+%1 and %2 more pages -[%3]
+Range
+About
+Manage
+Yesterday
+Expand
+Zoom in
+Click the star to add articles you want to read when you have the time.
+importing
+This tab is recording
+Zoom out
+Save as
+Save as
+%1 is not commonly downloaded and could harm your computer.
+Reading list tab item
+Reopen closed tab
+The signature of %1 is corrupt or invalid.
+ADD TO
+A blank page
+Save form entries
+The %1 download was interrupted.
+Save
+Microsoft Edge blocked a pop-up from %1.
+Ask Cortana
+Tell us more
+Move to New Window
+Save Target As||%1 Document|*%2|
+%1 - [%2]
+Turn them off
+More
+Learn more
+PASSWORDS
+Unsafe website
+Microsoft Edge
+See all content
+To sync, turn on device syncing in Settings.
+Firefox
+Notification
+Share
+Do you want to close all tabs?
+Downloaded
+%1!d!%% of %2 downloaded from %3
+Cancel
+Offer to save passwords
+Delete
+Cut
+Let %1 use your location?
+Previous
+Exit now
+http://go.microsoft.com/fwlink/?LinkId=536624
+View more settings
+Note taken on 
+%1!d! downloads in progress    %2
+Right now you can only have up to %1!d! characters per note. (We're working on making room for more.)
+<div style="font-family: Segoe UI;"><h3>Typed Note %d:</h3>
+Do you want to open %1 (%2) from %3?
+Resume
+A specific page or pages
+Hub
+More options
+Cortana
+Favorite tab item
+%1 %2
+%1 from %2 is being downloaded.
+Close Cortana's suggestions. (ESC)
+Refresh
+Browsing InPrivate
+Include additional info about how your browser is set up
+A security update for %1 is available.
+A specific page
+Microsoft Edge
+Clip
+Microsoft Edge blocked this website from displaying content with security certificate errors.
+New window
+%1/%2
+You'll see current and past downloads here.
+Print
+Save as
+Have Cortana assist me in Microsoft Edge
+This webpage is not responding due to a long-running script.
+Close
+Microsoft EdgeHTML
+Add to the favorites bar by selecting 
+, or by %1 your favorites.
+Reading list
+Save in
+Close tab
+Show notes
+Always close all tabs
+This file contained a virus and was deleted.
+Scroll tab list backward
+Share this password with my other devices
+You're not connected
+Do more with Microsoft Edge 
+ the fast, new browser built for Windows 10
+We couldn't open this page in reading view, but we'll show you the original.
+%1 remaining
+Clear browsing data
+<img class="snippet-image-secondary" width="200" src="%1" />
+    
+Collecting my thoughts...
+Dark
+SmartScreen Filter isn't showing some content on this website. If you choose to see this content and download something from it, it might install other programs you don't want or change your settings (like your home page). So be sure to carefully review what's being installed.
+Settings
+%1 - %2
+Show the favorites bar
+Expert
+Retry
+Pin this page to Start
+Edit credential
+Delete
+Learn more
+Next
+Learn about privacy
+Copy
+Scroll tab list forward
+Add a note
+Media licenses
+Save as
+You should close this site immediately.
+Sites that ask if they can show you notifications will appear here. You can see what permissions they have and also change them.
+Allow
+Terms of use
+Resume
+Save in
+You'll see your browsing history here once you've visited sites.
+View advanced settings
+Page number (Ctrl+G)
+Caret browsing lets you select text using the keyboard. F7 turns on caret browsing for the current tab.
+More settings
+Today
+This warning is incorrect
+%1 - F12 Developer Tools
+Invalid folder name
+International website address
+%1 visited %2
+View favorites settings
+Close Tab
+Share picture
+Tracking protection data
+Fit to width
+Privacy statement
+Back
+Home Page
+Would you like to save your password for %1?
+View note
+Share Web Note
+This tab is casting
+Favorites bar
+Add to reading list
+Features
+Open Microsoft Edge with
+Bing Lookup
+From:  %1!ls!
+Program: %2!ls!
+Address: %3!ls!
+Some data couldn't be cleared. Please try again.
+Folder name
+Favorites Bar
+OneNote
+Refresh
+Let sites store data on my device
+Right now there can only be %1!d! typed notes per page. (We're working on making room for more.)
+Add to favorites
+Make a Web Note
+Match case
+Vault (Passwords, auto form fills, secure notes, and authenticator)
+Create auto fills to speed up data entry.
+Print
+New tab page
+Zoom out (Ctrl-)
+Delete Note %1!d!
+Change what Microsoft Edge knows about me in the cloud
+75%
+Opening...
+Resume
+Cancel
+Let's get you back online
+Choose what to clear
+Show only icons on the favorites bar
+Print
+%1 items
+Stay on top of your reading
+This might not be the site you want
+Save to OneNote tab item
+Open new tabs with
+1.5
+%1    %2
+Copied Web Note clipping to clipboard
+A security update for this program is available.
+%1 item
+Cancel
+TABS
+25%
+Total number of pages
+Zoom out (Ctrl-)
+More info
+Create new folder
+Close other tabs
+Last month
+Are you sure you want to leave this page?
+%1 from %2 is being downloaded.
+Exit
+Back
+History tab item
+Manage passwords
+This file was reported as unsafe by SmartScreen Filter.
+%1 and %2 more pages
+%1 from %2 is paused.
+Name
+Settings
+Download tab item
+Choose one
+Import favorites from another browser
+Pages
+Do you want to choose where this note will appear on the page?
+ms-settings:network-status
+Add some or get your favorites from another browser.
+50%
+Adobe Flash has crashed.
+Microsoft Edge
+History
+Select all
+Sorry, you can't take notes on this page right now.
+Send feedback
+Potentially unsafe content
+Light
+Manage my saved passwords
+International Website Address Report
+RESERVED_FOR_FONTLOC
+Some browsing data couldn't be cleared.
+Form data
+Pin this pane
+This unsafe download was blocked by SmartScreen Filter.
+Invalid favorite name
+Privacy
+Save
+Save picture as
+Favorites
+Import favorites
+Open Feedback Hub
+%1!d! downloads in progress
+Security Report - %1 [%2]
+Show less
+Rename
+0 of 0
+Securely store notes for the important things in life.
+What do you want to do with %1 (%2)?
+From: %3
+200%
+Recover webpage
+This website is trying to open a new window.
+Show search and site suggestions as I type
+Browsing history
+New folder
+Report that this download is safe.
+Options
+Current page
+Last week
+Optimize taskbar web search results for screen readers
+Drag to copy region
+Start page
+InPrivate
+SmartScreen Filter reported %1 as unsafe.
+The note will be placed next to the content you select. To do this, use caret browsing (F7).
+You might lose them if you close the browser.
+Search
+Cookies and saved website data
+%1 tab
+Narrow
+This tab is playing media
+To refresh this page, your browser needs to repeat any actions you've already taken. For example, if you've already entered info into a form, your info will be resubmitted to the site.
+has identified this site as
+Earlier this week
+Sign in to Cortana to get more in Edge
+All done!
+Undo
+Invalid range. Try something like 2-5.
+Reading view
+Play speed
+Web Note made in Microsoft Edge
+Customize Microsoft Edge
+View downloads
+Automatically sync reading list, favorites, and history
+Notification text, %1
+AUTOFILLS
+Location permissions
+Duplicate
+We've blocked content sent over insecure connections to help protect your info.
+Do you want AutoComplete to remember web form entries?
+More options
+Website problems
+Search in the address bar with
+Clearing data...
+%1 is not responding due to a long-running script.
+Don't let this page create more messages
+http://go.microsoft.com/fwlink/?LinkId=521839
+Open with Internet Explorer
+Some Windows features are only available if you are using a Microsoft account or work account.
+Zoom out
+The publisher of %1 couldn
+t be verified.
+Download unsafe file
+Problems with Microsoft Edge browser features or suggestions to make them better.
+Delete cookies
+Share
+All clear!
+The site or parts of the site are broken, don't look right, or are slow to load.
+Horizontal list
+The address for this site contains extended (Unicode) characters.
+Save target as
+Play
+Options
+This webpage is not responding.
+Close this pane
+Do you want to open %1 from %2?
+Help protect me from malicious sites and downloads with SmartScreen Filter
+This site says...
+%1!.512s!
+Report that this download is unsafe
+Clip to OneNote
+Find on page
+Search %s or enter web address
+Delete
+Pin
+Couldn't download %1 from %2.
+Zoom in (Ctrl+)
+Potentially unwanted software
+Allow all pop-ups
+Just a moment...
+Clear
+Save downloaded files to
+Pause
+Searching...
+Don't ask again
+Delete
+Manage notifications
+Undo
+Move up
+International website address
+Favorites
+Print
+Microsoft Edge can't share right now because the page is still loading.
+Back
+This kind of file won't open on your phone.
+Start
+Restarting...
+Created for screen readers
+Hide notes
+Websites you visit won't show up in your browsing history, and Microsoft Edge won't save cookies, temporary internet files, or other info about your browsing session.
+Microsoft Edge was recently updated and your extensions were reinstalled. You'll need to turn them on again.
+This program was blocked by your System Administrator.
+Reading
+ of 
+Cast media to device
+HISTORY
+Always use caret browsing
+See your favorites here
+Change search engine
+Cortana here. Let's get set up.
+Offer to save passwords
+New tab page
+RESERVED_FOR_FONTLOC
+The webpage
+Read the Microsoft privacy statement
+%1 [%2]
+All
+Fit to page (Ctrl+Shift+A)
+Close all
+Fullscreen
+Error
+Always clear this when I close the browser
+%1 visited %2 %3
+Change my default
+Open
+Zoom in (Ctrl+)
+History
+AUTHENTICATOR
+Favorites
+InPrivate
+Last hour
+Open proxy settings
+Settings
+Looking looking looking...
+Save
+New InPrivate tab
+Home
+Open folder
+Past downloads
+Current downloads
+InPrivate
+Save file
+Clearing selected data
+Note %1!d!
+Your note was saved to OneNote.
+Settings
+Name
+Collapse
+Settings
+Done clearing data
+Show more favorites
+New tab
+Web Notes - %1
+Close all InPrivate tabs
+Save folder in
+These services share your browsing history and keystrokes with Microsoft to help improve products and services.
+"Inspect element" and "View source" will now appear in the context menu.
+Your System Administrator blocked %1.
+Cancel
+Go to any page between 1 and %1 (Ctrl+G)
+Pin this pane
+%1 switched to full screen (Esc to exit).
+Use page prediction to speed up browsing, improve reading, and make my overall experience better
+Open in new window
+What do you want to do with %1?
+From: %2
+Import
+Learn about AutoComplete
+Just a sec...
+Exit
+Empty reading list image
+History and Forms
+Some features might save data on your device or send it to Microsoft to improve your browsing experience.
+Save
+Where to next?
+Fit to page (Ctrl+Shift+A)
+Don't show me this again
+Paste and search
+Oops! Looks like we lost connection.
+Shrink to fit
+To add a webpage to your reading list, select More, and then select Add to reading list.
+ (default)
+FAVORITES
+Print (Ctrl+P)
+InPrivate
+You can't write on websites managed by your organization, %1.
+Cookies
+      <html %1 %2>
+        <head>
+          <style>
+            .snippet-div { width:575px; height:155px; overflow:auto; }
+            .snippet-images-div { float:right; position:relative; width:200px; height:150px; }
+            .snippet-image-main { margin-right:auto; max-width:200px; max-height:150px; }
+            .snippet-image-secondary { display:none; }
+            .snippet-spacer-div { float:right; position:relative; width:10px; height:150px; }
+            .snippet-info-div { float:right; position:relative; width:360px; height:150px; }
+            .snippet-info-title-div { direction:rtl; height:30px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            .snippet-info-URL-div { direction:rtl; font:16pt "Segoe UI"; text-decoration:none; color:#1975D1; }
+            .snippet-info-description-div { padding-top:10px; direction:rtl; font:11pt "Segoe UI Semilight"; }
+          </style>
+        </head>
+        <body %1>
+          <div name="snippet" class="snippet-div">
+            <!-- OPTIONAL: image(s) and spacer -->
+            %3
+            <div name="info" class="snippet-info-div">
+              <!-- Title -->
+              <div name="title" class="snippet-info-title-div">
+                <a class="snippet-info-URL-div" href="%5">%4</a>
+              </div>
+              <!-- OPTIONAL: description -->
+              <div name="description" class="snippet-info-description-div">
+                %6
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    
+100%
+Clear all
+Mobile version
+Open in new tab
+Let sites save protected media licenses on my device
+Downloads
+Older
+Block only third party cookies
+Save
+Forward
+Extensions from unknown sources are turned on. They might be risky, so we recommend turning them off.
+View credential
+This tab is casting
+Choose a recent section
+Enter text to search
+Version %1!u!.%2!u!.%3!u!.%4!u!
+Print
+Download history
+Settings
+Change your language settings to see the native language address.
+%1, Go forward
+Folder name
+Sync your favorites and reading list
+%1 contained a virus and was deleted.
+Cancel
+You've reached the limit
+Downloads
+Allow 
+Advanced settings
+Detect phone numbers
+Scroll tab list backward
+unknown content
+Edge can't sync this much content. Delete a few favorites or reading list items to turn syncing back on.
+Smart Lookup
+Mute
+Turn on
+New tab
+Running...
+The publisher of %1 couldn
+t be verified. Are you sure you want to run the program?
+enter reading view
+Add
+Firefox
+Character sets currently in use
+Show more
+URL
+Today
+Pan
+New InPrivate tab
+Send feedback
+Help & about
+Save your changes?
+Couldn't import from %1, but your other favorites are ready and waiting.
+Open with
+Resuming
+Show unsafe content
+Allow this website to open an app?
+Save as (Ctrl+S)
+Delete
+%1 and 1 more page
+InPrivate
+Save picture
+Yes
+SECURE NOTES
+Favorites settings
+Keep them off
+Set as default
+Settings
+Sort by name
+Send feedback
+Manage your tokens used for two-step verification.
+Make room
+Turn off caret browsing?
+Potentially unwanted software
+Margins
+Add a Favorite
+Couldn't clear media licenses that are in use. Try again after restarting Microsoft Edge.
+Keep them on
+Pause
+Use Adobe Flash Player
+Match Diacritic
+%1 - %2
+Save
+Search or browse
+To add a webpage to your reading list, tap "..." and then "Add to reading list."
+Reading view is not available for this page
+More
+Vault pane opened, authenticator tab item
+%1 is unsafe to download and was blocked by SmartScreen Filter.
+Copy
+Delete
+%1!ls! [%2!ls!]
+Change account settings
+Import favorites
+Remove
+Saving...
+Folder
+Open folder
+Couldn't import from %1 and %2, but your other favorites are ready and waiting.
+Surveying...
+Paste and go
+Cached data and files
+Show tab previews
+Tell us what's going on
+Your connection to the server is encrypted.
+Find on page
+%1 switched to full screen.
+Stop
+Hub (Favorites, reading list, history, and downloads)
+Save form entries
+Chrome
+VAULT
+This file couldn
+t be downloaded.
+%1 of %2
+Close all tabs
+Next
+History
+Certificate error
+<h4>Note taken on:</h4>
+Passwords
+Make a Web Note
+Show content
+%1 and 1 more page - [%2]
+Do you want to update your saved password for %1?
+999+ results
+Fetching stuff...
+Website identification
+Pop-up exceptions
+Run anyway
+Leave this page
+Report site issue
+See your extensions
+Save
+Save in
+Microsoft Edge reset your home page because the home page setting was corrupt.
+%1. %2
+This adds a cursor on webpages so you can select text with your keyboard. F7 turns caret browsing on or off for all tabs and windows.
+%1 downloaded from %2.
+Unsafe website
+Click 
+ in the address bar to save an article to read later.
+ 2016 Microsoft
+Allow once
+Save as (Ctrl+S)
+Blank page
+Stop
+      <html %1 %2>
+        <head>
+          <style>
+            .snippet-div { width:575px; height:155px; overflow:auto; }
+            .snippet-images-div { float:left; position:relative; width:200px; height:150px; }
+            .snippet-image-main { margin-left:auto; max-width:200px; max-height:150px; }
+            .snippet-image-secondary { display:none; }
+            .snippet-spacer-div { float:left; position:relative; width:10px; height:150px; }
+            .snippet-info-div { float:left; position:relative; width:360px; height:150px; }
+            .snippet-info-title-div { direction:ltr; height:30px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            .snippet-info-URL-div { direction:ltr; font:16pt "Segoe UI"; text-decoration:none; color:#1975D1; }
+            .snippet-info-description-div { padding-top:10px; direction:ltr; font:11pt "Segoe UI Semilight"; }
+          </style>
+        </head>
+        <body %1>
+          <div name="snippet" class="snippet-div">
+            <!-- OPTIONAL: image(s) and spacer -->
+            %3
+            <div name="info" class="snippet-info-div">
+              <!-- Title -->
+              <div name="title" class="snippet-info-title-div">
+                <a class="snippet-info-URL-div" href="%5">%4</a>
+              </div>
+              <!-- OPTIONAL: description -->
+              <div name="description" class="snippet-info-description-div">
+                %6
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    
+Headers and footers
+Media licenses couldn't be cleared because they're in use. Try again after restarting Microsoft Edge.
+Securely store credentials for your favorite websites.
+Favorite all tabs
+Skip this
+Earlier today
+%1 at %2
+Stop script
+Microsoft Edge problems or suggestions
+Yes, it's correct.
+Go to original page
+Medium
+We're still working on this, but soon you'll be able to see your favorite sites here. You'll get an update when things are ready. 
+While you're waiting, why not fill up your reading list? 
+%1 couldn
+t be downloaded.
+%1 finished downloading.
+Don't allow
+8.0
+This site can't save any more data to your device. Make room by clearing website data.
+Add to reading list
+Reading view style
+Security report
+This might not be the site you want
+Previous pages
+Vault (Passwords, auto form fills, secure notes, and authenticator)
+Settings
+Add to favorites or reading list
+Save
+Clear history and data on exit
+Select all
+Back
+150%
+Help me fix it
+I'm on it...
+Show the favorites bar
+Cut
+Fit to width
+Wide
+This file might have been moved or deleted.
+SmartScreen Filter isn't showing some content on this website because it might contain threats to your PC, your personal data, or your financial info.
+If you choose to view unsafe content, malicious software might be installed immediately on your PC.
+View Cortana's suggestions for this page. (Alt+C)
+This setting isn't available when Cortana is turned off in Windows.
+%1 of %2 downloaded from %3
+We couldn't set %s as your default search engine because it doesn't have a secure connection to help protect your info.
+Be careful when you download something from this website because it might install other programs you don't want or change your settings (like your home page). So be sure to check what's be
