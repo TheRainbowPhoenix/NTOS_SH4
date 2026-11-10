@@ -41,10 +41,14 @@ NAVINK = (0x31, 0x30, 0x31)  # navbar glyph ink (NAV_INK)
 # the SHELLCHROME navbar owns y488..528 on the light surfaces (home,
 # thinking, error); the ask state keeps the SIP edge-to-edge (ask.png)
 def navbar_ok(px):
-    for x in (40, 160, 280):
-        if not near(pix(px, x, 510), NAVBG):
+    # shellchrome nav bar: full y480..528 strip, reference-exact icons
+    # (back shaft y503-504, home flag y494-512, magnifier y494-513).
+    # Background probes sit at y481 (strip start, no stale-SIP gap) and
+    # y521 (below every glyph); the ink probe is the back-arrow shaft.
+    for x, y in ((40, 481), (160, 481), (280, 481), (40, 521), (280, 521)):
+        if not near(pix(px, x, y), NAVBG):
             return False
-    return near(pix(px, 65, 508), NAVINK, 40)
+    return near(pix(px, 65, 504), NAVINK, 40)
 
 # the orb ring: sample the ring body (left/right arcs + top/bottom of the
 # circle centred at 160,48, outer d48)

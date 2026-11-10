@@ -45,8 +45,10 @@ NAVINK = (0x31, 0x30, 0x31)     # navbar glyph ink (NAV_INK)
 # the label strip under the app-bar glyphs (y475..486) must be pure chrome
 # when the bar is collapsed: icons only, labels hidden by default
 def labels_hidden(px):
+    # collapsed app bar: icon-only rows must be pure chrome. Sample
+    # y470..478 only — the system nav bar owns y480..528 now.
     for x in (32, 96, 160, 224, 288):
-        for y in (478, 481, 484):
+        for y in (474, 477, 479):
             if not near(pix(px, x, y), CHROME):
                 return False
     return True
@@ -70,10 +72,13 @@ def labels_visible(px):
 # the SHELLCHROME navbar owns y488..528 on every files screen: light strip
 # with the Back/Home/Search glyphs (Back = horizontal stroke y508)
 def navbar_ok(px):
-    for x in (40, 160, 280):
-        if not near(pix(px, x, 510), NAVBG):
+    # shellchrome nav bar: full y480..528 strip, reference-exact icons
+    # (back shaft y503-504, home flag y494-512, magnifier y494-513).
+    # Background probes at y481 (strip start) and y521 (below glyphs).
+    for x, y in ((40, 481), (160, 481), (280, 481), (40, 521), (280, 521)):
+        if not near(pix(px, x, y), NAVBG):
             return False
-    return near(pix(px, 65, 508), NAVINK, 40)
+    return near(pix(px, 65, 504), NAVINK, 40)
 
 
 CHECKS = {
