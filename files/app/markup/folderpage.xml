@@ -14,7 +14,7 @@
 
     <!-- ================= content ========================================== -->
     <!-- page background under the sort row + list (PageBackgroundAltHigh) -->
-    <Rect x="0" y="48" w="320" h="432" bg="#FFFFFF"/>
+    <Rect x="0" y="48" w="320" h="392" bg="#FFFFFF"/>
     <!-- browse: "Sort by: <key>" + chevron (light-dismiss sort flyout) -->
     <Button name="SortBar" x="0" y="48" w="320" h="36" command="sortbar">
       <Text name="SortByLabel" x="12" y="13" text="Sort by:" color="#000000" size="14"/>
@@ -26,10 +26,10 @@
           size="14" visible="false"/>
     <Text name="StatusText" x="12" y="61" text="" color="#000000" size="14" visible="false"/>
     <Text name="EmptyText" x="12" y="61" text="This folder is empty." color="#767676" size="14" visible="false"/>
-    <Rect name="ItemsHost" x="0" y="84" w="320" h="396" bg="#FFFFFF"/>
+    <Rect name="ItemsHost" x="0" y="84" w="320" h="356" bg="#FFFFFF"/>
 
     <!-- ================= app bar: collapsed (icon-only, 48px) ============ -->
-    <Canvas x="0" y="480" w="320" h="48">
+    <Canvas x="0" y="440" w="320" h="48">
       <Rect name="AppBarCollapsed" x="0" y="0" w="320" h="48" bg="#E6E6E6"/>
       <!-- browse row: Select | New folder | View | Search | ... -->
       <Button name="AbSelect" x="0" y="0" w="64" h="48" command="select">
@@ -70,7 +70,7 @@
     </Canvas>
 
     <!-- ============ app bar: expanded ("..." open: labels shown) ========= -->
-    <Canvas x="0" y="460" w="320" h="68">
+    <Canvas x="0" y="420" w="320" h="68">
       <Rect name="AppBarExpanded" x="0" y="0" w="320" h="68" bg="#E6E6E6" visible="false"/>
       <!-- browse row with labels -->
       <Button name="XbSelect" x="0" y="0" w="64" h="68" command="select" visible="false">

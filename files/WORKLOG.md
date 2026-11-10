@@ -176,3 +176,53 @@ dest-copy / copy-done / scrolled / scrolled-top / edge-open + final.
 verify_fs.py asserts the rename/move/copy physically landed on disk.
 VLM parity vs LIGHT_THEME_this_device.png: ~85-90% (folder tone matched
 to the reference, remaining deltas are icon stroke weight + sample data).
+
+## v3 — navbar chrome, top dialogs, parity fixes (user feedback round)
+
+### System navigation bar (the big one)
+- files now imports SHELLCHROME.DLL through UIXChromeFactory — the exact
+  module edge/settings use — and paints it last on every frame, so the
+  Back/Home/Search strip (y488..528, light NAV_BG #CECFCE / NAV_INK
+  #313031 from files_theme slots 11/12) shows over content, navpane and
+  dialogs alike (LIGT_THEME_sidenav_open.png shows the bar under the
+  pane too).
+- Input: every pointer message forwards to the chrome first; 4/5/6 =
+  Back (dismiss / up / quit), Home (\fls0 root), Search (search row).
+- App bar raised 40px (collapsed y440..488, expanded y420..488), content
+  host y84..440, overflow menu top 276, toast y388..440.
+- The shared SIP docks 40px up (g_kb->dock(40)) while a dialog/search is
+  open: keyboard y231..488, navbar always visible below — exactly the
+  reference stack (rename_folder_focused_input.png: sheet, SIP, navbar).
+
+### Top-anchored dialog prompts
+- rename/new-folder/confirm dialogs were mid-screen bottom sheets; the
+  W10M prompts are top-fixed sheets under the NavBar (measured off
+  rename_folder_focused_input.png / create_folder.png / delete_confirm.
+  png): 22px title, 14px label, 272px field with the X clear affordance
+  (rename-clear/newfolder-clear commands), OK/Cancel 132/136px with
+  centered labels, 3px accent underline closing the sheet, scrim over
+  the content only (the app bar + navbar stay live below, like the
+  reference).
+- confirm is part of the e2e now: Documents/report.pdf is selected,
+  deleted through the dialog and verify_fs.py asserts it is gone.
+
+### Parity fixes
+- app-bar labels centered under their icons (markup x=0 w=64 on the
+  align=center Texts — they inherited the button width and centered a
+  slot too far right).
+- sort-by flyout carries a 1px C_SEP outline (separator-grey border).
+- list rows: browse icon x20 / title x72; select mode slides to x52 /
+  x104 (checkbox x12 w20) — name+date move right of the checkbox
+  instead of overlapping the icon (LIGHT_THEME_multi_select.png).
+- file-type icons: the 1px left/right/bottom page borders render now
+  (vec_icons.py authored them as fill-styles; svf.c skips strokes when
+  the style stroke is the transparent sentinel — style(stroke=...) fix).
+
+### e2e v3 (27 -> 33 frames, all green)
+boot / navpane / documents / sortflyout / sortdesc / sortasc /
+overflow-browse / props-root / selectmode / overflow-select / rename
+(docked SIP, top sheet) / confirm / delete-done / dest-picker /
+dest-documents / move-done / dest-copy / copy-done / scrolled /
+scrolled-top / edge-open + final. checker asserts the navbar strip
+(NAVBG + Back glyph) on every files frame and the markdown.dll module
+is loaded for the edge file:// hand-off (edge's new engine page path).

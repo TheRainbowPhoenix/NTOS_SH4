@@ -39,25 +39,27 @@ SEL = (0xCC, 0xE8, 0xFF)
 SCRIM = (0x7F, 0x7F, 0x7F)
 AMBER = (0xF5, 0xC2, 0x42)      # VEC folder front panel (reference tone)
 EDGE_BAR = (0xCE, 0xCF, 0xCE)   # edge light navbar (shellchrome NAV_BG)
+NAVBG = (0xCE, 0xCF, 0xCE)      # files navbar strip (shellchrome NAV_BG)
+NAVINK = (0x31, 0x30, 0x31)     # navbar glyph ink (NAV_INK)
 
-# the label strip under the app-bar glyphs (y518..523) must be pure chrome
+# the label strip under the app-bar glyphs (y475..486) must be pure chrome
 # when the bar is collapsed: icons only, labels hidden by default
 def labels_hidden(px):
     for x in (32, 96, 160, 224, 288):
-        for y in (518, 521, 523):
+        for y in (478, 481, 484):
             if not near(pix(px, x, y), CHROME):
                 return False
     return True
 
 
 def labels_visible(px):
-    # labels sit centered under their icons (button centers 32/96/160/224);
-    # every expanded bar shows ink under at least 3 of the 5 glyph columns
+    # labels sit centered under their icons (button centers 32/96/160/224)
+    # in the y460..471 band of the expanded bar (y420..488)
     cols = 0
     for cx in (32, 96, 160, 224, 288):
         hits = 0
         for x in range(cx - 12, cx + 13, 3):
-            for y in range(500, 512, 2):
+            for y in range(460, 472, 2):
                 c = pix(px, x, y)
                 if near(c, INK, 60):
                     hits += 1
@@ -65,13 +67,21 @@ def labels_visible(px):
             cols += 1
     return cols >= 3
 
+# the SHELLCHROME navbar owns y488..528 on every files screen: light strip
+# with the Back/Home/Search glyphs (Back = horizontal stroke y508)
+def navbar_ok(px):
+    for x in (40, 160, 280):
+        if not near(pix(px, x, 510), NAVBG):
+            return False
+    return near(pix(px, 65, 508), NAVINK, 40)
+
 
 CHECKS = {
     'boot': [
-        ('navbar', 160, 24, CHROME),
+        ('topbar', 160, 24, CHROME),
         ('page', 160, 300, WHITE),
-        ('appbar', 40, 504, CHROME),
-        ('folder-amber', 24, 116, AMBER),   # VEC folder front panel, row 0
+        ('appbar', 40, 464, CHROME),
+        ('folder-amber', 44, 116, AMBER),   # VEC folder front panel, row 0
     ],
     'navpane': [
         ('pane', 120, 300, PANE),
@@ -79,69 +89,82 @@ CHECKS = {
         ('title-band', 120, 20, PANE),
     ],
     'documents': [
-        ('navbar', 160, 24, CHROME),
+        ('topbar', 160, 24, CHROME),
         ('page', 160, 300, WHITE),
-        ('appbar', 40, 504, CHROME),
+        ('appbar', 40, 464, CHROME),
     ],
     'sortflyout': [
         ('flyout-panel', 200, 100, WHITE),
         ('divider', 100, 119, (0xE0, 0xE0, 0xE0)),
-        ('page-below', 260, 300, WHITE),
+        ('flyout-border', 8, 200, (0xE0, 0xE0, 0xE0)),
+        ('page-below', 260, 310, WHITE),
     ],
     'sortdesc': [
         ('page', 160, 300, WHITE),
-        ('appbar', 40, 504, CHROME),
+        ('appbar', 40, 464, CHROME),
     ],
     'sortasc': [
         ('page', 160, 300, WHITE),
-        ('appbar', 40, 504, CHROME),
+        ('appbar', 40, 464, CHROME),
     ],
     'overflow-browse': [
         ('scrim', 160, 200, SCRIM),
         ('panel', 160, 340, WHITE),
-        ('expanded-bar', 10, 465, CHROME),
+        ('expanded-bar', 10, 425, CHROME),
     ],
     'props-root': [
-        ('navbar', 160, 24, CHROME),
+        ('topbar', 160, 24, CHROME),
         ('page', 160, 300, WHITE),
     ],
     'selectmode': [
-        ('appbar', 40, 504, CHROME),
+        ('appbar', 40, 464, CHROME),
         ('content', 160, 300, WHITE),
     ],
     'overflow-select': [
         ('scrim', 160, 200, SCRIM),
         ('panel', 160, 340, WHITE),
-        ('expanded-bar', 10, 465, CHROME),
+        ('expanded-bar', 10, 425, CHROME),
+    ],
+    'confirm': [
+        ('sheet', 160, 120, WHITE),
+        ('scrim', 160, 300, SCRIM),
+        ('accent-line', 160, 234, ACCENT),
+        ('appbar-live', 40, 464, CHROME),
+    ],
+    'delete-done': [
+        ('page', 160, 300, WHITE),
+        ('appbar', 40, 464, CHROME),
     ],
     'rename-sheet': [
-        ('sheet', 160, 150, WHITE),
-        ('kb-backdrop', 160, 300, PANE),
-        ('scrim', 160, 100, SCRIM),
+        # top sheet 48..228 + docked SIP 231..488 + navbar: no scrim shows
+        ('sheet', 160, 120, WHITE),
+        ('sheet-title', 100, 66, WHITE),
+        ('kb-backdrop', 160, 240, PANE),
+        ('accent-line', 160, 226, ACCENT),
     ],
     'rename-typed': [
-        ('sheet', 160, 150, WHITE),
-        ('kb-key', 16, 340, WHITE),
+        ('sheet', 160, 120, WHITE),
+        ('kb-key', 49, 302, WHITE),
     ],
     'rename-done': [
         ('page', 160, 300, WHITE),
-        ('appbar', 40, 504, CHROME),
+        ('appbar', 40, 464, CHROME),
     ],
     'dest-picker': [
         ('content', 160, 300, WHITE),
-        ('appbar', 40, 504, CHROME),
+        ('appbar', 40, 464, CHROME),
     ],
-    'dest-documents': [('content', 160, 200, WHITE), ('appbar', 40, 504, CHROME)],
-    'dest-copy': [('content', 160, 300, WHITE), ('appbar', 40, 504, CHROME)],
-    'move-done': [('page', 160, 300, WHITE), ('appbar', 40, 504, CHROME)],
-    'copy-done': [('page', 160, 300, WHITE), ('appbar', 40, 504, CHROME)],
+    'dest-documents': [('content', 160, 200, WHITE), ('appbar', 40, 464, CHROME)],
+    'dest-copy': [('content', 160, 300, WHITE), ('appbar', 40, 464, CHROME)],
+    'move-done': [('page', 160, 300, WHITE), ('appbar', 40, 464, CHROME)],
+    'copy-done': [('page', 160, 300, WHITE), ('appbar', 40, 464, CHROME)],
     'scrolled': [
         ('page', 160, 300, WHITE),
         ('scrollbar', 318, 220, (0xC8, 0xC8, 0xC8)),
     ],
     'scrolled-top': [
         ('page', 160, 300, WHITE),
-        ('appbar', 40, 504, CHROME),
+        ('appbar', 40, 464, CHROME),
     ],
     # file:// activation: Edge takes the foreground (dark chrome, white
     # md content) — the files light theme is gone
@@ -196,6 +219,9 @@ def main():
             ok = False
         if name in LABELS_OUT and not labels_visible(px):
             print(f'{path}: expanded app-bar labels missing')
+            ok = False
+        if name not in ('edge-open', 'final') and not navbar_ok(px):
+            print(f'{path}: system navbar strip missing at the bottom')
             ok = False
         if ok:
             print(f'{path}: {len(colors)} sampled colors [OK]')

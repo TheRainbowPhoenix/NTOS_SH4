@@ -31,6 +31,8 @@ expect(os.path.isfile(f'{root}/Documents/data.dat'), 'Documents/data.dat exists 
 # copy: Downloads/song.mp3 copied into Documents (source stays)
 expect(os.path.isfile(f'{root}/Downloads/song.mp3'), 'Downloads/song.mp3 still there (copy)')
 expect(os.path.isfile(f'{root}/Documents/song.mp3'), 'Documents/song.mp3 exists (copy)')
+# delete: Documents/report.pdf removed through the confirm dialog
+expect(not os.path.isfile(f'{root}/Documents/report.pdf'), 'report.pdf deleted (confirm dialog)')
 # untouched samples
 expect(os.path.isfile(f'{root}/Documents/ntos.html'), 'ntos.html intact for the edge hand-off')
 expect(os.path.isfile(f'{root}/Documents/readme.txt'), 'readme.txt intact')

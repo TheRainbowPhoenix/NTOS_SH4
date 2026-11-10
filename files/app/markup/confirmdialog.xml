@@ -1,15 +1,18 @@
 <Page name="ConfirmDialog">
+  <!-- top-anchored prompt (delete_confirm.png): title + message + OK/Cancel
+       under the NavBar, no SIP; dimmed list below, app bar stays live -->
   <Canvas>
-    <Rect name="CfScrim" x="0" y="0" w="320" h="528" bg="#7F7F7F"/>
-    <!-- bottom sheet, no SIP -->
-    <Rect x="0" y="376" w="320" h="152" bg="#FFFFFF"/>
-    <Text name="ConfirmTitle" x="12" y="390" text="Delete" color="#000000" size="18"/>
-    <Text name="ConfirmMessage" x="12" y="420" text="It will be removed permanently. Are you sure you want to delete?" color="#000000" size="14"/>
-    <Button name="ConfirmOK" x="0" y="480" w="160" h="48" command="confirm-ok">
-      <Text x="80" y="495" text="OK" color="#0078D7" size="14" align="1"/>
+    <Rect name="CfScrim" x="0" y="48" w="320" h="392" bg="#7F7F7F"/>
+    <Rect x="0" y="48" w="320" h="188" bg="#FFFFFF"/>
+    <Text name="ConfirmTitle" x="24" y="60" text="Delete" color="#000000" size="22"/>
+    <Text x="24" y="96" text="It will be removed permanently." color="#000000" size="14"/>
+    <Text x="24" y="116" text="Are you sure you want to delete?" color="#000000" size="14"/>
+    <Button name="ConfirmOK" x="24" y="156" w="132" h="40" command="confirm-ok" bg="#F2F2F2">
+      <Text x="0" y="13" w="132" text="OK" color="#0078D7" size="14" align="1"/>
     </Button>
-    <Button name="ConfirmCancel" x="160" y="480" w="160" h="48" command="confirm-cancel">
-      <Text x="80" y="495" text="Cancel" color="#000000" size="14" align="1"/>
+    <Button name="ConfirmCancel" x="160" y="156" w="136" h="40" command="confirm-cancel" bg="#F2F2F2">
+      <Text x="0" y="13" w="136" text="Cancel" color="#000000" size="14" align="1"/>
     </Button>
+    <Rect x="0" y="233" w="320" h="3" bg="#0078D7"/>
   </Canvas>
 </Page>

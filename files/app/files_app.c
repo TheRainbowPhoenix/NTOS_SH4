@@ -45,6 +45,18 @@ typedef struct FilesKb {
     void (*dock)(int);
 } FilesKb;
 
+/* shell chrome (SHELLCHROME.DLL) mirror of phone.h Chrome: the system
+ * navigation bar (Back / Home / Search) every hosted app shows at the
+ * bottom — the same module edge and settings import */
+typedef struct FilesChrome {
+    U32 profile;
+    void (*paint)(void *);
+    int (*input)(U32, U32, U32);
+    int (*expanded)(void);
+    int (*navheight)(void);
+    int (*navigation)(int);
+} FilesChrome;
+
 /* shared control painters (payload/phone/uixctl.c, linked into this DLL) */
 void ctl_button(void *dc, const FilesRender *r, int x, int y, int w, int h,
                 const char *label, int pressed);
@@ -59,6 +71,10 @@ int SVFDrawTint(void *dc, const void *data, unsigned length, int x, int y,
 NT_DEFINE(render_SpGetThreadContext)
 NT_IMPORT(const FilesKb *, UIXGetSchemaFactory, (void))
 NT_DEFINE(UIXGetSchemaFactory)
+/* nav-bar chrome: imported from SHELLCHROME.DLL (UIXChromeFactory is the
+ * hosted-app surface: nav bar only, themed through files_renderer) */
+NT_IMPORT(const FilesChrome *, UIXChromeFactory, (void))
+NT_DEFINE(UIXChromeFactory)
 /* ---- WinCE imports ---- */
 typedef int (*WndProcT)(void *, U32, U32, U32);
 typedef struct {
@@ -413,6 +429,8 @@ static const U32 files_theme[] = {
     RGB_(0x00, 0x00, 0x00), /* 8 CTRL_INK   button label             */
     RGB_(0x66, 0x66, 0x66), /* 9 CTRL_EDGE  unchecked border         */
     RGB_(0x76, 0x76, 0x76), /* 10 FIELD_EDGE input border/hint       */
+    RGB_(0xCE, 0xCF, 0xCE), /* 11 NAV_BG    nav bar strip (light)    */
+    RGB_(0x31, 0x30, 0x31), /* 12 NAV_INK   nav bar glyphs           */
 };
 
 static const FilesRender files_renderer = {
@@ -726,6 +744,7 @@ static char toast_text[80];
 static char edit_buf[NAME_MAX_ * 2]; /* shared text field (rename/newfolder/search) */
 static int edit_len;
 static const FilesKb *g_kb;
+static const FilesChrome *g_chrome;
 
 /* ops context */
 static char ops_src[MAX_ITEMS][NAME_MAX_];  /* selected names at op start */
@@ -1257,15 +1276,16 @@ static void paint_crumbs(void *dc)
 #define ROW_H 56
 #define TILE_H 88
 
-/* content area: y84 .. (menu_open ? 460 : 480) — the app bar grows from
- * 48px (icon-only) to 68px (labels expanded) while the "..." menu is open */
+/* content area: y84 .. (menu_open ? 420 : 440) — the app bar grows from
+ * 48px (icon-only) to 68px (labels expanded) while the "..." menu is open,
+ * and the system navbar owns y488..528 below it */
 static NRect items_host(void)
 {
     NRect r;
     r.x = 0;
     r.y = 84;
     r.w = 320;
-    r.h = (short)((menu_open ? 460 : 480) - 84);
+    r.h = (short)((menu_open ? 420 : 440) - 84);
     return r;
 }
 
@@ -1460,7 +1480,7 @@ static int overflow_disabled(int row)
 }
 static int overflow_top(void)
 {
-    return (menu_open ? 460 : 480) - 144;
+    return (menu_open ? 420 : 440) - 144;
 }
 static void paint_overflow(void *dc)
 {
@@ -1744,8 +1764,12 @@ static void paint_all(void *dc)
                         ++shown;
                     }
                 }
-                if (g_kb)
+                if (g_kb) {
+                    /* SIP docks above the system navbar (y231..488),
+                     * like rename_folder_focused_input.png */
+                    g_kb->dock(40);
                     g_kb->paint(dc);
+                }
             }
         } else {
             update_status_bindings();
@@ -1825,8 +1849,11 @@ static void paint_all(void *dc)
                 const char *hint = mode == M_RENAME ? "File name" : "Folder name";
                 ctl_field(dc, &files_renderer, r.x, r.y, r.w, r.h, edit_buf, hint, 1);
             }
-            if (g_kb)
+            if (g_kb) {
+                /* the shared SIP rises above the navbar: 231..488 */
+                g_kb->dock(40);
                 g_kb->paint(dc);
+            }
         }
     } else if (mode == M_CONFIRM) {
         if ((d = ux_find_doc(&ux, "FolderPage"))) {
@@ -1884,10 +1911,14 @@ static void paint_all(void *dc)
         }
     }
     if (toast_text[0]) {
-        fill(dc, 0, 428, 320, 480, C_NAV);
-        fill(dc, 0, 428, 320, 429, C_MUT);
-        draw_text(dc, 16, 449, toast_text, C_INK, 12, 0, 0);
+        fill(dc, 0, 388, 320, 440, C_NAV);
+        fill(dc, 0, 388, 320, 389, C_MUT);
+        draw_text(dc, 16, 409, toast_text, C_INK, 12, 0, 0);
     }
+    /* system navigation bar (SHELLCHROME.DLL): always the topmost strip,
+     * over content, navpane and dialogs alike */
+    if (g_chrome)
+        g_chrome->paint(dc);
 }
 
 /* =====================================================================
@@ -2068,6 +2099,10 @@ static void do_command(const char *cmd)
         mode = M_FOLDER;
     } else if (xeq(cmd, "rename-cancel")) {
         mode = M_FOLDER;
+    } else if (xeq(cmd, "rename-clear") || xeq(cmd, "newfolder-clear")) {
+        /* the X affordance inside the dialog field (reference input) */
+        edit_len = 0;
+        edit_buf[0] = 0;
     } else if (xeq(cmd, "properties")) {
         int sel = -1;
         for (int i = 0; i < item_count; ++i)
@@ -2197,14 +2232,17 @@ static void process_tap(int x, int y)
     const UxDoc *d;
     const UxNode *b;
     if (mode == M_RENAME || mode == M_NEWFOLDER) {
-        if (y >= 271 && g_kb) {
+        if (y >= 231 && g_kb) { /* docked SIP (y231..488) */
             U32 lp = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
             int c = g_kb->input(WM_DOWN_, 1, lp);
             if (c > 0)
                 edit_key((unsigned)c);
             return;
         }
-        if (y < 139) { /* scrim dismiss */
+        if (y >= 231) { /* navbar strip: handled by the chrome in wndproc */
+            return;
+        }
+        if (y >= 228) { /* scrim below the sheet: light dismiss */
             mode = M_FOLDER;
             return;
         }
@@ -2214,7 +2252,7 @@ static void process_tap(int x, int y)
         return;
     }
     if (mode == M_SEARCH) {
-        if (y >= 271 && g_kb) {
+        if (y >= 231 && g_kb) {
             U32 lp = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
             int c = g_kb->input(WM_DOWN_, 1, lp);
             if (c > 0)
@@ -2222,7 +2260,7 @@ static void process_tap(int x, int y)
             return;
         }
         /* result rows: navigate to the parent folder and select the item */
-        if (y >= 84 && y < 271 && edit_len) {
+        if (y >= 84 && y < 231 && edit_len) {
             int shown = 0;
             for (int i = 0; i < search_row_count && shown < 3; ++i) {
                 const char *n = search_rows[i].name;
@@ -2261,7 +2299,7 @@ static void process_tap(int x, int y)
         }
         if ((d = ux_find_doc(&ux, "SearchPage")) && (b = hit_test(d, x, y)))
             do_command(ux_str(&ux, b, UXA_COMMAND, ""));
-        else if (y < 271)
+        else if (y < 231)
             mode = M_FOLDER;
         return;
     }
@@ -2284,8 +2322,8 @@ static void process_tap(int x, int y)
     if (mode == M_CONFIRM) {
         if ((d = ux_find_doc(&ux, "ConfirmDialog")) && (b = hit_test(d, x, y)))
             do_command(ux_str(&ux, b, UXA_COMMAND, ""));
-        else if (y < 376)
-            mode = M_FOLDER;
+        else if (y >= 236 && y < 488)
+            mode = M_FOLDER; /* scrim below the sheet: light dismiss */
         return;
     }
     if (mode == M_PROPERTIES) {
@@ -2310,7 +2348,7 @@ static void process_tap(int x, int y)
             menu_open = 0; /* light dismiss (also via the "..." toggle) */
         return;
     }
-    if (y >= 48 && y < 480) {
+    if (y >= 48 && y < 440) {
         /* breadcrumb strip handled below (needs crumb rects) */
         if (y >= 84) {
             NRect host = items_host();
@@ -2401,6 +2439,8 @@ static int load_markup(void)
 
 static void *g_wnd;
 
+static void nav_bar_action(int key);
+
 static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
 {
     if (msg == WM_PAINT_) {
@@ -2433,6 +2473,27 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
         NT_CALL(InvalidateRect, (hwnd, 0, 0));
         NT_CALL(UpdateWindow, (hwnd));
         return 0;
+    }
+    if (msg == WM_DOWN_ || msg == WM_MOVE_ || msg == WM_UP_) {
+        int x = (int)(short)(lp & 0xffff);
+        int y = (int)(short)(lp >> 16);
+        (void)x;
+        /* system navbar (y488..528): the SHELLCHROME chrome owns the strip
+         * — 4/5/6 = Back/Home/Search, 1 = consumed, 0 = not ours */
+        int cr = g_chrome ? g_chrome->input(msg, wp, lp) : 0;
+        if (cr >= 4 && cr <= 6) {
+            nav_bar_action(cr);
+            NT_CALL(InvalidateRect, (hwnd, 0, 0));
+            NT_CALL(UpdateWindow, (hwnd));
+            return 0;
+        }
+        if (cr == 1) {
+            NT_CALL(InvalidateRect, (hwnd, 0, 0));
+            NT_CALL(UpdateWindow, (hwnd));
+            return 0; /* press tracked by the bar */
+        }
+        if (msg == WM_UP_)
+            return 0;
     }
     if (msg == WM_DOWN_) {
         int x = (int)(short)(lp & 0xffff);
@@ -2473,6 +2534,40 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
 static const W16 cls_name[] = {'F', 'i', 'l', 'e', 'E', 'x', 'p', 'l', 'o',
                                'r', 'e', 'r', 0};
 
+/* navbar keys (SHELLCHROME hosted input codes): Back walks out of the
+ * current surface like the hardware back key, Home jumps to the device
+ * root, Search opens the search row with the SIP */
+static void nav_bar_action(int key)
+{
+    if (key == 4) { /* Back */
+        if (mode == M_FOLDER) {
+            if (xstrlen(cur_path) > 7) {
+                char parent[120];
+                path_parent(parent, cur_path, sizeof(parent));
+                nav_to(parent);
+            } else {
+                NT_CALL(PostQuitMessage, (0));
+            }
+        } else if (mode == M_DEST) {
+            do_command("dest-cancel");
+        } else {
+            mode = M_FOLDER;
+        }
+        sort_open = 0;
+        menu_open = 0;
+    } else if (key == 5) { /* Home */
+        nav_to("\\fls0");
+        mode = M_FOLDER;
+        select_mode = 0;
+        sort_open = 0;
+        menu_open = 0;
+    } else if (key == 6) { /* Search */
+        mode = M_SEARCH;
+        edit_len = 0;
+        edit_buf[0] = 0;
+    }
+}
+
 __attribute__((dllexport)) int RunApplication(void)
 {
     if (load_markup())
@@ -2488,6 +2583,11 @@ __attribute__((dllexport)) int RunApplication(void)
     g_kb = NT_CALL(UIXGetSchemaFactory, ());
     if (!g_kb || g_kb->profile != 0x55495831u)
         g_kb = 0;
+    /* system nav-bar chrome (SHELLCHROME.DLL): the strip edge/settings
+     * shows under every hosted app — files themes it light */
+    g_chrome = NT_CALL(UIXChromeFactory, ());
+    if (!g_chrome || g_chrome->profile != 0x55495831u)
+        g_chrome = 0;
     WndClass wc;
     wc.style = 0;
     wc.proc = wndproc;

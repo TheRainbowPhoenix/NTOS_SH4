@@ -10,8 +10,8 @@
       <Glyph x="14" y="14" w="20" h="20" text="x" color="#767676"/>
     </Button>
     <!-- results -->
-    <Rect x="0" y="48" w="320" h="223" bg="#FFFFFF"/>
+    <Rect x="0" y="48" w="320" h="183" bg="#FFFFFF"/>
     <Text name="SearchHint" x="12" y="61" text="" color="#767676" size="14"/>
-    <Rect name="SearchHost" x="0" y="84" w="320" h="187" bg="#FFFFFF"/>
+    <Rect name="SearchHost" x="0" y="84" w="320" h="147" bg="#FFFFFF"/>
   </Canvas>
 </Page>
