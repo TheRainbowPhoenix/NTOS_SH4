@@ -37,12 +37,24 @@ typedef struct CortRender {
 } CortRender;
 
 typedef struct CortKb {
-    U32 profile; /* 0x55494831 "UIX1" */
+    U32 profile; /* 0x55495831 "UIX1" */
     void (*paint)(void *);
     int (*input)(U32, U32, U32);
     int (*page)(void);
     void (*dock)(int);
 } CortKb;
+
+/* shell chrome (SHELLCHROME.DLL) mirror of phone.h Chrome: the system
+ * navigation bar (Back / Home / Search) — cortana_light.png shows the
+ * strip under the light home, exactly like edge/settings/files */
+typedef struct CortChrome {
+    U32 profile;
+    void (*paint)(void *);
+    int (*input)(U32, U32, U32);
+    int (*expanded)(void);
+    int (*navheight)(void);
+    int (*navigation)(int);
+} CortChrome;
 
 void ctl_field(void *dc, const CortRender *r, int x, int y, int w, int h,
                const char *text, const char *hint, int focused);
@@ -52,6 +64,10 @@ int SVFDrawTint(void *dc, const void *data, unsigned length, int x, int y,
 NT_DEFINE(render_SpGetThreadContext)
 NT_IMPORT(const CortKb *, UIXGetSchemaFactory, (void))
 NT_DEFINE(UIXGetSchemaFactory)
+/* nav-bar chrome: imported from SHELLCHROME.DLL (UIXChromeFactory is the
+ * hosted-app surface: nav bar only, themed through cort_renderer) */
+NT_IMPORT(const CortChrome *, UIXChromeFactory, (void))
+NT_DEFINE(UIXChromeFactory)
 /* ---- WinCE imports ---- */
 typedef int (*WndProcT)(void *, U32, U32, U32);
 typedef struct {
@@ -314,6 +330,8 @@ static const U32 cort_theme[] = {
     RGB_(0x00, 0x00, 0x00), /* 8 CTRL_INK   button label             */
     RGB_(0x66, 0x66, 0x66), /* 9 CTRL_EDGE  unchecked border         */
     RGB_(0x76, 0x76, 0x76), /* 10 FIELD_EDGE input border/hint       */
+    RGB_(0xCE, 0xCF, 0xCE), /* 11 NAV_BG    nav bar strip (light)    */
+    RGB_(0x31, 0x30, 0x31), /* 12 NAV_INK   nav bar glyphs           */
 };
 
 static const CortRender cort_renderer = {
@@ -550,6 +568,7 @@ static int mode = M_HOME;
 static char query[64];
 static int query_len;
 static const CortKb *g_kb;
+static const CortChrome *g_chrome;
 
 /* orb geometry (measured from refs/cortana/cortana_light.png) */
 #define ORB_CX 160
@@ -585,6 +604,11 @@ static void paint_all(void *dc)
         if (mode == M_INPUT && g_kb)
             g_kb->paint(dc);
     }
+    /* system navigation bar (SHELLCHROME.DLL): the strip under the light
+     * surfaces, per cortana_light.png / cortana_light_failed.png. The ask
+     * state (M_INPUT) keeps the SIP edge-to-edge like ask.png, no bar. */
+    if (g_chrome && mode != M_INPUT)
+        g_chrome->paint(dc);
 }
 
 /* =====================================================================
@@ -689,6 +713,29 @@ static int load_markup(void)
 
 static void *g_wnd;
 
+/* navbar keys (SHELLCHROME hosted input codes): Back mirrors the hardware
+ * back key (home exits), Home resets to the light home, Search opens the
+ * ask state */
+static void nav_bar_action(int key)
+{
+    if (key == 4) { /* Back */
+        if (mode == M_HOME)
+            NT_CALL(PostQuitMessage, (0));
+        else
+            mode = M_HOME;
+        query[0] = 0;
+        query_len = 0;
+    } else if (key == 5) { /* Home */
+        mode = M_HOME;
+        query[0] = 0;
+        query_len = 0;
+    } else if (key == 6) { /* Search */
+        mode = M_INPUT;
+        query[0] = 0;
+        query_len = 0;
+    }
+}
+
 static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
 {
     if (msg == WM_PAINT_) {
@@ -715,6 +762,24 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
         NT_CALL(UpdateWindow, (hwnd));
         return 0;
     }
+    if (msg == WM_DOWN_ || msg == WM_MOVE_ || msg == WM_UP_) {
+        /* system navbar (y488..528) on the non-SIP surfaces: the chrome
+         * owns the strip — 4/5/6 = Back/Home/Search, 1 = consumed */
+        int cr = (g_chrome && mode != M_INPUT) ? g_chrome->input(msg, wp, lp) : 0;
+        if (cr >= 4 && cr <= 6) {
+            nav_bar_action(cr);
+            NT_CALL(InvalidateRect, (hwnd, 0, 0));
+            NT_CALL(UpdateWindow, (hwnd));
+            return 0;
+        }
+        if (cr == 1) {
+            NT_CALL(InvalidateRect, (hwnd, 0, 0));
+            NT_CALL(UpdateWindow, (hwnd));
+            return 0;
+        }
+        if (msg == WM_UP_)
+            return 0;
+    }
     if (msg == WM_DOWN_) {
         int x = (int)(short)(lp & 0xffff);
         int y = (int)(short)(lp >> 16);
@@ -738,6 +803,11 @@ __attribute__((dllexport)) int RunApplication(void)
     g_kb = NT_CALL(UIXGetSchemaFactory, ());
     if (!g_kb || g_kb->profile != 0x55495831u)
         g_kb = 0;
+    /* system nav-bar chrome (SHELLCHROME.DLL): the strip edge/settings
+     * and files show — cortana themes it light through cort_renderer */
+    g_chrome = NT_CALL(UIXChromeFactory, ());
+    if (!g_chrome || g_chrome->profile != 0x55495831u)
+        g_chrome = 0;
     WndClass wc;
     wc.style = 0;
     wc.proc = wndproc;

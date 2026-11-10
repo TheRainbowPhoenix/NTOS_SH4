@@ -35,6 +35,16 @@ BAND = (0xDE, 0xDB, 0xDE)
 INK = (0, 0, 0)
 ACC = (0x00, 0x78, 0xD7)
 ORB = (0x4A, 0x71, 0xFF)
+NAVBG = (0xCE, 0xCF, 0xCE)   # navbar strip (shellchrome NAV_BG)
+NAVINK = (0x31, 0x30, 0x31)  # navbar glyph ink (NAV_INK)
+
+# the SHELLCHROME navbar owns y488..528 on the light surfaces (home,
+# thinking, error); the ask state keeps the SIP edge-to-edge (ask.png)
+def navbar_ok(px):
+    for x in (40, 160, 280):
+        if not near(pix(px, x, 510), NAVBG):
+            return False
+    return near(pix(px, 65, 508), NAVINK, 40)
 
 # the orb ring: sample the ring body (left/right arcs + top/bottom of the
 # circle centred at 160,48, outer d48)
@@ -86,13 +96,25 @@ CHECKS = {
         ('band', 40, 440, BAND),
         ('mic', 290, 456, ACC),
     ],
+    'nav-search': [
+        ('page', 160, 130, PAGE),
+        ('kb-backdrop', 160, 300, (0xF2, 0xF2, 0xF2)),
+        ('query-field', 200, 248, (255, 255, 255)),
+    ],
+    'nav-home': [
+        ('page', 160, 300, PAGE),
+        ('band', 40, 440, BAND),
+        ('mic', 290, 456, ACC),
+    ],
     'final': [
         ('page', 160, 300, PAGE),
     ],
 }
 
-ORB_SCREENS = {'boot', 'input', 'thinking', 'error', 'home-again', 'final'}
-GREETING_SCREENS = {'boot', 'error', 'home-again', 'final'}
+ORB_SCREENS = {'boot', 'input', 'thinking', 'error', 'home-again',
+               'nav-search', 'nav-home', 'final'}
+GREETING_SCREENS = {'boot', 'error', 'home-again', 'nav-home', 'final'}
+NAV_SCREENS = {'boot', 'thinking', 'error', 'home-again', 'nav-home', 'final'}
 
 
 def main():
@@ -128,6 +150,9 @@ def main():
             ok = False
         if name in GREETING_SCREENS and not greeting_blue(px):
             print(f'{path}: blue greeting text missing in y84..97')
+            ok = False
+        if name in NAV_SCREENS and not navbar_ok(px):
+            print(f'{path}: system navbar strip missing at the bottom')
             ok = False
         if ok:
             print(f'{path}: {len(colors)} sampled colors [OK]')

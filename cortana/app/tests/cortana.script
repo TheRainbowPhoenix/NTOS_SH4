@@ -20,4 +20,11 @@ tap 160 240
 shot error
 key 0x1b
 shot home-again
+# navbar (SHELLCHROME chrome): Search key opens the ask state...
+tap 258 508
+shot nav-search
+key 0x1b
+# ...Home key resets to the light home
+tap 160 508
+shot nav-home
 quit

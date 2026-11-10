@@ -51,3 +51,18 @@ mode (the captures show the offline states).
   subtle blue gradient; the VEC stroke model is flat).
 - COOBE consent page (ask.png) + hamburger notebook menu if the demo
   grows; SH4 device build through build_phone.py / elf2ntx.
+
+## v2 — system navigation bar (user feedback round)
+
+- cortana now imports the SHELLCHROME.DLL nav bar through
+  UIXChromeFactory — the same hosted-app surface edge, settings and
+  files use — themed light through two new cort_theme slots (NAV_BG
+  #CECFCE / NAV_INK #313031; cortana_light.png shows the strip under
+  the light home and error pages).
+- Painted topmost on the light surfaces (home / thinking / error); the
+  ask state keeps the SIP edge-to-edge like ask.png, no strip.
+- Input: Back mirrors the hardware back key (back from home exits),
+  Home resets to the light home, Search opens the ask state — all
+  covered by the e2e (nav-search / nav-home frames).
+- e2e: 6 -> 8 frames, checker asserts the navbar strip + Back glyph on
+  every light frame; shellchrome.dll joins the module load list.

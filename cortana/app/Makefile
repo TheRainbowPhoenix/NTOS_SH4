@@ -45,7 +45,8 @@ clean:
 test: all
 	rm -rf tests/fs/fls0 && mkdir -p tests/fs/fls0
 	cp cortana.uxaml tests/fs/fls0/cortana.uxaml
-	../../edge/ntos_linux/ntos_linux fingerkb.dll cortana.dll \
+	$(MAKE) -C $(EDGEAPP) ZIG=$(ZIG) shellchrome.dll
+	../../edge/ntos_linux/ntos_linux fingerkb.dll $(EDGEAPP)/shellchrome.dll cortana.dll \
 	  --script tests/cortana.script --shot cortana --fs tests/fs
 	python3 tests/check_cortana_shots.py cortana-*.png
 
