@@ -1,0 +1,6 @@
+tap 24 56
+shot nav-open
+drag 160 400 160 150
+shot nav-scrolled
+tap 100 412
+shot nav-after

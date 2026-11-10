@@ -1,75 +1,89 @@
 <Page name="ConvPage">
   <!-- UnitConverter.xbf phone layout: two value displays + unit combos +
-       supplementary results + CE/back + 3x4 numpad on the shade. -->
+       supplementary results + CE/back row + 3x4 numpad on the shade. -->
   <Canvas>
-    <Rect x="0" y="0" w="320" h="32" bg="#F2F2F2"/>
-    <Text name="AppTitle" x="12" y="10" w="180" text="Calculator" color="#000000" size="12"/>
-    <Rect x="0" y="32" w="320" h="48" bg="#F2F2F2"/>
-    <Button name="NavButton" x="0" y="40" w="48" h="32" command="nav">
-      <Glyph x="12" y="6" w="24" h="20" text="hamburger" color="#000000"/>
-    </Button>
-    <!-- value 1 (active) + unit combo 1 -->
-    <Rect x="0" y="80" w="320" h="46" bg="#F2F2F2"/>
-    <Button name="Value1Zone" x="0" y="80" w="320" h="46" command="pick:1"/>
-    <Button name="Units1" x="12" y="126" w="296" h="30" command="units:1">
-      <Text name="Units1T" x="0" y="8" w="250" text="Liters" color="#000000" size="14"/>
-      <Glyph x="266" y="8" w="18" h="14" text="chev-down" color="#5D5A5C"/>
-    </Button>
-    <!-- value 2 + unit combo 2 -->
-    <Rect x="0" y="156" w="320" h="46" bg="#F2F2F2"/>
-    <Button name="Value2Zone" x="0" y="156" w="320" h="46" command="pick:2"/>
-    <Button name="Units2" x="12" y="202" w="296" h="30" command="units:2">
-      <Text name="Units2T" x="0" y="8" w="250" text="Gallons (US)" color="#000000" size="14"/>
-      <Glyph x="266" y="8" w="18" h="14" text="chev-down" color="#5D5A5C"/>
-    </Button>
-    <!-- supplementary results -->
-    <Rect x="0" y="232" w="320" h="40" bg="#F2F2F2"/>
-    <!-- numpad shade -->
-    <Rect x="0" y="272" w="320" h="1" bg="#DEDBDE"/>
-    <Rect x="0" y="273" w="320" h="207" bg="#E6E6E6"/>
-    <!-- CE / backspace row -->
-    <Button name="ce" x="160" y="273" w="80" h="41" command="op:ce">
-      <Text x="0" y="14" w="80" text="CE" align="1" color="#000000" size="14"/>
-    </Button>
-    <Button name="back" x="240" y="273" w="80" h="41" command="op:back">
-      <Glyph x="28" y="10" w="24" h="22" text="backspace" color="#000000"/>
-    </Button>
-    <!-- 3x4 pad: 7 8 9 / 4 5 6 / 1 2 3 / neg 0 dot -->
-    <Button name="n7" x="0" y="314" w="107" h="41" command="d:7">
-      <Text x="0" y="10" w="107" text="7" align="1" color="#000000" size="22"/>
-    </Button>
-    <Button name="n8" x="107" y="314" w="106" h="41" command="d:8">
-      <Text x="0" y="10" w="106" text="8" align="1" color="#000000" size="22"/>
-    </Button>
-    <Button name="n9" x="213" y="314" w="107" h="41" command="d:9">
-      <Text x="0" y="10" w="107" text="9" align="1" color="#000000" size="22"/>
-    </Button>
-    <Button name="n4" x="0" y="355" w="107" h="41" command="d:4">
-      <Text x="0" y="10" w="107" text="4" align="1" color="#000000" size="22"/>
-    </Button>
-    <Button name="n5" x="107" y="355" w="106" h="41" command="d:5">
-      <Text x="0" y="10" w="106" text="5" align="1" color="#000000" size="22"/>
-    </Button>
-    <Button name="n6" x="213" y="355" w="107" h="41" command="d:6">
-      <Text x="0" y="10" w="107" text="6" align="1" color="#000000" size="22"/>
-    </Button>
-    <Button name="n1" x="0" y="396" w="107" h="41" command="d:1">
-      <Text x="0" y="10" w="107" text="1" align="1" color="#000000" size="22"/>
-    </Button>
-    <Button name="n2" x="107" y="396" w="106" h="41" command="d:2">
-      <Text x="0" y="10" w="106" text="2" align="1" color="#000000" size="22"/>
-    </Button>
-    <Button name="n3" x="213" y="396" w="107" h="41" command="d:3">
-      <Text x="0" y="10" w="107" text="3" align="1" color="#000000" size="22"/>
-    </Button>
-    <Button name="negate" x="0" y="437" w="107" h="43" command="op:negate">
-      <Glyph x="44" y="10" w="18" h="23" text="negate" color="#000000"/>
-    </Button>
-    <Button name="n0" x="107" y="437" w="106" h="43" command="d:0">
-      <Text x="0" y="10" w="106" text="0" align="1" color="#000000" size="22"/>
-    </Button>
-    <Button name="dot" x="213" y="437" w="107" h="43" command="d:.">
-      <Text x="0" y="8" w="107" text="." align="1" color="#000000" size="22"/>
-    </Button>
+    <Canvas x="0" y="0" w="320" h="32">
+      <Rect x="0" y="0" w="320" h="32" bg="#F2F2F2"/>
+      <Text name="AppTitle" x="12" y="10" w="180" text="Calculator" color="#000000" size="12"/>
+    </Canvas>
+    <Canvas x="0" y="32" w="320" h="48">
+      <Rect x="0" y="0" w="320" h="48" bg="#F2F2F2"/>
+      <Button name="NavButton" x="0" y="8" w="48" h="32" command="nav">
+        <Glyph x="12" y="6" w="24" h="20" text="hamburger" color="#000000"/>
+      </Button>
+    </Canvas>
+    <Canvas x="0" y="80" w="320" h="46">
+      <Rect x="0" y="0" w="320" h="46" bg="#F2F2F2"/>
+      <Button name="Value1Zone" x="0" y="0" w="320" h="46" command="pick:1"/>
+    </Canvas>
+    <Canvas x="0" y="126" w="320" h="30">
+      <Button name="Units1" x="12" y="0" w="296" h="30" command="units:1">
+        <Text name="Units1T" x="0" y="8" w="250" text="Liters" color="#000000" size="14"/>
+        <Glyph x="266" y="8" w="18" h="14" text="chev-down" color="#5D5A5C"/>
+      </Button>
+    </Canvas>
+    <Canvas x="0" y="156" w="320" h="46">
+      <Rect x="0" y="0" w="320" h="46" bg="#F2F2F2"/>
+      <Button name="Value2Zone" x="0" y="0" w="320" h="46" command="pick:2"/>
+    </Canvas>
+    <Canvas x="0" y="202" w="320" h="30">
+      <Button name="Units2" x="12" y="0" w="296" h="30" command="units:2">
+        <Text name="Units2T" x="0" y="8" w="250" text="Gallons (US)" color="#000000" size="14"/>
+        <Glyph x="266" y="8" w="18" h="14" text="chev-down" color="#5D5A5C"/>
+      </Button>
+    </Canvas>
+    <Canvas x="0" y="232" w="320" h="40">
+      <Rect x="0" y="0" w="320" h="40" bg="#F2F2F2"/>
+    </Canvas>
+    <Canvas x="0" y="272" w="320" h="41">
+      <Rect x="0" y="0" w="320" h="1" bg="#DEDBDE"/>
+      <Rect x="0" y="1" w="320" h="40" bg="#E6E6E6"/>
+      <Button name="ce" x="160" y="1" w="80" h="40" command="op:ce">
+        <Text x="0" y="13" w="80" text="CE" align="1" color="#000000" size="14"/>
+      </Button>
+      <Button name="back" x="240" y="1" w="80" h="40" command="op:back">
+        <Glyph x="28" y="9" w="24" h="22" text="backspace" color="#000000"/>
+      </Button>
+    </Canvas>
+    <Canvas x="0" y="313" w="320" h="83">
+      <Button name="n7" x="0" y="1" w="107" h="41" command="d:7">
+        <Text x="0" y="10" w="107" text="7" align="1" color="#000000" size="22"/>
+      </Button>
+      <Button name="n8" x="107" y="1" w="106" h="41" command="d:8">
+        <Text x="0" y="10" w="106" text="8" align="1" color="#000000" size="22"/>
+      </Button>
+      <Button name="n9" x="213" y="1" w="107" h="41" command="d:9">
+        <Text x="0" y="10" w="107" text="9" align="1" color="#000000" size="22"/>
+      </Button>
+      <Button name="n4" x="0" y="42" w="107" h="41" command="d:4">
+        <Text x="0" y="10" w="107" text="4" align="1" color="#000000" size="22"/>
+      </Button>
+      <Button name="n5" x="107" y="42" w="106" h="41" command="d:5">
+        <Text x="0" y="10" w="106" text="5" align="1" color="#000000" size="22"/>
+      </Button>
+      <Button name="n6" x="213" y="42" w="107" h="41" command="d:6">
+        <Text x="0" y="10" w="107" text="6" align="1" color="#000000" size="22"/>
+      </Button>
+    </Canvas>
+    <Canvas x="0" y="396" w="320" h="84">
+      <Button name="n1" x="0" y="0" w="107" h="41" command="d:1">
+        <Text x="0" y="10" w="107" text="1" align="1" color="#000000" size="22"/>
+      </Button>
+      <Button name="n2" x="107" y="0" w="106" h="41" command="d:2">
+        <Text x="0" y="10" w="106" text="2" align="1" color="#000000" size="22"/>
+      </Button>
+      <Button name="n3" x="213" y="0" w="107" h="41" command="d:3">
+        <Text x="0" y="10" w="107" text="3" align="1" color="#000000" size="22"/>
+      </Button>
+      <Button name="negate" x="0" y="41" w="107" h="43" command="op:negate">
+        <Glyph x="44" y="10" w="18" h="23" text="negate" color="#000000"/>
+      </Button>
+      <Button name="n0" x="107" y="41" w="106" h="43" command="d:0">
+        <Text x="0" y="10" w="106" text="0" align="1" color="#000000" size="22"/>
+      </Button>
+      <Button name="dot" x="213" y="41" w="107" h="43" command="d:.">
+        <Text x="0" y="8" w="107" text="." align="1" color="#000000" size="22"/>
+      </Button>
+    </Canvas>
   </Canvas>
 </Page>

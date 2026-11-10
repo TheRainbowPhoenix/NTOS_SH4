@@ -1,0 +1,8 @@
+tap 24 56
+tap 100 102
+shot s-boot
+tap 160 401
+tap 160 209
+shot s-sin
+tap 288 209
+shot s-sin2

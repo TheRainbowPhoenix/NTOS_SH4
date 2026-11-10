@@ -1,0 +1,9 @@
+tap 24 56
+drag 160 400 160 150
+tap 100 420
+shot direct-about
+tap 24 56
+shot reopen
+drag 160 400 160 150
+tap 100 414
+shot second-about

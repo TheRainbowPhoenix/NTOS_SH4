@@ -1,0 +1,9 @@
+tap 24 56
+tap 100 102
+tap 160 401
+shot d-five
+tap 96 401
+tap 160 401
+shot d-45
+tap 32 273
+shot d-sqrt

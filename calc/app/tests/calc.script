@@ -1,0 +1,137 @@
+# calc e2e — coordinates from calc/app/markup/*.xml:
+# StdPage: memory row y172-204 (MC26 MR80 M+133 M-186 MS240 M293);
+#   keypad rows y205/251/297/343/389/435 (46px), cols x0/80/160/240.
+#   row0: % sqrt x2 1/x  row1: CE C back div  row2: 7 8 9 x
+#   row3: 4 5 6 -  row4: 1 2 3 +  row5: neg 0 . =
+# SciPage: angle y134-164 (DEG38 RAD94 GRAD150 @149); memory y164-192;
+#   9 keypad rows y193+32k, 5 cols x32/96/160/224/288.
+#   r0: x2 xy sin cos tan   r1: x3 yroot asin acos atan
+#   r2: sqrt 10x log Exp Mod  r3: inv e^ ln dms deg
+#   r4: 2nd CE C back div  r5: pi 7 8 9 x  r6: n! 4 5 6 -
+#   r7: ( 1 2 3 +  r8: ) neg 0 . =
+# ConvPage: Units1 tap(160,141) Units2(160,217); CE(200,293) back(280,293);
+#   pad rows y314/355/396/437, cols x53/160/266.
+# NavPane: Standard(100,62) Scientific(100,102); cats Volume(100,172)
+#   Length(100,212) Temperature(100,292); About needs scroll.
+shot boot
+# ---- standard: 12 + 3 x 4 = 60
+tap 40 412
+tap 120 412
+tap 280 412
+tap 120 366
+tap 280 320
+tap 40 366
+tap 280 457
+shot std-result
+# ---- sqrt(81) = 9
+tap 120 274
+tap 120 320
+tap 40 412
+tap 80 228
+tap 280 457
+shot std-sqrt
+# ---- 900 + 50 % = 1350
+tap 120 274
+tap 200 320
+tap 200 320
+tap 200 320
+tap 280 412
+tap 40 412
+tap 40 228
+tap 280 457
+shot std-percent
+# ---- 8, 1/x, negate
+tap 120 274
+tap 200 366
+tap 280 228
+tap 40 457
+shot std-invert
+# ---- memory: 42 =, MS, 8 =, M+, MR
+tap 120 274
+tap 40 366
+tap 120 412
+tap 280 457
+tap 240 188
+tap 200 320
+tap 280 457
+tap 133 188
+tap 80 188
+shot std-memory
+# ---- history sheet (2 items), clear, close
+tap 296 56
+shot std-history
+tap 280 120
+tap 160 60
+# ---- memory sheet
+tap 293 188
+shot std-memory-sheet
+tap 160 60
+# ---- nav pane -> Scientific
+tap 24 56
+shot navpane
+tap 100 102
+shot sci-boot
+# ---- DEG: sin(30) = 0.5
+tap 224 369
+tap 160 464
+tap 160 209
+shot sci-sin30
+# ---- RAD: pi / 4 = then tan -> ~1
+tap 94 149
+tap 32 369
+tap 288 337
+tap 96 401
+tap 288 464
+tap 288 209
+shot sci-rad-tan
+# ---- 2nd + asin(0.5) = 30 deg
+tap 32 337
+tap 224 464
+tap 160 401
+tap 160 209
+shot sci-asin
+# ---- parens: ( 2 + 3 ) x 4 = 20
+tap 160 337
+tap 32 433
+tap 160 433
+tap 288 433
+tap 224 433
+tap 32 464
+tap 288 369
+tap 96 401
+tap 288 464
+shot sci-parens
+# ---- 5! = 120
+tap 160 337
+tap 160 401
+tap 32 401
+shot sci-factorial
+# ---- nav -> Converter (Volume: Liters -> Gallons US), type 2
+tap 24 56
+tap 100 172
+shot conv-volume
+# unit 2 -> Milliliters (picker row 0)
+tap 160 141
+tap 24 136
+shot conv-picker
+# back to Liters (picker row 2)
+tap 160 141
+tap 24 208
+# ---- nav -> Length (Meters -> Feet), type 3
+tap 24 56
+tap 100 212
+tap 160 334
+shot conv-length
+# ---- nav -> Temperature (C -> F), type 100 -> 212
+tap 24 56
+tap 100 292
+tap 200 334
+tap 200 334
+tap 120 334
+shot conv-temp
+# ---- About (drag the nav pane past the end: clamped = deterministic)
+tap 24 56
+drag 160 460 160 40
+drag 160 460 160 40
+tap 100 450
+shot about
