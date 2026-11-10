@@ -116,6 +116,16 @@ static void ntos_puts(const char *text) {
     cur_row = static_cast<int>(app_console.row());
     LCD_Refresh();
 }
+static void log_text(char *&dst, const char *text) {
+    while (*text) *dst++ = *text++;
+}
+static void log_number(char *&dst, uint32_t value, unsigned base, unsigned width = 0) {
+    char digits[32];
+    unsigned n = 0;
+    do { digits[n++] = "0123456789ABCDEF"[value % base]; value /= base; } while (value);
+    while (n < width) digits[n++] = '0';
+    while (n) *dst++ = digits[--n];
+}
 static void ntos_app_puts(const char *text) {
     if (!app_console_started) {
         fillScreen(0xffff);
@@ -1130,9 +1140,10 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             if(n<0) goto done;
             total+=n;
         }
-        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "Linked %d import(s), %u DLL(s)",total,count-1u);
-        LCD_Refresh();
+        char msg[80], *p=msg;
+        log_text(p,"Linked "); log_number(p,static_cast<uint32_t>(total),10);
+        log_text(p," import(s), "); log_number(p,count-1u,10);
+        log_text(p," DLL(s)"); *p=0; ntos_puts(msg);
     }
     api_raw=static_cast<uint8_t *>(Mem_Malloc(0x4000u+0xFFFu));
     if(!api_raw){*err="API mapping allocation failed";goto done;}
@@ -1287,24 +1298,24 @@ done:
 #if NTOS_ENABLE_TLB_MISS_PAGER
     // All host UI work occurs AFTER restoring the original VBR and SR.
     // Report the actual fault/eviction count when emulator testing PAGERTEST.
-    if(rc==0 || ntos_hw::g_context.fault_error!=0u)
-    Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                 "PF=%lu HINT=%lu EV=%lu BAD=%lu",
-                 static_cast<unsigned long>(ntos_hw::g_context.hw_faults),
-                 static_cast<unsigned long>(ntos_hw::g_context.hint_calls),
-                 static_cast<unsigned long>(ntos_hw::g_context.table.evictions),
-                 static_cast<unsigned long>(ntos_hw::g_context.fault_error));
+    if(rc==0 || ntos_hw::g_context.fault_error!=0u) {
+        char msg[80], *p=msg;
+        log_text(p,"PF="); log_number(p,ntos_hw::g_context.hw_faults,10);
+        log_text(p," HINT="); log_number(p,ntos_hw::g_context.hint_calls,10);
+        log_text(p," EV="); log_number(p,ntos_hw::g_context.table.evictions,10);
+        log_text(p," BAD="); log_number(p,ntos_hw::g_context.fault_error,10);
+        *p=0; ntos_puts(msg);
+    }
     if(ntos_hw::g_context.hw_faults!=0u &&
        (rc==0 || ntos_hw::g_context.fault_error!=0u)) {
-        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "TEA=%08lX EV=%03lX SPC=%08lX",
-                     static_cast<unsigned long>(ntos_hw::g_context.last_tea),
-                     static_cast<unsigned long>(ntos_hw::g_context.last_expevt),
-                     static_cast<unsigned long>(ntos_hw::g_context.last_spc));
-        Debug_Printf(0,static_cast<unsigned int>(cur_row++),false,0,
-                     "SSR=%08lX MMUCR=%08lX",
-                     static_cast<unsigned long>(ntos_hw::g_context.last_ssr),
-                     static_cast<unsigned long>(ntos_hw::g_context.last_mmucr));
+        char msg[80], *p=msg;
+        log_text(p,"TEA="); log_number(p,ntos_hw::g_context.last_tea,16,8);
+        log_text(p," EV="); log_number(p,ntos_hw::g_context.last_expevt,16,3);
+        log_text(p," SPC="); log_number(p,ntos_hw::g_context.last_spc,16,8);
+        *p=0; ntos_puts(msg);
+        p=msg; log_text(p,"SSR="); log_number(p,ntos_hw::g_context.last_ssr,16,8);
+        log_text(p," MMUCR="); log_number(p,ntos_hw::g_context.last_mmucr,16,8);
+        *p=0; ntos_puts(msg);
     }
     LCD_Refresh();
 #endif
@@ -1718,6 +1729,11 @@ int main(int argc, char **argv, char **envp) {
             if(ok)ok=pe::parse(app_file,app_size,&app_hdr)==0;
             if(ok)ok=run_mapped(app_file,app_size,app_hdr,nullptr,0,nullptr,0,&ret,&launch_error)==0;
             if(app_file)Mem_Free(app_file);
+            if(ok && ret) {
+                char msg[48], *p=msg;
+                log_text(p,"App returned 0x"); log_number(p,static_cast<uint32_t>(ret),16,8);
+                *p=0; ntos_puts(msg);
+            }
             if(!fs_recover()) {
                 ntos_puts("SDK close failed; stop launching apps");
                 LCD_Refresh();

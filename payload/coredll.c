@@ -1065,19 +1065,30 @@ int ReadFile(void *handle, void *buffer, u32 count, u32 *done, void *overlapped)
 {
     const void **a = ntapi();
     int fd = handle_fd(handle), n;
+    u32 total = 0;
     if (done)
         *done = 0;
-    if (fd < 0 || !buffer || !a || !a[12] || overlapped || count > 4096u) {
+    if (fd < 0 || !buffer || !a || !a[12] || overlapped) {
         g_last_error = 87;
         return 0;
     }
-    n = ((int (*)(int, void *, u32))a[12])(fd, buffer, count);
-    if (n < 0) {
-        g_last_error = nt_file_error(n);
-        return 0;
+    while (total < count) {
+        u32 chunk = count - total;
+        if (chunk > 4096u)
+            chunk = 4096u;
+        n = ((int (*)(int, void *, u32))a[12])(fd, (unsigned char *)buffer + total, chunk);
+        if (n < 0) {
+            if (done)
+                *done = total;
+            g_last_error = nt_file_error(n);
+            return 0;
+        }
+        total += (u32)n;
+        if ((u32)n < chunk)
+            break;
     }
     if (done)
-        *done = (u32)n;
+        *done = total;
     g_last_error = 0;
     return 1;
 }

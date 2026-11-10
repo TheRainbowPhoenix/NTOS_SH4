@@ -26,6 +26,19 @@ static int fake_read(int fd, void *p, u32 n)
         ((char *)p)[0] = 'P';
     return n ? 1 : 0;
 }
+static u32 large_read_remaining;
+static unsigned large_read_calls;
+static int fake_large_read(int fd, void *p, u32 n)
+{
+    (void)fd;
+    assert(n <= 4096u);
+    ++large_read_calls;
+    if (n > large_read_remaining)
+        n = large_read_remaining;
+    memset(p, 'X', n);
+    large_read_remaining -= n;
+    return (int)n;
+}
 static int fake_size(int fd)
 {
     last_fd = fd;
@@ -130,6 +143,15 @@ int main(void)
     char data[4];
     u32 done = 0;
     assert(ReadFile(a, data, 4, &done, 0) && done == 1 && data[0] == 'P' && last_fd == 0x10001);
+    {
+        char markup[15000];
+        ntos_host_table[12] = (const void *)fake_large_read;
+        large_read_remaining = 14000;
+        large_read_calls = 0;
+        assert(ReadFile(a, markup, sizeof(markup), &done, 0));
+        assert(done == 14000 && large_read_calls == 4 && markup[13999] == 'X');
+        ntos_host_table[12] = (const void *)fake_read;
+    }
     assert(GetFileSize(b, 0) == 176 && last_fd == 0x10002);
     assert(CloseHandle(a) && last_fd == 0x10001);
     assert(!ReadFile(a, data, 4, &done, 0));
