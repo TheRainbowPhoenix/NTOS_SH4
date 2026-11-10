@@ -57,6 +57,13 @@ if [ ! -x "$OPT/zig/zig" ]; then
 fi
 "$OPT/zig/zig" version
 
+# ---- mquickjs (bellard) for the chakra.dll stub ----
+if [ ! -d "$OPT/src/mquickjs" ]; then
+  mkdir -p "$OPT/src"
+  git clone --depth 1 https://github.com/bellard/mquickjs.git "$OPT/src/mquickjs" || true
+fi
+ls "$OPT/src/mquickjs/mquickjs.c" >/dev/null 2>&1 && echo "mquickjs present"
+
 # ---- NTOS_SH4_linux env + sample e2e ----
 make -C edge/ntos_linux test || echo "WARN: ntos_linux sample e2e failed"
 
