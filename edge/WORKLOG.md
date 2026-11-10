@@ -263,3 +263,39 @@ findbar 100. 'key s' is the POC shortcut into Settings.
 - More hub panes polish (favorites rows vs real capture), settings
   page reference capture if the user provides one.
 - SystemSettings/FileExplorer ports on top of uixctl + uXAML.
+
+## Session 5 — reference parity v4/v5, settings on uXAML, nav bar DLL, md engine
+
+Quality pass over the full reference set + the three feature blocks the user
+called out (settings/toggles/dropdowns/nav bar, keyboard context, md pages):
+
+- **Shared components** (`payload/phone`): ctl_toggle rewritten as the W10M
+  pill (ON=accent+white thumb right, OFF=outline+grey thumb left, dim=
+  disabled look); UIX_TH_NAV_BG/NAV_INK theme slots; Keyboard.context (go-key
+  input scope: arrow default, search magnifier for find fields — type.png);
+  SYS_GO_ARROW VEC1 asset; SHELLCHROME gains UIXChromeFactory (hosted-app
+  chrome: nav bar only, themed through the host renderer).
+- **Edge chrome v4** (user feedback, stroke audit): stroke weight size/16+1
+  (2px toolbar, 1px card glyphs); "..."=3px dots; + arms to 45% box;
+  InPrivate striped body; tab cards 30px header with the 1px #1F1F1F
+  minimized-tab frame (L/R/bottom, tabs.png x12/x153 bottom y189); #8A8A8A
+  card titles; TABS caps title; address bar at reference positions (hint
+  x98, lock/priv-glyph x104, text x124); private tabs show the small blue
+  InPrivate glyph; menu sheet reaches y480 (white-gap fix); tab-center
+  toolbar at x160/x228/x289; wiki/mock links underlined.
+- **Settings family rebuilt on uXAML** (12 new references): 3 pages + 2
+  flyout docs; UXA_UNDERLINE/UXA_DISABLED; dropdowns with live selection
+  (dyn_color/dyn_text); drag scrolling + fading scrollbar; the nav bar from
+  the imported SHELLCHROME chrome on every settings screen (back walks the
+  stack); checker carries state-discriminating presence probes because the
+  block metric alone cannot tell the pages apart. Ratios 84-99.4%.
+- **Host fixes**: INVALID_HANDLE_VALUE sign-extended (load_nav/read_file
+  segfault); harness `drag x0 y0 x1 y1` script command; SIGSEGV RIP logger.
+- **Text-page engine** (mdrender.c, successor of md_viewer.py): one run
+  emitter for md and HTML4 subsets; word wrap into shared visual lines;
+  find-in-page with yellow/orange matches over the visual-line table;
+  <script> bodies forwarded to the CHAKRA.DLL stub (JsRunScript ->
+  E_NOTIMPL, nothing executed); svf images inline (logo.svf demo asset).
+
+States in CI: 27 shots, 21 against device references, all >= 80% blocks
+(16x16/48 tol) + presence probes. Next: FileExplorer port reuse of UXCTL.

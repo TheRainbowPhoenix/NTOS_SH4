@@ -23,12 +23,12 @@ all: edge.dll chakra.dll fingerkb.dll shellchrome.dll edge.uxaml
 edge.uxaml: uxaml_gen.py markup/*.xml
 	python3 uxaml_gen.py build markup/ -o edge.uxaml
 
-edge.dll: edge_app.c icons.c icons.h uxaml.c uxaml.h nt_app.h \
+edge.dll: edge_app.c icons.c icons.h uxaml.c uxaml.h nt_app.h mdrender.c \
           $(PHONE)/uixctl.c $(PHONE)/svf.c $(PHONE)/phone.h
 	$(ZIG) cc -target x86_64-windows-gnu -shared -O2 -nostdlib \
 	  -Wl,--image-base=0x180010000 -DNTOS_LINUX_BUILD \
 	  -I. -I../../payload/phone -I../../payload -o edge.dll \
-	  edge_app.c icons.c uxaml.c \
+	  edge_app.c icons.c uxaml.c mdrender.c \
 	  $(PHONE)/uixctl.c $(PHONE_CFLAGS) \
 	  $(PHONE)/svf.c $(PHONE_CFLAGS)
 
@@ -78,7 +78,8 @@ clean:
 test: all
 	rm -rf tests/fs/fls0 && mkdir -p tests/fs/fls0
 	cp edge.uxaml tests/fs/fls0/edge.uxaml
-	../ntos_linux/ntos_linux fingerkb.dll shellchrome.dll edge.dll --script tests/edge.script \
+	cp tests/assets/article.md tests/assets/logo.svf tests/fs/fls0/
+	../ntos_linux/ntos_linux fingerkb.dll shellchrome.dll chakra.dll edge.dll --script tests/edge.script \
 	  --shot edge --fs tests/fs
 	python3 tests/check_edge_shots.py edge-*.png
 	../ntos_linux/ntos_linux chakra.dll --entry ChakraSmokeTest

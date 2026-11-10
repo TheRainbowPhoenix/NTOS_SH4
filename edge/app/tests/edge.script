@@ -100,3 +100,30 @@ tap 60 346
 shot findbar
 tap 160 100
 shot final
+tap 158 504
+char 97
+char 114
+char 116
+char 105
+char 99
+char 108
+char 101
+char 46
+char 109
+char 100
+key 13
+shot mdpage
+tap 294 504
+tap 60 346
+tap 60 504
+shot mdfind-kbd
+char 101
+char 120
+char 97
+char 109
+shot mdfind
+tap 296 500
+tap 220 504
+shot mdfind-next
+tap 160 100
+shot mdpage2

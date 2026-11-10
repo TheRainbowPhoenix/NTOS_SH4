@@ -61,6 +61,29 @@ typedef struct EdgeChrome {
     int (*navigation)(int);
 } EdgeChrome;
 
+/* ---- mdrender (mdrender.c): the text-page "web engine" + find-in-page ---- */
+int md_page_load(const char *name);
+int md_line_count_get(void);
+int md_find(const char *query, int *out_x, int *out_y, int *out_w, int cap,
+            void *unused);
+int md_paint(void *dc);
+/* CHAKRA.DLL stub entry (script forwarding; the stub does nothing) */
+NT_IMPORT(int, JsRunScript, (const W16 *, unsigned, const W16 *, void **))
+NT_DEFINE(JsRunScript)
+
+static char find_query[40];
+static int find_len, find_sip, find_active, find_nmatch;
+static int fm_x[24], fm_y[24], fm_w[24];
+
+/* mdrender host hooks: file IO + renderer + svf + the chakra stub */
+int md_read_file(const char *name, unsigned char *buf, int cap);
+U32 md_rgb(int r, int g, int b);
+void md_fill(void *dc, int l, int t, int r, int b, U32 c);
+void md_text(void *dc, int x, int y, const char *s, int len, U32 c, int h, int bold);
+int md_text_w(const char *s, int len, int h);
+void md_svfdraw(void *dc, const unsigned char *data, unsigned len, int x, int y, int w, int h);
+int md_chakra(const char *script);
+
 /* shared control painters (payload/phone/uixctl.c, linked into this DLL) */
 void ctl_button(void *dc, const EdgeRender *r, int x, int y, int w, int h,
                 const char *label, int pressed);
@@ -524,6 +547,101 @@ __attribute__((dllexport)) int svf_SVFDrawTint(void *dc, const void *data,
     return SVFDrawTint(dc, data, length, x, y, w, h, tint);
 }
 
+/* ---- mdrender host hooks ---- */
+int md_read_file(const char *name, unsigned char *buf, int cap)
+{
+    W16 path[40];
+    int n = 0;
+    path[n++] = '\\'; path[n++] = 'f'; path[n++] = 'l'; path[n++] = 's';
+    path[n++] = '0'; path[n++] = '\\';
+    for (int i = 0; name[i] && n < 38; ++i)
+        path[n++] = (W16)(unsigned char)name[i];
+    path[n] = 0;
+    void *h = NT_CALL(CreateFileW, (path, 0x80000000u, 1, 0, 3, 0, 0));
+    if (!h || h == (void *)(intptr_t)-1)
+        return 0;
+    U32 got = 0;
+    int ok = NT_CALL(ReadFile, (h, buf, (U32)cap, &got, 0));
+    NT_CALL(CloseHandle, (h));
+    return ok && got ? (int)got : 0;
+}
+U32 md_rgb(int r, int g, int b)
+{
+    return RGB_(r, g, b);
+}
+void md_fill(void *dc, int l, int t, int r, int b, U32 c)
+{
+    fill(dc, l, t, r, b, c);
+}
+static void draw_text_n(void *dc, int x, int y, const char *s, int len,
+                        U32 c, int h, int bold)
+{
+    char tmp[96];
+    if (len > 90)
+        len = 90;
+    for (int i = 0; i < len; ++i)
+        tmp[i] = s[i];
+    tmp[len] = 0;
+    draw_text(dc, x, y, tmp, c, h, 0, bold);
+}
+static int text_w_n(const char *s, int len, int h)
+{
+    char tmp[96];
+    if (len > 90)
+        len = 90;
+    for (int i = 0; i < len; ++i)
+        tmp[i] = s[i];
+    tmp[len] = 0;
+    return text_w(tmp, h);
+}
+void md_text(void *dc, int x, int y, const char *s, int len, U32 c, int h, int bold)
+{
+    draw_text_n(dc, x, y, s, len, c, h, bold);
+}
+int md_text_w(const char *s, int len, int h)
+{
+    return text_w_n(s, len, h);
+}
+void md_svfdraw(void *dc, const unsigned char *data, unsigned len, int x, int y,
+                int w, int h)
+{
+    SVFDrawTint(dc, data, len, x, y, w, h, RGB_(0x00, 0x00, 0x00));
+}
+int md_chakra(const char *script)
+{
+    /* forward the <script> body to the CHAKRA.DLL stub. The stub returns
+     * E_NOTIMPL (no engine on this profile) and executes nothing — the
+     * entire scripting story of the POC in one call. */
+    static W16 wbuf[512];
+    int n = 0;
+    while (script[n] && n < 500) {
+        wbuf[n] = (W16)(unsigned char)script[n];
+        ++n;
+    }
+    wbuf[n] = 0;
+    return NT_CALL(JsRunScript, (wbuf, 0, 0, 0));
+}
+
+/* ---- find-in-page helpers ---- */
+static void find_run(void)
+{
+    find_nmatch = 0;
+    find_active = 0;
+    if (find_len && md_line_count_get())
+        find_nmatch = md_find(find_query, fm_x, fm_y, fm_w, 24, 0);
+    if (find_active >= find_nmatch)
+        find_active = 0;
+}
+static void paint_find_highlights(void *dc, int clip_bottom)
+{
+    for (int i = 0; i < find_nmatch; ++i) {
+        if (fm_y[i] + 14 > clip_bottom)
+            continue;
+        U32 c = i == find_active ? RGB_(0xFF, 0x8C, 0x00) : RGB_(0xFF, 0xD7, 0x00);
+        fill(dc, fm_x[i] - 2, fm_y[i] - 2, fm_x[i] + fm_w[i] + 2, fm_y[i] + 13, c);
+    }
+}
+
 /* ---- model ---- */
 #define MAX_TABS 8
 #define MAX_URL 96
@@ -668,6 +786,8 @@ static const char *dyn_text(const char *name, const char *def)
         Tab *t = &tabs[tab_cur];
         return t->title[0] ? t->title : "New tab";
     }
+    if (xeq(name, "FindText"))
+        return find_query;
     /* dropdown closed-box values follow the live selection */
     if (xeq(name, "WebsitePrefValue"))
         return WEBSITE_OPTS[website_sel & 1];
@@ -967,6 +1087,12 @@ static void paint_page(void *dc)
             /* home state per home.png: plain white page */
             fill(dc, 0, 0, 320, 480, C_PAGEBG);
         }
+        return;
+    }
+    /* markdown text pages render through the shared mdrender core */
+    int hl = xstrlen(t->host);
+    if (hl > 3 && xeq(t->host + hl - 3, ".md") && md_page_load(t->host)) {
+        md_paint(dc);
         return;
     }
     int wiki = 0;
@@ -1313,10 +1439,36 @@ static void paint_all(void *dc)
 {
     const UxDoc *d;
     if (mode == M_BROWSER || mode == M_FIND) {
-        paint_browser(dc);
-        if (mode == M_FIND && (d = ux_find_doc(&ux, "FindOnPageBar"))) {
-            layout_doc(d, 0, 0, 320, 528);
-            paint_node(dc, d->root);
+        if (mode == M_FIND && find_sip) {
+            /* with the SIP up the find bar rides above the keyboard */
+            clip_set(0, 0, 320, 223);
+            paint_browser(dc);
+            paint_find_highlights(dc, 223);
+            clip_set(0, 0, 320, 528);
+            if ((d = ux_find_doc(&ux, "FindOnPageBar"))) {
+                layout_doc(d, 0, 223 - 480, 320, 528);
+                paint_node(dc, d->root);
+                /* typed query + caret in the field */
+                if (find_len) {
+                    draw_text(dc, 12, 240, find_query, RGB_(0x00, 0x00, 0x00), 14, 0, 0);
+                    int cx = 12 + text_w(find_query, 14);
+                    if (cx < 150)
+                        fill(dc, cx + 2, 231, cx + 4, 259, C_BLUE);
+                }
+            }
+            if (g_kb)
+                g_kb->paint(dc); /* search-scope go key set on open */
+        } else {
+            paint_browser(dc);
+            if (mode == M_FIND) {
+                paint_find_highlights(dc, 480);
+                if ((d = ux_find_doc(&ux, "FindOnPageBar"))) {
+                    layout_doc(d, 0, 0, 320, 528);
+                    paint_node(dc, d->root);
+                    if (find_len)
+                        draw_text(dc, 12, 497, find_query, RGB_(0x00, 0x00, 0x00), 14, 0, 0);
+                }
+            }
         }
     } else if (mode == M_MENU) {
         paint_browser(dc);
@@ -1438,8 +1590,10 @@ static void do_command(const char *cmd)
         mode = M_ADDRESS;
         addr_len = 0;
         addr_buf[0] = 0;
-        if (g_kb)
+        if (g_kb) {
             g_kb->dock(0);
+            g_kb->context(0); /* go key: arrow (address entry) */
+        }
     } else if (xeq(cmd, "reload"))
         toast("Refreshing...");
     else if (xeq(cmd, "reader"))
@@ -1473,6 +1627,19 @@ static void do_command(const char *cmd)
     else if (xeq(cmd, "ddsel-2")) { cookies_sel = 0; dd_open = 0; }
     else if (xeq(cmd, "ddsel-3")) { cookies_sel = 1; dd_open = 0; }
     else if (xeq(cmd, "ddsel-4")) { cookies_sel = 2; dd_open = 0; }
+    else if (xeq(cmd, "find-type")) {
+        find_sip = 1;
+        if (g_kb)
+            g_kb->context(1); /* go key: search magnifier (find field) */
+    }
+    else if (xeq(cmd, "find-prev")) {
+        if (find_nmatch)
+            find_active = (find_active + find_nmatch - 1) % find_nmatch;
+    }
+    else if (xeq(cmd, "find-next")) {
+        if (find_nmatch)
+            find_active = (find_active + 1) % find_nmatch;
+    }
     else if (xeq(cmd, "addr-tabs"))
         mode = M_TABS;
     else if (xeq(cmd, "tabs-back") || xeq(cmd, "hub-back") ||
@@ -1569,7 +1736,8 @@ static void do_command(const char *cmd)
                xeq(cmd, "link-changeengine") || xeq(cmd, "link-binghist") ||
                xeq(cmd, "link-terms") || xeq(cmd, "link-privacy") ||
                xeq(cmd, "link-report") || xeq(cmd, "link-openfb") ||
-               xeq(cmd, "dd-style") || xeq(cmd, "dd-font"))
+               xeq(cmd, "dd-style") || xeq(cmd, "dd-font") ||
+               xeq(cmd, "find-close"))
         toast("Not available in this POC");
     /* "noop" and unknown commands: silently ignored */
 }
@@ -1664,6 +1832,37 @@ static void process_tap(int x, int y)
         }
         if ((d = ux_find_doc(&ux, "HubPanel")) && (b = hit_test(d, x, y)))
             do_command(ux_str(&ux, b, UXA_COMMAND, ""));
+        return;
+    }
+    if (mode == M_FIND && find_sip) {
+        /* find bar rides above the SIP at y223..271; keys below */
+        if (y >= 317 && g_kb) {
+            U32 lp2 = (U32)(((y & 0xffff) << 16) | (x & 0xffff));
+            int c = g_kb->input(WM_DOWN_, 1, lp2);
+            if (c == 13) { /* go: keep the bar, drop the keyboard */
+                find_sip = 0;
+                find_run();
+            } else if (c == 8) {
+                if (find_len)
+                    find_query[--find_len] = 0;
+                find_run();
+            } else if (c >= 32 && c < 127 && find_len < 38) {
+                find_query[find_len++] = (char)c;
+                find_query[find_len] = 0;
+                find_run();
+            }
+            return;
+        }
+        if (y >= 223 && y < 317) { /* the bar strip (223..271) + kb backdrop */
+            if (y < 271 && (d = ux_find_doc(&ux, "FindOnPageBar")) &&
+                (b = hit_test(d, x, y))) {
+                do_command(ux_str(&ux, b, UXA_COMMAND, ""));
+                return;
+            }
+            return; /* dead backdrop: swallow */
+        }
+        mode = M_BROWSER; /* tap the page: dismiss the find bar */
+        find_sip = 0;
         return;
     }
     if (settings_mode()) {
@@ -1769,12 +1968,21 @@ static int wndproc(void *hwnd, U32 msg, U32 wp, U32 lp)
                 mode = M_TABS;
             else if (mode == M_SETTINGS)
                 mode = M_BROWSER;
+            else if (mode == M_FIND)
+                find_sip = 0; /* hardware back: drop the keyboard first */
             else
                 mode = M_BROWSER;
             set_scroll = 0;
             dd_open = 0;
         } else if (mode == M_ADDRESS) {
             addr_key(wp);
+        } else if (mode == M_FIND && (wp >= 32 && wp < 127)) {
+            /* find-on-page: live query through WM_CHAR (SIP typing) */
+            if (find_len < 38) {
+                find_query[find_len++] = (char)wp;
+                find_query[find_len] = 0;
+            }
+            find_run();
         } else if (mode == M_BROWSER && (wp == 's' || wp == 'S')) {
             /* POC shortcut into the settings page (e2e reachability) */
             mode = M_SETTINGS;

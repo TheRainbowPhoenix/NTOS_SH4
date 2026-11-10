@@ -289,6 +289,26 @@ PRESENCE = {
         (12, 450, 310, 470, 8, 200, 0),     # bottom note
         (53, 496, 77, 518, 8, 200, 0),      # nav bar back
     ],
+    # markdown "web pages" (no device reference: our own text-page engine)
+    'mdpage': [
+        (16, 10, 100, 36, 25, -100, 0),     # "Exam" heading (dark on white)
+        (12, 55, 310, 120, 20, 150, 2),     # blue underlined links
+        (134, 320, 186, 380, 100, -300, 0), # svf art in the image slot
+        (24, 400, 300, 450, 100, 230, 0),   # fused code-block backdrop (#EFEFEF)
+        (12, 55, 310, 120, 4, -200, 0),     # no dark blob over the link zone
+    ],
+    'mdfind': [
+        (0, 0, 320, 225, 500, 200, 0),      # yellow match highlights (red ch)
+        (12, 230, 150, 265, 30, -100, 0),   # the typed query in the field
+    ],
+    'mdfind-kbd': [
+        (278, 489, 317, 509, 200, 200, 0),  # white go key
+        (289, 493, 307, 507, 10, -100, 0),  # search-magnifier glyph (black)
+    ],
+    'mdfind-next': [
+        (0, 0, 320, 480, 200, 230, 0),      # orange active match (red ch)
+        (0, 0, 320, 480, 300, 200, 0),      # yellow matches
+    ],
 }
 
 
