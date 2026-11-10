@@ -10,6 +10,8 @@
  * cross-module function address into them, which is the same "loader snaps
  * the IAT" model without needing an import directory at all.
  */
+#define _GNU_SOURCE /* MAP_ANONYMOUS under -std=c11 */
+#define _GNU_SOURCE /* MAP_ANONYMOUS under -std=c11 */
 #include "ntos_linux.h"
 
 #include <stdio.h>

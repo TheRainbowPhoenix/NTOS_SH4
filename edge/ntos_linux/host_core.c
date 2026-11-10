@@ -22,7 +22,6 @@
 U32 *host_fb;
 static int fb_dirty_flag;
 static int quit_posted;
-static int pumps_left = -1;
 
 static HostMsg *msg_head, *msg_tail;
 static int (*idle_hook)(void);
