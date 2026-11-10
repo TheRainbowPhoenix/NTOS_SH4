@@ -1,0 +1,44 @@
+<Page name="HubPanel">
+  <Canvas>
+    <Rect x="0" y="0" w="320" h="528" bg="#FFFFFF"/>
+    <Rect x="0" y="0" w="320" h="48" bg="#0078D7"/>
+    <Text x="16" y="16" text="Hub" color="#FFFFFF" size="14" bold="true" name="HubTitle"/>
+    <Button x="276" y="10" w="40" h="28" name="CloseButton" command="close">
+      <Text x="20" y="6" text="X" color="#FFFFFF" size="13" align="1"/>
+    </Button>
+    <!-- pivot headers (Favorites default) -->
+    <StackH x="0" y="48" w="320" h="36" name="PivotHeaders">
+      <Button x="0" y="0" w="80" h="36" command="pivot-favorites" name="HubFavoritePivotItem">
+        <Rect x="8" y="6" w="64" h="26" bg="#0078D7" radius="4"/>
+        <Text x="40" y="12" text="Favorites" color="#FFFFFF" size="10" align="1"/>
+      </Button>
+      <Button x="80" y="0" w="80" h="36" command="pivot-history" name="HubHistoryPivotItem">
+        <Text x="40" y="12" text="History" color="#50606E" size="10" align="1"/>
+      </Button>
+      <Button x="160" y="0" w="80" h="36" command="pivot-reading" name="HubReadingListPivotItem">
+        <Text x="40" y="12" text="Reading list" color="#50606E" size="10" align="1"/>
+      </Button>
+      <Button x="240" y="0" w="80" h="36" command="pivot-downloads" name="HubDownloadsPivotItem">
+        <Text x="40" y="12" text="Downloads" color="#50606E" size="10" align="1"/>
+      </Button>
+    </StackH>
+    <!-- pivot content host -->
+    <List x="0" y="92" w="320" h="436" name="HubList">
+      <Row><Button x="0" y="0" w="320" h="52" command="open-favorite">
+        <Rect x="12" y="10" w="32" h="32" bg="#F2F7FB" radius="4"/>
+        <Text x="56" y="12" text="MSDN" color="#1D2A3A" size="11"/>
+        <Text x="56" y="28" text="https://msdn.microsoft.com" color="#65788A" size="9"/>
+      </Button></Row>
+      <Row><Button x="0" y="0" w="320" h="52" command="open-favorite">
+        <Rect x="12" y="10" w="32" h="32" bg="#F2F7FB" radius="4"/>
+        <Text x="56" y="12" text="GitHub" color="#1D2A3A" size="11"/>
+        <Text x="56" y="28" text="https://github.com" color="#65788A" size="9"/>
+      </Button></Row>
+      <Row><Button x="0" y="0" w="320" h="52" command="open-favorite">
+        <Rect x="12" y="10" w="32" h="32" bg="#F2F7FB" radius="4"/>
+        <Text x="56" y="12" text="Wikipedia" color="#1D2A3A" size="11"/>
+        <Text x="56" y="28" text="https://wikipedia.org" color="#65788A" size="9"/>
+      </Button></Row>
+    </List>
+  </Canvas>
+</Page>

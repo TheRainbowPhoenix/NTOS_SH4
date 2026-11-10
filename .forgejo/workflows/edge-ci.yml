@@ -96,4 +96,11 @@ jobs:
             --script edge/ntos_linux/tests/sample.script --shot ci --fs edge/ntos_linux/tests/fs
           python3 edge/ntos_linux/tests/check_shots.py edge/ntos_linux/ci-*.png
 
+          # -- Edge POC: uXAML markup -> edge.dll -> scripted UI e2e --
+          make -C edge/app ZIG=$(command -v zig) clean all test
+
+          # -- uXAML round-trip: binary -> XML must reparse --
+          python3 edge/app/uxaml_gen.py toxml edge/app/edge.uxaml > /tmp/ux.xml
+          grep -q 'SmallScreenPage' /tmp/ux.xml
+
           echo "== edge CI step complete =="

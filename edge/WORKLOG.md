@@ -81,3 +81,67 @@ _BlankPage, HomeButton toggle, ReadingView fonts/styles, Vault passwords...).
 - decompile key entry points (rizin+rzghidra) once built: MicrosoftEdge.exe
   WinMain / App ctor, eView BrowserViewModel, EdgeContent ord1 export.
 - design uXAML binary format + NTOS_SH4_linux loader.
+
+## 2026-11-10 — session 1 (cont.): NTOS_SH4_linux + uXAML + Edge POC working
+
+### Toolchain complete
+- rizin 0.9.1 + rz-ghidra 0.9.0 built from source (meson options changed in
+  0.9: -Denable_tests=false -Dsubprojects_check=false; rz-ghidra v0.9 is
+  CMAKE not meson). Installed at /home/z/my-project/opt/rizin.
+  Smoke-tested: `aaa; s 0x180001000; pdg` decompiles sample.dll RunApplication.
+- Prebuilt tarball pushed to branch `edge-tools` (27.5MB):
+  refs edge-tools:rizin/rizin-linux-x86_64.tar.gz — bootstrap.sh restores it.
+- zig 0.14.0 at /home/z/my-project/opt/zig (340MB, redownloaded by bootstrap).
+- Sandbox kills background daemons (nohup insufficient); long builds must run
+  in foreground Bash calls; ninja resumes across calls.
+
+### NTOS_SH4_linux (edge/ntos_linux/) — Wine-like host env, WORKING
+- PE32+ loader: mmap at preferred base, DIR64 relocs, export dir parse,
+  NTOS-model IAT patching via exported __imp_* slots (payload sources use
+  payload/ntimport.h's exact NT_IMPORT/NT_DEFINE macros; host build adds
+  dllexport on slots with -DNTOS_LINUX_BUILD). Forwarder-RVA check must
+  inspect content (lld over-reports export dir size — data slots live inside
+  it). Ordinal table holds EAT indices directly (no base subtraction).
+- Builtin COREDLL (ms_abi gcc functions, Win64 ABI bridge): RegisterClassW,
+  CreateWindowExW, Show/Update/Invalidate/Destroy, GetMessageW (script-idle
+  hook + generated WM_PAINT), Begin/EndPaint, CreateSolidBrush/FillRect/
+  DeleteObject (brush cache), SipShowIM/SipGetInfo, CreateFileW/ReadFile/
+  WriteFile/CloseHandle/GetFileSize/SetFilePointer/FindFirst/Next/Close/
+  DeleteFileW (\fls0\ rooted at --fs), Sleep, GetTickCount, mem*.
+- e2e scripting: tap/key/char/sip/shot/quit lines execute lazily when the
+  app queue drains (interleaved with paints). PNG writer = stored-deflate,
+  no zlib dependency. 320x528 LCD, 0x00BBGGRR pixels.
+- sample_app.c validates the chain; pixel-verified chrome (status bar,
+  address pill, nav buttons, tap/key state changes).
+
+### uXAML v1 (edge/app/uxaml.[ch] + uxaml_gen.py)
+- Format UXA1: header + doc table + len-prefixed string heap + forward-only
+  node stream (kind u8, attrs {id,type,payload}, child_count). Static arena,
+  zero heap, single pass, ~200 lines of C.
+- uxaml_gen.py build: XML subset -> binary (4.8KB for 5 pages); toxml:
+  lossless "upper" back to XML. Round-trip verified in CI.
+- Layout v1: coordinates relative to parent; StackV/H + List/Row auto-flow;
+  Canvas/Button children relative. (Bit me once: markup with absolute coords
+  inside buttons rendered offscreen — all markup now relative.)
+
+### Edge POC (edge/app/edge_app.c + markup/) — WORKING, 11-frame e2e
+- Pages: SmallScreenPage (status strip, NTP top-sites grid, bottom
+  [tabs][address pill][...] chrome), ActionsMenu sheet (12 real items),
+  TabCenterPage (dark, cards + close), HubPanel (4 pivots), AddressEditBox
+  (+ QWERTY SIP, tap-typing, Go navigates).
+- Mock engine: URL -> hash -> generated article; NTP when empty; tabs model
+  (open/close/switch); commands routed by markup Command attr.
+- e2e script tests/edge.script: boot, menu open/close, tabcenter open/close,
+  address mode, keyboard typing, navigate, hub pivots — all frames
+  pixel-checked (check_shots.py), non-blank, correct palette counts.
+
+### CI (.forgejo/workflows/edge-ci.yml)
+- Builds ntos_linux + sample + edge app with zig, runs both e2e suites,
+  uXAML round-trip; ships log + screenshots to `edge-ci` branch.
+
+### Next
+- real decompilation passes (MicrosoftEdge.exe App::OnLaunched, eView
+  BrowserViewModel) to refine chrome details before screenshot comparison.
+- mquickjs evaluation for the chakra.dll stub; EdgeContent ord1 stub shape.
+- SH4 device build of the edge app (payload.ld + elf2ntx) once the loader
+  side is wired into phone.mk flow.

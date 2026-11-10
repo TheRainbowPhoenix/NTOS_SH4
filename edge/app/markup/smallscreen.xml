@@ -1,0 +1,23 @@
+<Page name="SmallScreenPage">
+  <Canvas>
+    <!-- status strip -->
+    <Rect x="0" y="0" w="320" h="24" bg="#0078D7"/>
+    <Text x="8" y="8" text="NTOS" color="#FFFFFF" size="9" bold="true"/>
+    <Text x="252" y="8" text="100% 12:00" color="#FFFFFF" size="9" align="2"/>
+    <!-- page viewport placeholder (app paints content) -->
+    <Rect x="0" y="24" w="320" h="448" bg="#FFFFFF" name="PageHost"/>
+    <!-- bottom chrome: tabs button / address pill / more -->
+    <Rect x="0" y="472" w="320" h="56" bg="#0078D7"/>
+    <Button x="8" y="484" w="44" h="32" name="TabsButton" command="tabs">
+      <Rect x="0" y="0" w="44" h="32" bg="#005A9E" radius="4"/>
+      <Text x="22" y="9" text="0" color="#FFFFFF" size="14" bold="true" align="1" name="TabsCount"/>
+    </Button>
+    <Button x="60" y="484" w="196" h="32" name="AddressEditBox" command="address">
+      <Rect x="0" y="0" w="196" h="32" bg="#FFFFFF" radius="4"/>
+      <Text x="98" y="9" text="Search or enter address" color="#50606E" size="11" align="1" name="AddressText"/>
+    </Button>
+    <Button x="264" y="484" w="48" h="32" name="MoreButton" command="menu">
+      <Text x="24" y="8" text="..." color="#FFFFFF" size="14" bold="true" align="1"/>
+    </Button>
+  </Canvas>
+</Page>

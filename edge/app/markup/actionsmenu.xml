@@ -1,0 +1,27 @@
+<Page name="ActionsMenu">
+  <Canvas>
+    <!-- dark scrim -->
+    <Rect x="0" y="0" w="320" h="528" bg="#00102000" visible="false" name="Scrim"/>
+    <!-- bottom sheet -->
+    <Rect x="0" y="180" w="320" h="348" bg="#FFFFFF" radius="0" name="Sheet"/>
+    <Rect x="0" y="180" w="320" h="40" bg="#F2F7FB"/>
+    <Text x="12" y="192" text="..." color="#1D2A3A" size="13" bold="true"/>
+    <Button x="272" y="188" w="40" h="28" name="CloseButton" command="close">
+      <Text x="20" y="6" text="X" color="#1D2A3A" size="13" align="1"/>
+    </Button>
+    <List x="0" y="220" w="320" h="308" name="MenuList">
+      <Row><Button x="0" y="0" w="320" h="44" command="newtab" name="ActionsMenuNewTab"><Text x="20" y="14" text="New tab" color="#1D2A3A" size="12"/></Button></Row>
+      <Row><Button x="0" y="0" w="320" h="44" command="newinprivate" name="ActionsMenuNewInPrivate"><Text x="20" y="14" text="New InPrivate tab" color="#1D2A3A" size="12"/></Button></Row>
+      <Row><Button x="0" y="0" w="320" h="44" command="favorites" name="ActionsMenuHub"><Text x="20" y="14" text="Favorites" color="#1D2A3A" size="12"/></Button></Row>
+      <Row><Button x="0" y="0" w="320" h="44" command="history"><Text x="20" y="14" text="History" color="#1D2A3A" size="12"/></Button></Row>
+      <Row><Button x="0" y="0" w="320" h="44" command="readinglist"><Text x="20" y="14" text="Reading list" color="#1D2A3A" size="12"/></Button></Row>
+      <Row><Button x="0" y="0" w="320" h="44" command="downloads"><Text x="20" y="14" text="Downloads" color="#1D2A3A" size="12"/></Button></Row>
+      <Row><Button x="0" y="0" w="320" h="44" command="findonpage" name="FindOnPageButton"><Text x="20" y="14" text="Find on page" color="#1D2A3A" size="12"/></Button></Row>
+      <Row><Button x="0" y="0" w="320" h="44" command="addfavorite" name="AddFavoriteFlyout"><Text x="20" y="14" text="Add to favorites" color="#1D2A3A" size="12"/></Button></Row>
+      <Row><Button x="0" y="0" w="320" h="44" command="share" name="ActionsMenuShare"><Text x="20" y="14" text="Share" color="#1D2A3A" size="12"/></Button></Row>
+      <Row><Button x="0" y="0" w="320" h="44" command="pintostart" name="ActionsMenuPinToStart"><Text x="20" y="14" text="Pin to Start" color="#1D2A3A" size="12"/></Button></Row>
+      <Row><Button x="0" y="0" w="320" h="44" command="print" name="ActionsMenuPrint"><Text x="20" y="14" text="Print" color="#1D2A3A" size="12"/></Button></Row>
+      <Row><Button x="0" y="0" w="320" h="44" command="settings" name="SettingsEntry"><Text x="20" y="14" text="Settings" color="#1D2A3A" size="12"/></Button></Row>
+    </List>
+  </Canvas>
+</Page>

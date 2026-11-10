@@ -1,0 +1,26 @@
+# Edge POC e2e: boot (new tab page), open menu, open tab center, type URL
+shot boot
+tap 288 500
+shot menu
+tap 288 200
+shot menu-closed
+tap 30 500
+shot tabcenter
+tap 288 516
+shot tabcenter-closed
+tap 158 500
+shot address
+tap 100 136
+tap 124 136
+tap 148 136
+tap 100 180
+tap 276 244
+shot typed
+tap 280 244
+shot navigated
+key 0x1b
+tap 288 500
+tap 100 248
+shot hub-favorites
+tap 180 66
+shot hub-history

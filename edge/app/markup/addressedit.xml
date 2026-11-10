@@ -1,0 +1,24 @@
+<Page name="AddressEditBoxPage">
+  <Canvas>
+    <Rect x="0" y="0" w="320" h="528" bg="#FFFFFF"/>
+    <Rect x="0" y="0" w="320" h="48" bg="#0078D7"/>
+    <Button x="4" y="10" w="40" h="28" name="BackButton" command="close">
+      <Text x="20" y="6" text="&lt;" color="#FFFFFF" size="13" align="1"/>
+    </Button>
+    <TextBox x="48" y="10" w="224" h="28" name="AddressBox" text="Search or enter address"/>
+    <Button x="276" y="10" w="44" h="28" name="GoButton" command="go">
+      <Text x="22" y="6" text="Go" color="#FFFFFF" size="12" align="1"/>
+    </Button>
+    <!-- suggestions -->
+    <List x="0" y="48" w="320" h="76" name="Suggestions">
+      <Row><Button x="0" y="0" w="320" h="38" command="go">
+        <Text x="16" y="12" text="ntos.local/start" color="#1D2A3A" size="11" name="Suggestion1"/>
+      </Button></Row>
+      <Row><Button x="0" y="0" w="320" h="38" command="go">
+        <Text x="16" y="12" text="ntos.local/docs" color="#1D2A3A" size="11" name="Suggestion2"/>
+      </Button></Row>
+    </List>
+    <!-- SIP keyboard host (app draws keys) -->
+    <Rect x="0" y="124" w="320" h="404" bg="#DAE9F4" name="KeyboardHost"/>
+  </Canvas>
+</Page>
