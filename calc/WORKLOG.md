@@ -138,3 +138,14 @@ engine off calc_app.c + host harness) — all green at 16 digits.
 - `.forgejo/workflows/calc-ci.yml`: same pattern as settings-ci —
   ntos_linux smoke + calc e2e (`make -C calc/app test`) + uXAML
   round-trip; log + calc-*.png shots shipped to the `calc-ci` branch.
+- Repo integrity: the 6 committed sci frames turned out to predate
+  the final sci.xml row fix (a stale sheet covered the keypad on
+  sci-boot..factorial); a pristine clean rebuild is deterministic
+  (bit-identical across two runs, DLL differing only in PE
+  TimeDateStamp + debug GUID) and passes all 21 probes — regenerated
+  and recommitted. The lesson from files applies here too: always
+  regenerate the full frame set from one clean run before committing.
+- `calc/app/.gitignore`: ignore the generated e2e scratch
+  (tests/build, tests/fs) so `git status` stays clean after
+  `make test`; `calc/tools/ascii_frame.py` sys.path fixed (tools/ is
+  2 levels below root, not 3).
