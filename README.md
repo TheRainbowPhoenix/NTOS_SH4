@@ -9,6 +9,19 @@ Ghidra's PE loader all parse the output directly). Basically a mini
 WinCE nk.exe: it finds `*.EXE`/`*.DLL` files on `\fls0\`
 
 
+## SH7305 diagnostic EXE
+
+The device build now includes `SH7305-PROBE.EXE` (built as
+`dist/sh7305-probe.exe`) from `payload/sh7305_probe.c` using the
+SH4AL-DSP big-endian toolchain, the freestanding `payload.ld` linker
+script, and `tools/elf2ntx.py` (PE machine `0x01A8`).
+
+Launch it in NTOS to print PVR, PRR, CVR, CPID, MMUCR, UTLB cursor and
+boundary values, and code address diagnostics to the NTOS console. It
+**does not** install TLB mappings. Unlike the standalone HH3 probe, this
+EXE does not yet read the external ROM payload or write `results.txt`;
+the current NTOS syscall table does not expose the HH3 probe's file I/O.
+
 ## Install on fx-CP400 (one download)
 
 Open [GitHub Actions → Build · copy to calculator](https://github.com/TheRainbowPhoenix/NTOS_SH4/actions/workflows/c-cpp.yml)
