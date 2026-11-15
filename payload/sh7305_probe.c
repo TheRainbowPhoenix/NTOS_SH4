@@ -143,7 +143,7 @@ static int save_report(const ntos_api_t *api)
 
 int main(const ntos_api_t *api,char **argv,char **envp)
 {
-    uint32_t mmucr, va, pa, pg;
+    uint32_t mmucr, va, pa;
     int code_match=0, saved;
     rom_result_t rom;
     (void)argv;(void)envp;
