@@ -16,11 +16,19 @@ The device build now includes `SH7305-PROBE.EXE` (built as
 SH4AL-DSP big-endian toolchain, the freestanding `payload.ld` linker
 script, and `tools/elf2ntx.py` (PE machine `0x01A8`).
 
-Launch it in NTOS to print PVR, PRR, CVR, CPID, MMUCR, UTLB cursor and
-boundary values, and code address diagnostics to the NTOS console. It
-**does not** install TLB mappings. Unlike the standalone HH3 probe, this
-EXE does not yet read the external ROM payload or write `results.txt`;
-the current NTOS syscall table does not expose the HH3 probe's file I/O.
+Launch it in NTOS to read PVR, PRR, CVR, CPID, MMUCR, UTLB cursor and
+boundary values. An added NTOS API callback resolves P0 PE virtual addresses
+against the physical backing frames recorded by the loader, without risky
+P4 TLB-array reads or installing any new mappings. The code check compares
+its virtual instruction word to its physical P1 alias; this is **backing
+memory**, not proof of a currently resident UTLB entry.
+
+Place the separately generated 1.5 MiB `romprobe.bin` in `\\fls0\\`.
+The EXE streams the entire file through a 4 KiB buffer, validates the
+three marker bytes and all zero-filled positions, then overwrites
+`\\fls0\\results.txt` with CPU, MMU, code, and ROM test results via NTOS's
+file syscalls. It reports failures when the payload is missing. **This is
+file-integrity verification, not a physically contiguous 1.5 MiB ROM map.**
 
 ## Install on fx-CP400 (one download)
 
