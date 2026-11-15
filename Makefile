@@ -67,6 +67,9 @@ HELLOCORE_EXE := $(OUTDIR)/HELLOCORE.EXE
 MEMTOOL_OBJ := $(BUILDDIR)/payload/memtool.o
 MEMTOOL_ELF := $(BUILDDIR)/payload/memtool.elf
 MEMTOOL_EXE := $(OUTDIR)/MEMTOOL.EXE
+SH7305_OBJ := $(BUILDDIR)/payload/sh7305_probe.o
+SH7305_ELF := $(BUILDDIR)/payload/sh7305_probe.elf
+SH7305_EXE := $(OUTDIR)/SH7305PROBE.EXE
 PAINT_OBJ := $(BUILDDIR)/payload/paintdemo.o
 PAINT_ELF := $(BUILDDIR)/payload/paintdemo.elf
 PAINT_EXE := $(OUTDIR)/PAINT.EXE
@@ -148,7 +151,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
+ntx: $(SH7305_EXE) $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -732,3 +735,15 @@ unified: all
 
 # Native WinCE-first phone launcher.
 include payload/phone/phone.mk
+
+# Freestanding SH4AL-DSP BE diagnostic built by the NTOS PE pipeline.
+$(SH7305_OBJ): $(PAYLOAD_DIR)/sh7305_probe.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(SH7305_ELF): $(SH7305_OBJ) $(PAYLOAD_DIR)/payload.ld
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(SH7305_OBJ)
+
+$(SH7305_EXE): $(SH7305_ELF) tools/elf2ntx.py
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
