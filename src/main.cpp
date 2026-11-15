@@ -79,6 +79,7 @@ struct NtosApi {
     int32_t (*find_next)(int32_t,NtosFind *);                // [25]
     int32_t (*find_close)(int32_t);                         // [26]
     int32_t (*launch)(const char *);                       // [27] serial app handoff
+    uint32_t (*backing_pa)(uint32_t);                     // [28] P0 image backing lookup
 };
 
 static int cur_row = 0;
@@ -355,6 +356,7 @@ static uint32_t ntos_getkey(void) {
 }
 
 static int32_t ntos_page_hint(uint32_t va);
+static uint32_t ntos_backing_pa(uint32_t va);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -417,6 +419,7 @@ static NtosApi g_ntos_api = {
     &ntos_find_next,     // [25]
     &ntos_find_close,    // [26]
     &ntos_launch,        // [27]
+    &ntos_backing_pa,    // [28] read-only mapped PE physical backing lookup
 };
 
 // ---------------------------------------------------------------------------
@@ -842,6 +845,19 @@ static int snap_imports(const pe::Image &image_hdr, const MappedImage *image,
 // capacity. Discovery is recursive, by the *actual PE import descriptor name*;
 // it is no longer a hardcoded COREDLL + optional XAMLUI pair.
 constexpr unsigned NTOS_MAX_MODULES=16u;  // EXE + fifteen distinct DLLs
+// These are physical *backing frames*, not UTLB slot residency. Keep the
+// table in the P1 resident loader; read-only queries never change the MMU.
+struct ProbeBacking {uint32_t va, pa, bytes;};
+static ProbeBacking g_probe_backings[NTOS_MAX_MODULES+1u]{};
+static unsigned g_probe_backings_count=0u;
+static uint32_t ntos_backing_pa(uint32_t va) {
+    for(unsigned i=0;i<g_probe_backings_count;++i) {
+        const ProbeBacking &b=g_probe_backings[i];
+        if(va>=b.va && va-b.va<b.bytes)
+            return b.pa+(va-b.va);
+    }
+    return 0xffffffffu;
+}
 constexpr uint32_t NTOS_MAX_FILE_BYTES=8u*1024u*1024u;
 struct ModuleNode {
     char name[40];
@@ -1161,6 +1177,17 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         flush_image(nodes[i].mapped.image,nodes[i].mapped.vsize);
     flush_image(api_block,0x4000u);
 
+    // Publish only valid, page-backed ranges before enabling translation.
+    // P0 EXEs use this stable PA resolver rather than reading risky P4 arrays.
+    g_probe_backings_count=0u;
+    for(unsigned i=0u;i<count;++i) {
+        const MappedImage &m=nodes[i].mapped;
+        g_probe_backings[g_probe_backings_count++]={
+            m.base,mmu::phys_addr(m.image),m.npages*0x1000u};
+    }
+    g_probe_backings[g_probe_backings_count++]={
+        mmu::VA_API_WINDOW,mmu::phys_addr(api_block),0x4000u};
+
     // Regular mode installs every page. Experimental fault mode installs
     // only the API window and each DLL's first page and EXE entry page;
     // the VBR+0x400 trampoline installs the remaining pages on demand.
@@ -1292,6 +1319,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     }
 
 done:
+    g_probe_backings_count=0u;
     mmu::disable_at_flush();
     irq_owner.release();
     host_world::restore(host_state);
