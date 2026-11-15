@@ -68,6 +68,7 @@ jobs:
           python3 tools/package_device.py --from-dist dist --out install
           python3 tools/check_unified_bundle.py install
           test -s install/NTOS.hh3
+          test -s install/SH7305-PROBE.EXE
           test -s install/Windows/demo.cpl
           test ! -e install/NTOS.elf
           test ! -e install/FAULTTEST.EXE
