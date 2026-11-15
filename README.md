@@ -23,7 +23,8 @@ P4 TLB-array reads or installing any new mappings. The code check compares
 its virtual instruction word to its physical P1 alias; this is **backing
 memory**, not proof of a currently resident UTLB entry.
 
-Place the separately generated 1.5 MiB `romprobe.bin` in `\\fls0\\`.
+The device package now includes the separately generated 1.5 MiB
+`romprobe.bin` at the storage root (`\\fls0\\`).
 The EXE streams the entire file through a 4 KiB buffer, validates the
 three marker bytes and all zero-filled positions, then overwrites
 `\\fls0\\results.txt` with CPU, MMU, code, and ROM test results via NTOS's
