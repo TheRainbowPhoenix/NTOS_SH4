@@ -69,6 +69,15 @@ jobs:
           python3 tools/check_unified_bundle.py install
           test -s install/NTOS.hh3
           test -s install/SH7305-PROBE.EXE
+          test "$(stat -c %s install/romprobe.bin)" -eq 1572864
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('install/romprobe.bin')
+          with p.open('rb') as f:
+              for offset, marker in ((0, 0x5a), (0x80000, 0xa5), (0x17ffff, 0x3c)):
+                  f.seek(offset)
+                  assert f.read(1) == bytes((marker,))
+          PY
           test -s install/Windows/demo.cpl
           test ! -e install/NTOS.elf
           test ! -e install/FAULTTEST.EXE
