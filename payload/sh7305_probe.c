@@ -166,13 +166,12 @@ static int save_report(const ntos_api_t *api)
 
 int main(const ntos_api_t *api,char **argv,char **envp)
 {
-    uint32_t mmucr,va,pa,p1,code_word,p1_word,ram_pa;
+    uint32_t va,pa,p1,code_word,p1_word,ram_pa;
     int saved, sample_mapped, sample_contiguous;
     rom_result_t rom;
     (void)argv;(void)envp;
     if(!api || !api->puts)return 1;
     used=0;report[0]=0;
-    mmucr=reg32(0xff000010u);
 
     append("SH7305 PROBE RESULTS\n====================\n\n");
     line_hex("PVR  ",reg32(0xff000030u));
@@ -232,7 +231,6 @@ int main(const ntos_api_t *api,char **argv,char **envp)
     append("File first bad: ");hex(rom.first_bad);append("\n");
     append("File read bytes: ");hex(rom.bytes);append("\n");
     append("Note: samples are RAM backing; the file is not mapped ROM.\n");
-    append("MMUCR ");hex(mmucr);append("\n");
 
     saved=save_report(api);
     api->puts("SH7305 PROBE RESULTS written to results.txt");
