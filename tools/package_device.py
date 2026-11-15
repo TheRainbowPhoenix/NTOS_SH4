@@ -21,7 +21,7 @@ APPS = (
 EXTRA_MODULES = ("DEMO.CPL",)
 SIDE_CARS = ("home.dat", "apps.dat", "nav.dat", "edge.uxaml", "edgelight.uxaml",
              "calc.uxaml", "files.uxaml", "cortana.uxaml", "article.md", "logo.svf",
-             "demo.md", "cool.svf", "swap.html")
+             "demo.md", "cool.svf", "swap.html", "romprobe.bin")
 README = """NTOS for Casio fx-CP400 — copy this folder's CONTENTS to storage.
 Keep Apps/ and Windows/System32/ directory structure. Install NTOS.hh3 as
 the calculator add-in. COREDLL.DLL is shared by ALL phone and native
