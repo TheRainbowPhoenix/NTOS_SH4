@@ -16,7 +16,10 @@
 typedef void (*puts_fn)(const char *);
 typedef struct {
     puts_fn puts;                               /* 0 */
-    void *reserved_1_10[10];                    /* 1..10 */
+    void *reserved_1_2[2];
+    void *(*malloc_)(uint32_t);                 /* 3 */
+    void (*free_)(void *);                     /* 4 */
+    void *reserved_5_10[6];                    /* 1..10 */
     int32_t (*file_open)(const char *,uint32_t);/* 11 */
     int32_t (*file_read)(int32_t,void *,uint32_t);/* 12 */
     int32_t (*file_write)(int32_t,const void *,uint32_t);/* 13 */
@@ -32,6 +35,7 @@ typedef struct {
 typedef struct {
     int opened, size_ok, done, markers[3], error;
     uint32_t bytes, first_bad;
+    uint8_t *resident;
 } rom_result_t;
 
 static uint8_t chunk[4096];
@@ -53,36 +57,46 @@ static void hex(uint32_t x)
 {
     static const char digits[]="0123456789ABCDEF";
     int i;
-    append("0x");
-    for(i=28;i>=0;i-=4) {
-        if(used+1u<sizeof(report))
-            report[used++]=digits[(x>>i)&15u];
-    }
+    for(i=28;i>=0;i-=4)
+        if(used+1u<sizeof(report)) report[used++]=digits[(x>>i)&15u];
     report[used]=0;
 }
 
-static void decimal(uint32_t value)
+static void hex_or_na(uint32_t x)
 {
-    char s[12];
-    unsigned n=0;
-    do {s[n++]=(char)('0'+value%10u);value/=10u;} while(value && n<sizeof(s));
-    while(n && used+1u<sizeof(report)) report[used++]=s[--n];
-    report[used]=0;
+    if(x==NOT_MAPPED)append("N/A");
+    else hex(x);
 }
 
 static void line_hex(const char *name,uint32_t value)
 {
-    append(name);append("=");hex(value);append("\n");
+    append(name);append(" ");hex(value);append("\n");
 }
 
-static void line_dec(const char *name,uint32_t value)
+static void field(const char *label,uint32_t value)
 {
-    append(name);append("=");decimal(value);append("\n");
+    append(label);append(" ");hex_or_na(value);append("\n");
 }
 
-static void line_bool(const char *name,int value)
+static void sample(const char *title,const uint8_t *ptr)
 {
-    append(name);append("=");append(value?"YES":"NO");append("\n");
+    uint32_t va=NOT_MAPPED,pa=NOT_MAPPED,p1=NOT_MAPPED;
+    append("\n");append(title);append("\n");
+    if(ptr) {
+        va=(uint32_t)(uintptr_t)ptr;
+        if(va>=0x80000000u && va<0xc0000000u) {
+            pa=va&0x1fffffffu;
+            p1=pa|0x80000000u;
+        }
+    }
+    field("VA",va);field("PA",pa);field("P1",p1);
+    append("PAGE bytes N/A\n");
+    field("VA value",ptr?(uint32_t)*ptr:NOT_MAPPED);
+    field("P1 value",p1!=NOT_MAPPED?(uint32_t)*(volatile const uint8_t *)(uintptr_t)p1:NOT_MAPPED);
+    append("Alias match: ");
+    if(p1==NOT_MAPPED)append("N/A");
+    else append(*ptr==*(volatile const uint8_t *)(uintptr_t)p1?"yes":"no");
+    append("\n");
 }
 
 static rom_result_t verify_rom(const ntos_api_t *api)
@@ -96,6 +110,7 @@ static rom_result_t verify_rom(const ntos_api_t *api)
     n=api->file_size(fd);
     result.size_ok=n==(int32_t)ROM_SIZE;
     if(!result.size_ok) {result.error=n;goto finish;}
+    if(api->malloc_) result.resident=(uint8_t *)api->malloc_(ROM_SIZE);
     while(result.bytes<ROM_SIZE) {
         uint32_t count=ROM_SIZE-result.bytes;
         uint32_t i;
@@ -114,9 +129,17 @@ static rom_result_t verify_rom(const ntos_api_t *api)
             if(offset==0x080000u)result.markers[1]=(chunk[i]==0xa5u);
             if(offset==ROM_SIZE-1u)result.markers[2]=(chunk[i]==0x3cu);
         }
+        if(result.resident) {
+            for(i=0;i<(uint32_t)n;++i)
+                result.resident[result.bytes+i]=chunk[i];
+        }
         result.bytes+=(uint32_t)n;
     }
     result.done=result.bytes==ROM_SIZE && result.first_bad==NOT_MAPPED;
+    if(!result.done && result.resident) {
+        api->free_(result.resident);
+        result.resident=0;
+    }
 finish:
     n=api->file_close(fd);
     if(n<0)result.error=n;
@@ -143,63 +166,78 @@ static int save_report(const ntos_api_t *api)
 
 int main(const ntos_api_t *api,char **argv,char **envp)
 {
-    uint32_t mmucr, va, pa;
-    int code_match=0, saved;
+    uint32_t mmucr,va,pa,p1,code_word,p1_word,ram_pa;
+    int saved, sample_mapped, sample_contiguous;
     rom_result_t rom;
     (void)argv;(void)envp;
     if(!api || !api->puts)return 1;
-
     used=0;report[0]=0;
-    append("SH7305 PROBE / NTOS SH4AL-DSP BE\n");
-    append("==============================\n");
-    line_hex("PVR",reg32(0xff000030u));
-    line_hex("PRR",reg32(0xff000044u));
-    line_hex("CVR",reg32(0xff000040u));
-    line_hex("CPID",reg32(0xff000048u));
     mmucr=reg32(0xff000010u);
-    line_hex("MMUCR",mmucr);
-    line_bool("AT",!!(mmucr&1u));
-    line_dec("UTLB_URC",(mmucr>>10)&63u);
-    line_dec("UTLB_URB",(mmucr>>18)&63u);
 
-    append("\nCODE\n");
+    append("SH7305 PROBE RESULTS\n====================\n\n");
+    line_hex("PVR  ",reg32(0xff000030u));
+    line_hex("PRR  ",reg32(0xff000044u));
+    line_hex("CVR  ",reg32(0xff000040u));
+    line_hex("CPIDR",reg32(0xff000048u));
+
+    append("\nUSER RAM\n");
+    ram_pa=api->backing_pa?api->backing_pa(0x08100000u):NOT_MAPPED;
+    append("VA 08100000\n");
+    field("PA",ram_pa);
+    field("P1",ram_pa==NOT_MAPPED?NOT_MAPPED:ram_pa|0x80000000u);
+    append("PAGE bytes ");append(ram_pa==NOT_MAPPED?"N/A":"00001000");append("\n");
+    append("RAM span bytes ");append(ram_pa==NOT_MAPPED?"N/A":"00004000");append("\n");
+
+    append("\nSH7305 CLOCKS (raw)\n");
+    line_hex("FRQCR ",reg32(0xa4150000u));
+    line_hex("PLLCR ",reg32(0xa4150024u));
+    line_hex("PLLFRQ",reg32(0xa4150050u));
+    append("Frequency Hz: N/A\n");
+
+    append("\nADDIN CODE\n");
     va=(uint32_t)(uintptr_t)&main;
-    line_hex("CODE_VA",va);
     pa=NOT_MAPPED;
-    if(va>=0x80000000u && va<0xc0000000u)
-        pa=va&0x1fffffffu;
-    else if(api->backing_pa)
-        pa=api->backing_pa(va);
-    line_hex("CODE_BACKING_PA",pa);
-    if(pa!=NOT_MAPPED) {
-        uint32_t a=reg32(va);
-        uint32_t b=reg32(pa|0x80000000u);
-        line_hex("CODE_VA_WORD",a);
-        line_hex("CODE_P1_WORD",b);
-        code_match=(a==b);
-    }
-    line_bool("CODE_MATCH",code_match);
-    append("CODE_NOTE=physical backing, not proof of current UTLB residency\n");
+    if(va>=0x80000000u && va<0xc0000000u)pa=va&0x1fffffffu;
+    else if(api->backing_pa)pa=api->backing_pa(va);
+    p1=pa==NOT_MAPPED?NOT_MAPPED:pa|0x80000000u;
+    field("VA",va);field("PA",pa);field("P1",p1);
+    append("PAGE bytes ");append(pa==NOT_MAPPED?"N/A":"00001000");append("\n");
+    /* The reference uses 16-bit SH instructions, not a 32-bit word. */
+    code_word=(uint32_t)*(volatile const uint16_t *)(uintptr_t)va;
+    p1_word=p1==NOT_MAPPED?NOT_MAPPED:
+        (uint32_t)*(volatile const uint16_t *)(uintptr_t)p1;
+    field("VA value",code_word);field("P1 value",p1_word);
+    append("Alias match: ");
+    append(p1==NOT_MAPPED?"N/A":code_word==p1_word?"yes":"no");
+    append("\n");
 
-    append("\nROM FILE CHECK\n");
-    append("ROM_PATH=" ROM_PATH "\n");
-    line_dec("ROM_EXPECTED_SIZE",ROM_SIZE);
     rom=verify_rom(api);
-    line_bool("ROM_OPEN",rom.opened);
-    line_bool("ROM_LENGTH_OK",rom.size_ok);
-    line_dec("ROM_BYTES_READ",rom.bytes);
-    line_bool("ROM_START_5A",rom.markers[0]);
-    line_bool("ROM_MID_A5",rom.markers[1]);
-    line_bool("ROM_END_3C",rom.markers[2]);
-    line_hex("ROM_FIRST_BAD",rom.first_bad);
-    line_bool("ROM_DATA_PASS",rom.done);
-    line_hex("ROM_IO_ERROR",(uint32_t)rom.error);
-    append("ROM_NOTE=streamed file verification, NOT 1.5MiB contiguous ROM mapping\n");
+    sample("ROM 1.5M START",rom.resident);
+    sample("ROM 1.5M MID",rom.resident?rom.resident+0x080000u:0);
+    sample("ROM 1.5M END",rom.resident?rom.resident+ROM_SIZE-1u:0);
+
+    sample_mapped=rom.resident!=0;
+    if(sample_mapped) {
+        uint32_t mem=(uint32_t)(uintptr_t)rom.resident;
+        sample_mapped=mem>=0x80000000u && mem<0xc0000000u &&
+            ROM_SIZE<=0xc0000000u-mem;
+    }
+    sample_contiguous=sample_mapped; /* Direct P1/P2 allocation is linear. */
+    append("\nLINUX ROM TEST\n");
+    line_hex("ROM bytes",ROM_SIZE);
+    append("Sample map: ");append(sample_mapped?"YES":"N/A");append("\n");
+    append("Samples contiguous: ");append(sample_mapped?
+        (sample_contiguous?"YES":"NO"):"N/A");append("\n");
+    append("File integrity: ");append(rom.done?"PASS":"FAIL");append("\n");
+    append("File first bad: ");hex(rom.first_bad);append("\n");
+    append("File read bytes: ");hex(rom.bytes);append("\n");
+    append("Note: samples are RAM backing; the file is not mapped ROM.\n");
+    append("MMUCR ");hex(mmucr);append("\n");
 
     saved=save_report(api);
-    api->puts("SH7305 probe finished; P0 backing address resolved:");
-    api->puts(pa!=NOT_MAPPED?"YES":"NO");
+    api->puts("SH7305 PROBE RESULTS written to results.txt");
     api->puts(rom.done?"ROM FILE: PASS":"ROM FILE: FAIL");
-    api->puts(saved==0?"RESULTS: \\fls0\\results.txt":"RESULTS: WRITE FAILED");
+    api->puts(saved==0?"SAVE: OK":"SAVE: FAILED");
+    if(rom.resident && api->free_)api->free_(rom.resident);
     return saved!=0?2:(rom.done?0:1);
 }
