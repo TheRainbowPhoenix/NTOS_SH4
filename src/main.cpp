@@ -690,14 +690,12 @@ static int load_mapped_reader(ntos_pager::ReadAt read,void *reader_context,
     *err = "ok";
     return 0;
 }
-#if !NTOS_STREAMED_IMAGE_LOADING
 static int load_mapped(const uint8_t *file,uint32_t file_size,
                        const pe::Image &hdr,MappedImage *out_mi,
                        const char **err) {
     PeMemoryReader source{file,file_size};
     return load_mapped_reader(&pe_memory_read,&source,file_size,hdr,out_mi,err);
 }
-#endif
 
 // Snap the EXE's PE import directory against coredll's export directory
 // (the WinCE IAT snap): each FirstThunk slot receives the absolute P0 VA
@@ -1087,6 +1085,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                       const char *source_path=nullptr) {
     (void)core_path;(void)core_size;(void)extra_path;(void)extra_size;
     *err="unknown";
+    (void)source_path; // used only by the streamed-build variant
     const host_world::Snapshot host_state=host_world::capture();
     ntos_irq::Owner irq_owner{};
     // Stage0 records ownership intent without installing an ISR. The host
