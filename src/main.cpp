@@ -28,10 +28,17 @@
 #include "../payload/ugui_font.h"
 #include "pe_rebase.hpp"
 #include "pe_pager.hpp"
+#include "pe_stream.hpp"
 #include "host_world.hpp"
 #include "irq_handoff.hpp"
 #include "mmu.hpp"
 #include "fs_guard.hpp"
+
+// Streaming is enabled on this development branch. Set 0 to compare the
+// previous eager full-file staging path during emulator/hardware testing.
+#ifndef NTOS_STREAMED_IMAGE_LOADING
+#define NTOS_STREAMED_IMAGE_LOADING 1
+#endif
 
 APP_NAME("NTOS")
 APP_DESCRIPTION("Big-endian SH4 COFF EXE loader")
@@ -588,11 +595,40 @@ static bool pe_memory_read(void *ctx,uint32_t pos,uint8_t *dst,uint32_t len) {
     Mem_Memcpy(dst,r->bytes+pos,len);
     return true;
 }
-// Copy an image into 4 KiB-aligned heap memory without applying any
-// relocations -- it will execute at its preferred base via the UTLB.
-static int load_mapped(const uint8_t *file, uint32_t file_size,
-                       const pe::Image &hdr, MappedImage *out_mi,
-                       const char **err) {
+// Bounded random-access SDK reads. Only called while running in the host's
+// P1 context, with AT disabled and NTOS not owning VBR. Never use this
+// callback to service a hardware page fault.
+struct PeDiskReader {
+    int fd;
+    uint32_t size;
+};
+static bool pe_disk_read(void *context,uint32_t position,
+                         uint8_t *destination,uint32_t count) {
+    auto *source=static_cast<PeDiskReader *>(context);
+    if(!source || !destination || !g_fs.file_is(source->fd) ||
+       position>source->size || count>source->size-position ||
+       position>0x7fffffffu) return false;
+    if(File_Lseek(source->fd,static_cast<int32_t>(position),
+                  static_cast<File_Whence>(0))!=static_cast<int32_t>(position))
+        return false;
+    uint32_t completed=0u;
+    while(completed<count) {
+        uint32_t wanted=count-completed;
+        if(wanted>4096u)wanted=4096u;
+        const int got=File_Read(source->fd,destination+completed,
+                                static_cast<int>(wanted));
+        if(got<=0 || static_cast<uint32_t>(got)>wanted)return false;
+        completed+=static_cast<uint32_t>(got);
+    }
+    return true;
+}
+
+// Materialize a complete resident image directly from a bounded file source.
+// This intentionally changes only file staging: the current fully RAM-backed
+// TLB-miss pager, relocations and DLL import behavior remain unchanged.
+static int load_mapped_reader(ntos_pager::ReadAt read,void *reader_context,
+                              uint32_t file_size,const pe::Image &hdr,
+                              MappedImage *out_mi,const char **err) {
     *err = "unknown";
     // The PE ImageBase is only a *preference*. Windows CE commonly links
     // every DLL to 0x10000000, outside our smaller P0 UTLB arena. The
@@ -636,8 +672,7 @@ static int load_mapped(const uint8_t *file, uint32_t file_size,
 
     // Populate each page from file-backed sections plus zero-fill,
     // using the read-at backend that will also serve future demand faults.
-    PeMemoryReader reader{file,file_size};
-    ntos_pager::Source src{&hdr,&reader,&pe_memory_read,file_size,
+    ntos_pager::Source src{&hdr,reader_context,read,file_size,
                             hdr.oh.image_base,true};
     for(uint32_t page=0u;page<mapped_bytes/0x1000u;++page) {
         if(!ntos_pager::materialize(src,page,
@@ -655,6 +690,14 @@ static int load_mapped(const uint8_t *file, uint32_t file_size,
     *err = "ok";
     return 0;
 }
+#if !NTOS_STREAMED_IMAGE_LOADING
+static int load_mapped(const uint8_t *file,uint32_t file_size,
+                       const pe::Image &hdr,MappedImage *out_mi,
+                       const char **err) {
+    PeMemoryReader source{file,file_size};
+    return load_mapped_reader(&pe_memory_read,&source,file_size,hdr,out_mi,err);
+}
+#endif
 
 // Snap the EXE's PE import directory against coredll's export directory
 // (the WinCE IAT snap): each FirstThunk slot receives the absolute P0 VA
@@ -934,6 +977,64 @@ static bool read_module_file(const char *path,uint8_t **dst,
     *dst=buf;*bytes=n;return true;
 }
 
+// Load and close each module before discovering the next DLL. The host's
+// filesystem gate allows only one SDK descriptor at a time. No file can
+// remain open when the MMU/VBR ownership changes or the payload runs.
+// If mapped==nullptr, validate only headers (for the launcher picker).
+static bool read_pe_source(const char *path,bool flat_dll_fallback,
+                           bool must_be_dll,pe::Image *header,
+                           MappedImage *mapped,uint32_t *size,
+                           const char **err) {
+    if(!path || !header || !size || !err)return false;
+    *size=0u;
+    int fd=fs_open(path,FILE_OPEN_READ);
+    if(fd<0 && flat_dll_fallback && !g_fs.busy()) {
+        char old_path[64]="\\\\fls0\\\\";
+        uint32_t offset=6u;
+        const char *name=path;
+        for(uint32_t i=0u;path[i];++i)
+            if(path[i]=='\\\\')name=path+i+1u;
+        for(uint32_t i=0u;name[i] && offset+1u<sizeof(old_path);++i)
+            old_path[offset++]=name[i];
+        old_path[offset]=0;
+        fd=fs_open(old_path,FILE_OPEN_READ);
+    }
+    if(fd<0) {*err="PE file unavailable or filesystem busy";return false;}
+    bool valid=false;
+    struct File_Stat st{};
+    do {
+        if(File_Fstat(fd,&st)<0 || st.fileSize<512u ||
+           st.fileSize>NTOS_MAX_FILE_BYTES) {
+            *err="invalid PE file length";
+            break;
+        }
+        const uint32_t bytes=static_cast<uint32_t>(st.fileSize);
+        PeDiskReader source{fd,bytes};
+        if(pe_stream::parse(&pe_disk_read,&source,bytes,header)!=0) {
+            *err="bad or unsupported SH4BE PE header";
+            break;
+        }
+        if(must_be_dll && !(header->fh.characteristics&pe::F_DLL)) {
+            *err="dependency is not an SH4BE DLL";
+            break;
+        }
+        if(mapped && load_mapped_reader(&pe_disk_read,&source,bytes,
+                                        *header,mapped,err)!=0)
+            break;
+        *size=bytes;
+        valid=true;
+    } while(false);
+    if(fs_close(fd)<0) {
+        *err="SDK PE file close failed; refusing further I/O";
+        valid=false;
+    }
+    if(!valid && mapped && mapped->raw) {
+        Mem_Free(mapped->raw);
+        *mapped=MappedImage{};
+    }
+    return valid;
+}
+
 static bool require_dependency(const char *dependency,ModuleNode *nodes,
                                unsigned *count,const char **err) {
     if(!safe_dll_name(dependency)) {
@@ -953,6 +1054,11 @@ static bool require_dependency(const char *dependency,ModuleNode *nodes,
     if(!dll_path(path,sizeof(path),module.name)) {
         *err="invalid DLL filename";return false;
     }
+#if NTOS_STREAMED_IMAGE_LOADING
+    if(!read_pe_source(path,true,true,&module.hdr,&module.mapped,
+                       &module.file_bytes,err))
+        return false;
+#else
     if(!read_module_file(path,&module.file,&module.file_bytes,err))
         return false;
     if(pe::parse(module.file,module.file_bytes,&module.hdr)!=0 ||
@@ -962,6 +1068,7 @@ static bool require_dependency(const char *dependency,ModuleNode *nodes,
     if(load_mapped(module.file,module.file_bytes,module.hdr,
                    &module.mapped,err)!=0)
         return false;
+#endif
     ++*count;
     return true;
 }
@@ -976,7 +1083,8 @@ static bool require_dependency(const char *dependency,ModuleNode *nodes,
 static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                       const char *core_path, uint32_t core_size,
                       const char *extra_path, uint32_t extra_size,
-                      int *out_ret, const char **err) {
+                      int *out_ret, const char **err,
+                      const char *source_path=nullptr) {
     (void)core_path;(void)core_size;(void)extra_path;(void)extra_size;
     *err="unknown";
     const host_world::Snapshot host_state=host_world::capture();
@@ -1005,6 +1113,27 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     nodes[0].file=file;
     nodes[0].file_bytes=fsize;
     // Main EXE is owned by the caller; only dependency buffers are freed.
+#if NTOS_STREAMED_IMAGE_LOADING
+    if(source_path) {
+        pe::Image disk_header{};
+        uint32_t actual_size=0u;
+        if(!read_pe_source(source_path,false,false,&disk_header,
+                           &nodes[0].mapped,&actual_size,err))
+            goto done;
+        // The launcher opened this PE once already to choose the load mode.
+        // Refuse a changed file instead of mixing two sets of metadata.
+        if(actual_size!=fsize ||
+           disk_header.oh.entry_rva!=hdr.oh.entry_rva ||
+           disk_header.oh.image_base!=hdr.oh.image_base ||
+           disk_header.oh.size_of_image!=hdr.oh.size_of_image ||
+           disk_header.section_count!=hdr.section_count ||
+           disk_header.oh.import_rva!=hdr.oh.import_rva ||
+           disk_header.oh.export_rva!=hdr.oh.export_rva) {
+            *err="PE headers changed while loading";
+            goto done;
+        }
+    } else
+#endif
     if(load_mapped(file,fsize,hdr,&nodes[0].mapped,err)!=0)
         goto done;
 
@@ -1598,14 +1727,38 @@ int main(int argc, char **argv, char **envp) {
         path[p] = '\0';
     }
 
+    uint8_t *file=nullptr;
+    uint32_t fsize=0u;
+    pe::Image hdr{};
+    const char *mapped_path=nullptr;
+#if NTOS_STREAMED_IMAGE_LOADING
+    const char *load_error=nullptr;
+    if(!read_pe_source(path,false,false,&hdr,nullptr,&fsize,&load_error)) {
+        app_load_error(load_error);
+        wait_error_key_release();
+        continue;
+    }
+    // Copy-load fallback still needs a staged buffer; normal mapped
+    // execution no longer allocates it at all.
+    if(mmu::at_enabled()) {
+        uint32_t staged_bytes=0u;
+        if(!read_module_file(path,&file,&staged_bytes,&load_error) ||
+           staged_bytes!=fsize) {
+            if(file)Mem_Free(file);
+            app_load_error(load_error?load_error:"PE file changed during load");
+            wait_error_key_release();
+            continue;
+        }
+    } else mapped_path=path;
+#else
     int fd = fs_open(path, FILE_OPEN_READ);
     if (fd < 0) {
         app_load_error("Could not open the selected EXE (file busy?)");
         wait_error_key_release();
         continue;
     }
-    uint32_t fsize = sizes[pick[selected]];
-    auto *file = static_cast<uint8_t *>(Mem_Malloc(fsize != 0 ? fsize : 1));
+    fsize = sizes[pick[selected]];
+    file = static_cast<uint8_t *>(Mem_Malloc(fsize != 0 ? fsize : 1));
     if (file == nullptr) {
         app_load_error("Not enough memory to stage EXE");
         fs_close(fd);
@@ -1623,13 +1776,15 @@ int main(int argc, char **argv, char **envp) {
     fs_close(fd);
 
     // Parse the header once to pick the load path.
-    pe::Image hdr{};
     if (pe::parse(file, fsize, &hdr) != 0) {
         app_load_error("Invalid SH4BE PE executable");
         Mem_Free(file);
         wait_error_key_release();
         continue;
     }
+
+
+#endif
 
     int ret;
     if (!mmu::at_enabled() && hdr.oh.magic == pe::OPT_MAGIC_PE32 &&
@@ -1666,16 +1821,16 @@ int main(int argc, char **argv, char **envp) {
         ntos_puts("Mode: UTLB-mapped (preferred base)");
         const char *err = nullptr;
         const int mapped_rc=run_mapped(file,fsize,hdr,core_path,core_size,
-                       extra_path,extra_size,&ret,&err);
+                       extra_path,extra_size,&ret,&err,mapped_path);
         if(mapped_rc != 0) {
             if(mapped_rc==-2) {
-                Mem_Free(file);
+                if(file)Mem_Free(file);
                 kernel_fault_screen();
                 return safe_host_exit(-1);
             }
             app_load_error(err);
             LCD_Refresh();
-            Mem_Free(file);
+            if(file)Mem_Free(file);
             wait_error_key_release();
         continue;
         }
@@ -1709,7 +1864,7 @@ int main(int argc, char **argv, char **envp) {
         Mem_Free(image);
     }
 
-    Mem_Free(file);
+    if(file)Mem_Free(file);
     if(!fs_recover()) {
         ntos_puts("FS locked after application; stopping");
         LCD_Refresh();
@@ -1723,9 +1878,16 @@ int main(int argc, char **argv, char **envp) {
             next[i]=0;pending_app[0]=0;
             uint8_t *app_file=nullptr;uint32_t app_size=0;const char *launch_error=nullptr;
             pe::Image app_hdr{};
+#if NTOS_STREAMED_IMAGE_LOADING
+            bool ok=read_pe_source(next,false,false,&app_hdr,nullptr,
+                                   &app_size,&launch_error);
+            if(ok)ok=run_mapped(nullptr,app_size,app_hdr,nullptr,0,nullptr,0,
+                                &ret,&launch_error,next)==0;
+#else
             bool ok=read_module_file(next,&app_file,&app_size,&launch_error);
             if(ok)ok=pe::parse(app_file,app_size,&app_hdr)==0;
             if(ok)ok=run_mapped(app_file,app_size,app_hdr,nullptr,0,nullptr,0,&ret,&launch_error)==0;
+#endif
             if(app_file)Mem_Free(app_file);
             if(ok && ret) {
                 char msg[48], *p=msg;
