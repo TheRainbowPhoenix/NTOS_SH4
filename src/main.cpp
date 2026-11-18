@@ -580,10 +580,9 @@ static int32_t ntos_page_hint(uint32_t va) {
 }
 
 
-// The eager mapper uses the exact same file-to-page materializer as the
-// future demand pager. It runs with MMU translation disabled and does not
-// install any exception vectors. The source is still buffered in P1 RAM;
-// the upcoming fault backend will replace this Reader with safe file I/O.
+// The eager mapper and the future demand pager share a file-to-page
+// materializer. In the old mode this Reader uses a complete P1 RAM buffer;
+// in streamed mode the source is an SDK file read with MMU/VBR restored.
 struct PeMemoryReader {
     const uint8_t *bytes;
     uint32_t count;
@@ -595,6 +594,7 @@ static bool pe_memory_read(void *ctx,uint32_t pos,uint8_t *dst,uint32_t len) {
     Mem_Memcpy(dst,r->bytes+pos,len);
     return true;
 }
+#if NTOS_STREAMED_IMAGE_LOADING
 // Bounded random-access SDK reads. Only called while running in the host's
 // P1 context, with AT disabled and NTOS not owning VBR. Never use this
 // callback to service a hardware page fault.
@@ -622,6 +622,7 @@ static bool pe_disk_read(void *context,uint32_t position,
     }
     return true;
 }
+#endif
 
 // Materialize a complete resident image directly from a bounded file source.
 // This intentionally changes only file staging: the current fully RAM-backed
@@ -975,6 +976,8 @@ static bool read_module_file(const char *path,uint8_t **dst,
     *dst=buf;*bytes=n;return true;
 }
 
+#if NTOS_STREAMED_IMAGE_LOADING
+static uint32_t g_skipped_pe_staging_bytes=0u;
 // Load and close each module before discovering the next DLL. The host's
 // filesystem gate allows only one SDK descriptor at a time. No file can
 // remain open when the MMU/VBR ownership changes or the payload runs.
@@ -1030,8 +1033,10 @@ static bool read_pe_source(const char *path,bool flat_dll_fallback,
         Mem_Free(mapped->raw);
         *mapped=MappedImage{};
     }
+    if(valid && mapped)g_skipped_pe_staging_bytes+=*size;
     return valid;
 }
+#endif
 
 static bool require_dependency(const char *dependency,ModuleNode *nodes,
                                unsigned *count,const char **err) {
@@ -1108,6 +1113,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     uint8_t *api_block=nullptr;
     int rc=-1;
 
+#if NTOS_STREAMED_IMAGE_LOADING
+    g_skipped_pe_staging_bytes=0u;
+#endif
     nodes[0].hdr=hdr;
     nodes[0].file=file;
     nodes[0].file_bytes=fsize;
@@ -1423,6 +1431,16 @@ done:
     mmu::disable_at_flush();
     irq_owner.release();
     host_world::restore(host_state);
+#if NTOS_STREAMED_IMAGE_LOADING
+    if(source_path) {
+        char msg[72], *p=msg;
+        log_text(p,"Skipped PE source buffers: ");
+        log_number(p,g_skipped_pe_staging_bytes,10);
+        log_text(p," bytes");
+        *p=0;
+        ntos_puts(msg); // host VBR and MMU already restored
+    }
+#endif
 #if NTOS_ENABLE_TLB_MISS_PAGER
     // All host UI work occurs AFTER restoring the original VBR and SR.
     // Report the actual fault/eviction count when emulator testing PAGERTEST.
@@ -1713,7 +1731,8 @@ int main(int argc, char **argv, char **envp) {
         }
     }
 
-    // Read the selected file fully. File_Open takes an ANSI path.
+    // Open the selected PE. Streaming mode only reads its header here;
+    // copy-load comparison mode retains the former full-file staging path.
     char path[8 + kMaxName + 1];
     {
         const char prefix[] = "\\fls0\\";
