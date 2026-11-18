@@ -609,7 +609,7 @@ static bool pe_disk_read(void *context,uint32_t position,
        position>source->size || count>source->size-position ||
        position>0x7fffffffu) return false;
     if(File_Lseek(source->fd,static_cast<int32_t>(position),
-                  static_cast<File_Whence>(0))!=static_cast<int32_t>(position))
+                  FILE_SEEK_SET)!=static_cast<int32_t>(position))
         return false;
     uint32_t completed=0u;
     while(completed<count) {
@@ -987,15 +987,15 @@ static bool read_pe_source(const char *path,bool flat_dll_fallback,
     *size=0u;
     int fd=fs_open(path,FILE_OPEN_READ);
     if(fd<0 && flat_dll_fallback && !g_fs.busy()) {
-        char old_path[64]="\\\\fls0\\\\";
-        uint32_t offset=6u;
-        const char *name=path;
-        for(uint32_t i=0u;path[i];++i)
-            if(path[i]=='\\\\')name=path+i+1u;
-        for(uint32_t i=0u;name[i] && offset+1u<sizeof(old_path);++i)
-            old_path[offset++]=name[i];
-        old_path[offset]=0;
-        fd=fs_open(old_path,FILE_OPEN_READ);
+        char legacy[64]="\\fls0\\";
+        unsigned k=6;
+        const char *last=path;
+        for(unsigned i=0;path[i];++i)
+            if(path[i]=='\\')last=path+i+1u;
+        for(unsigned i=0;last[i] && k+1<sizeof(legacy);++i)
+            legacy[k++]=last[i];
+        legacy[k]=0;
+        fd=fs_open(legacy,FILE_OPEN_READ);
     }
     if(fd<0) {*err="PE file unavailable or filesystem busy";return false;}
     bool valid=false;
@@ -1744,7 +1744,9 @@ int main(int argc, char **argv, char **envp) {
         if(!read_module_file(path,&file,&staged_bytes,&load_error) ||
            staged_bytes!=fsize) {
             if(file)Mem_Free(file);
-            app_load_error(load_error?load_error:"PE file changed during load");
+            app_load_error(staged_bytes && staged_bytes!=fsize ?
+                           "PE file changed during load" :
+                           (load_error?load_error:"Failed to stage copy-load PE"));
             wait_error_key_release();
             continue;
         }
