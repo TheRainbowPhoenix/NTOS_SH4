@@ -32,6 +32,10 @@ jobs:
           apt-get install -y -qq python3 python3-pefile gcc g++ clang-format clang-tidy
       - name: Build native test fixtures
         run: make -j4
+      - name: Bounded streamed PE header parser regression
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/pe_stream_test.cpp -o /tmp/pe-stream-test
+          /tmp/pe-stream-test
       - name: Static checks and PE import/link validation
         run: |
           python3 tools/format_c_sources.py --check
