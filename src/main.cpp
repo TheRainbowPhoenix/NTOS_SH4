@@ -25,7 +25,7 @@
 #include "../payload/ntapi_caps.h"
 #include "pe.hpp"
 #include "console.hpp"
-#include "../payload/ugui_font.h"
+#include "console_font.hpp"
 #include "pe_rebase.hpp"
 #include "pe_pager.hpp"
 #include "pe_stream.hpp"
@@ -104,9 +104,9 @@ static int cur_row = 0;
 // The bitmap atlas contains 14 distinct rows per glyph. The old 12-row
 // resampling skipped source row 6 (the middle bar in E/F/B); do not squeeze
 // rows. 37 lines x 14 pixels fit inside the 320x528 LCD (518 pixels).
-constexpr unsigned NTOS_CONSOLE_COLUMNS=40u;
-constexpr unsigned NTOS_CONSOLE_ROWS=37u;
-constexpr unsigned NTOS_CONSOLE_GLYPH_HEIGHT=14u;
+constexpr unsigned NTOS_CONSOLE_COLUMNS=ntos_console::COLUMNS;
+constexpr unsigned NTOS_CONSOLE_ROWS=ntos_console::ROWS;
+constexpr unsigned NTOS_CONSOLE_GLYPH_HEIGHT=ntos_console::GLYPH_HEIGHT;
 static TextConsole<NTOS_CONSOLE_COLUMNS,NTOS_CONSOLE_ROWS> app_console;
 static bool app_console_started = false;
 static void console_paint(unsigned row, const char *text) {
@@ -117,7 +117,7 @@ static void console_paint(unsigned row, const char *text) {
         unsigned ch = static_cast<unsigned char>(text[x]);
         if (ch < 32 || ch > 126) ch = '?';
         for (unsigned y = 0; y < NTOS_CONSOLE_GLYPH_HEIGHT; ++y) {
-            const unsigned bits = nt_font_rows[ch - 32][y];
+            const unsigned bits = ntos_console::glyph_row(ch,y);
             for (unsigned bit = 0; bit < 8; ++bit)
                 if (bits & (1u << bit)) setPixel(x * 8 + bit, top + y, 0);
         }
