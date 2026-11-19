@@ -31,7 +31,7 @@ int main(const void *const *api,char **argv,char **envp)
     if(open_(PATH,1u)!=-16 || count()!=1u)
         return 0xBAD60005u;
     if(size_(fd)<512)return 0xBAD60006u;
-    uint8_t bytes[16]={0};
+    uint8_t bytes[16]; // File_Read fills every byte before inspection.
     if(read_(fd,bytes,16u)!=16)return 0xBAD60007u;
     // Header signature "MZ"; never modify the file.
     if(bytes[0]!=0x4Du || bytes[1]!=0x5Au)
