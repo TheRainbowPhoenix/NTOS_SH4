@@ -546,9 +546,36 @@ $(NT_PROBE_DIST)/LARGE4M.EXE: $(NT_PROBE_BUILD)/large4m.elf tools/elf2ntx.py
 	$(PYTHON) tools/elf2ntx.py $< -o $@
 	$(PYTHON) tools/check_large4m_pe.py $@
 
-.PHONY: nt-exec-probes
-nt-exec-probes: $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/LARGE4M.EXE
-	@echo "NT EXECUTIVE EXPERIMENTS: dist_ntprobe/ (NOT DEVICE PACKAGE)"
+# Self-contained opt-in P0/P1/P2 probes. No fault injection, disk
+# mutation or unhinted P0 dereferences appear in the hardware package.
+# PROCTEST depends on PROCNEXT + PROCFINAL and a matching HELLO.EXE.
+define NT_SAFE_PROBE_RULE
+$(NT_PROBE_BUILD)/$(1).o: payload/$(1).c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(NT_PROBE_BUILD)/$(1).elf: $(NT_PROBE_BUILD)/$(1).o payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+
+$(NT_PROBE_DIST)/$(2).EXE: $(NT_PROBE_BUILD)/$(1).elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+endef
+$(eval $(call NT_SAFE_PROBE_RULE,pooltest,POOLTEST))
+$(eval $(call NT_SAFE_PROBE_RULE,evtest,EVTEST))
+$(eval $(call NT_SAFE_PROBE_RULE,proctest,PROCTEST))
+$(eval $(call NT_SAFE_PROBE_RULE,procnext,PROCNEXT))
+$(eval $(call NT_SAFE_PROBE_RULE,procfinal,PROCFINAL))
+$(eval $(call NT_SAFE_PROBE_RULE,mmtest,MMTEST))
+$(eval $(call NT_SAFE_PROBE_RULE,iotest,IOTEST))
+NT_SAFE_PROBES := $(addprefix $(NT_PROBE_DIST)/,POOLTEST.EXE EVTEST.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE MMTEST.EXE IOTEST.EXE)
+
+.PHONY: nt-safe-probes nt-exec-probes
+nt-safe-probes: $(NT_PROBE_DIST)/OBTEST.EXE $(NT_SAFE_PROBES)
+	@echo "NTOS P0/P1/P2 HARDWARE-SAFE-INTENT probes in dist_ntprobe/"
+nt-exec-probes: nt-safe-probes $(NT_PROBE_DIST)/LARGE4M.EXE
+	@echo "NT EXECUTIVE EXPERIMENTS: dist_ntprobe/ (NOT DEFAULT DEVICE PACKAGE)"
 
 # Experimental measured MSVC SH4 ABI bridges. Both targets are completely
 # isolated: no compiler patch, no modified release or pager output.
