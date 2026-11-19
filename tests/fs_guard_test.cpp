@@ -6,7 +6,7 @@ static int file_closes=0, find_closes=0, fail_close=0;
 static int close_file(int fd) {
     assert(fd==17);
     ++file_closes;
-    return fail_close ? -1 : 0;
+    return fail_close == 2 ? 1 : (fail_close ? -1 : 0);
 }
 static int close_find(int fd) {
     assert(fd==29);
@@ -42,5 +42,13 @@ int main() {
     assert(healthy.close(close_file,close_find));
     assert(!healthy.busy());
     assert(healthy.cleanup(close_file,close_find));
+    ntos_fs::Gate unexpected;
+    fail_close=2; // an undocumented positive return is NOT proven success
+    assert(unexpected.acquire_file(17));
+    const int before=file_closes;
+    assert(!unexpected.close(close_file,close_find) && unexpected.poisoned);
+    assert(!unexpected.cleanup(close_file,close_find));
+    assert(file_closes==before+1);
+    fail_close=0;
     std::puts("PASS exclusive ownership, stale SDK handle fail-stop, no close retry");
 }
