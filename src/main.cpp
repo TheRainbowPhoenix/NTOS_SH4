@@ -33,6 +33,7 @@
 #include "irq_handoff.hpp"
 #include "mmu.hpp"
 #include "nt/mm_protect.hpp"
+#include "nt/launch_policy.hpp"
 #include "fs_guard.hpp"
 #include "nt/process.hpp"
 
@@ -2145,21 +2146,21 @@ int main(int argc, char **argv, char **envp) {
                 wait_error_key_release();
             }
             if(!pending_app[0]) {
-                // A stub/Settings/Calculator exit goes straight back to Start.
-                bool is_home=true;const char *home="\\fls0\\STARTHOST.EXE";
-                for(unsigned j=0;home[j]||next[j];++j){char a=home[j],b=next[j];
-                    if(a>='a'&&a<='z')a-=32;
-                    if(b>='a'&&b<='z')b-=32;
-                    if(a!=b){is_home=false;break;}}
-                if(is_home)break;
-                // A standalone foreground probe is allowed to finish in the
-                // picker. Do not auto-launch a nonexistent phone Start host:
-                // it caused the misleading "PE file unavailable or filesystem
-                // busy" message after PROCFINAL.EXE passed. File_Stat is a
-                // handle-free check, performed only after normal cleanup.
-                struct File_Stat home_stat{};
-                if(g_fs.busy() || g_fs.poisoned ||
-                   File_Stat(home,&home_stat)!=0)break;
+                // A stub/Settings/Calculator exit returns to Start only
+                // if that optional phone shell EXE is installed. Completed
+                // PROCTEST chains must return cleanly to the picker instead
+                // of producing a misleading missing-PE error.
+                const bool queue_home=ntos_launch_policy::queue_optional_home(
+                    next,[](const char *home) {
+                        // Called in restored host context after SDK close.
+                        // File_Stat is handle-free and never runs when the
+                        // single-owner gate is busy or poisoned.
+                        if(g_fs.busy() || g_fs.poisoned)return false;
+                        struct File_Stat st{};
+                        return File_Stat(home,&st)==0;
+                    });
+                if(!queue_home)break;
+                const char *home=ntos_launch_policy::HOME;
                 unsigned j=0;for(;home[j];++j)pending_app[j]=home[j];pending_app[j]=0;
             }
         }
