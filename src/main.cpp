@@ -281,6 +281,7 @@ static int32_t ntos_file_read(int32_t fd, void *data, uint32_t count) {
         if (amount>sizeof(bounce)) amount=sizeof(bounce);
         int n=File_Read(sdk_fd,bounce,static_cast<int>(amount));
         if (n<0) return total ? static_cast<int32_t>(total) : n;
+        if(static_cast<uint32_t>(n)>amount)return -2; // bad SDK byte count
         for (int i=0;i<n;++i) dst[total+static_cast<uint32_t>(i)]=bounce[i];
         total+=static_cast<uint32_t>(n);
         if (n<static_cast<int>(amount)) break;
@@ -298,8 +299,11 @@ static int32_t ntos_file_write(int32_t fd,const void *data,uint32_t count) {
         if (amount>sizeof(bounce)) amount=sizeof(bounce);
         for (uint32_t i=0;i<amount;++i) bounce[i]=src[total+i];
         int n=File_Write(sdk_fd,bounce,static_cast<int>(amount));
-        if (n<0) return total ? static_cast<int32_t>(total) : n;
+        if(n<0) return total ? static_cast<int32_t>(total) : n;
+        if(n==0 || static_cast<uint32_t>(n)>amount)
+            return total ? static_cast<int32_t>(total) : -5;
         total+=static_cast<uint32_t>(n);
+        if(static_cast<uint32_t>(n)<amount)break; // short write: no blind retry
         if (n<static_cast<int>(amount)) break;
     }
     return static_cast<int32_t>(total);
