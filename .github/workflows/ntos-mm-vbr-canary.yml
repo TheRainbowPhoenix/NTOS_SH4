@@ -27,7 +27,7 @@ jobs:
       - name: Test all Mm/Ob/Ex/FS structures on host and preserve baseline
         run: |
           set -eu
-          for name in nt_mm_permissions_test fault_pager_test nt_p0p2_host_test nt_io_injection_test nt_executive_test nt_flash_guard_test fs_guard_test console_glyph_test console_host_test; do
+          for name in nt_launch_policy_test nt_mm_permissions_test fault_pager_test nt_p0p2_host_test nt_io_injection_test nt_executive_test nt_flash_guard_test fs_guard_test console_glyph_test console_host_test; do
             g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 "tests/$name.cpp" -o "/tmp/$name"
             "/tmp/$name"
           done
