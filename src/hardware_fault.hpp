@@ -13,6 +13,15 @@
 #ifndef NTOS_ENABLE_TLB_MISS_PAGER
 #define NTOS_ENABLE_TLB_MISS_PAGER 0
 #endif
+#ifndef NTOS_ENFORCE_PE_PAGE_PERMISSIONS
+#define NTOS_ENFORCE_PE_PAGE_PERMISSIONS 0
+#endif
+#ifndef NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE
+#define NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE 0
+#endif
+#if NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE && !NTOS_ENABLE_TLB_MISS_PAGER
+#error "The VBR canary requires the experimental TLB pager"
+#endif
 #ifndef NTOS_ENABLE_IRQ_OWNERSHIP
 #define NTOS_ENABLE_IRQ_OWNERSHIP 0
 #endif
@@ -45,6 +54,13 @@ struct Context {
     uint32_t failed_address=0u;
     volatile uint32_t hw_faults=0u;
     volatile uint32_t hint_calls=0u;
+    // One-shot expected unhinted fault canary. The canary EXE is
+    // separately opt-in, never present in physical CP400 bundles.
+    volatile uint32_t probe_page=0u;
+    volatile uint32_t probe_event=0u;
+    volatile uint32_t probe_seen=0u;
+    volatile uint32_t probe_unexpected=0u;
+    volatile bool probe_armed=false;
     // Only written inside the P1-resident exception callback. Read and
     // printed after VBR returns to Hollyhock, never via SDK in the ISR.
     volatile uint32_t last_tea=0u;
@@ -56,9 +72,11 @@ struct Context {
 static Context g_context{};
 
 static bool commit_translation(void *,uint32_t va,uint32_t pa,
-                               unsigned slot,unsigned way) {
-    if(slot>=mmu::SLOT_ROTATING_LAST+1u || way>3u)return false;
-    mmu::map_page_at_index(va,pa,slot,way);
+                               unsigned slot,unsigned read_only) {
+    if(slot>=mmu::SLOT_ROTATING_LAST+1u || read_only>1u)return false;
+    if(!mmu::map_page_at_index_flags(va,pa,slot,
+            read_only ? mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE))
+        return false;
 #if NTOS_VERIFY_UTLB_SLOTS
     return mmu::verify_slot(slot,va,pa);
 #else
@@ -91,6 +109,13 @@ extern "C" int ntos_pager_exception_callback(uint32_t tea,uint32_t expevt) {
         ++ctx.fault_error;
         ctx.failed_address=tea;
         return 0;
+    }
+    if(ctx.probe_armed) {
+        if((tea&~0xFFFu)==ctx.probe_page &&
+           expevt==ctx.probe_event) {
+            ++ctx.probe_seen;
+            ctx.probe_armed=false;
+        } else ++ctx.probe_unexpected;
     }
     return 1;
 }
@@ -172,6 +197,11 @@ inline ntos_irq::Hooks hooks(const host_world::Snapshot &host) {
     ctx.failed_address=0u;
     ctx.hw_faults=0u;
     ctx.hint_calls=0u;
+    ctx.probe_armed=false;
+    ctx.probe_page=0u;
+    ctx.probe_event=0u;
+    ctx.probe_seen=0u;
+    ctx.probe_unexpected=0u;
     ctx.last_tea=0u;
     ctx.last_expevt=0u;
     ctx.last_spc=0u;
@@ -180,8 +210,35 @@ inline ntos_irq::Hooks hooks(const host_world::Snapshot &host) {
     Mem_Memset(&ctx.table,0,sizeof(ctx.table));
     return {&ctx,&prepare,&install,&verify,&uninstall};
 }
-inline bool add_module(uint32_t va,const uint8_t *backing,uint32_t pages) {
-    return g_context.table.add(va,mmu::phys_addr(backing),pages);
+inline bool add_module(uint32_t va,const uint8_t *backing,uint32_t pages,
+                       const pe::Image *image=nullptr) {
+    return g_context.table.add(va,mmu::phys_addr(backing),pages,
+                               image,NTOS_ENFORCE_PE_PAGE_PERMISSIONS!=0);
+}
+inline uint32_t protection(uint32_t va) {
+    return static_cast<uint32_t>(g_context.table.access(va));
+}
+inline int arm_probe(uint32_t va,uint32_t event) {
+#if NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE
+    Context &ctx=g_context;
+    if(!ctx.installed || !mmu::at_enabled() || ctx.probe_armed ||
+       (event!=0x40u && event!=0x60u))return -1;
+    const uint32_t page=va&~0xFFFu;
+    if(ctx.table.lookup(page)>=0 ||
+       ctx.table.access(page)!=ntos_mm::Access::read_write)
+        return -2;
+    uint32_t pa=0u;
+    if(!ctx.table.backing(page,&pa))return -3;
+    ctx.probe_page=page;
+    ctx.probe_event=event;
+    ctx.probe_seen=0u;
+    ctx.probe_unexpected=0u;
+    ctx.probe_armed=true;
+    return 0;
+#else
+    (void)va;(void)event;
+    return -1; // safe on physical device builds
+#endif
 }
 inline bool prime(uint32_t va,bool pin=true) {
     return g_context.table.fault(va,&commit_translation,nullptr,pin);
