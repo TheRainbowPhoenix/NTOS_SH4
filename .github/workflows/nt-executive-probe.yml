@@ -60,3 +60,16 @@ jobs:
             dist_ntprobe/LARGE4M.EXE
           if-no-files-found: error
           retention-days: 20
+
+      - name: Upload conservative no-VBR hardware-candidate smoke-test bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: NTOS-ObEx-CONSERVATIVE-NO-VBR-SMOKE-TEST
+          path: |
+            dist_nt_exe_conservative/NTOS.hh3
+            dist_ntprobe/OBTEST.EXE
+            dist/HELLO.EXE
+            dist/HELLOCORE.EXE
+            dist/COREDLL.DLL
+          if-no-files-found: error
+          retention-days: 20
