@@ -106,11 +106,24 @@ static void check_real_pe(const char *path) {
                                 from_disk.oh.image_base,true};
     uint8_t a[4096]{},b[4096]{};
     const uint32_t pages=(from_disk.oh.size_of_image+4095u)/4096u;
-    for(uint32_t index: {0u,pages/2u,pages-1u}) {
-        const char *err=nullptr;
-        assert(ntos_pager::materialize(original,index,a,&err));
-        assert(ntos_pager::materialize(streamed,index,b,&err));
-        assert(std::memcmp(a,b,sizeof(a))==0);
+    if(size>=4u*1024u*1024u) {
+        // Do not merely inspect the first/middle/last page of a large EXE.
+        // Read every mapped page directly from disk and compare it with the
+        // original full-buffer materialization. This runs on the HOST only.
+        for(uint32_t index=0u;index<pages;++index) {
+            const char *err=nullptr;
+            assert(ntos_pager::materialize(original,index,a,&err));
+            assert(ntos_pager::materialize(streamed,index,b,&err));
+            assert(std::memcmp(a,b,sizeof(a))==0);
+        }
+        std::printf("PASS large PE stream parity: %u mapped pages\n",pages);
+    } else {
+        for(uint32_t index: {0u,pages/2u,pages-1u}) {
+            const char *err=nullptr;
+            assert(ntos_pager::materialize(original,index,a,&err));
+            assert(ntos_pager::materialize(streamed,index,b,&err));
+            assert(std::memcmp(a,b,sizeof(a))==0);
+        }
     }
     assert(std::fclose(f)==0);
 }

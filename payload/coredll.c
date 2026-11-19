@@ -918,10 +918,13 @@ int UpdateWindow(void *hwnd)
  * Strings from apps are UTF-16; Hollyhock File_Open takes an ANSI path.
  * Only the existing WinCE function names are exposed to PE clients. */
 #define NT_INVALID_FILE ((void *)-1)
-#define NT_HANDLE_TAG 0x00010000u
-/* SDK/Fugue descriptors include the mount index in their upper 16 bits. */
+/* COREDLL handles never encode a reusable slot index. Kernel-side NtosApi
+ * handles are separate; neither exposes a raw SDK/Fugue descriptor. */
+#define NT_HANDLE_TAG 0x20000000u
+static u32 nt_next_file_token = 1u; /* never reset within this DLL lifetime */
 static struct {
     int used, fd;
+    u32 token;
 } nt_files[32];
 #define NT_GENERIC_READ 0x80000000u
 #define NT_GENERIC_WRITE 0x40000000u
@@ -957,13 +960,20 @@ static int narrow_path(const u16 *src, char *dest, u32 capacity)
     return 1;
 }
 
-static int handle_fd(void *handle)
+static int handle_slot(void *handle)
 {
     u32 value = (u32)handle;
-    if (value <= NT_HANDLE_TAG || value > NT_HANDLE_TAG + 32u)
+    if ((value & 0xE0000000u) != NT_HANDLE_TAG)
         return -1;
-    unsigned slot = value - NT_HANDLE_TAG - 1u;
-    return nt_files[slot].used ? nt_files[slot].fd : -1;
+    for (unsigned i = 0; i < 32u; ++i)
+        if (nt_files[i].used && nt_files[i].token == value)
+            return (int)i;
+    return -1;
+}
+static int handle_fd(void *handle)
+{
+    int slot = handle_slot(handle);
+    return slot < 0 ? -1 : nt_files[slot].fd;
 }
 
 static u32 g_last_error;
@@ -1035,15 +1045,17 @@ void *CreateFileW(const u16 *path, u32 access, u32 share, void *security, u32 cr
     unsigned slot = 0;
     while (slot < 32u && nt_files[slot].used)
         ++slot;
-    if (slot == 32u) {
+    if (slot == 32u || nt_next_file_token == 0u ||
+        nt_next_file_token > 0x1fffffffu) {
         if (a[14])
-            ((int (*)(int))a[14])(fd);
+            ((int (*)(int))a[14])(fd); /* at most one close attempt */
         g_last_error = 4;
         return NT_INVALID_FILE;
     }
     nt_files[slot].used = 1;
     nt_files[slot].fd = fd;
-    return (void *)(NT_HANDLE_TAG + slot + 1u);
+    nt_files[slot].token = NT_HANDLE_TAG | nt_next_file_token++;
+    return (void *)nt_files[slot].token;
 }
 
 u32 GetFileSize(void *handle, u32 *high)
@@ -1118,7 +1130,8 @@ int WriteFile(void *handle, const void *buffer, u32 count, u32 *done, void *over
 int CloseHandle(void *handle)
 {
     const void **a = ntapi();
-    int fd = handle_fd(handle);
+    int slot = handle_slot(handle);
+    int fd = slot < 0 ? -1 : nt_files[slot].fd;
     if (fd < 0 || !a || !a[14]) {
         g_last_error = 87;
         return 0;
@@ -1126,8 +1139,11 @@ int CloseHandle(void *handle)
     int result = ((int (*)(int))a[14])(fd);
     /* Preserve the synthetic handle if the SDK did not actually close it;
      * the kernel filesystem gate remains locked and CloseHandle can retry. */
-    if (result == 0)
-        nt_files[(u32)handle - NT_HANDLE_TAG - 1u].used = 0;
+    if (result == 0) {
+        nt_files[slot].used = 0;
+        nt_files[slot].fd = -1;
+        nt_files[slot].token = 0u;
+    }
     g_last_error = result < 0 ? nt_file_error(result) : 0;
     return result == 0;
 }
@@ -1235,9 +1251,20 @@ typedef struct {
     u32 attrs, times[6], size_hi, size_lo, oid;
     u16 name[260];
 } NT_FIND_DATA;
+static u32 nt_next_find_token=1u;
 static struct {
     int used, fd;
+    u32 token;
 } nt_finds[8];
+static int find_slot(void *handle)
+{
+    const u32 value=(u32)handle;
+    if((value&0xF0000000u)!=0x30000000u)return -1;
+    for(unsigned i=0u;i<8u;++i)
+        if(nt_finds[i].used && nt_finds[i].token==value)
+            return (int)i;
+    return -1;
+}
 static void nt_copy_find(NT_FIND_DATA *out, const NT_FIND_NATIVE *in)
 {
     out->attrs = in->attr;
@@ -1274,31 +1301,32 @@ void *FindFirstFileW(const u16 *pattern, NT_FIND_DATA *out)
         g_last_error = 2;
         return NT_INVALID_FILE;
     }
+    if(nt_next_find_token==0u || nt_next_find_token>0x0FFFFFFFu) {
+        if(a[26])((int (*)(int))a[26])(fd); // one attempt, gate poisons on failure
+        g_last_error=4;
+        return NT_INVALID_FILE;
+    }
     nt_finds[i].used = 1;
     nt_finds[i].fd = fd;
+    nt_finds[i].token = 0x30000000u | nt_next_find_token++;
     nt_copy_find(out, &found);
     g_last_error = 0;
-    return (void *)(0x30000u + i + 1u);
+    return (void *)nt_finds[i].token;
 }
 int FindNextFileW(void *search, NT_FIND_DATA *out)
 {
-    u32 v = (u32)search;
+    const int slot = find_slot(search);
     const void **a = ntapi();
     NT_FIND_NATIVE found;
     if (!ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 25u)) {
         g_last_error = 50;
         return 0;
     }
-    if (v <= 0x30000u || v > 0x30008u || !out || !a || !a[25]) {
+    if (slot < 0 || !out || !a || !a[25]) {
         g_last_error = 6;
         return 0;
     }
-    unsigned i = v - 0x30001u;
-    if (!nt_finds[i].used) {
-        g_last_error = 6;
-        return 0;
-    }
-    if (((int (*)(int, NT_FIND_NATIVE *))a[25])(nt_finds[i].fd, &found) < 0) {
+    if (((int (*)(int, NT_FIND_NATIVE *))a[25])(nt_finds[slot].fd, &found) < 0) {
         g_last_error = 18;
         return 0;
     }
@@ -1308,20 +1336,20 @@ int FindNextFileW(void *search, NT_FIND_DATA *out)
 }
 int FindClose(void *search)
 {
-    u32 v = (u32)search;
+    const int slot = find_slot(search);
     const void **a = ntapi();
     if (!ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 26u)) {
         g_last_error = 50;
         return 0;
     }
-    if (v <= 0x30000u || v > 0x30008u || !a || !a[26])
+    if (slot < 0 || !a || !a[26])
         return 0;
-    unsigned i = v - 0x30001u;
-    if (!nt_finds[i].used)
-        return 0;
-    int result = ((int (*)(int))a[26])(nt_finds[i].fd);
-    if (result == 0)
-        nt_finds[i].used = 0;
+    int result = ((int (*)(int))a[26])(nt_finds[slot].fd);
+    if (result == 0) {
+        nt_finds[slot].used = 0;
+        nt_finds[slot].fd = -1;
+        nt_finds[slot].token = 0u;
+    }
     return result == 0;
 }
 typedef struct {
