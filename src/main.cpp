@@ -1135,9 +1135,25 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
            disk_header.oh.size_of_image!=hdr.oh.size_of_image ||
            disk_header.section_count!=hdr.section_count ||
            disk_header.oh.import_rva!=hdr.oh.import_rva ||
-           disk_header.oh.export_rva!=hdr.oh.export_rva) {
+           disk_header.oh.import_size!=hdr.oh.import_size ||
+           disk_header.oh.export_rva!=hdr.oh.export_rva ||
+           disk_header.oh.export_size!=hdr.oh.export_size ||
+           disk_header.oh.basereloc_rva!=hdr.oh.basereloc_rva ||
+           disk_header.oh.basereloc_size!=hdr.oh.basereloc_size) {
             *err="PE headers changed while loading";
             goto done;
+        }
+        // A file replaced between the picker read and materialization
+        // must not silently change PE section locations or permissions.
+        for(uint32_t i=0u;i<hdr.section_count;++i) {
+            const pe::SectionHeader &a=hdr.sections[i];
+            const pe::SectionHeader &b=disk_header.sections[i];
+            if(a.rva!=b.rva || a.vsize!=b.vsize ||
+               a.raw_offset!=b.raw_offset || a.raw_size!=b.raw_size ||
+               a.characteristics!=b.characteristics) {
+                *err="PE sections changed while loading";
+                goto done;
+            }
         }
     } else
 #endif
