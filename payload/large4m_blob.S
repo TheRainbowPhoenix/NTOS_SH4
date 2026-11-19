@@ -3,8 +3,8 @@
  * Large probe is built on demand and never installed by package_device.py. */
     .section .rodata.large,"a"
     .balign 4096
-    .global ntos_large_blob
-ntos_large_blob:
+    .global _ntos_large_blob
+_ntos_large_blob:
     .fill 4194304,1,0xA5
-    .global ntos_large_blob_end
-ntos_large_blob_end:
+    .global _ntos_large_blob_end
+_ntos_large_blob_end:
