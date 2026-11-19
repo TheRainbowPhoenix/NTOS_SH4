@@ -25,7 +25,7 @@ int main() {
     assert(process.attach_file(18,&first)==nt::DEVICE_BUSY);
     assert(process.handles.used==1u);
     assert(process.handles.get(first,nt::Type::event,
-        reinterpret_cast<nt::Object **>(nullptr))==nt::INVALID_PARAMETER);
+        static_cast<nt::Object **>(nullptr))==nt::INVALID_PARAMETER);
     assert(process.drop_file(first)==nt::SUCCESS);
     assert(process.file_fd(first)<0);
     assert(process.drop_file(first)==nt::INVALID_HANDLE);
