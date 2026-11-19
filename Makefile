@@ -546,9 +546,67 @@ $(NT_PROBE_DIST)/LARGE4M.EXE: $(NT_PROBE_BUILD)/large4m.elf tools/elf2ntx.py
 	$(PYTHON) tools/elf2ntx.py $< -o $@
 	$(PYTHON) tools/check_large4m_pe.py $@
 
-.PHONY: nt-exec-probes
-nt-exec-probes: $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/LARGE4M.EXE
-	@echo "NT EXECUTIVE EXPERIMENTS: dist_ntprobe/ (NOT DEVICE PACKAGE)"
+# Self-contained opt-in P0/P1/P2 probes. No fault injection, disk
+# mutation or unhinted P0 dereferences appear in the hardware package.
+# PROCTEST depends on PROCNEXT + PROCFINAL and a matching HELLO.EXE.
+# Pattern rules avoid GNU Make eval-time automatic-variable expansion.
+$(NT_PROBE_BUILD)/%.o: payload/%.c
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(NT_PROBE_BUILD)/%.elf: $(NT_PROBE_BUILD)/%.o payload/payload.ld
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+
+$(NT_PROBE_DIST)/POOLTEST.EXE: $(NT_PROBE_BUILD)/pooltest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/EVTEST.EXE: $(NT_PROBE_BUILD)/evtest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PROCTEST.EXE: $(NT_PROBE_BUILD)/proctest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PROCNEXT.EXE: $(NT_PROBE_BUILD)/procnext.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PROCFINAL.EXE: $(NT_PROBE_BUILD)/procfinal.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/MMTEST.EXE: $(NT_PROBE_BUILD)/mmtest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/IOTEST.EXE: $(NT_PROBE_BUILD)/iotest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+NT_SAFE_PROBES := $(addprefix $(NT_PROBE_DIST)/,POOLTEST.EXE EVTEST.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE MMTEST.EXE IOTEST.EXE)
+
+# Deliberately unresolved DLL import: exercises failure before guest entry.
+# This is NOT a DllMain initialization-failure test, which is unsupported.
+$(NT_PROBE_BUILD)/procfail.o: payload/procfail.c payload/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(NT_PROBE_BUILD)/procfail.elf: $(NT_PROBE_BUILD)/procfail.o payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+
+$(NT_PROBE_DIST)/PROCFAIL.EXE: $(NT_PROBE_BUILD)/procfail.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module NOFILE.DLL
+
+.PHONY: nt-safe-probes nt-exec-probes
+nt-safe-probes: $(NT_PROBE_DIST)/OBTEST.EXE $(NT_SAFE_PROBES)
+	@echo "NTOS P0/P1/P2 HARDWARE-SAFE-INTENT probes in dist_ntprobe/"
+nt-exec-probes: nt-safe-probes $(NT_PROBE_DIST)/LARGE4M.EXE
+	@echo "NT EXECUTIVE EXPERIMENTS: dist_ntprobe/ (NOT DEFAULT DEVICE PACKAGE)"
 
 # Experimental measured MSVC SH4 ABI bridges. Both targets are completely
 # isolated: no compiler patch, no modified release or pager output.

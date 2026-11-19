@@ -52,5 +52,44 @@ int main(const void *const *api,char **argv,char **envp)
        free_tag(p,NT_TAG_OBTS)!=0xC000000Du ||
        live()!=0u)return 0xBAD0100Eu;
     if(close((u32)a)!=NT_SUCCESS || count()!=0u)return 0xBAD0100Fu;
+    // P0: recycle the same sixteen event-object slots for 128 fresh
+    // handles. The public cookies must never alias stale references.
+    uint32_t first=0u,last=0u;
+    typedef int32_t (*file_read_t)(int32_t,void *,u32);
+    typedef int32_t (*file_close_t)(int32_t);
+    file_read_t fread_=(file_read_t)api[12];
+    file_close_t fclose_=(file_close_t)api[14];
+    if(!fread_ || !fclose_)return 0xBAD01011u;
+    for(u32 i=0u;i<128u;++i) {
+        int32_t h=create(i&1u,i&1u);
+        if(h<=0 || ((u32)h)==last || ((u32)h)==first)
+            return 0xBAD01012u;
+        if(i==0u)first=(u32)h;
+        if(count()!=1u)return 0xBAD01013u;
+        // An event passed as a file must be rejected before ANY SDK I/O.
+        uint8_t one=0u;
+        if(fread_(h,&one,1u)!=-2 || fclose_(h)!=-2)
+            return 0xBAD01014u;
+        if(close((u32)h)!=NT_SUCCESS || count()!=0u)
+            return 0xBAD01015u;
+        if(set((u32)h)!=NT_INVALID_HANDLE ||
+           wait((u32)h,0u)!=NT_INVALID_HANDLE ||
+           close((u32)h)!=NT_INVALID_HANDLE)
+            return 0xBAD01016u;
+        last=(u32)h;
+    }
+    if(set(first)!=NT_INVALID_HANDLE)return 0xBAD01017u;
+    uint32_t simultaneous[16];
+    for(u32 i=0u;i<16u;++i) {
+        int32_t h=create(1u,0u);
+        if(h<=0)return 0xBAD01018u;
+        simultaneous[i]=(u32)h;
+    }
+    if(count()!=16u || (u32)create(1u,0u)!=0xC000009Au)
+        return 0xBAD01019u;
+    for(u32 i=0u;i<16u;++i)
+        if(close(simultaneous[i])!=NT_SUCCESS)
+            return 0xBAD0101Au;
+    if(count()!=0u || live()!=0u)return 0xBAD0101Bu;
     return 0x0B0B0010u;
 }
