@@ -1,6 +1,6 @@
 /* MMTEST.EXE: explicitly hinted 96-page RAM-backed UTLB replacement.
  * No deliberate P0 fault or illegal write to a protected mapping.
- * Expect 0x4D4D0060, HINT=192, EV>0, BAD=0 and normally PF=0. */
+ * Expect 0x4D4D0060, HINT=193 (192 valid + 1 rejected), EV>0, BAD=0 and normally PF=0. */
 #include <stdint.h>
 typedef uint32_t u32;
 typedef int32_t (*hint_fn)(u32);
