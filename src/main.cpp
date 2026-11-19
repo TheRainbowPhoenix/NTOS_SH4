@@ -33,6 +33,7 @@
 #include "irq_handoff.hpp"
 #include "mmu.hpp"
 #include "fs_guard.hpp"
+#include "nt/process.hpp"
 
 // Streaming is enabled on this development branch. Set 0 to compare the
 // previous eager full-file staging path during emulator/hardware testing.
@@ -86,6 +87,16 @@ struct NtosApi {
     int32_t (*find_next)(int32_t,NtosFind *);                // [25]
     int32_t (*find_close)(int32_t);                         // [26]
     int32_t (*launch)(const char *);                       // [27] serial app handoff
+    int32_t (*create_event)(uint32_t,uint32_t);             // [28] manual, initial
+    uint32_t (*set_event)(uint32_t);                        // [29]
+    uint32_t (*reset_event)(uint32_t);                      // [30]
+    uint32_t (*wait_event)(uint32_t,uint32_t);              // [31] timeout ms; 0 supported
+    uint32_t (*close_object)(uint32_t);                     // [32] NTSTATUS
+    void *(*ex_alloc)(uint32_t,uint32_t);                   // [33] bytes, tag
+    uint32_t (*ex_free)(void *,uint32_t);                   // [34] ptr, tag
+    uint32_t (*ex_pool_peak)(void);                         // [35]
+    uint32_t (*ex_pool_live)(void);                         // [36]
+    uint32_t (*ob_handle_count)(void);                      // [37]
 };
 
 static int cur_row = 0;
@@ -194,6 +205,14 @@ static bool kernel_path(char *out, const char *in) {
 // All SDK descriptors belong to one serialized NTOS gate. Do not confuse
 // a WinCE synthetic COREDLL HANDLE with an SDK descriptor.
 static ntos_fs::Gate g_fs;
+// This is NOT a protected process address space: it is the owner of one
+// foreground application graph, its NT handles, events and Ex allocations.
+static nt::Process g_nt_process{};
+static void *nt_host_alloc(void *,size_t n) {return Mem_Malloc(n);}
+static void nt_host_free(void *,void *p) {Mem_Free(p);}
+static void nt_process_configure() {
+    g_nt_process.pool.configure(nullptr,&nt_host_alloc,&nt_host_free);
+}
 struct FatalSnapshot {
     uint32_t tea=0,expevt=0,spc=0,ssr=0,mmucr=0,reason=0;
 };
@@ -240,17 +259,27 @@ static int fs_find_close(int handle) {
 static int32_t ntos_file_open(const char *name, uint32_t flags) {
     char path[96];
     if (!kernel_path(path,name)) return -2;
-    return fs_open(path,static_cast<int>(flags));
+    if(!g_nt_process.active || g_fs.busy())return -16;
+    const int sdk_fd=fs_open(path,static_cast<int>(flags));
+    if(sdk_fd<0)return sdk_fd;
+    uint32_t token=0u;
+    if(g_nt_process.attach_file(sdk_fd,&token)!=nt::SUCCESS) {
+        // The SDK file was positively opened. Close exactly once, and
+        // quarantine every subsequent operation if the close is ambiguous.
+        return fs_close(sdk_fd)==0 ? -12 : -1;
+    }
+    return static_cast<int32_t>(token);
 }
 static int32_t ntos_file_read(int32_t fd, void *data, uint32_t count) {
-    if (!data || count>4096u || !g_fs.file_is(fd)) return -2;
+    const int32_t sdk_fd=g_nt_process.file_fd(static_cast<uint32_t>(fd));
+    if (!data || count>4096u || !g_fs.file_is(sdk_fd)) return -2;
     auto *dst=static_cast<uint8_t *>(data);
     uint8_t bounce[256];
     uint32_t total=0;
     while (total<count) {
         uint32_t amount=count-total;
         if (amount>sizeof(bounce)) amount=sizeof(bounce);
-        int n=File_Read(fd,bounce,static_cast<int>(amount));
+        int n=File_Read(sdk_fd,bounce,static_cast<int>(amount));
         if (n<0) return total ? static_cast<int32_t>(total) : n;
         for (int i=0;i<n;++i) dst[total+static_cast<uint32_t>(i)]=bounce[i];
         total+=static_cast<uint32_t>(n);
@@ -259,7 +288,8 @@ static int32_t ntos_file_read(int32_t fd, void *data, uint32_t count) {
     return static_cast<int32_t>(total);
 }
 static int32_t ntos_file_write(int32_t fd,const void *data,uint32_t count) {
-    if (!data || count>4096u || !g_fs.file_is(fd)) return -2;
+    const int32_t sdk_fd=g_nt_process.file_fd(static_cast<uint32_t>(fd));
+    if (!data || count>4096u || !g_fs.file_is(sdk_fd)) return -2;
     const auto *src=static_cast<const uint8_t *>(data);
     uint8_t bounce[256];
     uint32_t total=0;
@@ -267,14 +297,22 @@ static int32_t ntos_file_write(int32_t fd,const void *data,uint32_t count) {
         uint32_t amount=count-total;
         if (amount>sizeof(bounce)) amount=sizeof(bounce);
         for (uint32_t i=0;i<amount;++i) bounce[i]=src[total+i];
-        int n=File_Write(fd,bounce,static_cast<int>(amount));
+        int n=File_Write(sdk_fd,bounce,static_cast<int>(amount));
         if (n<0) return total ? static_cast<int32_t>(total) : n;
         total+=static_cast<uint32_t>(n);
         if (n<static_cast<int>(amount)) break;
     }
     return static_cast<int32_t>(total);
 }
-static int32_t ntos_file_close(int32_t fd) { return fs_close(fd); }
+static int32_t ntos_file_close(int32_t fd) {
+    const uint32_t token=static_cast<uint32_t>(fd);
+    const int32_t sdk_fd=g_nt_process.file_fd(token);
+    if(!g_fs.file_is(sdk_fd))return -2;
+    // The SDK close MUST happen before discarding the public handle.
+    // On ambiguous failure g_fs becomes poisoned: no retry, no reuse.
+    if(fs_close(sdk_fd)!=0)return -1;
+    return g_nt_process.drop_file(token)==nt::SUCCESS ? 0 : -2;
+}
 
 // Structured input: kind 1=touch down/drag, 2=CLEAR, 3=key press.
 // On key press x contains the Hollyhock KEYCODE_* value.
@@ -319,14 +357,16 @@ static void ntos_draw_text(uint32_t x, uint32_t y, const char *text) {
 }
 static int32_t ntos_file_size(int32_t fd) {
     struct File_Stat st{};
-    if (!g_fs.file_is(fd) || File_Fstat(fd, &st) < 0) return -1;
+    const int32_t sdk_fd=g_nt_process.file_fd(static_cast<uint32_t>(fd));
+    if (!g_fs.file_is(sdk_fd) || File_Fstat(sdk_fd, &st) < 0) return -1;
     return static_cast<int32_t>(st.fileSize);
 }
 
 static int32_t ntos_file_seek(int32_t fd,int32_t offset,uint32_t whence) {
     if (whence>2) return -2;
-    if (!g_fs.file_is(fd)) return -2;
-    return File_Lseek(fd,offset,static_cast<File_Whence>(whence));
+    const int32_t sdk_fd=g_nt_process.file_fd(static_cast<uint32_t>(fd));
+    if (!g_fs.file_is(sdk_fd)) return -2;
+    return File_Lseek(sdk_fd,offset,static_cast<File_Whence>(whence));
 }
 static int32_t ntos_file_remove(const char *name) {
     char path[96];
@@ -370,22 +410,75 @@ static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindIn
     unsigned i=0;for(;i<127u && name[i];++i)out->name[i]=name[i];out->name[i]=0;
 }
 static int32_t ntos_find_first(const char *name,int32_t *handle,NtosFind *out) {
-    if(!name || !handle || !out)return -2;
+    if(!name || !handle || !out || !g_nt_process.active)return -2;
     char path[96];if(!kernel_path(path,name))return -2;
     char_const16_t pattern[96]{},found[260]{};
     for(unsigned i=0;path[i];++i)pattern[i]=static_cast<unsigned char>(path[i]);
     File_FindInfo info{};int search=0;
     int result=fs_find_first(pattern,&search,found,&info);
-    if(result==0){*handle=search;copy_find(out,found,info);}return result;
+    if(result!=0)return result;
+    uint32_t token=0u;
+    if(g_nt_process.attach_finder(search,&token)!=nt::SUCCESS)
+        return fs_find_close(search)==0 ? -12 : -1;
+    *handle=static_cast<int32_t>(token);
+    copy_find(out,found,info);
+    return 0;
 }
 static int32_t ntos_find_next(int32_t handle,NtosFind *out) {
     if(!out)return -2;
+    const int sdk_fd=g_nt_process.finder_fd(static_cast<uint32_t>(handle));
+    if(!g_fs.finder_is(sdk_fd))return -2;
     char_const16_t found[260]{};File_FindInfo info{};
-    int result=fs_find_next(handle,found,&info);
+    const int result=fs_find_next(sdk_fd,found,&info);
     if(result==0)copy_find(out,found,info);
     return result;
 }
-static int32_t ntos_find_close(int32_t handle) {return fs_find_close(handle);}
+static int32_t ntos_find_close(int32_t handle) {
+    const uint32_t token=static_cast<uint32_t>(handle);
+    const int sdk_fd=g_nt_process.finder_fd(token);
+    if(!g_fs.finder_is(sdk_fd))return -2;
+    if(fs_find_close(sdk_fd)!=0)return -1;
+    return g_nt_process.drop_finder(token)==nt::SUCCESS ? 0 : -2;
+}
+
+// NT Executive additions. NTSTATUS values are returned unmodified.
+static int32_t ntos_create_event(uint32_t manual,uint32_t initial) {
+    uint32_t token=0u;
+    const nt::Status s=g_nt_process.create_event(manual!=0u,initial!=0u,&token);
+    return s==nt::SUCCESS?static_cast<int32_t>(token):static_cast<int32_t>(s);
+}
+static uint32_t ntos_set_event(uint32_t token) {
+    return g_nt_process.event_set(token);
+}
+static uint32_t ntos_reset_event(uint32_t token) {
+    return g_nt_process.event_reset(token);
+}
+static uint32_t ntos_wait_event(uint32_t token,uint32_t ms) {
+    return g_nt_process.event_poll(token,ms);
+}
+static uint32_t ntos_close_object(uint32_t token) {
+    nt::Object *o=nullptr;
+    const nt::Status s=g_nt_process.handles.get(token,nt::Type::none,&o);
+    if(s!=nt::SUCCESS)return s;
+    if(o->type==nt::Type::file)
+        return ntos_file_close(static_cast<int32_t>(token))==0 ?
+            nt::SUCCESS : nt::DEVICE_BUSY;
+    if(o->type==nt::Type::finder)
+        return ntos_find_close(static_cast<int32_t>(token))==0 ?
+            nt::SUCCESS : nt::DEVICE_BUSY;
+    return g_nt_process.handles.close(token);
+}
+static void *ntos_ex_alloc(uint32_t bytes,uint32_t allocation_tag) {
+    return g_nt_process.active ?
+        g_nt_process.pool.alloc(bytes,allocation_tag) : nullptr;
+}
+static uint32_t ntos_ex_free(void *ptr,uint32_t allocation_tag) {
+    return g_nt_process.active ?
+        g_nt_process.pool.free(ptr,allocation_tag) : nt::DEVICE_BUSY;
+}
+static uint32_t ntos_ex_pool_peak() {return g_nt_process.pool.peak;}
+static uint32_t ntos_ex_pool_live() {return g_nt_process.pool.current;}
+static uint32_t ntos_ob_handle_count() {return g_nt_process.handles.used;}
 
 static char pending_app[96];
 static int32_t ntos_launch(const char *name) {
@@ -424,6 +517,16 @@ static NtosApi g_ntos_api = {
     &ntos_find_next,     // [25]
     &ntos_find_close,    // [26]
     &ntos_launch,        // [27]
+    &ntos_create_event,  // [28]
+    &ntos_set_event,     // [29]
+    &ntos_reset_event,   // [30]
+    &ntos_wait_event,    // [31]
+    &ntos_close_object,  // [32]
+    &ntos_ex_alloc,      // [33]
+    &ntos_ex_free,       // [34]
+    &ntos_ex_pool_peak,  // [35]
+    &ntos_ex_pool_live,  // [36]
+    &ntos_ob_handle_count, // [37]
 };
 
 // ---------------------------------------------------------------------------
@@ -1101,6 +1204,10 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     if((host_state.mmucr&1u)!=0u) {
         *err="host MMU is already active";return -1;
     }
+    nt_process_configure();
+    if(!g_nt_process.begin()) {
+        *err="another NT process still owns resources";return -1;
+    }
     ModuleNode nodes[NTOS_MAX_MODULES]={};
     LinkedModule exports[NTOS_MAX_MODULES]={};
     ntos_rebase::Region reservations[NTOS_MAX_MODULES]={};
@@ -1488,6 +1595,19 @@ done:
         *err="filesystem close failed; refusing further file operations";
         g_fatal.reason=2;
         rc=-2;
+    }
+    // Discard every per-process typed handle only after the single SDK
+    // descriptor is confirmed closed (or the gate is permanently poisoned).
+    const uint32_t leaked_handles=g_nt_process.handles.used;
+    const uint32_t leaked_pool=g_nt_process.pool.current;
+    g_nt_process.finish(); // NEVER calls SDK File_Close a second time
+    if(leaked_handles || leaked_pool) {
+        char msg[80], *p=msg;
+        log_text(p,"NT cleanup: handles=");
+        log_number(p,leaked_handles,10);
+        log_text(p," ExBytes=");
+        log_number(p,leaked_pool,10);
+        *p=0;ntos_puts(msg);
     }
 #if NTOS_ENABLE_TLB_MISS_PAGER
     if(ntos_hw::g_context.fault_error) {
@@ -1896,7 +2016,23 @@ int main(int argc, char **argv, char **envp) {
         using entry_fn = int (*)(const NtosApi *, char **, char **);
         entry_fn entry = reinterpret_cast<entry_fn>(
             reinterpret_cast<uint32_t>(image) + hdr.oh.entry_rva);
+        nt_process_configure();
+        if(!g_nt_process.begin()) {
+            app_load_error("NT process resources still held");
+            Mem_Free(image);
+            if(file)Mem_Free(file);
+            wait_error_key_release();
+            continue;
+        }
         ret = entry(&g_ntos_api, nullptr, nullptr);
+        if(!fs_recover()) {
+            g_nt_process.finish();
+            Mem_Free(image);
+            if(file)Mem_Free(file);
+            kernel_fault_screen();
+            return safe_host_exit(-1);
+        }
+        g_nt_process.finish();
         Mem_Free(image);
     }
 
