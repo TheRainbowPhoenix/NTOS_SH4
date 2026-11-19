@@ -509,6 +509,47 @@ ce-abi-probe:
 
 -include $(DEPFILES)
 
+# Isolated NT executive and ~4 MiB image probes. These are deliberately NOT
+# part of 'all', 'ntx' or install/: test on emulator before any CP400 deployment.
+NT_PROBE_BUILD := obj_ntprobe
+NT_PROBE_DIST := dist_ntprobe
+NT_OBTEST_OBJ := $(NT_PROBE_BUILD)/obtest.o
+NT_LARGE_SRC_OBJ := $(NT_PROBE_BUILD)/large4m.o
+NT_LARGE_BLOB_OBJ := $(NT_PROBE_BUILD)/large4m_blob.o
+
+$(NT_OBTEST_OBJ): payload/obtest.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(NT_PROBE_BUILD)/obtest.elf: $(NT_OBTEST_OBJ) payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+
+$(NT_PROBE_DIST)/OBTEST.EXE: $(NT_PROBE_BUILD)/obtest.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_LARGE_SRC_OBJ): payload/large4m.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(NT_LARGE_BLOB_OBJ): payload/large4m_blob.S
+	@mkdir -p $(dir $@)
+	$(AS) -c $< -o $@ $(AS_FLAGS)
+
+$(NT_PROBE_BUILD)/large4m.elf: $(NT_LARGE_SRC_OBJ) $(NT_LARGE_BLOB_OBJ) payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(NT_LARGE_SRC_OBJ) $(NT_LARGE_BLOB_OBJ)
+
+$(NT_PROBE_DIST)/LARGE4M.EXE: $(NT_PROBE_BUILD)/large4m.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+	$(PYTHON) tools/check_large4m_pe.py $@
+
+.PHONY: nt-exec-probes
+nt-exec-probes: $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/LARGE4M.EXE
+	@echo "NT EXECUTIVE EXPERIMENTS: dist_ntprobe/ (NOT DEVICE PACKAGE)"
+
 # Experimental measured MSVC SH4 ABI bridges. Both targets are completely
 # isolated: no compiler patch, no modified release or pager output.
 MSVC_GEN_DIR := obj_msvc_thunks
