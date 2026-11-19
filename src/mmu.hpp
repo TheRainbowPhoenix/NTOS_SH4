@@ -150,7 +150,8 @@ inline void map_page_at_index(uint32_t va, uint32_t pa, uint32_t slot,
 #define NTOS_VERIFY_UTLB_SLOTS 0
 #endif
 #if NTOS_VERIFY_UTLB_SLOTS && defined(__sh__)
-inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa) {
+inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa,
+                        uint32_t expected_flags=PTEL_PAGE) {
     if(slot>=UTLB_ENTRIES)return false;
     const uint32_t addr=*reinterpret_cast<volatile const uint32_t *>(
         0xF6000000u+(slot<<8));
@@ -162,7 +163,9 @@ inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa) {
            (addr&0x00000100u)!=0u &&
            (data&0x00000100u)!=0u &&
            (data&0x1FFFF000u)==(pa&0x1FFFF000u) &&
-           (data&PTEL_PAGE)==PTEL_PAGE;
+           (expected_flags==PTEL_PAGE ||
+            expected_flags==PTEL_PAGE_READ_ONLY) &&
+           (data&PTEL_PAGE)==expected_flags;
 }
 #endif
 
