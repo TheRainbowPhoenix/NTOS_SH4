@@ -24,19 +24,23 @@ int main() {
     assert(gate.rejected==3);
     fail_close=1;
     assert(!gate.close(close_file,close_find));
-    assert(gate.busy() && gate.close_failures==1);
+    assert(gate.busy() && gate.poisoned && gate.close_failures==1);
+    assert(!gate.file_is(17)); // poisoned descriptor is NOT usable
     assert(!gate.acquire_file(18)); // close failure locks all new access
     fail_close=0;
-    assert(gate.cleanup(close_file,close_find));
-    assert(!gate.busy() && gate.rescued==1 && file_closes==2);
-    assert(gate.acquire_finder(29));
-    assert(gate.finder_is(29));
-    assert(!gate.acquire_file(17));
-    assert(gate.cleanup(close_file,close_find));
-    assert(!gate.busy() && gate.rescued==2 && find_closes==1);
-    assert(gate.acquire_file(17));
-    assert(gate.close(close_file,close_find));
-    assert(!gate.busy());
-    assert(gate.cleanup(close_file,close_find));
-    std::puts("PASS exclusive file/finder ownership, double-open denial, failed-close interlock, exit cleanup");
+    assert(!gate.cleanup(close_file,close_find)); // no retry of ambiguous close
+    assert(!gate.close(close_file,close_find));
+    assert(file_closes==1); // critical: only one SDK close attempted
+
+    ntos_fs::Gate healthy;
+    assert(healthy.acquire_finder(29));
+    assert(healthy.finder_is(29));
+    assert(!healthy.acquire_file(17));
+    assert(healthy.cleanup(close_file,close_find));
+    assert(!healthy.busy() && healthy.rescued==1 && find_closes==1);
+    assert(healthy.acquire_file(17));
+    assert(healthy.close(close_file,close_find));
+    assert(!healthy.busy());
+    assert(healthy.cleanup(close_file,close_find));
+    std::puts("PASS exclusive ownership, stale SDK handle fail-stop, no close retry");
 }
