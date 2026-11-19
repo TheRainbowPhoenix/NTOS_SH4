@@ -549,26 +549,43 @@ $(NT_PROBE_DIST)/LARGE4M.EXE: $(NT_PROBE_BUILD)/large4m.elf tools/elf2ntx.py
 # Self-contained opt-in P0/P1/P2 probes. No fault injection, disk
 # mutation or unhinted P0 dereferences appear in the hardware package.
 # PROCTEST depends on PROCNEXT + PROCFINAL and a matching HELLO.EXE.
-define NT_SAFE_PROBE_RULE
-$(NT_PROBE_BUILD)/$(1).o: payload/$(1).c
-	@mkdir -p $(dir $@)
+# Pattern rules avoid GNU Make eval-time automatic-variable expansion.
+$(NT_PROBE_BUILD)/%.o: payload/%.c
+	@mkdir -p $(NT_PROBE_BUILD)
 	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
 
-$(NT_PROBE_BUILD)/$(1).elf: $(NT_PROBE_BUILD)/$(1).o payload/payload.ld
-	@mkdir -p $(dir $@)
+$(NT_PROBE_BUILD)/%.elf: $(NT_PROBE_BUILD)/%.o payload/payload.ld
+	@mkdir -p $(NT_PROBE_BUILD)
 	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
 
-$(NT_PROBE_DIST)/$(2).EXE: $(NT_PROBE_BUILD)/$(1).elf tools/elf2ntx.py
-	@mkdir -p $(dir $@)
+$(NT_PROBE_DIST)/POOLTEST.EXE: $(NT_PROBE_BUILD)/pooltest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
 	$(PYTHON) tools/elf2ntx.py $< -o $@
-endef
-$(eval $(call NT_SAFE_PROBE_RULE,pooltest,POOLTEST))
-$(eval $(call NT_SAFE_PROBE_RULE,evtest,EVTEST))
-$(eval $(call NT_SAFE_PROBE_RULE,proctest,PROCTEST))
-$(eval $(call NT_SAFE_PROBE_RULE,procnext,PROCNEXT))
-$(eval $(call NT_SAFE_PROBE_RULE,procfinal,PROCFINAL))
-$(eval $(call NT_SAFE_PROBE_RULE,mmtest,MMTEST))
-$(eval $(call NT_SAFE_PROBE_RULE,iotest,IOTEST))
+
+$(NT_PROBE_DIST)/EVTEST.EXE: $(NT_PROBE_BUILD)/evtest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PROCTEST.EXE: $(NT_PROBE_BUILD)/proctest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PROCNEXT.EXE: $(NT_PROBE_BUILD)/procnext.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PROCFINAL.EXE: $(NT_PROBE_BUILD)/procfinal.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/MMTEST.EXE: $(NT_PROBE_BUILD)/mmtest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/IOTEST.EXE: $(NT_PROBE_BUILD)/iotest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
 NT_SAFE_PROBES := $(addprefix $(NT_PROBE_DIST)/,POOLTEST.EXE EVTEST.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE MMTEST.EXE IOTEST.EXE)
 
 # Deliberately unresolved DLL import: exercises failure before guest entry.
