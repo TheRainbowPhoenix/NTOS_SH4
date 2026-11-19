@@ -2096,6 +2096,14 @@ int main(int argc, char **argv, char **envp) {
                     if(b>='a'&&b<='z')b-=32;
                     if(a!=b){is_home=false;break;}}
                 if(is_home)break;
+                // A standalone foreground probe is allowed to finish in the
+                // picker. Do not auto-launch a nonexistent phone Start host:
+                // it caused the misleading "PE file unavailable or filesystem
+                // busy" message after PROCFINAL.EXE passed. File_Stat is a
+                // handle-free check, performed only after normal cleanup.
+                struct File_Stat home_stat{};
+                if(g_fs.busy() || g_fs.poisoned ||
+                   File_Stat(home,&home_stat)!=0)break;
                 unsigned j=0;for(;home[j];++j)pending_app[j]=home[j];pending_app[j]=0;
             }
         }
