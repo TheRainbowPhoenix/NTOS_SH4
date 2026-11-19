@@ -571,6 +571,20 @@ $(eval $(call NT_SAFE_PROBE_RULE,mmtest,MMTEST))
 $(eval $(call NT_SAFE_PROBE_RULE,iotest,IOTEST))
 NT_SAFE_PROBES := $(addprefix $(NT_PROBE_DIST)/,POOLTEST.EXE EVTEST.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE MMTEST.EXE IOTEST.EXE)
 
+# Deliberately unresolved DLL import: exercises failure before guest entry.
+# This is NOT a DllMain initialization-failure test, which is unsupported.
+$(NT_PROBE_BUILD)/procfail.o: payload/procfail.c payload/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(NT_PROBE_BUILD)/procfail.elf: $(NT_PROBE_BUILD)/procfail.o payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+
+$(NT_PROBE_DIST)/PROCFAIL.EXE: $(NT_PROBE_BUILD)/procfail.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module NOFILE.DLL
+
 .PHONY: nt-safe-probes nt-exec-probes
 nt-safe-probes: $(NT_PROBE_DIST)/OBTEST.EXE $(NT_SAFE_PROBES)
 	@echo "NTOS P0/P1/P2 HARDWARE-SAFE-INTENT probes in dist_ntprobe/"
