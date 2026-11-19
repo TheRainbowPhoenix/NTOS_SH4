@@ -42,6 +42,18 @@ jobs:
           make -j4 BUILDDIR=obj_stream_eager OUTDIR=dist_stream_eager DEPDIR=.deps_stream_eager DEFINES="-DNTOS_STREAMED_IMAGE_LOADING=1" hh3
           test -s dist_stream_off/NTOS.hh3
           test -s dist_stream_eager/NTOS.hh3
+      - name: NT Ob/Ex ownership and poison-gate host regressions
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/nt_executive_test.cpp -o /tmp/nt-executive-test
+          /tmp/nt-executive-test
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/fs_guard_test.cpp -o /tmp/nt-fs-guard-test
+          /tmp/nt-fs-guard-test
+      - name: Produce and validate opt-in 4 MiB real SH4BE PE
+        run: |
+          make nt-exec-probes
+          test -s dist_ntprobe/OBTEST.EXE
+          python3 tools/check_large4m_pe.py dist_ntprobe/LARGE4M.EXE
+          /tmp/pe-stream-test dist_ntprobe/LARGE4M.EXE
       - name: Static checks and PE import/link validation
         run: |
           python3 tools/format_c_sources.py --check
