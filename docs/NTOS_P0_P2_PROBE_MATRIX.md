@@ -34,7 +34,7 @@ want the new build; its launcher logic is unchanged.
 | P1 | `POOLTEST.EXE` | `0x50010200` on a clean run | 4 randomized allocation/free rounds, 1–8192 byte sizes, 512 KiB peak, 128 tracked slots, overflow and tag errors; low 16 bits are reported peak KiB |
 | P1 | `EVTEST.EXE` | `0xE7000010` | manual-reset vs auto-reset, zero-timeout polls, unsupported blocking waits, repeated close/reopen |
 | P2 | `PROCTEST.EXE` | stages `0x70010001`, `0x70020002`, `0x70030003` | serial handoff to `PROCNEXT.EXE` and `PROCFINAL.EXE` with intentionally leaked event/Ex allocation and read-only file; host recovers descriptor then clears per-launch ownership |
-| P2 | `MMTEST.EXE` | `0x4D4D0060`, `HINT=192`, `EV>0`, `BAD=0` | 96 explicitly hinted RAM pages, forward write and reverse read/validation after UTLB eviction; invalid unmapped VA hint rejected |
+| P2 | `MMTEST.EXE` | `0x4D4D0060`, `HINT=193` (192 successful + 1 deliberately rejected), `EV>0`, `BAD=0` | 96 explicitly hinted RAM pages, forward write and reverse read/validation after UTLB eviction; invalid unmapped VA hint rejected |
 | P2 | `IOTEST.EXE` | `0x10F00010` | read-only `HELLO.EXE` header/seek/size, nested open rejection, wrong-type and stale handle rejection, two positively successful closes |
 
 The pool peak is retained by the executive for the lifetime of the
