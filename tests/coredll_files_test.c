@@ -156,8 +156,11 @@ int main(void)
     assert(CloseHandle(a) && last_fd == 0x10001);
     assert(!ReadFile(a, data, 4, &done, 0));
     assert(CloseHandle(b) && last_fd == 0x10002 && closed == 2);
-    for (int i = 0; i < 32; ++i)
-        assert(CreateFileW(path, NT_GENERIC_READ, 1, 0, 3, 0, 0) != NT_INVALID_FILE);
+    void *opened[32];
+    for (int i = 0; i < 32; ++i) {
+        opened[i] = CreateFileW(path, NT_GENERIC_READ, 1, 0, 3, 0, 0);
+        assert(opened[i] != NT_INVALID_FILE);
+    }
     assert(CreateFileW(path, NT_GENERIC_READ, 1, 0, 3, 0, 0) == NT_INVALID_FILE &&
            GetLastError() == 4 && closed == 3);
     ntos_host_table[15] = (const void *)fake_event;
@@ -216,7 +219,13 @@ int main(void)
         /* the exhaustion block above left all 32 file slots busy: free a
          * few through the tag-encoded handles before the copy tests */
         for (int i = 0; i < 4; ++i)
-            CloseHandle((void *)(uintptr_t)(NT_HANDLE_TAG + i + 1u));
+            assert(CloseHandle(opened[i]));
+        /* A previously closed synthetic HANDLE must not alias a newly
+         * opened file that reused its table slot (or SDK descriptor). */
+        void *replacement = CreateFileW(path, NT_GENERIC_READ, 1, 0, 3, 0, 0);
+        assert(replacement != NT_INVALID_FILE && replacement != opened[0]);
+        assert(!ReadFile(opened[0], data, 1, &done, 0));
+        assert(CloseHandle(replacement));
         disk_len = 0;
         disk[0] = 0;
         launched_path[0] = 0;
