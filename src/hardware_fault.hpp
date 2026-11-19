@@ -113,9 +113,9 @@ extern "C" int ntos_pager_exception_callback(uint32_t tea,uint32_t expevt) {
     if(ctx.probe_armed) {
         if((tea&~0xFFFu)==ctx.probe_page &&
            expevt==ctx.probe_event) {
-            ++ctx.probe_seen;
+            ctx.probe_seen=ctx.probe_seen+1u;
             ctx.probe_armed=false;
-        } else ++ctx.probe_unexpected;
+        } else ctx.probe_unexpected=ctx.probe_unexpected+1u;
     }
     return 1;
 }
