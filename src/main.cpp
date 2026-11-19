@@ -101,29 +101,34 @@ struct NtosApi {
 
 static int cur_row = 0;
 
-// 40 columns by 40 rows: 8-pixel cells, 12 bitmap rows, 13-pixel pitch.
-// This bypasses the firmware debug printer's 14-pixel / 37-row limit.
-static TextConsole<> app_console;
+// The bitmap atlas contains 14 distinct rows per glyph. The old 12-row
+// resampling skipped source row 6 (the middle bar in E/F/B); do not squeeze
+// rows. 37 lines x 14 pixels fit inside the 320x528 LCD (518 pixels).
+constexpr unsigned NTOS_CONSOLE_COLUMNS=40u;
+constexpr unsigned NTOS_CONSOLE_ROWS=37u;
+constexpr unsigned NTOS_CONSOLE_GLYPH_HEIGHT=14u;
+static TextConsole<NTOS_CONSOLE_COLUMNS,NTOS_CONSOLE_ROWS> app_console;
 static bool app_console_started = false;
 static void console_paint(unsigned row, const char *text) {
-    const unsigned top = row * 13;
-    for (unsigned y = top; y < top + 13 && y < height; ++y)
+    const unsigned top = row * NTOS_CONSOLE_GLYPH_HEIGHT;
+    for (unsigned y = top; y < top + NTOS_CONSOLE_GLYPH_HEIGHT && y < height; ++y)
         line(0, static_cast<int>(y), static_cast<int>(width - 1), static_cast<int>(y), 0xffff);
-    for (unsigned x = 0; x < 40 && text[x]; ++x) {
+    for (unsigned x = 0; x < NTOS_CONSOLE_COLUMNS && text[x]; ++x) {
         unsigned ch = static_cast<unsigned char>(text[x]);
         if (ch < 32 || ch > 126) ch = '?';
-        for (unsigned y = 0; y < 12; ++y) {
-            const unsigned bits = nt_font_rows[ch - 32][y * 14 / 12];
+        for (unsigned y = 0; y < NTOS_CONSOLE_GLYPH_HEIGHT; ++y) {
+            const unsigned bits = nt_font_rows[ch - 32][y];
             for (unsigned bit = 0; bit < 8; ++bit)
                 if (bits & (1u << bit)) setPixel(x * 8 + bit, top + y, 0);
         }
     }
 }
 static bool console_scroll() {
-    // Copy pixels once instead of rasterizing all 1,600 glyph cells on every line.
+    // Scroll 36 complete 14-pixel lines; the 37th line is repainted
+    // by TextConsole::newline. Never shear a glyph mid-row.
     volatile uint16_t *frame = vram;
-    for (unsigned i = 0; i < 320u * 39u * 13u; ++i)
-        frame[i] = frame[i + 320u * 13u];
+    for (unsigned i = 0; i < 320u * (NTOS_CONSOLE_ROWS - 1u) * NTOS_CONSOLE_GLYPH_HEIGHT; ++i)
+        frame[i] = frame[i + 320u * NTOS_CONSOLE_GLYPH_HEIGHT];
     return true;
 }
 static void ntos_puts(const char *text) {
