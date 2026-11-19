@@ -29,13 +29,13 @@ struct Gate {
         kind=finder;handle=h;return true;
     }
     void released() { kind=none;handle=-1; }
-    // Returns false on an ambiguous SDK close and permanently poisons ownership.
+    // Only SDK return code 0 proves close success. Any other result is ambiguous\n    // and permanently poisons ownership (never call Close twice).
     template<class FileClose, class FindClose>
     bool close(FileClose close_file, FindClose close_find) {
         if(poisoned)return false;
         if(!busy())return true;
         int result=kind==file ? close_file(handle) : close_find(handle);
-        if(result<0) { ++close_failures;poisoned=true; return false; }
+        if(result!=0) { ++close_failures;poisoned=true; return false; }
         released();return true;
     }
     template<class FileClose, class FindClose>
