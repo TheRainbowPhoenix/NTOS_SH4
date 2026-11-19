@@ -18,13 +18,14 @@ int main(const void *const *api,char **argv,char **envp)
     count_fn peak=(count_fn)api[35],live=(count_fn)api[36],count=(count_fn)api[37];
     if(!alloc||!release||!peak||!live||!count)return 0xBAD20002u;
     if(live()!=0u || count()!=0u)return 0xBAD20003u;
-    void *block[128]={0};
-    u32 length[128]={0},order[128]={0};
+    // Every entry is initialized before use; avoid freestanding libc memset.
+    void *block[128];
+    u32 length[128],order[128];
     u32 rng=0x3278FDD1u;
     for(u32 round=0u;round<4u;++round) {
         u32 expected=0u;
         for(u32 i=0u;i<64u;++i) {
-            u32 n=1u+(i*131u+round*1091u)%8192u;
+            u32 n=1u+((i*131u+round*1091u)&8191u);
             block[i]=alloc(n,TAG);
             if(!block[i])return 0xBAD20004u;
             length[i]=n;order[i]=i;expected+=n;
@@ -35,7 +36,7 @@ int main(const void *const *api,char **argv,char **envp)
         if(live()!=expected)return 0xBAD20005u;
         for(u32 i=63u;i>0u;--i) {
             rng=rng*1664525u+1013904223u;
-            u32 j=rng%(i+1u),tmp=order[i];
+            u32 j=rng>>26u,tmp=order[i]; // 0..63, no SH4 runtime divide helper
             order[i]=order[j];order[j]=tmp;
         }
         for(u32 i=0u;i<64u;++i) {
