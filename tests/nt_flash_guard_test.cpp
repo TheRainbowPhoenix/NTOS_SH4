@@ -8,7 +8,7 @@
 struct MockFs {
     nt::Process process{};
     ntos_fs::Gate gate{};
-    unsigned opens=0u,reads=0u,closes=0u,finds=0u;
+    unsigned opens=0u,reads=0u,writes=0u,closes=0u,finds=0u;
     bool fail_close=false;
     static MockFs *active;
     static int close_sdk(int fd) {
@@ -41,6 +41,12 @@ struct MockFs {
         ++reads;
         return 1;
     }
+    int32_t write_file(uint32_t cookie) {
+        const int32_t sdk_fd=process.file_fd(cookie);
+        if(!gate.file_is(sdk_fd))return -2;
+        ++writes;
+        return 1;
+    }
     int32_t close_file(uint32_t cookie) {
         const int32_t sdk_fd=process.file_fd(cookie);
         if(!gate.file_is(sdk_fd))return -2;
@@ -62,8 +68,10 @@ int main() {
     assert(d.open_file()==-16 && d.opens==1u); // no second File_Open
     assert(!d.gate.acquire_finder(29) && d.finds==0u);
     assert(d.read_file(static_cast<uint32_t>(a))==1 && d.reads==1u);
+    assert(d.write_file(static_cast<uint32_t>(a))==1 && d.writes==1u);
     assert(d.close_file(static_cast<uint32_t>(a))==0 && d.closes==1u);
     assert(d.read_file(static_cast<uint32_t>(a))==-2 && d.reads==1u);
+    assert(d.write_file(static_cast<uint32_t>(a))==-2 && d.writes==1u);
     assert(d.close_file(static_cast<uint32_t>(a))==-2 && d.closes==1u);
     const int32_t b=d.open_file();
     assert(b>0 && b!=a && d.opens==2u); // SDK fd is recycled but token isn't
@@ -80,6 +88,7 @@ int main() {
     assert(d.close_file(static_cast<uint32_t>(c))==-1);
     assert(d.closes==3u && d.gate.poisoned);
     assert(d.read_file(static_cast<uint32_t>(c))==-2);
+    assert(d.write_file(static_cast<uint32_t>(c))==-2 && d.writes==1u);
     assert(d.open_file()==-16 && d.opens==3u);
     assert(d.close_file(static_cast<uint32_t>(c))==-2);
     assert(!d.close_leaked_and_end()); // poisoned cleanup MUST NOT retry
