@@ -1,0 +1,59 @@
+name: Console font · conservative CP400 smoke
+on:
+  push:
+    branches:
+      - fix/console-full-14px-glyphs
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: console-font-smoke-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-and-check:
+    name: Full 8x14 glyphs + no-VBR HH3
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.2
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Host compiler and unit tests
+        run: |
+          apt-get update -qq && apt-get install -y -qq g++ python3
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/console_glyph_test.cpp -o /tmp/console-glyphs
+          /tmp/console-glyphs
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/console_host_test.cpp -o /tmp/console-host
+          /tmp/console-host
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/fs_guard_test.cpp -o /tmp/fs-guard
+          /tmp/fs-guard
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/nt_executive_test.cpp -o /tmp/nt-exec
+          /tmp/nt-exec
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/nt_flash_guard_test.cpp -o /tmp/nt-flash-safe
+          /tmp/nt-flash-safe
+          gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/nt-core-files
+          /tmp/nt-core-files
+      - name: Build conservative no-VBR NTOS app
+        run: |
+          make -j4 BUILDDIR=obj_font_safe OUTDIR=dist_font_safe DEPDIR=.deps_font_safe DEFINES="-DNTOS_STREAMED_IMAGE_LOADING=1" hh3
+          test -s dist_font_safe/NTOS.hh3
+      - name: Build matching small SH4BE test executables
+        run: |
+          make -j4 dist/HELLO.EXE dist/HELLOCORE.EXE dist/COREDLL.DLL
+          make dist_ntprobe/OBTEST.EXE
+          test -s dist_ntprobe/OBTEST.EXE
+      - name: Upload conservative on-device test files
+        uses: actions/upload-artifact@v7
+        with:
+          name: NTOS-Console14px-CP400-CONSERVATIVE-SMOKE
+          path: |
+            dist_font_safe/NTOS.hh3
+            dist/HELLO.EXE
+            dist/HELLOCORE.EXE
+            dist/COREDLL.DLL
+            dist_ntprobe/OBTEST.EXE
+          if-no-files-found: error
+          retention-days: 30
