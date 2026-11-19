@@ -1,0 +1,69 @@
+name: NTOS P0-P2 executive and MM/IO probes
+on:
+  push:
+    branches:
+      - feat/ntos-p0-p2-probe-suite
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ntos-p0-p2-probes-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  p0-p2:
+    name: Compile SH4BE probes and mock unsafe faults
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.2
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install C and C++ host compilers
+        run: apt-get update -qq && apt-get install -y -qq gcc g++ python3
+      - name: Exercise Ob, pool, events, process lifecycle, MM and mock SDK faults
+        run: |
+          set -eu
+          for name in console_glyph_test console_host_test fs_guard_test nt_executive_test nt_flash_guard_test nt_p0p2_host_test nt_io_injection_test; do
+            g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 "tests/$name.cpp" -o "/tmp/$name"
+            "/tmp/$name"
+          done
+          gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/coredll-files
+          /tmp/coredll-files
+      - name: Compile tested explicit-hint experimental firmware
+        run: |
+          make -j4 BUILDDIR=obj_p0p2 OUTDIR=dist_p0p2 DEPDIR=.deps_p0p2 DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1" hh3
+          test -s dist_p0p2/NTOS.hh3
+      - name: Compile all P0-P2 PE probes and negative dependency fixture
+        run: |
+          make -j4 ntx
+          make -j4 nt-exec-probes dist_ntprobe/PROCFAIL.EXE
+          python3 tools/check_large4m_pe.py dist_ntprobe/LARGE4M.EXE
+          for name in OBTEST POOLTEST EVTEST PROCTEST PROCNEXT PROCFINAL PROCFAIL MMTEST IOTEST LARGE4M; do
+            test -s "dist_ntprobe/$name.EXE"
+          done
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/pe_stream_test.cpp -o /tmp/pe-stream
+          /tmp/pe-stream dist/COREDLL.DLL dist/CHAINTEST.EXE dist_ntprobe/LARGE4M.EXE
+      - name: Upload opt-in P0-P2 on-device probes (no destructive injection)
+        uses: actions/upload-artifact@v7
+        with:
+          name: NTOS-CP400-P0-P2-SAFE-INTENT-PROBES
+          path: |
+            dist_p0p2/NTOS.hh3
+            dist_ntprobe/OBTEST.EXE
+            dist_ntprobe/POOLTEST.EXE
+            dist_ntprobe/EVTEST.EXE
+            dist_ntprobe/PROCTEST.EXE
+            dist_ntprobe/PROCNEXT.EXE
+            dist_ntprobe/PROCFINAL.EXE
+            dist_ntprobe/PROCFAIL.EXE
+            dist_ntprobe/MMTEST.EXE
+            dist_ntprobe/IOTEST.EXE
+            dist/HELLO.EXE
+            dist/COREDLL.DLL
+            dist/PAGERTEST.EXE
+            dist/PAGERSTRESS.DLL
+          if-no-files-found: error
+          retention-days: 30
