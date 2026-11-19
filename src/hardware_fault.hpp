@@ -78,7 +78,9 @@ static bool commit_translation(void *,uint32_t va,uint32_t pa,
             read_only ? mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE))
         return false;
 #if NTOS_VERIFY_UTLB_SLOTS
-    return mmu::verify_slot(slot,va,pa);
+    return mmu::verify_slot(slot,va,pa,
+                            read_only ? mmu::PTEL_PAGE_READ_ONLY :
+                                        mmu::PTEL_PAGE);
 #else
     return true;
 #endif
