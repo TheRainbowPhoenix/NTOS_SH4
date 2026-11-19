@@ -12,6 +12,7 @@
 #pragma once
 #include <stdint.h>
 #include "pe_rebase.hpp"
+#include "nt/mm_protect.hpp"
 
 namespace ntos_fault {
 constexpr unsigned MAX_MODULES=16u;
@@ -21,6 +22,8 @@ struct Area {
     uint32_t va;
     uint32_t pages;
     uint32_t pa;  // physical page aligned, image's P1 heap backing
+    const pe::Image *header=nullptr; // owned by loader for entire guest run
+    bool protected_pages=false;
 };
 struct Entry {
     uint32_t va;
@@ -28,10 +31,12 @@ struct Entry {
     uint32_t age;
     bool present;
     bool pinned;
+    ntos_mm::Access access=ntos_mm::Access::read_write;
 };
 // The SH7305 has a 64-entry fully associative UTLB, not the SH7705's
 // 32 sets x 4 ways. Slots 0..54 are NTOS-owned; 55..58 map the API window.
-// The final callback argument is reserved for ABI compatibility and is 0.
+// Install callback final argument is 0 for RW, 1 for RO. The existing
+// unprotected caller ABI still passes 0. This is NOT the SH7705 UTLB way.
 using Install=bool (*)(void *,uint32_t,uint32_t,unsigned,unsigned);
 struct Pager {
     Area modules[MAX_MODULES]{};
@@ -40,7 +45,8 @@ struct Pager {
     uint32_t clock=0u,misses=0u,evictions=0u;
     bool servicing=false;
 
-    bool add(uint32_t va,uint32_t pa,uint32_t pages) {
+    bool add(uint32_t va,uint32_t pa,uint32_t pages,
+             const pe::Image *header=nullptr,bool protect=false) {
         if(modules_used>=MAX_MODULES || !pages ||
            (va&(PAGE-1u)) || (pa&(PAGE-1u)) ||
            va<ntos_rebase::VA_MIN || va>=ntos_rebase::VA_MAX ||
@@ -50,7 +56,10 @@ struct Pager {
             if(ntos_rebase::overlap(va,pages,
                 modules[i].va,modules[i].pages))
                 return false;
-        modules[modules_used++]={va,pages,pa};
+        if(protect && (!header || pages !=
+            (header->oh.size_of_image+PAGE-1u)/PAGE))
+            return false;
+        modules[modules_used++]={va,pages,pa,header,protect};
         return true;
     }
     bool backing(uint32_t va,uint32_t *pa) const {
@@ -67,6 +76,19 @@ struct Pager {
         }
         return false;
     }
+    ntos_mm::Access access(uint32_t va) const {
+        const uint32_t aligned=va&~(PAGE-1u);
+        for(unsigned i=0u;i<modules_used;++i) {
+            const Area &a=modules[i];
+            if(aligned>=a.va && (aligned-a.va)/PAGE<a.pages) {
+                if(!a.protected_pages || !a.header)
+                    return ntos_mm::Access::read_write;
+                return ntos_mm::pe_page_access(*a.header,
+                                               (aligned-a.va)/PAGE);
+            }
+        }
+        return ntos_mm::Access::no_access;
+    }
     int lookup(uint32_t va) const {
         va&=~(PAGE-1u);
         for(unsigned i=0;i<SLOTS;++i)
@@ -81,6 +103,8 @@ struct Pager {
         uint32_t pa=0;
         const uint32_t vpn=va&~(PAGE-1u);
         if(!backing(vpn,&pa)) {servicing=false;return false;}
+        const ntos_mm::Access rights=access(vpn);
+        if(!ntos_mm::readable(rights)) {servicing=false;return false;}
         const int existing=lookup(vpn);
         if(existing>=0) {
             Entry &e=entries[static_cast<unsigned>(existing)];
@@ -88,7 +112,8 @@ struct Pager {
             // on a tracked page still requires LDTLB, even if NTOS
             // previously installed that mapping.
             if(hardware_miss &&
-               !install(ctx,e.va,e.pa,static_cast<unsigned>(existing),0u)) {
+               !install(ctx,e.va,e.pa,static_cast<unsigned>(existing),
+                   e.access==ntos_mm::Access::read_only ? 1u : 0u)) {
                 servicing=false;return false;
             }
             e.age=++clock;
@@ -112,11 +137,12 @@ struct Pager {
             }
         if(victim<0){servicing=false;return false;}
         Entry &out=entries[static_cast<unsigned>(victim)];
-        if(!install(ctx,vpn,pa,static_cast<unsigned>(victim),0u)) {
+        if(!install(ctx,vpn,pa,static_cast<unsigned>(victim),
+                    rights==ntos_mm::Access::read_only ? 1u : 0u)) {
             servicing=false;return false;
         }
         if(out.present)++evictions;
-        out={vpn,pa,++clock,true,pin};
+        out={vpn,pa,++clock,true,pin,rights};
         ++misses;
         servicing=false;
         return true;
