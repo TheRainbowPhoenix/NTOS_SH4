@@ -192,6 +192,15 @@ inline nt::Status arm_guest_guard(uint32_t address,uint32_t event,
            c.user_read_session || resume_pc>0xFFFFFFFDu ||
            !executable_page(&c.table,resume_pc+2u))
             return nt::INVALID_PARAMETER;
+        // Verify actual SH4BE instructions in the *mapped guest image*:
+        // TRAPA #0x7B (C37B), immediately followed by RTS (000B).
+        // Never promote an arbitrary user PC back to supervisor mode.
+        const uint16_t trap=*reinterpret_cast<volatile const uint16_t *>(
+            resume_pc);
+        const uint16_t ret=*reinterpret_cast<volatile const uint16_t *>(
+            resume_pc+2u);
+        if(trap!=0xC37Bu || ret!=0x000Bu)
+            return nt::INVALID_PARAMETER;
     }
     const nt::Status status=c.guest_guard.arm(
         address,event,resume_pc,&executable_page,&c.table,
