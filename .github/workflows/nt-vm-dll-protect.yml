@@ -43,13 +43,13 @@ jobs:
           test -s dist_vm_device/NTOS.hh3
       - name: Build isolated emulator VBR+0x100 protection dispatcher candidate
         run: |
-          make -j4 BUILDDIR=obj_vm_guard OUTDIR=dist_vm_guard DEPDIR=.deps_vm_guard DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=1 -DNTOS_ENABLE_GUEST_PROTECT_DISPATCH=1" hh3
+          make -j4 BUILDDIR=obj_vm_guard OUTDIR=dist_vm_guard DEPDIR=.deps_vm_guard DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=1 -DNTOS_ENABLE_GUEST_PROTECT_DISPATCH=1 -DNTOS_SH4A_TLB_SYNC_BARRIER=1 -DNTOS_VERIFY_UTLB_SLOTS=1" hh3
           test -s dist_vm_guard/NTOS.hh3
       - name: Build all matching real SH4BE PE init, VM, pager and loader fixtures
         run: |
           make -j4 ntx
           make -j4 nt-vm-dll-probes nt-exec-probes dist_ntprobe/MMROTEST.EXE
-          for p in VMTEST.EXE MMGUARD.EXE MMREAD.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE; do
+          for p in VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE; do
             test -s "dist_ntprobe/$p"
           done
           python3 tools/check_large4m_pe.py dist_ntprobe/LARGE4M.EXE
@@ -86,6 +86,7 @@ jobs:
             dist_vm_guard/NTOS.hh3
             dist_ntprobe/MMGUARD.EXE
             dist_ntprobe/MMREAD.EXE
+            dist_ntprobe/MMRDINIT.EXE
             dist_ntprobe/VMTEST.EXE
             dist_ntprobe/INITGOOD.DLL
             dist_ntprobe/INITFAIL.DLL
