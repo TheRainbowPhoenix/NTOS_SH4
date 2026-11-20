@@ -1,4 +1,4 @@
-/* MMREAD.EXE -- EMULATOR ONLY: deliberately trap a denied P0 READ.
+/* MMREAD.EXE -- separately gated CP400 protection test for a denied P0 READ.
  * A private 4KiB P1 frame is committed and prefaulted while RW, then
  * reprotected as supervisor-only (SH4A PTEL.PR=01). A P0 user load
  * must raise EXPEVT=0x0A0 at VBR+0x100; the one-shot handler redirects
