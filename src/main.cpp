@@ -34,6 +34,7 @@
 #include "mmu.hpp"
 #include "nt/mm_protect.hpp"
 #include "nt/launch_policy.hpp"
+#include "nt/picker.hpp"
 #include "fs_guard.hpp"
 #include "nt/process.hpp"
 #include "nt/dll_lifecycle.hpp"
@@ -1961,7 +1962,7 @@ static void banner(void) {
     cur_row = 3;
 }
 
-static void tiny_utoa(uint32_t v, char *buf) {
+[[maybe_unused]] static void tiny_utoa(uint32_t v, char *buf) {
     char tmp[12];
     int n = 0;
     if (v == 0) {
@@ -2059,6 +2060,15 @@ int main(int argc, char **argv, char **envp) {
     // names; File_Open takes ANSI paths, so convert on the way in.
     char names[kMaxFiles][kMaxName + 1] = {};
     uint32_t sizes[kMaxFiles] = {};
+    // HH3's physical key enum layout is part of our bitfield contract.
+    static_assert(KEY_3==0x00000008u && KEY_6==0x00000010u &&
+                  KEY_9==0x00000020u && KEY_BACKSPACE==0x00000080u &&
+                  KEY_EXE==0x04000000u && KEY_CLEAR==0x00020000u);
+    static_assert(KEY_0==0x04000000u && KEY_1==0x08000000u &&
+                  KEY_2==0x00080000u && KEY_4==0x10000000u &&
+                  KEY_5==0x00100000u && KEY_7==0x20000000u &&
+                  KEY_8==0x00200000u && KEY_UP==0x00800000u &&
+                  KEY_DOWN==0x00400000u);
     int count = 0;
 
     for (const char_const16_t *pattern :
@@ -2131,52 +2141,50 @@ int main(int argc, char **argv, char **envp) {
         return safe_host_exit(0);
     }
 
-    for (int i = 0; i < count; i++) {
-        char line[48];
-        char sz[12];
-        tiny_utoa(sizes[pick[i]], sz);
-        int p = 0;
-        line[p++] = static_cast<char>('0' + i);
-        line[p++] = ':';
-        line[p++] = ' ';
-        for (int k = 0; k < kMaxName && names[pick[i]][k] != '\0'; k++)
-            line[p++] = names[pick[i]][k];
-        line[p++] = ' ';
-        for (int k = 0; sz[k] != '\0' && p < 46; k++)
-            line[p++] = sz[k];
-        line[p] = '\0';
-        Debug_Printf(0, static_cast<unsigned int>(3 + i), false, 0,
-                     "%s", line);
-    }
-    LCD_Refresh();
-
-    // Selection: EXE runs, CLEAR (power) quits, ADD/UP/DOWN cycles.
-    int selected = 0;
-    bool quit = false;
-    while (!quit) {
-        uint32_t key1 = 0;
-        uint32_t key2 = 0;
-        getKey(&key1, &key2);
-        if ((key1 | key2) != 0) {
-            if (testKey(key1, key2, KEY_EXE)) {
-                quit = true;
-            } else if ((testKey(key1, key2, KEY_CLEAR) || testKey(key1, key2, KEY_LEFT))) {
-                return safe_host_exit(0); // exits NTOS back to the launcher
-            } else if (testKey(key1, key2, KEY_ADD) ||
-                       testKey(0, key2, KEY_UP) ||
-                       testKey(0, key2, KEY_DOWN)) {
-                selected = (selected + 1) % count;
-                uint32_t d1 = 0;
-                uint32_t d2 = 0;
-                do {
-                    getKey(&d1, &d2);
-                } while ((d1 | d2) != 0);
-                Debug_Printf(0, 2, true, 0, "Selected: %d of %d      ",
-                             selected + 1, count);
-                LCD_Refresh();
+    // The 320x528 display cannot show all 64 file entries at once.
+    // Present a 29-row viewport and an always-visible "> " selection
+    // marker (including when the user types a two-digit index).
+    auto draw_picker=[&](const ntos_picker::Picker &ui) {
+        Debug_Printf(0,2,true,0,"Selected %u/%u   Jump:%s%u%s       ",
+            ui.selected+1u,ui.count,
+            ui.typed_digits ? "" : "-",
+            ui.typed_digits ? ui.typed : 0u,
+            ui.typed_digits && (!ui.typed || ui.typed>ui.count) ? " (range)" : "");
+        Debug_Printf(0,3,false,0,
+            "%s","EXE run | 0-9 jump | BACK edit | UP/DOWN");
+        for(unsigned row=0u;row<ntos_picker::VISIBLE;++row) {
+            char line[41];
+            const unsigned ordinal=ui.first+row;
+            if(ordinal<ui.count)
+                ntos_picker::format_row(
+                    line,ordinal,ui.selected,names[pick[ordinal]],
+                    sizes[pick[ordinal]]);
+            else {
+                for(unsigned c=0u;c<40u;++c)line[c]=' ';
+                line[40]=0;
             }
+            Debug_Printf(0,row+4u,false,0,"%s",line);
         }
+        LCD_Refresh();
+    };
+    ntos_picker::Picker picker{};
+    picker.init(static_cast<unsigned>(count));
+    draw_picker(picker);
+    // Do not reuse the EXE press that dismissed a previous payload/error.
+    uint32_t key1=0u,key2=0u;
+    do{getKey(&key1,&key2);}while((key1|key2)!=0u);
+    bool quit=false;
+    while(!quit) {
+        key1=0u;key2=0u;
+        getKey(&key1,&key2);
+        const auto action=picker.key(key1,key2);
+        if(action==ntos_picker::launch)quit=true;
+        else if(action==ntos_picker::exit_host)
+            return safe_host_exit(0);
+        else if(action==ntos_picker::redraw)
+            draw_picker(picker);
     }
+    const int selected=static_cast<int>(picker.selected);
 
     // Open the selected PE. Streaming mode only reads its header here;
     // copy-load comparison mode retains the former full-file staging path.

@@ -614,6 +614,10 @@ $(NT_PROBE_DIST)/MMREAD.EXE: $(NT_PROBE_BUILD)/mmread.elf tools/elf2ntx.py
 	@mkdir -p $(NT_PROBE_DIST)
 	$(PYTHON) tools/elf2ntx.py $< -o $@
 
+$(NT_PROBE_DIST)/MMRDINIT.EXE: $(NT_PROBE_BUILD)/mmrdinit.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
 $(NT_PROBE_BUILD)/initgood.elf: $(NT_PROBE_BUILD)/initgood.o payload/xamlui.ld
 	@mkdir -p $(NT_PROBE_BUILD)
 	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/xamlui.ld -o $@ $<
@@ -639,7 +643,7 @@ $(NT_PROBE_DIST)/INITFAIL.EXE: $(NT_PROBE_BUILD)/initfail_test.elf $(NT_PROBE_DI
 	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module INITFAIL.DLL
 
 .PHONY: nt-vm-dll-probes
-nt-vm-dll-probes: $(NT_PROBE_DIST)/VMTEST.EXE $(NT_PROBE_DIST)/MMGUARD.EXE $(NT_PROBE_DIST)/MMREAD.EXE $(NT_PROBE_DIST)/INITGOOD.DLL $(NT_PROBE_DIST)/INITFAIL.DLL $(NT_PROBE_DIST)/INITPASS.EXE $(NT_PROBE_DIST)/INITFAIL.EXE
+nt-vm-dll-probes: $(NT_PROBE_DIST)/VMTEST.EXE $(NT_PROBE_DIST)/MMGUARD.EXE $(NT_PROBE_DIST)/MMREAD.EXE $(NT_PROBE_DIST)/MMRDINIT.EXE $(NT_PROBE_DIST)/INITGOOD.DLL $(NT_PROBE_DIST)/INITFAIL.DLL $(NT_PROBE_DIST)/INITPASS.EXE $(NT_PROBE_DIST)/INITFAIL.EXE
 	@echo "NTOS private VM, DLL init and emulator-only protected-write probes"
 
 # Deliberately unresolved DLL import: exercises failure before guest entry.

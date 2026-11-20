@@ -417,8 +417,14 @@ def emit_ntx(elf, base, exports=None, dll_name=None, import_module=None,
             chars = (IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE |
                      IMAGE_SCN_MEM_READ)
         else:
-            chars = (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ |
-                     IMAGE_SCN_MEM_WRITE)
+            # Preserve ELF SHF_WRITE when converting initialized sections.
+            # Previously ALL non-executable PROGBITS became RW, including
+            # .rodata. That made SH4A PR=10/RO impossible: MMROTEST
+            # returned BAD70002 and MMGUARD could never arm its RO page.
+            # The existing .idata/.data/.got sections retain SHF_WRITE.
+            chars = IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ
+            if s.sh_flags & SHF_WRITE:
+                chars |= IMAGE_SCN_MEM_WRITE
         coff_secs.append({
             "name": coff_name,
             "rva": s.sh_addr - base,

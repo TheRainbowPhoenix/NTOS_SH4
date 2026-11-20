@@ -162,6 +162,18 @@ inline nt::Status arm_guest_guard(uint32_t address,uint32_t event,
        event==nt::SH4_PROTECTION_READ ?
        rights!=ntos_mm::Access::privileged_only : true)
         return nt::INVALID_PARAMETER;
+#if NTOS_VERIFY_UTLB_SLOTS
+    // In the separately gated emulator candidate, trust the *actual* P4
+    // UTLB data array rather than our software-page metadata. A failed
+    // hardware PR readback must reject the canary BEFORE the bad access.
+    const int slot=c.table.lookup(page);
+    if(slot<0 || !mmu::verify_slot(
+        static_cast<uint32_t>(slot),page,
+        c.table.entries[slot].pa,
+        rights==ntos_mm::Access::read_only ?
+            mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE_SUPERVISOR_ONLY))
+        return nt::DEVICE_BUSY;
+#endif
     return c.guest_guard.arm(address,event,resume_pc,
                              &executable_page,&c.table);
 #else
