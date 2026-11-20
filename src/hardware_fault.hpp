@@ -82,14 +82,14 @@ static Context g_context{};
 
 static bool commit_translation(void *,uint32_t va,uint32_t pa,
                                unsigned slot,unsigned read_only) {
-    if(slot>=mmu::SLOT_ROTATING_LAST+1u || read_only>1u)return false;
-    if(!mmu::map_page_at_index_flags(va,pa,slot,
-            read_only ? mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE))
+    if(slot>=mmu::SLOT_ROTATING_LAST+1u || read_only>2u)return false;
+    const uint32_t flags=read_only==2u ?
+        mmu::PTEL_PAGE_SUPERVISOR_ONLY :
+        read_only==1u ? mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE;
+    if(!mmu::map_page_at_index_flags(va,pa,slot,flags))
         return false;
 #if NTOS_VERIFY_UTLB_SLOTS
-    return mmu::verify_slot(slot,va,pa,
-                            read_only ? mmu::PTEL_PAGE_READ_ONLY :
-                                        mmu::PTEL_PAGE);
+    return mmu::verify_slot(slot,va,pa,flags);
 #else
     return true;
 #endif
@@ -153,12 +153,14 @@ inline nt::Status arm_guest_guard(uint32_t address,uint32_t event,
     if(!c.installed || !mmu::at_enabled())return nt::DEVICE_BUSY;
     const uint32_t page=address&~0xFFFu;
     if(c.table.lookup(page)<0)return nt::NOT_COMMITTED;
-    // A write to RO must be proven RO, already resident, and P0-backed.
-    // Read-protection delivery is supported by the dispatcher, but the
-    // current Mm has no privileged-only user-inaccessible PTEL mapping.
-    if(event==nt::SH4_PROTECTION_READ)return nt::NOT_SUPPORTED;
-    if(event!=nt::SH4_PROTECTION_WRITE ||
-       c.table.access(page)!=ntos_mm::Access::read_only)
+    // Only a pre-resident page with the expected hardware PR encoding
+    // may be armed. Write: RO PTEL.PR=10. Read: DEBUG-ONLY supervisor
+    // PTEL.PR=01 (a user P0 load must deliver EXPEVT 0x0A0).
+    const ntos_mm::Access rights=c.table.access(page);
+    if(event==nt::SH4_PROTECTION_WRITE ?
+       rights!=ntos_mm::Access::read_only :
+       event==nt::SH4_PROTECTION_READ ?
+       rights!=ntos_mm::Access::privileged_only : true)
         return nt::INVALID_PARAMETER;
     return c.guest_guard.arm(address,event,resume_pc,
                              &executable_page,&c.table);
