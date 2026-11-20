@@ -28,3 +28,12 @@ Milestones remaining: full interrupt-safe SH4AL-DSP context swap across two KTHR
 - `0x4D444331`: success
 
 The PSPARENT→PSCHILD probe now returns to the picker rather than launching STARTHOST.
+
+### Gated 500-cycle stress
+`MMSTRESS.EXE`: **0x4D535431** after 500 decommit/recommit cycles and independent second-page data verification. **Do not run MMSTRESS until the corrected MMREUSE returns 0x4D444331 on real hardware.** Stress is one foreground KTHREAD in this revision; a true cross-thread MMRACE remains gated on the real Ke context switch.
+
+### Ke-managed two KTHREAD experiment
+`K2THREAD.EXE`: expected **0x4B325431** for two kernel-owned TIDs alternating 1000 times, preserving integer ABI state and SH4AL-DSP register words. This is **privileged cooperative** switching (not arbitrary user-mode/RTE preemption and not two EXEs). Use the new API slots [67..70], which do not alter old slots. Test KCOOP and KTHREAD first. On a reset restore known-good firmware. This isolated firmware gate requires >=512 bytes below the hard HH3 loader limit.
+
+### MMRACE: actual 2-KTHREAD live-decommit stress (gate 3)
+Run **only** after corrected `MMREUSE.EXE` returns `0x4D444331` and `K2THREAD.EXE` returns `0x4B325431`. `MMRACE.EXE` executes 500 alternating decommit/recommit cycles **per KTHREAD** using separate P0 private pages in the same KPROCESS. Expected **0x4D524335** (1,000 total successful decommits); every round verifies zero-fill and that the other thread's page contents survive. A `0xBADADxxx` result identifies a failed stage; report exact code, TEA, EV, PF, BAD and return-to-picker. This is not two simultaneous separate EXE graphs or preemptive scheduling.

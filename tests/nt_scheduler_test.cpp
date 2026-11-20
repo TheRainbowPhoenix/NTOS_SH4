@@ -1,6 +1,7 @@
 #include "../src/nt/scheduler.hpp"
 #include <cassert>
 #include <cstdio>
+static bool ack(void *,uint32_t,uint32_t) {return true;}
 int main() {
     nt::CooperativeScheduler<2> s{};
     nt::SH4Context a{},b{};a.complete=b.complete=true;
@@ -13,17 +14,17 @@ int main() {
     assert(s.register_thread(1,258u,65539u,b)==nt::INVALID_PARAMETER);
     assert(s.begin(0)==nt::SUCCESS);
     unsigned chosen=99u;nt::SH4Context out{};
-    assert(s.yield(a,&chosen,&out)==nt::SUCCESS);
+    assert(s.yield(a,&chosen,&out,&ack,nullptr)==nt::SUCCESS);
     assert(chosen==1u && out.gpr[15]==b.gpr[15] &&
            out.bank1[4]==b.bank1[4] && out.dsp.x[0]==b.dsp.x[0] &&
            out.dsp.dsr==b.dsp.dsr);
     b.gpr[0]=0xCAFEu;
-    assert(s.yield(b,&chosen,&out)==nt::SUCCESS);
+    assert(s.yield(b,&chosen,&out,&ack,nullptr)==nt::SUCCESS);
     assert(chosen==0u && out.bank0[4]==a.bank0[4] &&
            out.pr==a.pr && out.dsp.x[0]==a.dsp.x[0]);
-    assert(s.yield(a,&chosen,&out)==nt::SUCCESS);
+    assert(s.yield(a,&chosen,&out,&ack,nullptr)==nt::SUCCESS);
     assert(chosen==1u && out.gpr[0]==0xCAFEu);
     assert(s.stop(0)==nt::SUCCESS);
-    assert(s.yield(b,&chosen,&out)==nt::SUCCESS && chosen==1u);
-    std::puts("PASS scheduler preflight: two process/thread identities, banked+FP+stack context, cooperative yield, stop");
+    assert(s.yield(b,&chosen,&out,&ack,nullptr)==nt::SUCCESS && chosen==1u);
+    std::puts("PASS scheduler preflight: two process/thread identities, banked+DSP+stack context, cooperative yield, stop");
 }

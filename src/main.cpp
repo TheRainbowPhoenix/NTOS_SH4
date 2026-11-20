@@ -39,7 +39,11 @@
 #include "nt/guest_buffer.hpp"
 #include "fs_guard.hpp"
 #include "nt/process.hpp"
+#include "nt/ke_coop.hpp"
 #include "nt/dll_lifecycle.hpp"
+#ifndef NTOS_ENABLE_COOP_KERNEL
+#define NTOS_ENABLE_COOP_KERNEL 0
+#endif
 #ifndef NTOS_ENABLE_DLL_INIT_TRACE
 #define NTOS_ENABLE_DLL_INIT_TRACE 0
 #endif
@@ -138,6 +142,10 @@ struct NtosApi {
     uint32_t (*ps_address_space_id)(void);              // [64]
     uint32_t (*ps_address_space_epoch)(void);           // [65]
     uint32_t (*ps_inherited_from_process_id)(void);     // [66]
+    uint32_t (*ke_create_coop_thread)(uint32_t,uint32_t); // [67] entry, P0 stack-top -> TID
+    uint32_t (*ke_coop_yield)(void);                   // [68]
+    uint32_t (*ke_coop_exit)(void);                    // [69] secondary-only
+    uint32_t (*ke_coop_switch_count)(void);            // [70]
 };
 
 static int cur_row = 0;
@@ -254,10 +262,18 @@ static ntos_fs::Gate g_fs;
 // This is NOT a protected process address space: it is the owner of one
 // foreground application graph, its NT handles, events and Ex allocations.
 static nt::Process g_nt_process{};
+#if NTOS_ENABLE_COOP_KERNEL
+static nt::KeCoop g_ke_coop{};
+extern "C" void ntos_ke_coop_swap(nt::CoopSaved *,const nt::CoopSaved *);
+#endif
 static void *nt_host_alloc(void *,size_t n) {return Mem_Malloc(n);}
 static void nt_host_free(void *,void *p) {Mem_Free(p);}
 static void nt_process_configure() {
     g_nt_process.pool.configure(nullptr,&nt_host_alloc,&nt_host_free);
+#if NTOS_ENABLE_COOP_KERNEL
+    // Only called before the next mapped guest. Never reset live stacks.
+    g_ke_coop.reset();
+#endif
 }
 struct FatalSnapshot {
     uint32_t tea=0,expevt=0,spc=0,ssr=0,mmucr=0,reason=0;
@@ -483,6 +499,10 @@ static uint32_t ntos_ke_exception_depth(void);
 static uint32_t ntos_ps_address_space_id(void);
 static uint32_t ntos_ps_address_space_epoch(void);
 static uint32_t ntos_ps_inherited_from_process_id(void);
+static uint32_t ntos_ke_create_coop_thread(uint32_t,uint32_t);
+static uint32_t ntos_ke_coop_yield(void);
+static uint32_t ntos_ke_coop_exit(void);
+static uint32_t ntos_ke_coop_switch_count(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -641,6 +661,10 @@ static NtosApi g_ntos_api = {
     &ntos_ps_address_space_id, // [64]
     &ntos_ps_address_space_epoch, // [65]
     &ntos_ps_inherited_from_process_id, // [66]
+    &ntos_ke_create_coop_thread, // [67]
+    &ntos_ke_coop_yield, // [68]
+    &ntos_ke_coop_exit, // [69]
+    &ntos_ke_coop_switch_count, // [70]
 };
 
 // ---------------------------------------------------------------------------
@@ -1102,6 +1126,9 @@ static uint32_t ntos_native_free(uint32_t process,uint32_t *base,
 
 static uint32_t ntos_ke_arm_system_call(uint32_t trap_pc,uint32_t service) {
 #if NTOS_ENABLE_TLB_MISS_PAGER && NTOS_ENABLE_KE_USER_SYSCALL
+#if NTOS_ENABLE_COOP_KERNEL
+    if(g_ke_coop.created && g_ke_coop.active==1u)return nt::DEVICE_BUSY;
+#endif
     if(!g_nt_process.active || !g_nt_process.ke.running())
         return nt::DEVICE_BUSY;
     return ntos_hw::arm_user_service(trap_pc,service);
@@ -1115,8 +1142,81 @@ static uint32_t ntos_ps_get_current_process_id(void) {
         g_nt_process.ke.process.unique_process_id : 0u;
 }
 static uint32_t ntos_ps_get_current_thread_id(void) {
+#if NTOS_ENABLE_COOP_KERNEL
+    return g_ke_coop.tid(g_nt_process.ke);
+#else
     return g_nt_process.ke.running() ?
         g_nt_process.ke.thread.unique_thread_id : 0u;
+#endif
+}
+// Temporary, C ABI-only Ke cooperative bridge: same KPROCESS and mapped
+// PE image, no virtual root switch. A future full trap-frame switch is
+// required for arbitrary user mode, DSP and timer preemption.
+static uint32_t ntos_ke_create_coop_thread(uint32_t entry,uint32_t sp) {
+#if NTOS_ENABLE_COOP_KERNEL && NTOS_ENABLE_TLB_MISS_PAGER
+    auto &ctx=ntos_hw::g_context;
+    if(!g_nt_process.active || !g_nt_process.ke.running() ||
+       !g_nt_process.space.valid() || g_ke_coop.created ||
+       ctx.service_armed || ctx.user_probe_session ||
+       ctx.guest_guard.armed || !ctx.installed || !mmu::at_enabled() ||
+       !entry || entry>=0x80000000u || (entry&1u) ||
+       sp<4096u || sp>=0x80000000u || (sp&15u) ||
+       !ntos_hw::executable_page(&ctx.table,entry) ||
+       !ntos_hw::executable_page(&ctx.table,entry+2u) ||
+       ctx.table.lookup(sp-4u)<0 ||
+       ctx.table.access(sp-4u)!=ntos_mm::Access::read_write)
+        return 0u;
+    uint32_t sr=0u,gbr=0u;
+    __asm__ volatile("stc sr,%0\n\tstc gbr,%1"
+                     : "=r"(sr),"=r"(gbr) :: "memory");
+    uint32_t tid=0u;
+    if(g_ke_coop.create(g_nt_process.ke,entry,sp,sr,gbr,&tid)
+       !=nt::SUCCESS)return 0u;
+    g_nt_process.ke.process.threads=2u;
+    return tid;
+#else
+    (void)entry;(void)sp;return 0u;
+#endif
+}
+static uint32_t ntos_ke_coop_yield(void) {
+#if NTOS_ENABLE_COOP_KERNEL && NTOS_ENABLE_TLB_MISS_PAGER
+    auto &ctx=ntos_hw::g_context;
+    if(ctx.service_armed || ctx.user_probe_session ||
+       ctx.guest_guard.armed || !mmu::at_enabled() ||
+       g_nt_process.ke.thread.exceptions.depth)
+        return nt::DEVICE_BUSY;
+    if(!g_ke_coop.created || g_ke_coop.exited)return nt::SUCCESS;
+    nt::CoopSaved *from=nullptr;const nt::CoopSaved *to=nullptr;
+    if(!g_ke_coop.next(g_nt_process.ke,&from,&to))
+        return nt::DEVICE_BUSY;
+    ntos_ke_coop_swap(from,to);
+    return nt::SUCCESS;
+#else
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_ke_coop_exit(void) {
+#if NTOS_ENABLE_COOP_KERNEL && NTOS_ENABLE_TLB_MISS_PAGER
+    auto &ctx=ntos_hw::g_context;
+    if(ctx.service_armed || ctx.user_probe_session ||
+       ctx.guest_guard.armed || !mmu::at_enabled())
+        return nt::DEVICE_BUSY;
+    nt::CoopSaved *from=nullptr;const nt::CoopSaved *to=nullptr;
+    if(!g_ke_coop.exit_peer(g_nt_process.ke,&from,&to))
+        return nt::INVALID_PARAMETER;
+    g_nt_process.ke.process.threads=1u;
+    ntos_ke_coop_swap(from,to);
+    return nt::INTERNAL_ERROR; // secondary must never resume
+#else
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_ke_coop_switch_count(void) {
+#if NTOS_ENABLE_COOP_KERNEL
+    return g_nt_process.ke.running() ? g_ke_coop.switches : 0u;
+#else
+    return 0u;
+#endif
 }
 static uint32_t ntos_ke_system_service_count(void) {
     return g_nt_process.ke.process.active ?
@@ -1126,6 +1226,9 @@ static uint32_t ntos_ke_register_exception(uint32_t tea,uint32_t ev,
                                             uint32_t pc,uint32_t resume) {
 #if NTOS_ENABLE_KE_USER_SYSCALL && NTOS_ENABLE_GUEST_PROTECT_DISPATCH
     if(!g_nt_process.active || !g_nt_process.space.valid())return 0u;
+#if NTOS_ENABLE_COOP_KERNEL
+    if(g_ke_coop.created && g_ke_coop.active==1u)return 0u;
+#endif
     return ntos_hw::arm_thread_exception(tea,ev,pc,resume);
 #else
     (void)tea;(void)ev;(void)pc;(void)resume;return 0u;
