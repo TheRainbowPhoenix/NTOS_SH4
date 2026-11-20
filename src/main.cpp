@@ -48,6 +48,9 @@
 #ifndef NTOS_ENABLE_GUEST_IO
 #define NTOS_ENABLE_GUEST_IO 0
 #endif
+#ifndef NTOS_ENABLE_PE_PAIR
+#define NTOS_ENABLE_PE_PAIR 0
+#endif
 #ifndef NTOS_ENABLE_DLL_INIT_TRACE
 #define NTOS_ENABLE_DLL_INIT_TRACE 0
 #endif
@@ -156,6 +159,9 @@ struct NtosApi {
     uint32_t (*nt_close_device)(uint32_t);              // [74] NTSTATUS
     uint32_t (*nt_device_io_control)(uint32_t,uint32_t,void *,uint32_t,
                                       uint32_t *);      // [75] NTSTATUS
+    uint32_t (*ps_peer_entry)(void);                   // [76] second EXE entry
+    uint32_t (*ps_peer_tick)(void);                    // [77] secondary progress
+    uint32_t (*ps_peer_progress)(void);                // [78] total ticks
 };
 
 static int cur_row = 0;
@@ -272,6 +278,13 @@ static ntos_fs::Gate g_fs;
 // This is NOT a protected process address space: it is the owner of one
 // foreground application graph, its NT handles, events and Ex allocations.
 static nt::Process g_nt_process{};
+#if NTOS_ENABLE_PE_PAIR
+struct PePairState {
+    uint32_t entry=0u,base=0u,progress=0u;
+    bool ready=false;
+};
+static PePairState g_pe_pair{};
+#endif
 #if NTOS_ENABLE_GUEST_IO
 struct NtIoBuiltIn {
     nt::io::Manager<2u,8u> manager{};
@@ -581,6 +594,9 @@ static uint32_t ntos_nt_write_device(uint32_t,const void *,uint32_t,uint32_t *);
 static uint32_t ntos_nt_close_device(uint32_t);
 static uint32_t ntos_nt_device_io_control(uint32_t,uint32_t,void *,uint32_t,
                                            uint32_t *);
+static uint32_t ntos_ps_peer_entry(void);
+static uint32_t ntos_ps_peer_tick(void);
+static uint32_t ntos_ps_peer_progress(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -748,6 +764,9 @@ static NtosApi g_ntos_api = {
     &ntos_nt_write_device, // [73]
     &ntos_nt_close_device, // [74]
     &ntos_nt_device_io_control, // [75]
+    &ntos_ps_peer_entry, // [76]
+    &ntos_ps_peer_tick, // [77]
+    &ntos_ps_peer_progress, // [78]
 };
 
 // ---------------------------------------------------------------------------
@@ -1413,6 +1432,32 @@ static uint32_t ntos_nt_device_io_control(uint32_t h,uint32_t code,
     return nt::NOT_SUPPORTED;
 #endif
 }
+static uint32_t ntos_ps_peer_entry(void) {
+#if NTOS_ENABLE_PE_PAIR && NTOS_ENABLE_COOP_KERNEL
+    return g_pe_pair.ready && g_nt_process.ke.running() &&
+           !g_ke_coop.created ? g_pe_pair.entry : 0u;
+#else
+    return 0u;
+#endif
+}
+static uint32_t ntos_ps_peer_tick(void) {
+#if NTOS_ENABLE_PE_PAIR && NTOS_ENABLE_COOP_KERNEL
+    if(!g_pe_pair.ready || !g_ke_coop.created ||
+       g_ke_coop.active!=1u || g_pe_pair.progress>=500u)
+        return 0u;
+    return ++g_pe_pair.progress;
+#else
+    return 0u;
+#endif
+}
+static uint32_t ntos_ps_peer_progress(void) {
+#if NTOS_ENABLE_PE_PAIR && NTOS_ENABLE_COOP_KERNEL
+    return g_pe_pair.ready && g_nt_process.ke.running() ?
+        g_pe_pair.progress : 0u;
+#else
+    return 0u;
+#endif
+}
 static uint32_t ntos_ke_system_service_count(void) {
     return g_nt_process.ke.process.active ?
         g_nt_process.ke.thread.syscall_count : 0u;
@@ -1989,6 +2034,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         *err="host MMU is already active";return -1;
     }
     nt_process_configure();
+#if NTOS_ENABLE_PE_PAIR
+    g_pe_pair=PePairState{};
+#endif
     if(!g_nt_process.begin()) {
         *err="another NT process still owns resources";return -1;
     }
@@ -2003,6 +2051,15 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     uint8_t *api_raw=nullptr;
     uint8_t *api_block=nullptr;
     uint8_t *vm_raw=nullptr;
+#if NTOS_ENABLE_PE_PAIR
+    MappedImage second_exe{};
+    pe::Image second_hdr{};
+    uint32_t second_file_size=0u;
+    uint32_t second_entry=0u;
+    bool pair_requested=source_path &&
+        ntos_launch_policy::ascii_equal_ci(source_path,
+                                           "\\fls0\\PEPAIR.EXE");
+#endif
     nt::DllLifecycle<NTOS_MAX_MODULES> dll_plan{};
     int rc=-1;
 
@@ -2126,6 +2183,25 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         }
     }
 
+#if NTOS_ENABLE_PE_PAIR && NTOS_ENABLE_COOP_KERNEL && NTOS_STREAMED_IMAGE_LOADING
+    if(pair_requested) {
+        if(!read_pe_source("\\fls0\\PEPEER.EXE",false,false,
+                           &second_hdr,&second_exe,&second_file_size,err))
+            goto done;
+        if(second_hdr.oh.import_rva || !second_hdr.oh.entry_rva ||
+           second_hdr.oh.size_of_image>65536u ||
+           second_exe.npages>16u) {
+            *err="PEPAIR second EXE must be import-free and <=64 KiB";
+            goto done;
+        }
+    }
+#elif NTOS_ENABLE_PE_PAIR
+    if(pair_requested) {
+        *err="PEPAIR needs streamed-loader build";
+        goto done;
+    }
+#endif
+
     // For <=55-page graphs, the experimental image uses the same fully
     // resident bootstrap as the proven regular loader. Unhinted small
     // programs (CHAINTEST, GUI) must not depend on an emulator delivering
@@ -2133,6 +2209,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     // pager, still requiring genuine VBR delivery or diagnostic hints.
     for(unsigned i=0u;i<count;++i)
         image_pages+=nodes[i].mapped.npages;
+#if NTOS_ENABLE_PE_PAIR
+    image_pages+=second_exe.npages;
+#endif
 #if NTOS_ENABLE_TLB_MISS_PAGER
     eager_experiment=(image_pages<=mmu::SLOT_ROTATING_LAST+1u);
 #endif
@@ -2171,6 +2250,23 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         exports[i]={i==0u ? "" : nodes[i].name,
                     &nodes[i].hdr,&nodes[i].mapped};
     }
+#if NTOS_ENABLE_PE_PAIR
+    if(second_exe.raw) {
+        // The PE is independent of parent imports/DLL_PROCESS_ATTACH.
+        // Co-resident mappings have DISJOINT VA ranges, same KPROCESS.
+        uint32_t chosen=0u;
+        if(count>=NTOS_MAX_MODULES ||
+           !ntos_rebase::choose_base(0x00500000u,
+                second_exe.npages,reservations,count,&chosen) ||
+           !ntos_rebase::apply(second_hdr,second_exe.image,
+                second_exe.vsize,chosen,err)) {
+            *err="cannot rebase second import-free PE";
+            goto done;
+        }
+        second_exe.base=chosen;
+        second_entry=chosen+second_hdr.oh.entry_rva;
+    }
+#endif
     // Always resolve by the individual import descriptor's DLL name.
     // Forward dependencies, shared dependencies and cyclic DLL references
     // are supported because *all* modules are registered before snapping.
@@ -2204,6 +2300,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 
     for(unsigned i=0u;i<count;++i)
         flush_image(nodes[i].mapped.image,nodes[i].mapped.vsize);
+#if NTOS_ENABLE_PE_PAIR
+    if(second_exe.raw)flush_image(second_exe.image,second_exe.vsize);
+#endif
     flush_image(api_block,0x4000u);
 
 #if NTOS_ENABLE_NT_PRIVATE_VM
@@ -2246,6 +2345,13 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                                     &nodes[i].hdr)) {
                 *err="cannot register virtual DLL backing";goto done;
             }
+#if NTOS_ENABLE_PE_PAIR
+        if(second_exe.raw &&
+           !ntos_hw::add_module(second_exe.base,second_exe.image,
+                                second_exe.npages,&second_hdr)) {
+            *err="cannot register resident second executable";goto done;
+        }
+#endif
 #if NTOS_ENABLE_NT_PRIVATE_VM
         ntos_hw::g_context.table.set_extra(
             &g_nt_process.space,[](void *owner,uint32_t va,uint32_t *pa,
@@ -2277,6 +2383,13 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                 *err="no UTLB way for EXE entry";goto done;
             }
         }
+#if NTOS_ENABLE_PE_PAIR
+        if(second_exe.raw &&
+           (!ntos_hw::prime(second_exe.base,true) ||
+            !ntos_hw::prime(second_entry,true))) {
+            *err="no resident second executable entry";goto done;
+        }
+#endif
         // Never call Hollyhock Debug_Printf/LCD_Refresh while our
         // experimental VBR+0x400 exception handler owns VBR. SDK output
         // can temporarily switch MMU/interrupt worlds behind our back.
@@ -2395,6 +2508,14 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             return !attach || result!=0;
         };
         app_console_started=false;
+#if NTOS_ENABLE_PE_PAIR
+        if(second_exe.raw) {
+            g_pe_pair.entry=second_entry;
+            g_pe_pair.base=second_exe.base;
+            g_pe_pair.progress=0u;
+            g_pe_pair.ready=true;
+        }
+#endif
         if(!dll_plan.attach(callback,nodes)) {
             *err="DLL_PROCESS_ATTACH returned FALSE";
             // attach() already detached exactly the accepted dependencies.
@@ -2410,6 +2531,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     }
 
 done:
+#if NTOS_ENABLE_PE_PAIR
+    g_pe_pair.ready=false;
+#endif
     mmu::disable_at_flush();
     irq_owner.release();
     host_world::restore(host_state);
@@ -2534,6 +2658,9 @@ done:
 #endif
     if(vm_raw) Mem_Free(vm_raw);
     if(api_raw) Mem_Free(api_raw);
+#if NTOS_ENABLE_PE_PAIR
+    if(second_exe.raw)Mem_Free(second_exe.raw);
+#endif
     for(unsigned i=0u;i<NTOS_MAX_MODULES;++i) {
         if(nodes[i].mapped.raw) Mem_Free(nodes[i].mapped.raw);
         if(i && nodes[i].file) Mem_Free(nodes[i].file);
