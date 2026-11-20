@@ -52,6 +52,12 @@ struct ProcessSpaces {
             constexpr uint32_t extent=64u*4096u;
             if(a<=b ? b-a<extent : a-b<extent)
                 return CONFLICTING_ADDRESSES;
+            // Newly allocated VM frames may not alias an existing
+            // process's loaded PE text/data physical backing.
+            for(unsigned i=0u;i<s.image_count;++i)
+                if(overlaps(vm->physical,64u,
+                            s.images[i].pa,s.images[i].pages))
+                    return CONFLICTING_ADDRESSES;
         }
         Slot *target=nullptr;
         for(auto &s:slots)if(!s.live) {target=&s;break;}
@@ -80,6 +86,9 @@ struct ProcessSpaces {
     Status add_image(uint32_t pid,uint32_t va,uint32_t pa,
                      uint32_t count,ntos_mm::Access rights,
                      bool shared=false) {
+        // After the first guest root becomes current, any live PE
+        // mapping change requires a separate hardware TLB transaction.
+        if(current_pid)return DEVICE_BUSY;
         Slot *owner=nullptr;
         for(auto &slot:slots)
             if(slot.live && slot.process.unique_process_id==pid)
@@ -97,6 +106,8 @@ struct ProcessSpaces {
            overlaps(va,count,0x08100000u,4u))
             return INVALID_PARAMETER;
         for(const auto &s:slots)if(s.live) {
+            if(overlaps(pa,count,s.root.vm->physical,64u))
+                return CONFLICTING_ADDRESSES;
             for(unsigned i=0u;i<s.image_count;++i) {
                 const ImageRange &old=s.images[i];
                 if(&s==owner &&

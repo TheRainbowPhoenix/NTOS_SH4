@@ -38,6 +38,8 @@ int main() {
     assert(ps.add_image(child,0x01001000u,0x0B000000u,1u,A::read_only,true)==nt::CONFLICTING_ADDRESSES);
     assert(ps.add_image(child,0x00402000u,0x0A001000u,1u,A::read_write)==nt::CONFLICTING_ADDRESSES);
     assert(ps.add_image(child,0x01002000u,0x0B000000u,1u,A::read_write,true)==nt::INVALID_PARAMETER);
+    assert(ps.add_image(child,0x00402000u,0x0C000000u,1u,A::read_only)==nt::CONFLICTING_ADDRESSES);
+    assert(ps.add_image(child,0x00402000u,0x0C100000u,1u,A::read_only)==nt::CONFLICTING_ADDRESSES);
     assert(ps.add_image(child,0x00400000u,0x0A200000u,1u,A::read_only)==nt::CONFLICTING_ADDRESSES);
     assert(ps.add_image(child,0x06000000u,0x0A200000u,1u,A::read_only)==nt::INVALID_PARAMETER);
     assert(ps.add_image(child,0x08100000u,0x0A200000u,1u,A::read_only)==nt::INVALID_PARAMETER);
@@ -47,6 +49,7 @@ int main() {
     assert(!ps.resolve_current(0x00400000u,&physical,&rights));
     assert(!ps.find(parent)->root.resolve(0x06000000u,&physical,&rights));
     assert(ps.switch_to(parent,nullptr,nullptr)==nt::SUCCESS);
+    assert(ps.add_image(parent,0x00402000u,0x0A200000u,1u,A::read_only)==nt::DEVICE_BUSY);
     Flush gate{};
     for(unsigned round=0u;round<1000u;++round) {
         const uint32_t current=(round&1u)?child:parent;
