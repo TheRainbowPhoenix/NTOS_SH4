@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feat/nt-vm-prot-exception-dll-init-20261120
+      - fix/mm-prot-tlb-and-picker-jump-20261120
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,7 +27,7 @@ jobs:
       - name: Run NT Ob/Ex, VM transactions, guarded exception, DLL rollback, FS, 55-slot and font host regressions
         run: |
           set -eu
-          for name in nt_virtual_memory_test nt_guest_exception_test nt_dll_lifecycle_test nt_mm_permissions_test nt_launch_policy_test fault_pager_test nt_p0p2_host_test nt_io_injection_test nt_executive_test nt_flash_guard_test fs_guard_test console_glyph_test console_host_test; do
+          for name in nt_picker_test nt_virtual_memory_test nt_guest_exception_test nt_dll_lifecycle_test nt_mm_permissions_test nt_launch_policy_test fault_pager_test nt_p0p2_host_test nt_io_injection_test nt_executive_test nt_flash_guard_test fs_guard_test console_glyph_test console_host_test; do
             g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 "tests/$name.cpp" -o "/tmp/$name"
             "/tmp/$name"
           done
