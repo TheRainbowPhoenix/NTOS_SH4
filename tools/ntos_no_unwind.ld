@@ -12,6 +12,12 @@
  */
 SECTIONS
 {
-  /DISCARD/ : { *(.eh_frame) *(.eh_frame.*) *(.gcc_except_table) *(.gcc_except_table.*) }
+  /* GCC's crtbegin.o references its own .eh_frame anchor from .text;
+   * keep crtbegin/crtend's tiny sentinels to satisfy that relocation.
+   * Only drop the SDK/libgcc/application unwinding tables. */
+  /DISCARD/ : {
+    *(EXCLUDE_FILE (*crtbegin.o *crtend.o) .eh_frame .eh_frame.*)
+    *(.gcc_except_table .gcc_except_table.*)
+  }
 }
 INSERT AFTER .text;
