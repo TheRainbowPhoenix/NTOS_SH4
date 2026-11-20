@@ -1,8 +1,8 @@
-/* MMGUARD.EXE is **EMULATOR ONLY**. It intentionally attempts
+/* MMGUARD.EXE is a separately gated HIGH-RISK CP400 probe. It attempts
  * ONE forbidden P0 store to read-only PE .rodata. VBR+0x100 must catch
  * EXPEVT=0x0C0, install a validated recovery SPC, and return to main.
  * Expected 0x47524401, PROT=1 REC=1 UNEXP=0, BAD=0.
- * This payload must never be bundled in normal physical CP400 firmware. */
+ * NEVER bundle in the ordinary physical CP400 firmware. */
 #include <stdint.h>
 #include "ntapi_caps.h"
 #include "user_write_probe.h"
