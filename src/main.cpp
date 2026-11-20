@@ -36,6 +36,7 @@
 #include "nt/launch_policy.hpp"
 #include "nt/picker.hpp"
 #include "nt/native_vm.hpp"
+#include "nt/guest_buffer.hpp"
 #include "fs_guard.hpp"
 #include "nt/process.hpp"
 #include "nt/dll_lifecycle.hpp"
@@ -927,13 +928,16 @@ static uint32_t ntos_guard_fault_address(void) {
 // These syscalls never open files or allocate in the VBR ISR.
 #if NTOS_ENABLE_NT_PRIVATE_VM && NTOS_ENABLE_TLB_MISS_PAGER
 static bool native_guest_word(uint32_t *word) {
-    const uint32_t va=reinterpret_cast<uint32_t>(word);
-    if(!word || (va&3u) || va<0x1000u || va>=0x80000000u ||
-       (va&0xFFFu)>0xFFCu || ntos_vm_busy())
-        return false;
-    const auto &table=ntos_hw::g_context.table;
-    return table.lookup(va)>=0 &&
-           table.access(va)==ntos_mm::Access::read_write;
+    if(ntos_vm_busy())return false;
+    auto &table=ntos_hw::g_context.table;
+    return nt::guest_writable_word(
+        reinterpret_cast<uintptr_t>(word),
+        [](void *context,uint32_t va) {
+            const auto &pager=
+                *static_cast<const ntos_fault::Pager *>(context);
+            return pager.lookup(va)>=0 &&
+                   pager.access(va)==ntos_mm::Access::read_write;
+        },&table);
 }
 static nt::Status native_vm_reserve(void *,uint32_t preferred,uint32_t pages,
                                     uint32_t *base) {
