@@ -336,6 +336,16 @@ extern "C" int ntos_general_exception_callback(
     c.last_tea=tea;c.last_expevt=event;
     c.last_spc=spc;c.last_ssr=ssr;c.last_mmucr=mmu::read_mmucr();
     uint32_t landing=0u;
+#if NTOS_ENABLE_KE_USER_SYSCALL
+    // Registered KTHREAD exceptions take priority over the legacy one-shot
+    // guest guard. With an empty chain (the CP400 default) nothing changes.
+    if(c.ke && c.ke->thread.exceptions.depth &&
+       c.ke->dispatch_exception(tea,event,spc,ssr,
+           &ntos_hw::executable_page,&c.table,&landing)) {
+        __asm__ volatile("ldc %0,spc" :: "r"(landing) : "memory");
+        return 1;
+    }
+#endif
     if(!c.guest_guard.decide(tea,event,spc,ssr,
                              &ntos_hw::executable_page,&c.table,
                              &landing))

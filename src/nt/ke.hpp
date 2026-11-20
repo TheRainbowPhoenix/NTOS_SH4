@@ -9,6 +9,7 @@
 #pragma once
 #include <stdint.h>
 #include "ntstatus.hpp"
+#include "exception_dispatch.hpp"
 
 namespace nt {
 constexpr uint32_t SH4A_SYSTEM_SERVICE_EVENT=0x160u;
@@ -39,6 +40,7 @@ struct KTHREAD {
     uint32_t start_address=0u;
     KTHREAD_STATE state=KTHREAD_STATE::initialized;
     KTRAP_FRAME last_trap{};
+    ThreadExceptions exceptions{};
     uint32_t syscall_count=0u;
     uint32_t voluntary_yields=0u;
     uint32_t rejected_traps=0u;
@@ -83,9 +85,31 @@ struct KernelContext {
     }
     void end() {
         in_service=false;
+        thread.exceptions.reset(); // no stale fault landing PC after exit
         if(process.active)thread.state=KTHREAD_STATE::terminated;
         process.active=false;
         process.threads=0u;
+    }
+
+    // Phase 1: kernel-owned, bounded records. There is deliberately no
+    // guest registration API until a dedicated one-op CP400 canary passes.
+    Status register_exception(uint32_t tea,uint32_t event,uint32_t fault_pc,
+                              uint32_t continuation,ThreadExecutable executable,
+                              void *context,uint32_t *token) {
+        if(!running())return DEVICE_BUSY;
+        return thread.exceptions.push(thread.unique_thread_id,tea,event,
+            fault_pc,continuation,executable,context,token);
+    }
+    Status unregister_exception(uint32_t token) {
+        if(!running())return DEVICE_BUSY;
+        return thread.exceptions.pop(thread.unique_thread_id,token);
+    }
+    bool dispatch_exception(uint32_t tea,uint32_t event,uint32_t spc,
+                            uint32_t ssr,ThreadExecutable executable,
+                            void *context,uint32_t *landing) {
+        return running() && thread.exceptions.dispatch(
+            thread.unique_thread_id,tea,event,spc,ssr,executable,
+            context,landing);
     }
 
     static bool valid_service(uint32_t id) {
