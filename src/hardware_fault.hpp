@@ -134,7 +134,7 @@ extern "C" int ntos_pager_exception_callback(uint32_t tea,uint32_t expevt) {
 namespace ntos_hw {
 // This callback reads only prevalidated P1-owned PE image metadata and
 // cannot allocate, access an SDK file, or use the host LCD.
-static bool executable_page(void *opaque,uint32_t pc) {
+[[maybe_unused]] static bool executable_page(void *opaque,uint32_t pc) {
     if(pc&1u)return false;
     const auto &table=*static_cast<const ntos_fault::Pager *>(opaque);
     for(unsigned i=0u;i<table.modules_used;++i) {
