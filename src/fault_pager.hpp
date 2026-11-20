@@ -38,12 +38,20 @@ struct Entry {
 // Install callback final argument is 0 for RW, 1 for RO. The existing
 // unprotected caller ABI still passes 0. This is NOT the SH7705 UTLB way.
 using Install=bool (*)(void *,uint32_t,uint32_t,unsigned,unsigned);
+// The private VM arena supplies committed physical frames from P1 RAM.
+// The VBR ISR never calls the allocator or filesystem.
+using ExtraResolve=bool (*)(void *,uint32_t,uint32_t *,ntos_mm::Access *);
 struct Pager {
     Area modules[MAX_MODULES]{};
     Entry entries[SLOTS]{};
     unsigned modules_used=0u;
     uint32_t clock=0u,misses=0u,evictions=0u;
     bool servicing=false;
+    void *extra_context=nullptr;
+    ExtraResolve extra=nullptr;
+    void set_extra(void *context,ExtraResolve resolve) {
+        extra_context=context;extra=resolve;
+    }
 
     bool add(uint32_t va,uint32_t pa,uint32_t pages,
              const pe::Image *header=nullptr,bool protect=false) {
@@ -74,6 +82,11 @@ struct Pager {
                 return true;
             }
         }
+        if(extra) {
+            ntos_mm::Access rights=ntos_mm::Access::no_access;
+            if(extra(extra_context,aligned,pa,&rights) &&
+               ntos_mm::readable(rights))return true;
+        }
         return false;
     }
     ntos_mm::Access access(uint32_t va) const {
@@ -87,6 +100,12 @@ struct Pager {
                                                (aligned-a.va)/PAGE);
             }
         }
+        if(extra) {
+            uint32_t physical_unused=0u;
+            ntos_mm::Access rights=ntos_mm::Access::no_access;
+            if(extra(extra_context,aligned,&physical_unused,&rights))
+                return rights;
+        }
         return ntos_mm::Access::no_access;
     }
     int lookup(uint32_t va) const {
@@ -95,6 +114,21 @@ struct Pager {
             if(entries[i].present && entries[i].va==va)
                 return static_cast<int>(i);
         return -1;
+    }
+    // Reinstall the same slot with updated PTEL.PR rights. Nonresident
+    // pages inherit their new permission when subsequently faulted in.
+    bool reprotect(uint32_t va,ntos_mm::Access rights,
+                   Install install,void *ctx) {
+        if(servicing || !install || !ntos_mm::readable(rights))
+            return false;
+        const int ix=lookup(va);
+        if(ix<0)return true;
+        Entry &e=entries[static_cast<unsigned>(ix)];
+        if(!install(ctx,e.va,e.pa,static_cast<unsigned>(ix),
+                    rights==ntos_mm::Access::read_only ? 1u:0u))
+            return false;
+        e.access=rights;
+        return true;
     }
     bool fault(uint32_t va,Install install,void *ctx,bool pin=false,
                bool hardware_miss=false) {
