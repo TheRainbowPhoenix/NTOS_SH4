@@ -54,6 +54,12 @@
 #ifndef NTOS_ENABLE_PSROOT
 #define NTOS_ENABLE_PSROOT 0
 #endif
+#ifndef NTOS_ENABLE_PS_EXEC
+#define NTOS_ENABLE_PS_EXEC 0
+#endif
+#if NTOS_ENABLE_PS_EXEC && (!NTOS_ENABLE_PSROOT || !NTOS_ENABLE_TLB_MISS_PAGER)
+#error "PSCODE requires physical PSROOT and the owned VBR pager"
+#endif
 #ifndef NTOS_ENABLE_DLL_INIT_TRACE
 #define NTOS_ENABLE_DLL_INIT_TRACE 0
 #endif
@@ -170,6 +176,7 @@ struct NtosApi {
     uint32_t (*psroot_current)(void);                  // [81] root 0 or 1
     uint32_t (*pstwin_child_pid)(void);                // [82] child Ps PID
     uint32_t (*io_replace_loop_driver)(uint32_t);      // [83] diagnostic IoReplaceDriver
+    uint32_t (*ps_exec_entry)(void);                    // [84] same-VA executable entry
 };
 
 static int cur_row = 0;
@@ -299,6 +306,11 @@ struct PsRootHardware {
     uint32_t va=0u,pa[2]{},parent_pid=0u,switches=0u;
     uint8_t *backing[2]{};
     unsigned module_index=0u,active=0u;
+#if NTOS_ENABLE_PS_EXEC
+    uint32_t exec_va=0u,exec_entry=0u,exec_pa[2]{};
+    uint8_t *exec_backing[2]{};
+    unsigned exec_module_index=0u,exec_pages=0u;
+#endif
     nt::KPROCESS child{};
     bool ready=false,twin=false;
 };
@@ -632,6 +644,7 @@ static uint32_t ntos_psroot_switch(uint32_t);
 static uint32_t ntos_psroot_current(void);
 static uint32_t ntos_pstwin_child_pid(void);
 static uint32_t ntos_io_replace_loop_driver(uint32_t);
+static uint32_t ntos_ps_exec_entry(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -807,6 +820,7 @@ static NtosApi g_ntos_api = {
     &ntos_psroot_current, // [81]
     &ntos_pstwin_child_pid, // [82]
     &ntos_io_replace_loop_driver, // [83]
+    &ntos_ps_exec_entry, // [84]
 };
 
 // ---------------------------------------------------------------------------
@@ -1436,6 +1450,14 @@ static uint32_t ntos_psroot_switch(uint32_t target) {
     return psroot_activate(target);
 #else
     (void)target;return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_ps_exec_entry(void) {
+#if NTOS_ENABLE_PS_EXEC
+    return g_ps_root.ready && g_ps_root.exec_pages &&
+           g_nt_process.ke.running() ? g_ps_root.exec_entry : 0u;
+#else
+    return 0u;
 #endif
 }
 static uint32_t ntos_pstwin_child_pid(void) {
@@ -2259,11 +2281,23 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     uint8_t *psroot_raw=nullptr;
     uint32_t psroot_va=0u;
+#if NTOS_ENABLE_PS_EXEC
+    MappedImage exec_images[2]{};
+    pe::Image exec_headers[2]{};
+    uint32_t exec_sizes[2]{};
+    uint32_t exec_va=0u;
+    bool exec_requested=source_path &&
+        ntos_launch_policy::ascii_equal_ci(source_path,
+                                           "\\fls0\\PSCODE.EXE");
+#endif
     bool root_requested=source_path &&
         (ntos_launch_policy::ascii_equal_ci(source_path,
                                             "\\fls0\\PSROOT.EXE")
 #if NTOS_ENABLE_PE_PAIR
          || twin_requested
+#endif
+#if NTOS_ENABLE_PS_EXEC
+         || exec_requested
 #endif
         );
 #endif
@@ -2412,6 +2446,41 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     }
 #endif
 
+#if NTOS_ENABLE_PS_EXEC && NTOS_STREAMED_IMAGE_LOADING
+    if(exec_requested) {
+        const char *paths[2]={"\\fls0\\CODEA.EXE","\\fls0\\CODEB.EXE"};
+        for(unsigned i=0u;i<2u;++i) {
+            if(!read_pe_source(paths[i],false,false,&exec_headers[i],
+                                &exec_images[i],&exec_sizes[i],err))
+                goto done;
+            if((exec_headers[i].fh.characteristics&pe::F_DLL) ||
+               exec_headers[i].oh.import_rva ||
+               !exec_headers[i].oh.entry_rva ||
+               !exec_images[i].npages ||
+               exec_images[i].npages>8u) {
+                *err="PSCODE requires small import-free executable PEs";
+                goto done;
+            }
+        }
+        if(exec_images[0].npages!=exec_images[1].npages ||
+           exec_headers[0].oh.entry_rva!=exec_headers[1].oh.entry_rva) {
+            *err="PSCODE executable layouts are incompatible";
+            goto done;
+        }
+        for(uint32_t i=0u;i<exec_images[0].npages;++i)
+            if(ntos_mm::pe_page_access(exec_headers[0],i)!=
+               ntos_mm::pe_page_access(exec_headers[1],i)) {
+                *err="PSCODE PE page permissions mismatch";
+                goto done;
+            }
+    }
+#elif NTOS_ENABLE_PS_EXEC
+    if(exec_requested) {
+        *err="PSCODE needs streamed loader";
+        goto done;
+    }
+#endif
+
     // For <=55-page graphs, the experimental image uses the same fully
     // resident bootstrap as the proven regular loader. Unhinted small
     // programs (CHAINTEST, GUI) must not depend on an emulator delivering
@@ -2421,6 +2490,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         image_pages+=nodes[i].mapped.npages;
 #if NTOS_ENABLE_PE_PAIR
     image_pages+=second_exe.npages;
+#endif
+#if NTOS_ENABLE_PS_EXEC
+    image_pages+=exec_images[0].npages;
 #endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(root_requested)++image_pages;
@@ -2479,6 +2551,27 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #if NTOS_ENABLE_PE_PAIR
         g_ps_root.twin=twin_requested;
 #endif
+    }
+#endif
+#if NTOS_ENABLE_PS_EXEC
+    if(exec_requested) {
+        if(!ntos_fault::choose_virtual(0x00600000u,
+                exec_images[0].npages,reservations,count,&exec_va) ||
+           ntos_rebase::overlap(exec_va,exec_images[0].npages,
+                                psroot_va,1u)) {
+            *err="no private executable virtual mapping";goto done;
+        }
+        for(unsigned i=0u;i<2u;++i) {
+            if(!ntos_rebase::apply(exec_headers[i],exec_images[i].image,
+                         exec_images[i].vsize,exec_va,err))
+                goto done;
+            exec_images[i].base=exec_va;
+            g_ps_root.exec_pa[i]=mmu::phys_addr(exec_images[i].image);
+            g_ps_root.exec_backing[i]=exec_images[i].image;
+        }
+        g_ps_root.exec_pages=exec_images[0].npages;
+        g_ps_root.exec_va=exec_va;
+        g_ps_root.exec_entry=exec_va+exec_headers[0].oh.entry_rva;
     }
 #endif
     for(unsigned i=0u;i<count;++i) {
@@ -2551,6 +2644,12 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(root_requested)flush_image(g_ps_root.backing[0],8192u);
 #endif
+#if NTOS_ENABLE_PS_EXEC
+    if(exec_requested)
+        for(unsigned i=0u;i<2u;++i)
+            flush_image(exec_images[i].image,
+                        exec_images[i].npages*4096u);
+#endif
     flush_image(api_block,0x4000u);
 
 #if NTOS_ENABLE_NT_PRIVATE_VM
@@ -2609,6 +2708,16 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             }
         }
 #endif
+#if NTOS_ENABLE_PS_EXEC
+        if(exec_requested) {
+            auto &pager=ntos_hw::g_context.table;
+            g_ps_root.exec_module_index=pager.modules_used;
+            if(!pager.add(exec_va,g_ps_root.exec_pa[0],
+                          g_ps_root.exec_pages,&exec_headers[0],true)) {
+                *err="cannot register private executable root";goto done;
+            }
+        }
+#endif
 #if NTOS_ENABLE_NT_PRIVATE_VM
         ntos_hw::g_context.table.set_extra(
             &g_nt_process.space,[](void *owner,uint32_t va,uint32_t *pa,
@@ -2661,6 +2770,13 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         if(root_requested && !ntos_hw::prime(psroot_va,true)) {
             *err="cannot pin isolated P0 root data page";goto done;
         }
+#endif
+#if NTOS_ENABLE_PS_EXEC
+        if(exec_requested)
+            for(uint32_t i=0u;i<g_ps_root.exec_pages;++i)
+                if(!ntos_hw::prime(exec_va+i*4096u,true)) {
+                    *err="cannot pin private executable pages";goto done;
+                }
 #endif
         // Never call Hollyhock Debug_Printf/LCD_Refresh while our
         // experimental VBR+0x400 exception handler owns VBR. SDK output
@@ -2952,6 +3068,10 @@ done:
 #endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(psroot_raw)Mem_Free(psroot_raw);
+#endif
+#if NTOS_ENABLE_PS_EXEC
+    for(unsigned i=0u;i<2u;++i)
+        if(exec_images[i].raw)Mem_Free(exec_images[i].raw);
 #endif
     for(unsigned i=0u;i<NTOS_MAX_MODULES;++i) {
         if(nodes[i].mapped.raw) Mem_Free(nodes[i].mapped.raw);
