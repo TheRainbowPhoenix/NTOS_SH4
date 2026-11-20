@@ -19,6 +19,12 @@
 #ifndef NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE
 #define NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE 0
 #endif
+#ifndef NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+#define NTOS_ENABLE_GUEST_PROTECT_DISPATCH 0
+#endif
+#if NTOS_ENABLE_GUEST_PROTECT_DISPATCH && !NTOS_ENABLE_TLB_MISS_PAGER
+#error "Guarded protection-exception dispatch requires RAM-backed VBR paging"
+#endif
 #if NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE && !NTOS_ENABLE_TLB_MISS_PAGER
 #error "The VBR canary requires the experimental TLB pager"
 #endif
@@ -31,6 +37,7 @@
 
 #if NTOS_ENABLE_TLB_MISS_PAGER && NTOS_ENABLE_IRQ_OWNERSHIP
 #include "fault_pager.hpp"
+#include "nt/guest_exception.hpp"
 #include "irq_handoff.hpp"
 
 extern "C" {
@@ -45,6 +52,8 @@ extern "C" {
 namespace ntos_hw {
 struct Context {
     ntos_fault::Pager table{};
+    nt::GuestException guest_guard{};
+    volatile uint32_t general_faults=0u;
     host_world::Snapshot host{};
     uint8_t *vectors_raw=nullptr;
     uint8_t *vectors=nullptr;
@@ -123,6 +132,70 @@ extern "C" int ntos_pager_exception_callback(uint32_t tea,uint32_t expevt) {
 }
 
 namespace ntos_hw {
+// This callback reads only prevalidated P1-owned PE image metadata and
+// cannot allocate, access an SDK file, or use the host LCD.
+static bool executable_page(void *opaque,uint32_t pc) {
+    if(pc&1u)return false;
+    const auto &table=*static_cast<const ntos_fault::Pager *>(opaque);
+    for(unsigned i=0u;i<table.modules_used;++i) {
+        const auto &mod=table.modules[i];
+        if(!mod.header || pc<mod.va ||
+           (pc-mod.va)/0x1000u>=mod.pages)continue;
+        return ntos_mm::pe_page_executable(
+            *mod.header,(pc-mod.va)/0x1000u);
+    }
+    return false; // VM pages and API windows are never recovery code
+}
+inline nt::Status arm_guest_guard(uint32_t address,uint32_t event,
+                                 uint32_t resume_pc) {
+#if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+    auto &c=g_context;
+    if(!c.installed || !mmu::at_enabled())return nt::DEVICE_BUSY;
+    const uint32_t page=address&~0xFFFu;
+    if(c.table.lookup(page)<0)return nt::NOT_COMMITTED;
+    // A write to RO must be proven RO, already resident, and P0-backed.
+    // Read-protection delivery is supported by the dispatcher, but the
+    // current Mm has no privileged-only user-inaccessible PTEL mapping.
+    if(event==nt::SH4_PROTECTION_READ)return nt::NOT_SUPPORTED;
+    if(event!=nt::SH4_PROTECTION_WRITE ||
+       c.table.access(page)!=ntos_mm::Access::read_only)
+        return nt::INVALID_PARAMETER;
+    return c.guest_guard.arm(address,event,resume_pc,
+                             &executable_page,&c.table);
+#else
+    (void)address;(void)event;(void)resume_pc;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+} // namespace ntos_hw
+
+// VBR+0x100 general exception entry, independent of the +0x400 miss path.
+// This callback can ONLY redirect a *pre-armed*, exact P0 protection fault
+// onto an executable PE recovery label. Nonmatching exceptions return 0
+// so the original host general vector receives them without RTE.
+extern "C" int ntos_general_exception_callback(uint32_t tea,uint32_t event) {
+#if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+    auto &c=ntos_hw::g_context;
+    uint32_t spc=0u,ssr=0u;
+    __asm__ volatile("stc spc,%0" : "=r"(spc) :: "memory");
+    __asm__ volatile("stc ssr,%0" : "=r"(ssr) :: "memory");
+    c.general_faults=c.general_faults+1u;
+    c.last_tea=tea;c.last_expevt=event;
+    c.last_spc=spc;c.last_ssr=ssr;c.last_mmucr=mmu::read_mmucr();
+    if(event!=nt::SH4_PROTECTION_READ &&
+       event!=nt::SH4_PROTECTION_WRITE)return 0;
+    uint32_t landing=0u;
+    if(!c.guest_guard.decide(tea,event,spc,ssr,
+                             &ntos_hw::executable_page,&c.table,
+                             &landing))
+        return 0;
+    __asm__ volatile("ldc %0,spc" :: "r"(landing) : "memory");
+    return 1;
+#else
+    (void)tea;(void)event;return 0;
+#endif
+}
+namespace ntos_hw {
 inline uint32_t read_sr() {
     uint32_t v;
     __asm__ volatile("stc sr,%0" : "=r"(v) :: "memory");
@@ -199,6 +272,8 @@ inline ntos_irq::Hooks hooks(const host_world::Snapshot &host) {
     ctx.failed_address=0u;
     ctx.hw_faults=0u;
     ctx.hint_calls=0u;
+    ctx.guest_guard.reset();
+    ctx.general_faults=0u;
     ctx.probe_armed=false;
     ctx.probe_page=0u;
     ctx.probe_event=0u;
