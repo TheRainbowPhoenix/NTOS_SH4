@@ -5,12 +5,14 @@
 #include "event.hpp"
 #include "pool.hpp"
 #include "virtual_memory.hpp"
+#include "ke.hpp"
 namespace nt {
 struct Process {
     Handles<64> handles{};
     Events<16> events{};
     Pool<128> pool{};
     VirtualMemory<64,8> vm{}; // 256 KiB arena, allocated by loader before VBR
+    KernelContext ke{}; // 1 foreground KPROCESS/KTHREAD, no scheduler yet
     Object file{};
     Object finder{};
     int32_t raw_file=-1,raw_finder=-1;
@@ -26,6 +28,7 @@ struct Process {
         // Does NOT issue any SDK File_Close, File_Read or File_Open.
         handles.close_all();
         pool.release_all();
+        ke.end(); // after guest execution, never an SDK close or syscall
         // Called only AFTER MMU is disabled/UTLB flushed; no live aliases.
         vm.clear();
         raw_file=-1;raw_finder=-1;
