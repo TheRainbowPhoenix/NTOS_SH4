@@ -108,6 +108,10 @@ struct NtosApi {
     uint32_t (*vm_query)(uint32_t);                       // [44] 0 reserved,1 RO,2 RW
     uint32_t (*vm_release)(uint32_t);                     // [45] reserved-only release
     uint32_t (*vm_committed_pages)(void);                 // [46] per-launch tracked frames
+    uint32_t (*arm_guest_guard)(uint32_t,uint32_t,uint32_t); // [47] TEA,EV,resume PC
+    uint32_t (*guard_seen)(void);                         // [48] accepted violations
+    uint32_t (*guard_status)(void);                       // [49] NTSTATUS
+    uint32_t (*guard_fault_address)(void);                // [50] TEA
 };
 
 static int cur_row = 0;
@@ -431,6 +435,10 @@ static uint32_t ntos_vm_protect(uint32_t base,uint32_t pages,uint32_t rights);
 static uint32_t ntos_vm_query(uint32_t va);
 static uint32_t ntos_vm_release(uint32_t va);
 static uint32_t ntos_vm_committed_pages(void);
+static uint32_t ntos_arm_guest_guard(uint32_t,uint32_t,uint32_t);
+static uint32_t ntos_guard_seen(void);
+static uint32_t ntos_guard_status(void);
+static uint32_t ntos_guard_fault_address(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -565,6 +573,10 @@ static NtosApi g_ntos_api = {
     &ntos_vm_query, // [44]
     &ntos_vm_release, // [45]
     &ntos_vm_committed_pages, // [46]
+    &ntos_arm_guest_guard, // [47]
+    &ntos_guard_seen, // [48]
+    &ntos_guard_status, // [49]
+    &ntos_guard_fault_address, // [50]
 };
 
 // ---------------------------------------------------------------------------
@@ -852,6 +864,38 @@ static uint32_t ntos_vm_committed_pages(void) {
 #endif
 }
 
+
+static uint32_t ntos_arm_guest_guard(uint32_t address,uint32_t event,
+                                      uint32_t recovery_pc) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    if(!g_nt_process.active)return nt::DEVICE_BUSY;
+    return ntos_hw::arm_guest_guard(address,event,recovery_pc);
+#else
+    (void)address;(void)event;(void)recovery_pc;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_guard_seen(void) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    return ntos_hw::g_context.guest_guard.accepted;
+#else
+    return 0u;
+#endif
+}
+static uint32_t ntos_guard_status(void) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    return ntos_hw::g_context.guest_guard.last_status;
+#else
+    return 0u;
+#endif
+}
+static uint32_t ntos_guard_fault_address(void) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    return ntos_hw::g_context.guest_guard.last_tea;
+#else
+    return 0u;
+#endif
+}
 
 // The eager mapper and the future demand pager share a file-to-page
 // materializer. In the old mode this Reader uses a complete P1 RAM buffer;
@@ -1786,6 +1830,16 @@ done:
         log_text(p," MMUCR="); log_number(p,ntos_hw::g_context.last_mmucr,16,8);
         *p=0; ntos_puts(msg);
     }
+#if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+    if(ntos_hw::g_context.general_faults) {
+        char msg[80], *p=msg;
+        log_text(p,"PROT=");log_number(p,ntos_hw::g_context.general_faults,10);
+        log_text(p," REC=");log_number(p,ntos_hw::g_context.guest_guard.accepted,10);
+        log_text(p," UNEXP=");
+        log_number(p,ntos_hw::g_context.guest_guard.forwarded,10);
+        *p=0;ntos_puts(msg);
+    }
+#endif
 #if NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE
     if(ntos_hw::g_context.probe_seen || ntos_hw::g_context.probe_armed) {
         char msg[72], *p=msg;
