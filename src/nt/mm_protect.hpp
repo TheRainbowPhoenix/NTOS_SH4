@@ -11,7 +11,12 @@
 #include "../pe.hpp"
 
 namespace ntos_mm {
-enum class Access : uint8_t { no_access=0u, read_only=1u, read_write=2u };
+// privileged_only is a DEBUG-ONLY user-inaccessible P0 mapping (PTEL.PR=01),
+// used to provoke a genuine SH4A EXPEVT=0x0A0 in the emulator. It is NOT
+// an NT PAGE_NOACCESS implementation and is never enabled on CP400 kits.
+enum class Access : uint8_t {
+    no_access=0u, read_only=1u, read_write=2u, privileged_only=3u
+};
 constexpr uint32_t PAGE=4096u;
 inline bool writable(Access a) { return a==Access::read_write; }
 inline bool readable(Access a) { return a!=Access::no_access; }
