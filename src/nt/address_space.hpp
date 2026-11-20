@@ -9,13 +9,20 @@ struct AddressSpaceRoot {
     const uint32_t *current_pid=nullptr;
     uint32_t owner_pid=0u,epoch=0u;
     bool active=false;
-    bool bind(uint32_t pid,const uint32_t *live_pid,
-              VirtualMemory<64,8> *backing) {
-        if(active || !pid || !live_pid || *live_pid!=pid ||
+    // An inactive process may prepare a private root without making it
+    // current. The scheduler activates it only AFTER verified TLB removal.
+    bool prepare(uint32_t pid,const uint32_t *live_pid,
+                 VirtualMemory<64,8> *backing) {
+        if(active || !pid || !live_pid ||
            !backing || !backing->backing || !backing->physical ||
            epoch==0xffffffffu)return false;
         vm=backing;current_pid=live_pid;owner_pid=pid;
         active=true;++epoch;return true;
+    }
+    bool bind(uint32_t pid,const uint32_t *live_pid,
+              VirtualMemory<64,8> *backing) {
+        return live_pid && *live_pid==pid &&
+               prepare(pid,live_pid,backing);
     }
     bool valid() const {
         return active && vm && current_pid &&
