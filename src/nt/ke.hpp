@@ -141,7 +141,7 @@ inline bool user_service_trap_allowed(const KernelContext &kernel,
            (ssr&0x70000000u)==0u &&
            (saved_supervisor_sr&0x70000000u)==0x40000000u &&
            spc==expected_next && !(spc&1u) &&
-           valid_service(expected_service) &&
+           KernelContext::valid_service(expected_service) &&
            expected_service==actual_service;
 }
 } // namespace nt
