@@ -232,7 +232,7 @@ extern "C" int ntos_general_exception_callback(uint32_t tea,uint32_t event) {
     if(event==0x160u && c.user_probe_session) {
         const uint32_t tra=*reinterpret_cast<volatile uint32_t *>(
             0xFF000020u);
-        if(!nt::user_read_return_allowed(
+        if(!nt::user_probe_return_allowed(
                c.user_probe_session,event,tra,spc,ssr,
                c.user_probe_trapa_next,c.user_probe_saved_sr) ||
            !ntos_hw::executable_page(&c.table,spc))
