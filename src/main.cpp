@@ -2190,6 +2190,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #if NTOS_ENABLE_PE_PAIR
     g_pe_pair=PePairState{};
 #endif
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    g_ps_root=PsRootHardware{};
+#endif
     if(!g_nt_process.begin()) {
         *err="another NT process still owns resources";return -1;
     }
@@ -2209,9 +2212,24 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     pe::Image second_hdr{};
     uint32_t second_file_size=0u;
     uint32_t second_entry=0u;
-    bool pair_requested=source_path &&
+    bool twin_requested=source_path &&
         ntos_launch_policy::ascii_equal_ci(source_path,
-                                           "\\fls0\\PEPAIR.EXE");
+                                           "\\fls0\\PSTWIN.EXE");
+    bool pair_requested=source_path &&
+        (ntos_launch_policy::ascii_equal_ci(source_path,
+                                            "\\fls0\\PEPAIR.EXE") ||
+         twin_requested);
+#endif
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    uint8_t *psroot_raw=nullptr;
+    uint32_t psroot_va=0u;
+    bool root_requested=source_path &&
+        (ntos_launch_policy::ascii_equal_ci(source_path,
+                                            "\\fls0\\PSROOT.EXE")
+#if NTOS_ENABLE_PE_PAIR
+         || twin_requested
+#endif
+        );
 #endif
     nt::DllLifecycle<NTOS_MAX_MODULES> dll_plan{};
     int rc=-1;
@@ -2338,7 +2356,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 
 #if NTOS_ENABLE_PE_PAIR && NTOS_ENABLE_COOP_KERNEL && NTOS_STREAMED_IMAGE_LOADING
     if(pair_requested) {
-        if(!read_pe_source("\\fls0\\PEPEER.EXE",false,false,
+        const char *second_name=twin_requested ?
+            "\\fls0\\TWINCHILD.EXE" : "\\fls0\\PEPEER.EXE";
+        if(!read_pe_source(second_name,false,false,
                            &second_hdr,&second_exe,&second_file_size,err))
             goto done;
         if((second_hdr.fh.characteristics&pe::F_DLL) ||
@@ -2365,6 +2385,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         image_pages+=nodes[i].mapped.npages;
 #if NTOS_ENABLE_PE_PAIR
     image_pages+=second_exe.npages;
+#endif
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    if(root_requested)++image_pages;
 #endif
 #if NTOS_ENABLE_TLB_MISS_PAGER
     eager_experiment=(image_pages<=mmu::SLOT_ROTATING_LAST+1u);
@@ -2397,6 +2420,31 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         *err="DLL graph exceeds resident UTLB page budget";goto done;
     }
 #endif
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    if(root_requested) {
+        // Never repurpose an ordinary PE or private VM page for the
+        // process-root canary. Both physical frames are allocated in
+        // P1 before VBR ownership, and are never freed while AT is on.
+        if(!ntos_fault::choose_virtual(0x00700000u,1u,
+                                      reservations,count,&psroot_va)) {
+            *err="no free P0 virtual slot for root canary";goto done;
+        }
+        psroot_raw=static_cast<uint8_t *>(Mem_Malloc(8192u+4095u));
+        if(!psroot_raw) {
+            *err="cannot allocate two physical root frames";goto done;
+        }
+        auto *aligned=static_cast<uint8_t *>(align_page(psroot_raw));
+        Mem_Memset(aligned,0,8192u);
+        g_ps_root.va=psroot_va;
+        g_ps_root.backing[0]=aligned;
+        g_ps_root.backing[1]=aligned+4096u;
+        g_ps_root.pa[0]=mmu::phys_addr(aligned);
+        g_ps_root.pa[1]=mmu::phys_addr(aligned+4096u);
+#if NTOS_ENABLE_PE_PAIR
+        g_ps_root.twin=twin_requested;
+#endif
+    }
+#endif
     for(unsigned i=0u;i<count;++i) {
         if(!ntos_rebase::apply(nodes[i].hdr,nodes[i].mapped.image,
                                nodes[i].mapped.vsize,nodes[i].mapped.base,err))
@@ -2419,6 +2467,13 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         }
         second_exe.base=chosen;
         second_entry=chosen+second_hdr.oh.entry_rva;
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+        if(root_requested &&
+           ntos_rebase::overlap(second_exe.base,second_exe.npages,
+                               psroot_va,1u)) {
+            *err="second EXE overlaps P0 root canary";goto done;
+        }
+#endif
     }
 #endif
     // Always resolve by the individual import descriptor's DLL name.
@@ -2456,6 +2511,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         flush_image(nodes[i].mapped.image,nodes[i].mapped.vsize);
 #if NTOS_ENABLE_PE_PAIR
     if(second_exe.raw)flush_image(second_exe.image,second_exe.vsize);
+#endif
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    if(root_requested)flush_image(g_ps_root.backing[0],8192u);
 #endif
     flush_image(api_block,0x4000u);
 
@@ -2506,6 +2564,15 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             *err="cannot register resident second executable";goto done;
         }
 #endif
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+        if(root_requested) {
+            auto &pager=ntos_hw::g_context.table;
+            g_ps_root.module_index=pager.modules_used;
+            if(!pager.add(psroot_va,g_ps_root.pa[0],1u,nullptr,false)) {
+                *err="cannot register isolated P0 data root";goto done;
+            }
+        }
+#endif
 #if NTOS_ENABLE_NT_PRIVATE_VM
         ntos_hw::g_context.table.set_extra(
             &g_nt_process.space,[](void *owner,uint32_t va,uint32_t *pa,
@@ -2554,12 +2621,20 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             *err="no resident second executable entry";goto done;
         }
 #endif
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+        if(root_requested && !ntos_hw::prime(psroot_va,true)) {
+            *err="cannot pin isolated P0 root data page";goto done;
+        }
+#endif
         // Never call Hollyhock Debug_Printf/LCD_Refresh while our
         // experimental VBR+0x400 exception handler owns VBR. SDK output
         // can temporarily switch MMU/interrupt worlds behind our back.
         if(!irq_owner.acquire()) {
             *err="VBR exception ownership install failed";goto done;
         }
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+        if(root_requested)g_ps_root.ready=true;
+#endif
     }
 #else
     {
@@ -2698,6 +2773,16 @@ done:
 #if NTOS_ENABLE_PE_PAIR
     g_pe_pair.ready=false;
 #endif
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    if(g_ps_root.ready && mmu::at_enabled() &&
+       ntos_hw::g_context.table.lookup(g_ps_root.va)>=0) {
+        mmu::cache_writeback_invalidate_block(
+            reinterpret_cast<void *>(g_ps_root.va),4096u);
+        mmu::cache_writeback_invalidate_block(
+            g_ps_root.backing[g_ps_root.active],4096u);
+    }
+    g_ps_root.ready=false;
+#endif
     mmu::disable_at_flush();
     irq_owner.release();
     host_world::restore(host_state);
@@ -2798,6 +2883,10 @@ done:
     const uint32_t leaked_pool=g_nt_process.pool.current;
 #if NTOS_ENABLE_GUEST_IO
     g_nt_io.shutdown(g_nt_process.ke.process.unique_process_id);
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    if(g_ps_root.twin && g_ps_root.child.active)
+        g_nt_io.shutdown(g_ps_root.child.unique_process_id);
+#endif
 #endif
     g_nt_process.finish(); // NEVER calls SDK File_Close a second time
     if(leaked_handles || leaked_pool) {
@@ -2824,6 +2913,9 @@ done:
     if(api_raw) Mem_Free(api_raw);
 #if NTOS_ENABLE_PE_PAIR
     if(second_exe.raw)Mem_Free(second_exe.raw);
+#endif
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    if(psroot_raw)Mem_Free(psroot_raw);
 #endif
     for(unsigned i=0u;i<NTOS_MAX_MODULES;++i) {
         if(nodes[i].mapped.raw) Mem_Free(nodes[i].mapped.raw);
