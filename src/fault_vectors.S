@@ -19,6 +19,93 @@ _ntos_vbr_template_start:
     .space 0x100,0
 
     .org 0x100
+#if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+/* VBR+0x100: data TLB protection violations EXPEVT 0x0A0 / 0x0C0.
+ * Same P1 stack / register preservation as the proven +0x400 handler.
+ * Callback returns 1 ONLY for an exact, pre-armed P0 guest trap and
+ * has already set privileged SPC to a validated guest continuation.
+ * Other faults chain to the original host VBR+0x100. */
+.Lgeneral:
+    mov r0,r15
+    mov.l .Lgeneral_stack_var,r0
+    mov.l @r0,r0
+    mov.l r15,@-r0
+    mov r0,r15
+    mov.l r1,@-r15
+    mov.l r2,@-r15
+    mov.l r3,@-r15
+    mov.l r4,@-r15
+    mov.l r5,@-r15
+    mov.l r6,@-r15
+    mov.l r7,@-r15
+    mov.l r8,@-r15
+    mov.l r9,@-r15
+    mov.l r10,@-r15
+    mov.l r11,@-r15
+    mov.l r12,@-r15
+    mov.l r13,@-r15
+    mov.l r14,@-r15
+    sts.l pr,@-r15
+    sts.l mach,@-r15
+    sts.l macl,@-r15
+    stc.l gbr,@-r15
+
+    mov.l .Lgeneral_tea,r0
+    mov.l @r0,r4
+    mov.l .Lgeneral_expevt,r0
+    mov.l @r0,r5
+    mov.l .Lgeneral_callback,r0
+    jsr @r0
+    nop
+    tst r0,r0
+    bf .Lgeneral_handled
+    mov #1,r0
+    bra .Lgeneral_restore
+    nop
+.Lgeneral_handled:
+    mov #0,r0
+.Lgeneral_restore:
+    mov r0,r1
+    ldc.l @r15+,gbr
+    lds.l @r15+,macl
+    lds.l @r15+,mach
+    lds.l @r15+,pr
+    mov.l @r15+,r14
+    mov.l @r15+,r13
+    mov.l @r15+,r12
+    mov.l @r15+,r11
+    mov.l @r15+,r10
+    mov.l @r15+,r9
+    mov.l @r15+,r8
+    mov.l @r15+,r7
+    mov.l @r15+,r6
+    mov.l @r15+,r5
+    mov.l @r15+,r4
+    mov.l @r15+,r3
+    mov.l @r15+,r2
+    tst r1,r1
+    mov.l @r15+,r1
+    mov.l @r15+,r0
+    bt .Lgeneral_return
+    stc sgr,r15
+    mov.l r0,@-r15
+    mov.l .Lold_general_var,r0
+    mov.l @r0,r0
+    jmp @r0
+    mov.l @r15+,r0
+.Lgeneral_return:
+    stc sgr,r15
+    rte
+    nop
+
+    .align 2
+.Lgeneral_stack_var: .long _ntos_exception_stack_top
+.Lgeneral_tea:       .long 0xFF00000C
+.Lgeneral_expevt:    .long 0xFF000024
+.Lgeneral_callback:  .long _ntos_general_exception_callback
+.Lold_general_var:   .long _ntos_saved_general_vector
+#else
+/* On standard firmware the host OS remains sole owner of general faults. */
 .Lgeneral:
     mov.l r0,@-r15
     mov.l .Lold_general_var,r0
@@ -28,6 +115,7 @@ _ntos_vbr_template_start:
     .align 2
 .Lold_general_var:
     .long _ntos_saved_general_vector
+#endif
 
     .org 0x400
 .Lmiss:
