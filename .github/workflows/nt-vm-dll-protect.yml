@@ -76,10 +76,10 @@ jobs:
             dist/PAGERSTRESS.DLL
           if-no-files-found: error
           retention-days: 30
-      - name: Upload separately gated emulator-only deliberate protected-write test
+      - name: Upload separately gated emulator-only read/write protection tests
         uses: actions/upload-artifact@v7
         with:
-          name: NTOS-EMULATOR-ONLY-EXPEVT-0C0-RECOVERABLE-GUEST-TRAP
+          name: NTOS-EMULATOR-ONLY-EXPEVT-0A0-0C0-RECOVERABLE-GUEST-TRAPS
           path: |
             dist_vm_guard/NTOS.hh3
             dist_ntprobe/MMGUARD.EXE
