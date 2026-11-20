@@ -36,6 +36,10 @@
 #include "nt/launch_policy.hpp"
 #include "fs_guard.hpp"
 #include "nt/process.hpp"
+#include "nt/dll_lifecycle.hpp"
+#ifndef NTOS_ENABLE_DLL_INIT_TRACE
+#define NTOS_ENABLE_DLL_INIT_TRACE 0
+#endif
 
 // Streaming is enabled on this development branch. Set 0 to compare the
 // previous eager full-file staging path during emulator/hardware testing.
@@ -1433,6 +1437,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     uint8_t *api_raw=nullptr;
     uint8_t *api_block=nullptr;
     uint8_t *vm_raw=nullptr;
+    nt::DllLifecycle<NTOS_MAX_MODULES> dll_plan{};
     int rc=-1;
 
 #if NTOS_STREAMED_IMAGE_LOADING
@@ -1752,52 +1757,89 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         reinterpret_cast<void *>(mmu::VA_API_WINDOW),0x4000u);
 #endif
 
-    // WinCE loader invokes each DLL entry after its dependencies have
-    // been relocated and imports snapped, and before EXE entry. Reverse
-    // BFS gives a dependency-first order for the acyclic part of the graph;
-    // cyclic DLLs are supported for imports, but their init order remains
-    // deterministic rather than arbitrarily re-entrant. On failure,
-    // detach the DLLs that already accepted PROCESS_ATTACH.
-    {
-        using dll_entry=int (*)(uint32_t,uint32_t,void *);
-        using exe_entry=int (*)(const NtosApi *,char **,char **);
-        app_console_started = false;
-        bool attached[NTOS_MAX_MODULES]={};
-        bool attach_ok=true;
-        // DLL_PROCESS_ATTACH=1, DLL_PROCESS_DETACH=0 from WinCE SDK.
-        for(unsigned i=count;i-->1u;) {
-            const auto &mod=nodes[i];
-            if(!mod.hdr.oh.entry_rva)continue;
-            dll_entry entry=reinterpret_cast<dll_entry>(
-                mod.mapped.base+mod.hdr.oh.entry_rva);
-            if(!entry(mod.mapped.base,1u,nullptr)) {
-                attach_ok=false;
-                *err="DLL_PROCESS_ATTACH returned FALSE";
-                break;
+    // DllMain runs only AFTER the full graph is mapped, relocated and all
+    // IAT entries snapped. Initialize dependencies BEFORE their consumers.
+    // A rejected PROCESS_ATTACH rolls back EXACTLY the successfully
+    // attached DLLs in reverse order; never call EXE entry after failure.
+    if(!dll_plan.configure(count)) {
+        *err="invalid DLL graph for initialization";goto done;
+    }
+    for(unsigned i=1u;i<count;++i) {
+        if(!dll_plan.entry(i,nodes[i].hdr.oh.entry_rva!=0u)) {
+            *err="cannot register DLL entry";goto done;
+        }
+        const auto &m=nodes[i];
+        if(!m.hdr.oh.import_rva)continue;
+        bool terminated=false;
+        for(uint32_t di=0u;di<m.hdr.oh.import_size/20u;++di) {
+            pe::ImportDesc d{};
+            if(!pe::read_import_desc(m.hdr,m.mapped.image,
+                                     m.mapped.vsize,di,&d)) {
+                terminated=true;break;
             }
-            attached[i]=true;
+            char name[40]{};
+            if(!pe::rva_string(m.mapped.image,m.mapped.vsize,
+                               d.name_rva,name,sizeof(name))) {
+                *err="DLL initialization import name corrupted";goto done;
+            }
+            for(unsigned j=1u;j<count;++j)
+                if(i!=j && module_matches(name,nodes[j].name))
+                    (void)dll_plan.depends(i,j);
         }
-        if(attach_ok) {
-            exe_entry entry=reinterpret_cast<exe_entry>(
-                nodes[0].mapped.base+hdr.oh.entry_rva);
-            *out_ret=entry(&g_ntos_api,nullptr,nullptr);
-            *err="ok";
-            rc=0;
+        if(!terminated) {
+            *err="DLL initialization dependency graph unterminated";goto done;
         }
-        // Opposite of attach order: release all initialized modules.
-        for(unsigned i=1u;i<count;++i) {
-            if(!attached[i])continue;
-            const auto &mod=nodes[i];
+    }
+    if(!dll_plan.plan()) {
+        *err="could not order DLL_PROCESS_ATTACH";goto done;
+    }
+    {
+        // ABI: int DllMain(HINSTANCE module, DWORD reason, void *reserved)
+        // where PROCESS_ATTACH=1 and PROCESS_DETACH=0. Only successful
+        // attach callbacks are placed on the per-run detach stack.
+        using dll_entry=int (*)(uint32_t,uint32_t,void *);
+        auto callback=[](void *opaque,unsigned index,bool attach)->bool {
+            auto *modules=static_cast<ModuleNode *>(opaque);
+            const ModuleNode &m=modules[index];
+            if(!m.hdr.oh.entry_rva)return true;
             dll_entry entry=reinterpret_cast<dll_entry>(
-                mod.mapped.base+mod.hdr.oh.entry_rva);
-            (void)entry(mod.mapped.base,0u,nullptr);
+                m.mapped.base+m.hdr.oh.entry_rva);
+            const int result=entry(m.mapped.base,attach?1u:0u,nullptr);
+            return !attach || result!=0;
+        };
+        app_console_started=false;
+        if(!dll_plan.attach(callback,nodes)) {
+            *err="DLL_PROCESS_ATTACH returned FALSE";
+            // attach() already detached exactly the accepted dependencies.
+            goto done;
         }
+        using exe_entry=int (*)(const NtosApi *,char **,char **);
+        exe_entry entry=reinterpret_cast<exe_entry>(
+            nodes[0].mapped.base+hdr.oh.entry_rva);
+        *out_ret=entry(&g_ntos_api,nullptr,nullptr);
+        *err="ok";
+        rc=0;
+        dll_plan.detach(callback,nodes);
     }
 
 done:
     mmu::disable_at_flush();
     irq_owner.release();
     host_world::restore(host_state);
+#if NTOS_ENABLE_DLL_INIT_TRACE
+    if(dll_plan.planned) {
+        char msg[80], *p=msg;
+        log_text(p,"DLL init: attach=");
+        log_number(p,dll_plan.detached,10);
+        log_text(p," detach=");
+        log_number(p,dll_plan.detached,10);
+        log_text(p," rejected=");
+        log_number(p,dll_plan.failed,10);
+        log_text(p," cycles=");
+        log_number(p,dll_plan.cycle_breaks,10);
+        *p=0;ntos_puts(msg);
+    }
+#endif
 #if NTOS_STREAMED_IMAGE_LOADING
     if(source_path) {
         char msg[72], *p=msg;
