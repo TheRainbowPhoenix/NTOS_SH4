@@ -15,9 +15,16 @@ int main() {
         assert(ascii_equal_ci(path,HOME));
         ++probes;return true;
     };
+    // Kernel test chains must return to picker, NEVER launch Start.
     assert(!queue_optional_home("\\fls0\\PROCFINAL.EXE",missing));
+    assert(!queue_optional_home("\\fls0\\PROCFINAL.EXE",exists));
+    assert(!queue_optional_home("\\fls0\\PSCHILD.EXE",exists));
+    assert(!queue_optional_home("\\FLS0\\pschild.exe",exists));
+    assert(probes==0u);
+    // Ordinary UI-managed application still gets optional fallback.
+    assert(!queue_optional_home("\\fls0\\OTHER.EXE",missing));
     assert(probes==1u);
-    assert(queue_optional_home("\\fls0\\PROCFINAL.EXE",exists));
+    assert(queue_optional_home("\\fls0\\OTHER.EXE",exists));
     assert(probes==2u);
     assert(!queue_optional_home("\\fls0\\STARTHOST.EXE",exists));
     assert(!queue_optional_home("\\FLS0\\starthost.exe",exists));
