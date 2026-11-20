@@ -614,7 +614,8 @@ $(NT_PROBE_DIST)/PROTSTATE.EXE: $(NT_PROBE_BUILD)/protstate.elf tools/elf2ntx.py
 	@mkdir -p $(NT_PROBE_DIST)
 	$(PYTHON) tools/elf2ntx.py $< -o $@
 
-# The true VBR+0x100 protection violation payload is EMULATOR ONLY.
+# Real VBR+0x100 protected-access payloads are high-risk opt-in ONLY.
+# Never distribute as ordinary device-safe EXEs.
 $(NT_PROBE_DIST)/MMGUARD.EXE: $(NT_PROBE_BUILD)/mmguard.elf tools/elf2ntx.py
 	@mkdir -p $(NT_PROBE_DIST)
 	$(PYTHON) tools/elf2ntx.py $< -o $@
