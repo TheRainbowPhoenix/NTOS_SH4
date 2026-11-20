@@ -7,14 +7,15 @@ int main() {
     assert(kernel.enter_guest(0x00400200u)==nt::SUCCESS);
     nt::KeCoop coop{};
     uint32_t second=0u;
-    assert(coop.create(kernel,0x00400300u,0x00420000u,0x40001000u,0u,
-                       &second)==nt::INVALID_PARAMETER); // no DSP save yet
-    assert(coop.create(kernel,0x00400300u,0x00420000u,0x40000001u,0x1000u,
+    assert(coop.create(kernel,0x00400300u,0x00420000u,0x40000000u,0u,
+                       &second)==nt::INVALID_PARAMETER); // DSP not active
+    assert(coop.create(kernel,0x00400300u,0x00420000u,0x40001001u,0x1000u,
                        &second)==nt::SUCCESS);
     assert(second==65538u && coop.tid(kernel)==65537u);
     assert(coop.peer.owning_process_id==kernel.process.unique_process_id);
     assert(coop.frames[1].sp==0x00420000u &&
-           coop.frames[1].pr==0x00400300u);
+           coop.frames[1].pr==0x00400300u &&
+           sizeof(coop.frames[1].dsp)==56u);
     nt::CoopSaved *from=nullptr;const nt::CoopSaved *to=nullptr;
     for(unsigned i=0u;i<2000u;++i) {
         const unsigned current=coop.active;
@@ -33,5 +34,5 @@ int main() {
     kernel.end();
     coop.reset();
     assert(coop.owner_pid==0u && !coop.created);
-    std::puts("PASS Ke bridge host: 2 distinct KTHREADs, 1000 alternating yields, DSP guarded, exit+teardown");
+    std::puts("PASS Ke bridge host: 2 KTHREADs, 1000 yields, SH4AL-DSP save layout, exit+teardown");
 }

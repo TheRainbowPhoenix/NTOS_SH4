@@ -8,11 +8,15 @@ namespace nt {
 struct CoopSaved {
     uint32_t r8_r14[7]{};
     uint32_t sp=0u,pr=0u,gbr=0u,mach=0u,macl=0u,sr=0u;
+    // SH4AL-DSP, NOT FPU: A0,A1,A0G,A1G,M0,M1,X0,X1,Y0,Y1,
+    // DSR,RS,RE,MOD. Populated by the architectural MOVS/STS/STC ops.
+    uint32_t dsp[14]{};
 };
-static_assert(sizeof(CoopSaved)==52u);
+static_assert(sizeof(CoopSaved)==108u);
 static_assert(__builtin_offsetof(CoopSaved,sp)==28u);
 static_assert(__builtin_offsetof(CoopSaved,pr)==32u);
 static_assert(__builtin_offsetof(CoopSaved,sr)==48u);
+static_assert(__builtin_offsetof(CoopSaved,dsp)==52u);
 
 struct KeCoop {
     CoopSaved frames[2]{};
@@ -27,8 +31,9 @@ struct KeCoop {
         *out_tid=0u;
         if(created || !ke.running() || !entry || !stack ||
            (entry&1u) || (stack&15u) ||
-           // The temporary switch has no DSP save/restore yet.
-           (sr&0x70001000u)!=0x40000000u ||
+           // Require the SH4AL-DSP register bank enabled while the
+           // paired DSP context is saved/restored in assembly.
+           (sr&0x70001000u)!=0x40001000u ||
            ke.thread.unique_thread_id>=0xFFFFFFFEu)
             return INVALID_PARAMETER;
         owner_pid=ke.process.unique_process_id;
