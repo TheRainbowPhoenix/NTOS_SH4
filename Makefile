@@ -181,8 +181,9 @@ collision-test: ntx
 clean:
 	rm -rf $(BUILDDIR) $(OUTDIR) $(DEPDIR) dist_collision
 
-%.hh3: %.elf
-	$(STRIP) -o $@ $^
+%.hh3: %.elf tools/check_hh3_launcher_layout.py
+	$(STRIP) -o $@ $<
+	$(PYTHON) tools/check_hh3_launcher_layout.py --min-headroom 4096 $@
 
 # Payloads: freestanding compile, static link at their preferred base
 # (+0x200 for the PE header page -- link VA == runtime VA, see elf2ntx.py),
