@@ -90,6 +90,8 @@ void tlb_install_entry(uint32_t va, uint32_t pa, uint32_t pte_flags,
 void tlb_set_urc(uint32_t slot);
 void cache_invalidate_all(void);
 void cache_flush_invalidate_block(void *addr, uint32_t size);
+// OCBP writes back dirty data BEFORE invalidating: safe on failed decommit.
+void cache_writeback_invalidate_block(void *addr,uint32_t size);
 }
 
 // --- C helpers --------------------------------------------------------------
@@ -174,6 +176,50 @@ inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa,
            (data&PTEL_PAGE)==expected_flags;
 }
 #endif
+
+// SH4AL-DSP: a P4 UTLB associative write with A=1 and V=0 also
+// invalidates matching ITLB translations (Renesas SH-4A §7.6.3).
+// Invoke ONLY from owned privileged P1 stage0 on this single-core CPU.
+// Read back EVERY UTLB/ITLB slot: no frame is reused on mismatch.
+// This is NOT an SMP shootdown and is unavailable without P4 readback.
+inline bool invalidate_va_verified(uint32_t va) {
+#if NTOS_VERIFY_UTLB_SLOTS && defined(__sh__)
+    if(!at_enabled() || (va&0xFFFu) || va>=0x80000000u)return false;
+    uint32_t sr=0u;
+    __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+    if((sr&0x70000000u)!=0x40000000u)return false;
+    const uint32_t masked=sr|0xF0u;
+    __asm__ volatile("ldc %0,sr" :: "r"(masked) : "memory");
+    volatile uint32_t *const pteh=
+        reinterpret_cast<volatile uint32_t *>(REG_PTEH);
+    const uint32_t previous=*pteh;
+    *pteh=(previous&0xFFu)|(va&0xFFFFFC00u);
+    *reinterpret_cast<volatile uint32_t *>(0xF6000080u)=
+        va&0xFFFFFC00u; // A=1, D=0, V=0, ASID from PTEH
+    __asm__ volatile("synco" ::: "memory");
+    *pteh=previous;
+    // Non-associative P4 reads; any matching valid VPN fails CLOSED.
+    bool absent=true;
+    for(uint32_t slot=0u;slot<UTLB_ENTRIES;++slot) {
+        const uint32_t word=*reinterpret_cast<volatile const uint32_t *>(
+            0xF6000000u+(slot<<8));
+        if((word&0x100u) && (word&0xFFFFF000u)==va)
+            absent=false;
+    }
+    for(uint32_t slot=0u;slot<4u;++slot) {
+        const uint32_t word=*reinterpret_cast<volatile const uint32_t *>(
+            0xF2000000u+(slot<<8));
+        if((word&0x100u) && (word&0xFFFFF000u)==va)
+            absent=false;
+    }
+    // SH4A requires an instruction-fetch synchronization after TLB writes.
+    __asm__ volatile("icbi @%0\n\tsynco" :: "r"(&sr) : "memory");
+    __asm__ volatile("ldc %0,sr" :: "r"(sr) : "memory");
+    return absent;
+#else
+    (void)va;return false;
+#endif
+}
 
 // Physical address of a P1 (cached identity) pointer.
 inline uint32_t phys_addr(const void *p) {

@@ -137,6 +137,7 @@ struct NtosApi {
     uint32_t (*ke_exception_depth)(void);               // [63]
     uint32_t (*ps_address_space_id)(void);              // [64]
     uint32_t (*ps_address_space_epoch)(void);           // [65]
+    uint32_t (*ps_inherited_from_process_id)(void);     // [66]
 };
 
 static int cur_row = 0;
@@ -481,6 +482,7 @@ static uint32_t ntos_ke_exception_address(void);
 static uint32_t ntos_ke_exception_depth(void);
 static uint32_t ntos_ps_address_space_id(void);
 static uint32_t ntos_ps_address_space_epoch(void);
+static uint32_t ntos_ps_inherited_from_process_id(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -560,12 +562,16 @@ static uint32_t ntos_ex_pool_live() {return g_nt_process.pool.current;}
 static uint32_t ntos_ob_handle_count() {return g_nt_process.handles.used;}
 
 static char pending_app[96];
+static uint32_t pending_parent_pid=0u;
 static int32_t ntos_launch(const char *name) {
     char path[96];if(!kernel_path(path,name))return 0;
     int fd=fs_open(path,FILE_OPEN_READ);if(fd<0)return 0;
     if(fs_close(fd)<0)return 0;
     unsigned i=0;for(;i+1<sizeof(pending_app)&&path[i];++i)pending_app[i]=path[i];
-    pending_app[i]=0;return 1;
+    pending_app[i]=0;
+    pending_parent_pid=g_nt_process.ke.process.active ?
+        g_nt_process.ke.process.unique_process_id : 0u;
+    return 1;
 }
 static NtosApi g_ntos_api = {
     &ntos_app_puts,
@@ -634,6 +640,7 @@ static NtosApi g_ntos_api = {
     &ntos_ke_exception_depth, // [63]
     &ntos_ps_address_space_id, // [64]
     &ntos_ps_address_space_epoch, // [65]
+    &ntos_ps_inherited_from_process_id, // [66]
 };
 
 // ---------------------------------------------------------------------------
@@ -993,12 +1000,63 @@ static nt::Status native_vm_protect(void *,uint32_t base,uint32_t pages,
     if(s==nt::INTERNAL_ERROR)g_fatal.reason=3u;
     return s;
 }
+// CPU-backed invalidation: single core, interrupts masked across P4 write.
+// The pager metadata is cleared ONLY after both UTLB+ITLB readback succeeds.
+static bool vm_hw_invalidate(void *,unsigned,uint32_t va,uint32_t) {
+    return mmu::invalidate_va_verified(va);
+}
+static bool vm_shootdown(void *,uint32_t va) {
+    auto &vm=g_nt_process.vm;
+    const int ix=vm.find(va);
+    if(ix<0 || vm.pages[ix].frame==0xFFFFu)return false;
+    auto &pager=ntos_hw::g_context.table;
+    const int slot=pager.lookup(va);
+    // P0 and P1 can occupy different SH4A OC indices for the same
+    // physical page. Never free the frame based on P1 purge alone.
+    // Missing residency means P0 dirty-cache aliases cannot be proven
+    // absent by this early-stage routine: fail CLOSED.
+    if(slot<0 || slot>=static_cast<int>(ntos_fault::SLOTS))
+        return false;
+#if NTOS_VERIFY_UTLB_SLOTS
+    uint32_t phys=0u;
+    phys=vm.physical+uint32_t(vm.pages[ix].frame)*4096u;
+    if(!mmu::verify_slot(static_cast<uint32_t>(slot),va,phys,
+                        vm.query(va)==nt::VmAccess::read_only ?
+                        mmu::PTEL_PAGE_READ_ONLY :
+                        vm.query(va)==nt::VmAccess::emulator_user_denied ?
+                        mmu::PTEL_PAGE_SUPERVISOR_ONLY :
+                        mmu::PTEL_PAGE))
+        return false;
+#endif
+    // First write back+invalidate the *guest P0 alias* while its
+    // translation is still resident. Then purge the backing P1 alias.
+    // If invalidation later fails, contents remain intact in RAM.
+    mmu::cache_writeback_invalidate_block(
+        reinterpret_cast<void *>(va),4096u);
+    mmu::cache_writeback_invalidate_block(
+        vm.backing+uint32_t(vm.pages[ix].frame)*4096u,4096u);
+    return pager.invalidate(va,&vm_hw_invalidate,nullptr);
+}
+static nt::Status native_vm_decommit(void *,uint32_t base,uint32_t pages) {
+#if NTOS_VERIFY_UTLB_SLOTS && NTOS_ENABLE_NT_PRIVATE_VM
+    auto &ctx=ntos_hw::g_context;
+    if(ntos_vm_busy() || !g_nt_process.space.valid() ||
+       !g_nt_process.ke.running() ||
+       ctx.service_armed || ctx.user_probe_session ||
+       ctx.guest_guard.armed || ctx.table.servicing)
+        return nt::DEVICE_BUSY;
+    return g_nt_process.vm.decommit(base,pages,&vm_shootdown,nullptr);
+#else
+    (void)base;(void)pages;return nt::NOT_SUPPORTED;
+#endif
+}
 static nt::Status native_vm_release(void *,uint32_t base) {
     return g_nt_process.vm.release(base);
 }
 static nt::NativeVmOps native_vm_hooks() {
     return {nullptr,&native_vm_reserve,&native_vm_commit,
-                    &native_vm_protect,&native_vm_release};
+                    &native_vm_protect,&native_vm_release,
+                    &native_vm_decommit};
 }
 #endif
 static uint32_t ntos_native_allocate(uint32_t process,uint32_t *base,
@@ -1104,6 +1162,10 @@ static uint32_t ntos_ps_address_space_id(void) {
 }
 static uint32_t ntos_ps_address_space_epoch(void) {
     return g_nt_process.space.valid() ? g_nt_process.space.epoch : 0u;
+}
+static uint32_t ntos_ps_inherited_from_process_id(void) {
+    return g_nt_process.ke.process.active ?
+        g_nt_process.ke.process.inherited_from_process_id : 0u;
 }
 
 // The eager mapper and the future demand pager share a file-to-page
@@ -1613,7 +1675,8 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                       const char *core_path, uint32_t core_size,
                       const char *extra_path, uint32_t extra_size,
                       int *out_ret, const char **err,
-                      const char *source_path=nullptr) {
+                      const char *source_path=nullptr,
+                      uint32_t parent_pid=0u) {
     (void)core_path;(void)core_size;(void)extra_path;(void)extra_size;
     *err="unknown";
     (void)source_path; // used only by the streamed-build variant
@@ -1957,7 +2020,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     // foreground PE. DLL_PROCESS_ATTACH and EXE entry share this thread;
     // COREDLL remains a user PE DLL, not an implementation of Ke.
     if(g_nt_process.ke.begin(nodes[0].mapped.base,
-                             nodes[0].mapped.vsize)!=nt::SUCCESS ||
+                             nodes[0].mapped.vsize,parent_pid)!=nt::SUCCESS ||
        g_nt_process.ke.enter_guest(
            nodes[0].mapped.base+hdr.oh.entry_rva)!=nt::SUCCESS) {
         *err="Ps failed to initialize the foreground KTHREAD";
@@ -2603,17 +2666,19 @@ int main(int argc, char **argv, char **envp) {
             char next[96];unsigned i=0;
             for(;i+1<sizeof(next)&&pending_app[i];++i)next[i]=pending_app[i];
             next[i]=0;pending_app[0]=0;
+            const uint32_t parent_for_next=pending_parent_pid;
+            pending_parent_pid=0u;
             uint8_t *app_file=nullptr;uint32_t app_size=0;const char *launch_error=nullptr;
             pe::Image app_hdr{};
 #if NTOS_STREAMED_IMAGE_LOADING
             bool ok=read_pe_source(next,false,false,&app_hdr,nullptr,
                                    &app_size,&launch_error);
             if(ok)ok=run_mapped(nullptr,app_size,app_hdr,nullptr,0,nullptr,0,
-                                &ret,&launch_error,next)==0;
+                                &ret,&launch_error,next,parent_for_next)==0;
 #else
             bool ok=read_module_file(next,&app_file,&app_size,&launch_error);
             if(ok)ok=pe::parse(app_file,app_size,&app_hdr)==0;
-            if(ok)ok=run_mapped(app_file,app_size,app_hdr,nullptr,0,nullptr,0,&ret,&launch_error)==0;
+            if(ok)ok=run_mapped(app_file,app_size,app_hdr,nullptr,0,nullptr,0,&ret,&launch_error,nullptr,parent_for_next)==0;
 #endif
             if(app_file)Mem_Free(app_file);
             if(ok && ret) {

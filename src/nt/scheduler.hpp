@@ -1,15 +1,19 @@
-// Cooperative scheduler preparation, HOST-ONLY; no SH4 RTE switch yet.
-// A real switch must preserve both banked GPR sets, FPU, SR, PR, stack,
-// GBR, MAC and address-space ownership under masked interrupts.
+// Cooperative SH7305 SH4AL-DSP scheduler model, HOST-ONLY; no RTE switch yet.
+// This CPU has NO FPU. Save integer/banked GPRs, SR/PR/GBR/MAC,
+// DSP/loop control and address-space identity in the real assembly path.
 #pragma once
 #include <stdint.h>
 #include "ntstatus.hpp"
 namespace nt {
+struct Sh4AlDsp {
+    uint32_t a[2]{},ag[2]{},x[2]{},y[2]{},m[2]{};
+    uint32_t dsr=0u,mod=0u,rs=0u,re=0u;
+};
 struct SH4Context {
     uint32_t gpr[16]{},bank0[8]{},bank1[8]{};
-    uint32_t fr[32]{};
     uint32_t sr=0u,ssr=0u,spc=0u,sgr=0u,pr=0u;
-    uint32_t gbr=0u,mach=0u,macl=0u,fpul=0u,fpscr=0u;
+    uint32_t gbr=0u,mach=0u,macl=0u;
+    Sh4AlDsp dsp{};
     bool complete=false;
 };
 struct DispatchSlot {

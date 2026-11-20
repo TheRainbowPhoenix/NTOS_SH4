@@ -24,6 +24,7 @@ enum class KTHREAD_STATE : uint8_t {
 };
 struct KPROCESS {
     uint32_t unique_process_id=0u;
+    uint32_t inherited_from_process_id=0u;
     uint32_t image_base=0u;
     uint32_t image_bytes=0u;
     uint32_t threads=0u;
@@ -52,7 +53,8 @@ struct KernelContext {
     uint32_t generation=0u;
     bool in_service=false;
 
-    Status begin(uint32_t image_base,uint32_t image_bytes) {
+    Status begin(uint32_t image_base,uint32_t image_bytes,
+                 uint32_t parent_process_id=0u) {
         if(process.active || thread.state==KTHREAD_STATE::running ||
            !image_base || !image_bytes || generation==0xffffffffu)
             return INVALID_PARAMETER;
@@ -60,6 +62,7 @@ struct KernelContext {
         *this=KernelContext{};
         generation=next;
         process.unique_process_id=0x100u+next;
+        process.inherited_from_process_id=parent_process_id;
         process.image_base=image_base;
         process.image_bytes=image_bytes;
         process.threads=1u;

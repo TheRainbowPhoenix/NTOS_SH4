@@ -20,8 +20,10 @@ constexpr const char HOME[]="\\fls0\\STARTHOST.EXE";
 
 template<class Exists>
 inline bool queue_optional_home(const char *last,Exists exists) {
-    if(!last || ascii_equal_ci(last,HOME))
-        return false; // returning from Start must never loop
+    if(!last || ascii_equal_ci(last,HOME) ||
+       ascii_equal_ci(last,"\\fls0\\PSCHILD.EXE") ||
+       ascii_equal_ci(last,"\\fls0\\PROCFINAL.EXE"))
+        return false; // kernel test-chain exit returns to picker
     return exists(HOME); // host handles absence without an error screen
 }
 } // namespace ntos_launch_policy
