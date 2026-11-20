@@ -35,8 +35,8 @@ struct Entry {
 };
 // The SH7305 has a 64-entry fully associative UTLB, not the SH7705's
 // 32 sets x 4 ways. Slots 0..54 are NTOS-owned; 55..58 map the API window.
-// Install callback final argument is 0 for RW, 1 for RO. The existing
-// unprotected caller ABI still passes 0. This is NOT the SH7705 UTLB way.
+// Install callback final argument: 0=RW, 1=RO, 2=debug-only supervisor.
+// Existing unprotected callers still pass 0. This is NOT a SH7705 way.
 using Install=bool (*)(void *,uint32_t,uint32_t,unsigned,unsigned);
 // The private VM arena supplies committed physical frames from P1 RAM.
 // The VBR ISR never calls the allocator or filesystem.
@@ -125,7 +125,9 @@ struct Pager {
         if(ix<0)return true;
         Entry &e=entries[static_cast<unsigned>(ix)];
         if(!install(ctx,e.va,e.pa,static_cast<unsigned>(ix),
-                    rights==ntos_mm::Access::read_only ? 1u:0u))
+                    rights==ntos_mm::Access::privileged_only ? 2u :
+                    rights==ntos_mm::Access::privileged_only ? 2u :
+                    rights==ntos_mm::Access::read_only ? 1u : 0u))
             return false;
         e.access=rights;
         return true;
@@ -147,6 +149,7 @@ struct Pager {
             // previously installed that mapping.
             if(hardware_miss &&
                !install(ctx,e.va,e.pa,static_cast<unsigned>(existing),
+                   e.access==ntos_mm::Access::privileged_only ? 2u :
                    e.access==ntos_mm::Access::read_only ? 1u : 0u)) {
                 servicing=false;return false;
             }
