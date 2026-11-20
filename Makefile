@@ -147,6 +147,12 @@ $(BUILDDIR)/.ntos-build-flags: ntos-config-force
 # Only the SH7305 switcher needs SH4AL-DSP opcodes. The pinned
 # sh4a_nofpueb GCC lacks -m4al multilib; use assembler -dsp directly.
 # Keep the remaining project -m4a-nofpu and never generate FPU ops.
+# Stage0-only size option for the opt-in cooperative candidate.
+# Default O2 stays unchanged; avoid expanding the 64 KiB HH3 window.
+ifeq ($(KE_COOP_SMALL),1)
+$(BUILDDIR)/src/main.o: CXX_FLAGS += -Os
+endif
+
 $(BUILDDIR)/src/cooperative_switch.o: src/cooperative_switch.S
 	@mkdir -p $(dir $@)
 	$(AS) -Wa,-dsp -c $< -o $@ $(AS_FLAGS)
