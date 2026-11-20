@@ -227,8 +227,9 @@ extern "C" int ntos_general_exception_callback(uint32_t tea,uint32_t event) {
     if(event==0x160u && c.user_read_session) {
         const uint32_t tra=*reinterpret_cast<volatile uint32_t *>(
             0xFF000020u);
-        if(tra!=0x7Bu*4u || (ssr&0x40000000u)!=0u ||
-           spc!=c.user_read_trapa_next ||
+        if(!nt::user_read_return_allowed(
+               c.user_read_session,event,tra,spc,ssr,
+               c.user_read_trapa_next,c.user_read_saved_sr) ||
            !ntos_hw::executable_page(&c.table,spc))
             return 0;
         c.user_read_session=false;
