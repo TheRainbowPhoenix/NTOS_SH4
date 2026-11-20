@@ -28,7 +28,7 @@ CXX:=sh4a_nofpueb-elf-g++
 CXX_FLAGS=-std=c++20 $(COMMON_FLAGS)
 
 LD:=sh4a_nofpueb-elf-g++
-LD_FLAGS:=$(FUNCTION_FLAGS) -Wl,--gc-sections
+LD_FLAGS:=$(FUNCTION_FLAGS) -Wl,--gc-sections -Wl,-T,tools/ntos_no_unwind.ld
 LIBS:=-L$(SDK_DIR) -lsdk
 
 READELF:=sh4a_nofpueb-elf-readelf
@@ -466,9 +466,9 @@ $(FAULTTEST_EXE): $(PAGERSTRESS_TEST_ELF) $(FAULTSTRESS_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(PAGERSTRESS_TEST_ELF) -o $@ --import-module FAULTSTRESS.DLL
 
-$(APP_ELF): $(OBJECTS)
+$(APP_ELF): $(OBJECTS) tools/ntos_no_unwind.ld
 	@mkdir -p $(dir $@)
-	$(LD) -Wl,-Map $@.map -o $@ $(LD_FLAGS) $^ $(LIBS)
+	$(LD) -Wl,-Map $@.map -o $@ $(LD_FLAGS) $(OBJECTS) $(LIBS)
 
 $(NOLTOOBJS): FUNCTION_FLAGS+=-fno-lto
 
