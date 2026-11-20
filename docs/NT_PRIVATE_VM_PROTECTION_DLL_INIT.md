@@ -41,8 +41,8 @@ preemption or seL4 isolation are available.
 | Index | Signature | Contract |
 |---|---|---|
 | 41 | `uint32_t vm_reserve(uint32_t preferred, uint32_t pages)` | Return page-aligned P0 base or 0; preferred=0 selects first free VA in 0x06000000..0x06ffffff |
-| 42 | `NTSTATUS vm_commit(uint32_t base,uint32_t pages,uint32_t rights)` | rights=1 RO, 2 RW; zero-fill distinct preallocated P1 frames; no SDK I/O |
-| 43 | `NTSTATUS vm_protect(uint32_t base,uint32_t pages,uint32_t rights)` | Atomically update metadata and resident SH4A PTEL.PR; rollback on error |
+| 42 | `NTSTATUS vm_commit(uint32_t base,uint32_t pages,uint32_t rights)` | rights=1 RO, 2 RW; **rights=3 debug-only supervisor access** in the emulator build; zero-fill preallocated P1 frames; no SDK I/O |
+| 43 | `NTSTATUS vm_protect(uint32_t base,uint32_t pages,uint32_t rights)` | Update metadata and resident SH4A PTEL.PR; rollback on error; rights=3 only in emulator builds |
 | 44 | `uint32_t vm_query(uint32_t va)` | 0 absent/reserved, 1 committed RO, 2 committed RW |
 | 45 | `NTSTATUS vm_release(uint32_t base)` | Only for a region without committed pages; prevents unsafe live UTLB alias reuse |
 | 46 | `uint32_t vm_committed_pages(void)` | Per-launch count, max 64 |
@@ -92,7 +92,7 @@ candidate and matching EXEs and DLLs into `\\fls0\\`. Run in order:
 The bundle contains NO deliberate illegal-write payload and does
 not enable the new general-protection exception vector handler.
 
-## Emulator-only protected-write ZIP
+## Emulator-only protected-read AND protected-write ZIP
 
 `NTOS-EMULATOR-ONLY-EXPEVT-0C0-RECOVERABLE-GUEST-TRAP`
 
@@ -112,11 +112,26 @@ Run **MMGUARD.EXE only with the matching emulator-only NTOS.hh3**:
   real hardware. An unmatched general exception is forwarded to the
   previous host VBR+0x100 rather than guessed at or skipped.
 
-The dispatcher recognizes both SH4A protection event codes
-`0x0A0` (read) and `0x0C0` (write); however the current kernel
-has no P0 user-inaccessible-but-kernel-readable mapping to generate
-a safe **live read** violation. Read event decision logic is host
-tested; its physical trap path is NOT claimed as validated.
+Run **MMREAD.EXE** (same emulator-only ZIP) as a separate test:
+- It reserves/commits one P1-backed private VM page while RW, explicitly
+  hints the mapping, then changes its live SH4A PTEL.PR bits to **01**.
+  This means supervisor P1 may access the frame but user P0 may not.
+  Ordinary CP400 VM APIs REFUSE this emulator-specific protection code.
+- It arms one `EXPEVT=0x0A0` (read-protection) event, then deliberately
+  reads its own protected VA. The same guarded dispatcher must redirect
+  to its known in-function continuation; the read is NOT retried.
+- Expected `Payload returned 0x52444101`,
+  `PROT=1 REC=1 UNEXP=0`, `BAD=0`,
+  normally `PF=0 HINT=1`. A `BAD940xx` return, hang or reset is
+  a failed emulator experiment. MMREAD must NEVER run on CP400 hardware.
+
+The dispatcher recognizes both SH4A protection event codes:
+`0x0A0` (read, tested using the debug-only PR=01 page) and
+`0x0C0` (write, tested using a normal RO PR=10 page).
+Both require explicit one-shot arming, an exact TEA page, a P0
+interrupted SSR and an executable PE recovery label. Unknown general
+exceptions still go to the original host vector; this is **not** an
+unrestricted NT user-mode structured-exception implementation.
 
 ## What CI proves and does NOT
 
