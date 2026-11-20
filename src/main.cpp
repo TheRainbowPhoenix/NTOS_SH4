@@ -125,6 +125,10 @@ struct NtosApi {
         uint32_t,uint32_t *,uint32_t *,uint32_t,uint32_t *); // [52]
     uint32_t (*nt_free_virtual_memory)(
         uint32_t,uint32_t *,uint32_t *,uint32_t);         // [53]
+    uint32_t (*ke_arm_system_call)(uint32_t,uint32_t);    // [54] verified TRAPA PC, service
+    uint32_t (*ps_get_current_process_id)(void);        // [55]
+    uint32_t (*ps_get_current_thread_id)(void);         // [56]
+    uint32_t (*ke_system_service_count)(void);          // [57]
 };
 
 static int cur_row = 0;
@@ -457,6 +461,10 @@ static uint32_t ntos_native_allocate(uint32_t,uint32_t *,uint32_t,
 static uint32_t ntos_native_protect(uint32_t,uint32_t *,uint32_t *,
                                     uint32_t,uint32_t *);
 static uint32_t ntos_native_free(uint32_t,uint32_t *,uint32_t *,uint32_t);
+static uint32_t ntos_ke_arm_system_call(uint32_t,uint32_t);
+static uint32_t ntos_ps_get_current_process_id(void);
+static uint32_t ntos_ps_get_current_thread_id(void);
+static uint32_t ntos_ke_system_service_count(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -598,6 +606,10 @@ static NtosApi g_ntos_api = {
     &ntos_native_allocate, // [51]
     &ntos_native_protect, // [52]
     &ntos_native_free, // [53]
+    &ntos_ke_arm_system_call, // [54]
+    &ntos_ps_get_current_process_id, // [55]
+    &ntos_ps_get_current_thread_id, // [56]
+    &ntos_ke_system_service_count, // [57]
 };
 
 // ---------------------------------------------------------------------------
@@ -1004,6 +1016,29 @@ static uint32_t ntos_native_free(uint32_t process,uint32_t *base,
     (void)process;(void)base;(void)bytes;(void)type;
     return nt::NOT_SUPPORTED;
 #endif
+}
+
+static uint32_t ntos_ke_arm_system_call(uint32_t trap_pc,uint32_t service) {
+#if NTOS_ENABLE_TLB_MISS_PAGER && NTOS_ENABLE_KE_USER_SYSCALL
+    if(!g_nt_process.active || !g_nt_process.ke.running())
+        return nt::DEVICE_BUSY;
+    return ntos_hw::arm_user_service(trap_pc,service);
+#else
+    (void)trap_pc;(void)service;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_ps_get_current_process_id(void) {
+    return g_nt_process.ke.process.active ?
+        g_nt_process.ke.process.unique_process_id : 0u;
+}
+static uint32_t ntos_ps_get_current_thread_id(void) {
+    return g_nt_process.ke.running() ?
+        g_nt_process.ke.thread.unique_thread_id : 0u;
+}
+static uint32_t ntos_ke_system_service_count(void) {
+    return g_nt_process.ke.process.active ?
+        g_nt_process.ke.thread.syscall_count : 0u;
 }
 
 // The eager mapper and the future demand pager share a file-to-page
@@ -1853,6 +1888,19 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #endif
 
     mmu::enable_at();
+    // Ps creates a KPROCESS plus its first KTHREAD for the loaded
+    // foreground PE. DLL_PROCESS_ATTACH and EXE entry share this thread;
+    // COREDLL remains a user PE DLL, not an implementation of Ke.
+    if(g_nt_process.ke.begin(nodes[0].mapped.base,
+                             nodes[0].mapped.vsize)!=nt::SUCCESS ||
+       g_nt_process.ke.enter_guest(
+           nodes[0].mapped.base+hdr.oh.entry_rva)!=nt::SUCCESS) {
+        *err="Ps failed to initialize the foreground KTHREAD";
+        goto done;
+    }
+#if NTOS_ENABLE_TLB_MISS_PAGER && NTOS_ENABLE_KE_USER_SYSCALL
+    ntos_hw::g_context.ke=&g_nt_process.ke;
+#endif
 #if !NTOS_ENABLE_TLB_MISS_PAGER
     for(unsigned i=0u;i<count;++i)
         mmu::cache_flush_invalidate_block(
@@ -1977,6 +2025,18 @@ done:
         log_text(p," MMUCR="); log_number(p,ntos_hw::g_context.last_mmucr,16,8);
         *p=0; ntos_puts(msg);
     }
+#if NTOS_ENABLE_KE_USER_SYSCALL
+    if(g_nt_process.ke.thread.syscall_count ||
+       ntos_hw::g_context.service_rejected) {
+        char msg[80], *p=msg;
+        log_text(p,"KE PID=");log_number(p,g_nt_process.ke.process.unique_process_id,10);
+        log_text(p," TID=");log_number(p,g_nt_process.ke.thread.unique_thread_id,10);
+        log_text(p," SVC=");log_number(p,g_nt_process.ke.thread.syscall_count,10);
+        log_text(p," YIELD=");log_number(p,g_nt_process.ke.thread.voluntary_yields,10);
+        log_text(p," BADGATE=");log_number(p,ntos_hw::g_context.service_rejected,10);
+        *p=0;ntos_puts(msg);
+    }
+#endif
 #if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
     if(ntos_hw::g_context.general_faults ||
        ntos_hw::g_context.user_probe_returns) {
