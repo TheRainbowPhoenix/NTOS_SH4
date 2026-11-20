@@ -44,4 +44,24 @@ inline Access pe_page_access(const pe::Image &image,uint32_t page) {
     return !covered ? Access::no_access :
            write ? Access::read_write : Access::read_only;
 }
+// The SH4A has no NX bit. This EXECUTE check is still useful when
+// validating a guest recovery-PC target before changing privileged SPC.
+inline bool pe_page_executable(const pe::Image &image,uint32_t page) {
+    if(page>0xFFFFFFFFu/PAGE)return false;
+    const uint32_t start=page*PAGE;
+    if(start>=image.oh.size_of_image)return false;
+    const uint32_t end=start+((image.oh.size_of_image-start)<PAGE ?
+                             image.oh.size_of_image-start:PAGE);
+    for(uint32_t i=0u;i<image.section_count && i<8u;++i) {
+        const auto &sec=image.sections[i];
+        const uint32_t size=sec.vsize>sec.raw_size ?
+                            sec.vsize:sec.raw_size;
+        if(sec.rva>=image.oh.size_of_image ||
+           size>image.oh.size_of_image-sec.rva)continue;
+        if(sec.rva<end && start<sec.rva+size &&
+           (sec.characteristics&pe::SCN_MEM_EXECUTE))
+            return true;
+    }
+    return false;
+}
 } // namespace ntos_mm
