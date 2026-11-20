@@ -4,6 +4,7 @@ on:
     branches:
       - feat/nt-vm-prot-exception-dll-init-20261120
       - fix/mm-prot-tlb-and-picker-jump-20261120
+      - fix/cp400-guest-prot-trap-user-probe-20261120
   workflow_dispatch:
 permissions:
   contents: read
@@ -73,6 +74,24 @@ jobs:
             dist_ntprobe/PROCNEXT.EXE
             dist_ntprobe/PROCFINAL.EXE
             dist_ntprobe/IOTEST.EXE
+            dist/HELLO.EXE
+            dist/PAGERTEST.EXE
+            dist/PAGERSTRESS.DLL
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload real-device opt-in VBR+0x100 guarded protection candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: NTOS-CP400-CONTROLLED-VBR-PROTECTION-TRAPA-REBOOT-RISK
+          path: |
+            dist_vm_guard/NTOS.hh3
+            dist_ntprobe/MMGUARD.EXE
+            dist_ntprobe/MMREAD.EXE
+            dist_ntprobe/MMRDINIT.EXE
+            dist_ntprobe/MMROTEST.EXE
+            dist_ntprobe/VMTEST.EXE
+            dist_ntprobe/INITPASS.EXE
+            dist_ntprobe/INITGOOD.DLL
             dist/HELLO.EXE
             dist/PAGERTEST.EXE
             dist/PAGERSTRESS.DLL
