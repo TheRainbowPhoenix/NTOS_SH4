@@ -16,7 +16,7 @@ def check(filename):
     elf = Elf(Path(filename).read_bytes())
     syms = {s.name: s for s in elf.symbols}
     stem=Path(filename).stem.lower()
-    write=stem=="mmguard"
+    write=stem in ("mmguard","kexcept")
     syscall=stem=="kthread"
     prefix=("_ntos_user_syscall_" if syscall else
             "_ntos_user_write_probe_" if write else

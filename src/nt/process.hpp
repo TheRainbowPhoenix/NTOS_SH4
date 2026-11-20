@@ -6,6 +6,7 @@
 #include "pool.hpp"
 #include "virtual_memory.hpp"
 #include "ke.hpp"
+#include "address_space.hpp"
 namespace nt {
 struct Process {
     Handles<64> handles{};
@@ -13,6 +14,7 @@ struct Process {
     Pool<128> pool{};
     VirtualMemory<64,8> vm{}; // 256 KiB arena, allocated by loader before VBR
     KernelContext ke{}; // 1 foreground KPROCESS/KTHREAD, no scheduler yet
+    AddressSpaceRoot space{}; // owned VM resolver, no ASID switch yet
     Object file{};
     Object finder{};
     int32_t raw_file=-1,raw_finder=-1;
@@ -28,6 +30,7 @@ struct Process {
         // Does NOT issue any SDK File_Close, File_Read or File_Open.
         handles.close_all();
         pool.release_all();
+        space.unbind(); // MMU/TLB already flushed
         ke.end(); // after guest execution, never an SDK close or syscall
         // Called only AFTER MMU is disabled/UTLB flushed; no live aliases.
         vm.clear();

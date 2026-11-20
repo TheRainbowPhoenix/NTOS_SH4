@@ -198,6 +198,55 @@ inline nt::Status arm_user_service(uint32_t trap_pc,uint32_t service) {
     (void)trap_pc;(void)service;return nt::NOT_SUPPORTED;
 #endif
 }
+// Exact one-instruction KTHREAD exception canary. Only live, resident,
+ // hardware-confirmed protected pages; NO generic user callback.
+inline uint32_t arm_thread_exception(uint32_t tea,uint32_t event,
+                                     uint32_t fault_pc,uint32_t resume_pc) {
+#if NTOS_ENABLE_KE_USER_SYSCALL && NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+    Context &c=g_context;
+    if(!c.installed || !mmu::at_enabled() || !c.ke ||
+       !c.ke->running() || c.service_armed || c.user_probe_session ||
+       c.guest_guard.armed || !tea || tea>=0x80000000u ||
+       fault_pc>=0x7FFFFFFCu || fault_pc+2u!=resume_pc ||
+       !executable_page(&c.table,fault_pc) ||
+       !executable_page(&c.table,resume_pc+2u))
+        return 0u;
+    const uint32_t page=tea&~0xFFFu;
+    const int slot=c.table.lookup(page);
+    if(slot<0)return 0u;
+    const ntos_mm::Access access=c.table.access(page);
+    if(event==nt::KE_PROTECTION_WRITE ?
+        access!=ntos_mm::Access::read_only :
+        event==nt::KE_PROTECTION_READ ?
+        access!=ntos_mm::Access::privileged_only : true)
+        return 0u;
+#if NTOS_VERIFY_UTLB_SLOTS
+    const uint32_t flags=event==nt::KE_PROTECTION_WRITE ?
+        mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE_SUPERVISOR_ONLY;
+    if(!mmu::verify_slot(static_cast<uint32_t>(slot),page,
+            c.table.entries[slot].pa,flags))
+        return 0u;
+#endif
+    const auto *op=reinterpret_cast<volatile const uint16_t *>(fault_pc);
+    if(op[0]!=(event==nt::KE_PROTECTION_WRITE?0x2400u:0x6040u) ||
+       op[1]!=0xC37Bu || op[2]!=0x000Bu)
+        return 0u;
+    uint32_t sr=0u;
+    __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+    if((sr&0x70000000u)!=0x40000000u)return 0u;
+    uint32_t token=0u;
+    if(c.ke->register_exception(tea,event,fault_pc,resume_pc,
+           &executable_page,&c.table,&token)!=nt::SUCCESS)
+        return 0u;
+    c.user_probe_saved_sr=sr;
+    c.user_probe_trapa_next=resume_pc+2u;
+    c.user_probe_session=true;
+    return token;
+#else
+    (void)tea;(void)event;(void)fault_pc;(void)resume_pc;
+    return 0u;
+#endif
+}
 inline nt::Status arm_guest_guard(uint32_t address,uint32_t event,
                                  uint32_t resume_pc) {
 #if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
