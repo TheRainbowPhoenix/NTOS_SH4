@@ -54,6 +54,12 @@
 #ifndef NTOS_ENABLE_PSROOT
 #define NTOS_ENABLE_PSROOT 0
 #endif
+#ifndef NTOS_ENABLE_PS_EXEC
+#define NTOS_ENABLE_PS_EXEC 0
+#endif
+#if NTOS_ENABLE_PS_EXEC && (!NTOS_ENABLE_PSROOT || !NTOS_ENABLE_TLB_MISS_PAGER)
+#error "PSCODE requires physical PSROOT and the owned VBR pager"
+#endif
 #ifndef NTOS_ENABLE_DLL_INIT_TRACE
 #define NTOS_ENABLE_DLL_INIT_TRACE 0
 #endif
@@ -170,6 +176,7 @@ struct NtosApi {
     uint32_t (*psroot_current)(void);                  // [81] root 0 or 1
     uint32_t (*pstwin_child_pid)(void);                // [82] child Ps PID
     uint32_t (*io_replace_loop_driver)(uint32_t);      // [83] diagnostic IoReplaceDriver
+    uint32_t (*ps_exec_entry)(void);                    // [84] same-VA executable entry
 };
 
 static int cur_row = 0;
@@ -299,6 +306,11 @@ struct PsRootHardware {
     uint32_t va=0u,pa[2]{},parent_pid=0u,switches=0u;
     uint8_t *backing[2]{};
     unsigned module_index=0u,active=0u;
+#if NTOS_ENABLE_PS_EXEC
+    uint32_t exec_va=0u,exec_entry=0u,exec_pa[2]{};
+    uint8_t *exec_backing[2]{};
+    unsigned exec_module_index=0u,exec_pages=0u;
+#endif
     nt::KPROCESS child{};
     bool ready=false,twin=false;
 };
@@ -306,11 +318,13 @@ static PsRootHardware g_ps_root{};
 #endif
 #if NTOS_ENABLE_GUEST_IO
 struct NtIoBuiltIn {
-    nt::io::Manager<2u,8u> manager{};
+    nt::io::Manager<3u,8u> manager{};
     nt::io::DRIVER_OBJECT null_driver{};
     nt::io::DRIVER_OBJECT loop_driver{};
     nt::io::DRIVER_OBJECT loop_swapped{};
-    nt::io::DEVICE_OBJECT *null_device=nullptr,*loop_device=nullptr;
+    nt::io::DRIVER_OBJECT display_driver{};
+    nt::io::DEVICE_OBJECT *null_device=nullptr,*loop_device=nullptr,
+                          *display_device=nullptr;
     uint8_t loop[64]{};
     uint32_t loop_bytes=0u;
     bool enabled=false;
@@ -319,9 +333,36 @@ struct NtIoBuiltIn {
         auto *s=static_cast<NtIoBuiltIn *>(opaque);
         if(!s || !s->enabled)return nt::DEVICE_BUSY;
         using namespace nt::io;
-        const bool is_loop=&dev==s->loop_device;
         nt::Status status=nt::SUCCESS;
         uint32_t transferred=0u;
+        if(&dev==s->display_device) {
+            // First hardware-facing NT driver: use the already proven
+            // CP400 framebuffer HAL. Never call GetInput, File_* or
+            // manipulate VBR/IRQ state from this normal Ke service.
+            if(irp.major==Major::create || irp.major==Major::close) {
+                // Nothing to acquire; ownership stays in the HH3 HAL.
+            } else if(irp.major==Major::device_control &&
+                      irp.control_code==0x4E540001u &&
+                      irp.length==12u && irp.buffer) {
+                const auto *v=static_cast<const uint8_t *>(irp.buffer);
+                auto rd=[&](unsigned i)->uint32_t {
+                    return (uint32_t(v[i])<<24)|
+                           (uint32_t(v[i+1u])<<16)|
+                           (uint32_t(v[i+2u])<<8)|v[i+3u];
+                };
+                const uint32_t x=rd(0u),y=rd(4u),color=rd(8u);
+                if(x>=static_cast<uint32_t>(width) ||
+                   y>=static_cast<uint32_t>(height) ||
+                   color>0xFFFFu)status=nt::INVALID_PARAMETER;
+                else {
+                    ntos_pixel(x,y,color);
+                    transferred=12u;
+                }
+            } else status=nt::NOT_SUPPORTED;
+            return IoCompleteRequest(irp,status,transferred)==nt::SUCCESS ?
+                status : nt::INTERNAL_ERROR;
+        }
+        const bool is_loop=&dev==s->loop_device;
         switch(irp.major) {
         case Major::create:case Major::close: break;
         case Major::write:
@@ -355,11 +396,14 @@ struct NtIoBuiltIn {
         null_driver={&dispatch,this};
         loop_driver={&dispatch,this};
         loop_swapped={&dispatch,this};
+        display_driver={&dispatch,this};
         enabled=true;
         return manager.IoCreateDevice("\\Device\\Null",&null_driver,
                           &null_device)==nt::SUCCESS &&
                manager.IoCreateDevice("\\Device\\Loopback",&loop_driver,
-                          &loop_device)==nt::SUCCESS;
+                          &loop_device)==nt::SUCCESS &&
+               manager.IoCreateDevice("\\Device\\Display",&display_driver,
+                          &display_device)==nt::SUCCESS;
     }
     nt::Status replace_loop(uint32_t variant) {
         if(!enabled || variant>1u || !loop_device)
@@ -632,6 +676,7 @@ static uint32_t ntos_psroot_switch(uint32_t);
 static uint32_t ntos_psroot_current(void);
 static uint32_t ntos_pstwin_child_pid(void);
 static uint32_t ntos_io_replace_loop_driver(uint32_t);
+static uint32_t ntos_ps_exec_entry(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -807,6 +852,7 @@ static NtosApi g_ntos_api = {
     &ntos_psroot_current, // [81]
     &ntos_pstwin_child_pid, // [82]
     &ntos_io_replace_loop_driver, // [83]
+    &ntos_ps_exec_entry, // [84]
 };
 
 // ---------------------------------------------------------------------------
@@ -1360,52 +1406,142 @@ static nt::Status psroot_activate(uint32_t target) {
        pager.modules[g_ps_root.module_index].va!=va ||
        pager.modules[g_ps_root.module_index].pa!=g_ps_root.pa[before] ||
        slot<0 || !mmu::verify_slot(static_cast<uint32_t>(slot),
-                                    va,g_ps_root.pa[before]))
+                                   va,g_ps_root.pa[before]))
         return nt::DEVICE_BUSY;
-    // Protect the ENTIRE old-cache -> TLB purge -> new-root install
-    // transaction, not only the P4 associative invalidate. The CPU is
-    // single-core; Ke never runs this on an exception/IRQ stack.
+#if NTOS_ENABLE_PS_EXEC
+    const unsigned code_pages=g_ps_root.exec_pages;
+    if(code_pages) {
+        if(code_pages>8u ||
+           g_ps_root.exec_module_index>=pager.modules_used ||
+           pager.modules[g_ps_root.exec_module_index].va!=
+               g_ps_root.exec_va ||
+           pager.modules[g_ps_root.exec_module_index].pa!=
+               g_ps_root.exec_pa[before] ||
+           pager.modules[g_ps_root.exec_module_index].pages!=code_pages)
+            return nt::DEVICE_BUSY;
+        for(uint32_t i=0u;i<code_pages;++i) {
+            const uint32_t code_va=g_ps_root.exec_va+i*4096u;
+            const int index=pager.lookup(code_va);
+            const uint32_t rights=pager.access(code_va)==
+                     ntos_mm::Access::read_only ?
+                     mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE;
+            if(index<0 || !mmu::verify_slot(
+                   static_cast<uint32_t>(index),code_va,
+                   g_ps_root.exec_pa[before]+i*4096u,rights))
+                return nt::DEVICE_BUSY;
+        }
+    }
+#endif
+    // The entire old-alias writeback / verified UTLB+ITLB removal /
+    // new-root reinstall is one IRQ-excluded transaction. Never call
+    // SDK, heap or host file functions during this privileged interval.
     uint32_t previous=0u;
     __asm__ volatile("stc sr,%0" : "=r"(previous) :: "memory");
     if((previous&0x70000000u)!=0x40000000u)
         return nt::DEVICE_BUSY;
     const uint32_t masked=previous|0xF0u;
     __asm__ volatile("ldc %0,sr\n\tnop" :: "r"(masked) : "memory");
-    // Explicit single restore below. No C++ destructor: an unwind table
-    // would incorrectly pull newlib/exception runtime into tiny HH3.
     const nt::Status result=[&]() -> nt::Status {
-    mmu::cache_writeback_invalidate_block(
-        reinterpret_cast<void *>(va),4096u);
-    mmu::cache_writeback_invalidate_block(g_ps_root.backing[before],4096u);
-    if(!pager.invalidate(va,[](void *,unsigned,uint32_t address,uint32_t) {
-           return mmu::invalidate_va_verified(address);
-       },nullptr))
-        return nt::DEVICE_BUSY;
-    pager.modules[g_ps_root.module_index].pa=g_ps_root.pa[target];
-    if(ntos_hw::prime(va,true)) {
-        const int new_slot=pager.lookup(va);
-        if(new_slot>=0 &&
-           mmu::verify_slot(static_cast<unsigned>(new_slot),
-                            va,g_ps_root.pa[target])) {
-            g_ps_root.active=target;
-            ++g_ps_root.switches;
-            return nt::SUCCESS;
+        auto invalidate=[](void *,unsigned,uint32_t addr,uint32_t) {
+            return mmu::invalidate_va_verified(addr);
+        };
+        // On any partial P4 failure, recover ALL old pages before
+        // allowing guest code to execute. PID/root is still unpublished.
+        auto recover=[&]() -> nt::Status {
+#if NTOS_ENABLE_PS_EXEC
+            for(uint32_t i=0u;i<code_pages;++i) {
+                const uint32_t code_va=g_ps_root.exec_va+i*4096u;
+                if(!pager.invalidate(code_va,invalidate,nullptr)) {
+                    g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+                }
+            }
+            if(code_pages)
+                pager.modules[g_ps_root.exec_module_index].pa=
+                    g_ps_root.exec_pa[before];
+#endif
+            if(!pager.invalidate(va,invalidate,nullptr)) {
+                g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+            }
+            pager.modules[g_ps_root.module_index].pa=g_ps_root.pa[before];
+#if NTOS_ENABLE_PS_EXEC
+            for(uint32_t i=0u;i<code_pages;++i) {
+                const uint32_t code_va=g_ps_root.exec_va+i*4096u;
+                if(!ntos_hw::prime(code_va,true)) {
+                    g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+                }
+                const int code_slot=pager.lookup(code_va);
+                const uint32_t flags=pager.access(code_va)==
+                           ntos_mm::Access::read_only ?
+                           mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE;
+                if(code_slot<0 || !mmu::verify_slot(
+                        static_cast<unsigned>(code_slot),code_va,
+                        g_ps_root.exec_pa[before]+i*4096u,flags)) {
+                    g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+                }
+            }
+#endif
+            if(!ntos_hw::prime(va,true)) {
+                g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+            }
+            const int old_slot=pager.lookup(va);
+            if(old_slot<0 || !mmu::verify_slot(
+                   static_cast<unsigned>(old_slot),va,g_ps_root.pa[before])) {
+                g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+            }
+            return nt::DEVICE_BUSY;
+        };
+#if NTOS_ENABLE_PS_EXEC
+        // Purge BOTH guest P0 instruction-cache and P1 backing aliases
+        // before the physical text/data root changes at the SAME VPN.
+        for(uint32_t i=0u;i<code_pages;++i) {
+            const uint32_t code_va=g_ps_root.exec_va+i*4096u;
+            mmu::cache_writeback_invalidate_block(
+                reinterpret_cast<void *>(code_va),4096u);
+            mmu::cache_flush_invalidate_block(
+                reinterpret_cast<void *>(code_va),4096u);
+            mmu::cache_writeback_invalidate_block(
+                g_ps_root.exec_backing[before]+i*4096u,4096u);
         }
-    }
-    // A failed target install must never publish a new process ID.
-    // Try to recover the old P0 mapping before allowing any guest return.
-    const int partial=pager.lookup(va);
-    if(partial>=0 && !pager.invalidate(va,
-          [](void *,unsigned,uint32_t address,uint32_t) {
-              return mmu::invalidate_va_verified(address);
-          },nullptr))return nt::INTERNAL_ERROR;
-    pager.modules[g_ps_root.module_index].pa=g_ps_root.pa[before];
-    if(!ntos_hw::prime(va,true))return nt::INTERNAL_ERROR;
-    const int recovered=pager.lookup(va);
-    return recovered>=0 &&
-           mmu::verify_slot(static_cast<unsigned>(recovered),
-                            va,g_ps_root.pa[before]) ?
-           nt::DEVICE_BUSY : nt::INTERNAL_ERROR;
+        for(uint32_t i=0u;i<code_pages;++i)
+            if(!pager.invalidate(g_ps_root.exec_va+i*4096u,
+                                 invalidate,nullptr))
+                return recover();
+#endif
+        mmu::cache_writeback_invalidate_block(
+            reinterpret_cast<void *>(va),4096u);
+        mmu::cache_writeback_invalidate_block(
+            g_ps_root.backing[before],4096u);
+        if(!pager.invalidate(va,invalidate,nullptr))return recover();
+#if NTOS_ENABLE_PS_EXEC
+        if(code_pages)
+            pager.modules[g_ps_root.exec_module_index].pa=
+                g_ps_root.exec_pa[target];
+#endif
+        pager.modules[g_ps_root.module_index].pa=g_ps_root.pa[target];
+#if NTOS_ENABLE_PS_EXEC
+        for(uint32_t i=0u;i<code_pages;++i) {
+            const uint32_t code_va=g_ps_root.exec_va+i*4096u;
+            if(!ntos_hw::prime(code_va,true))return recover();
+            const int new_slot=pager.lookup(code_va);
+            const uint32_t flags=pager.access(code_va)==
+                        ntos_mm::Access::read_only ?
+                        mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE;
+            if(new_slot<0 || !mmu::verify_slot(
+                   static_cast<unsigned>(new_slot),code_va,
+                   g_ps_root.exec_pa[target]+i*4096u,flags))
+                return recover();
+        }
+#endif
+        if(!ntos_hw::prime(va,true))return recover();
+        const int new_slot=pager.lookup(va);
+        if(new_slot<0 ||
+           !mmu::verify_slot(static_cast<unsigned>(new_slot),
+                             va,g_ps_root.pa[target]))
+            return recover();
+        // Only now publish the new process root and its private P0 data.
+        g_ps_root.active=target;
+        ++g_ps_root.switches;
+        return nt::SUCCESS;
     }();
     __asm__ volatile("ldc %0,sr\n\tnop" :: "r"(previous) : "memory");
     return result;
@@ -1436,6 +1572,14 @@ static uint32_t ntos_psroot_switch(uint32_t target) {
     return psroot_activate(target);
 #else
     (void)target;return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_ps_exec_entry(void) {
+#if NTOS_ENABLE_PS_EXEC
+    return g_ps_root.ready && g_ps_root.exec_pages &&
+           g_nt_process.ke.running() ? g_ps_root.exec_entry : 0u;
+#else
+    return 0u;
 #endif
 }
 static uint32_t ntos_pstwin_child_pid(void) {
@@ -2259,11 +2403,23 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     uint8_t *psroot_raw=nullptr;
     uint32_t psroot_va=0u;
+#if NTOS_ENABLE_PS_EXEC
+    MappedImage exec_images[2]{};
+    pe::Image exec_headers[2]{};
+    uint32_t exec_sizes[2]{};
+    uint32_t exec_va=0u;
+    bool exec_requested=source_path &&
+        ntos_launch_policy::ascii_equal_ci(source_path,
+                                           "\\fls0\\PSCODE.EXE");
+#endif
     bool root_requested=source_path &&
         (ntos_launch_policy::ascii_equal_ci(source_path,
                                             "\\fls0\\PSROOT.EXE")
 #if NTOS_ENABLE_PE_PAIR
          || twin_requested
+#endif
+#if NTOS_ENABLE_PS_EXEC
+         || exec_requested
 #endif
         );
 #endif
@@ -2412,6 +2568,41 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     }
 #endif
 
+#if NTOS_ENABLE_PS_EXEC && NTOS_STREAMED_IMAGE_LOADING
+    if(exec_requested) {
+        const char *paths[2]={"\\fls0\\CODEA.EXE","\\fls0\\CODEB.EXE"};
+        for(unsigned i=0u;i<2u;++i) {
+            if(!read_pe_source(paths[i],false,false,&exec_headers[i],
+                                &exec_images[i],&exec_sizes[i],err))
+                goto done;
+            if((exec_headers[i].fh.characteristics&pe::F_DLL) ||
+               exec_headers[i].oh.import_rva ||
+               !exec_headers[i].oh.entry_rva ||
+               !exec_images[i].npages ||
+               exec_images[i].npages>8u) {
+                *err="PSCODE requires small import-free executable PEs";
+                goto done;
+            }
+        }
+        if(exec_images[0].npages!=exec_images[1].npages ||
+           exec_headers[0].oh.entry_rva!=exec_headers[1].oh.entry_rva) {
+            *err="PSCODE executable layouts are incompatible";
+            goto done;
+        }
+        for(uint32_t i=0u;i<exec_images[0].npages;++i)
+            if(ntos_mm::pe_page_access(exec_headers[0],i)!=
+               ntos_mm::pe_page_access(exec_headers[1],i)) {
+                *err="PSCODE PE page permissions mismatch";
+                goto done;
+            }
+    }
+#elif NTOS_ENABLE_PS_EXEC
+    if(exec_requested) {
+        *err="PSCODE needs streamed loader";
+        goto done;
+    }
+#endif
+
     // For <=55-page graphs, the experimental image uses the same fully
     // resident bootstrap as the proven regular loader. Unhinted small
     // programs (CHAINTEST, GUI) must not depend on an emulator delivering
@@ -2421,6 +2612,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         image_pages+=nodes[i].mapped.npages;
 #if NTOS_ENABLE_PE_PAIR
     image_pages+=second_exe.npages;
+#endif
+#if NTOS_ENABLE_PS_EXEC
+    image_pages+=exec_images[0].npages;
 #endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(root_requested)++image_pages;
@@ -2479,6 +2673,27 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #if NTOS_ENABLE_PE_PAIR
         g_ps_root.twin=twin_requested;
 #endif
+    }
+#endif
+#if NTOS_ENABLE_PS_EXEC
+    if(exec_requested) {
+        if(!ntos_fault::choose_virtual(0x00600000u,
+                exec_images[0].npages,reservations,count,&exec_va) ||
+           ntos_rebase::overlap(exec_va,exec_images[0].npages,
+                                psroot_va,1u)) {
+            *err="no private executable virtual mapping";goto done;
+        }
+        for(unsigned i=0u;i<2u;++i) {
+            if(!ntos_rebase::apply(exec_headers[i],exec_images[i].image,
+                         exec_images[i].vsize,exec_va,err))
+                goto done;
+            exec_images[i].base=exec_va;
+            g_ps_root.exec_pa[i]=mmu::phys_addr(exec_images[i].image);
+            g_ps_root.exec_backing[i]=exec_images[i].image;
+        }
+        g_ps_root.exec_pages=exec_images[0].npages;
+        g_ps_root.exec_va=exec_va;
+        g_ps_root.exec_entry=exec_va+exec_headers[0].oh.entry_rva;
     }
 #endif
     for(unsigned i=0u;i<count;++i) {
@@ -2551,6 +2766,12 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(root_requested)flush_image(g_ps_root.backing[0],8192u);
 #endif
+#if NTOS_ENABLE_PS_EXEC
+    if(exec_requested)
+        for(unsigned i=0u;i<2u;++i)
+            flush_image(exec_images[i].image,
+                        exec_images[i].npages*4096u);
+#endif
     flush_image(api_block,0x4000u);
 
 #if NTOS_ENABLE_NT_PRIVATE_VM
@@ -2609,6 +2830,16 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             }
         }
 #endif
+#if NTOS_ENABLE_PS_EXEC
+        if(exec_requested) {
+            auto &pager=ntos_hw::g_context.table;
+            g_ps_root.exec_module_index=pager.modules_used;
+            if(!pager.add(exec_va,g_ps_root.exec_pa[0],
+                          g_ps_root.exec_pages,&exec_headers[0],true)) {
+                *err="cannot register private executable root";goto done;
+            }
+        }
+#endif
 #if NTOS_ENABLE_NT_PRIVATE_VM
         ntos_hw::g_context.table.set_extra(
             &g_nt_process.space,[](void *owner,uint32_t va,uint32_t *pa,
@@ -2661,6 +2892,13 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         if(root_requested && !ntos_hw::prime(psroot_va,true)) {
             *err="cannot pin isolated P0 root data page";goto done;
         }
+#endif
+#if NTOS_ENABLE_PS_EXEC
+        if(exec_requested)
+            for(uint32_t i=0u;i<g_ps_root.exec_pages;++i)
+                if(!ntos_hw::prime(exec_va+i*4096u,true)) {
+                    *err="cannot pin private executable pages";goto done;
+                }
 #endif
         // Never call Hollyhock Debug_Printf/LCD_Refresh while our
         // experimental VBR+0x400 exception handler owns VBR. SDK output
@@ -2952,6 +3190,10 @@ done:
 #endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(psroot_raw)Mem_Free(psroot_raw);
+#endif
+#if NTOS_ENABLE_PS_EXEC
+    for(unsigned i=0u;i<2u;++i)
+        if(exec_images[i].raw)Mem_Free(exec_images[i].raw);
 #endif
     for(unsigned i=0u;i<NTOS_MAX_MODULES;++i) {
         if(nodes[i].mapped.raw) Mem_Free(nodes[i].mapped.raw);
