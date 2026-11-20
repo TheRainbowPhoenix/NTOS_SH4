@@ -55,17 +55,17 @@ int main() {
     // Renesas SH4A TRAPA is a processing-completion exception and
     // saves SPC=trap instruction + 2, with TRA=imm*4.
     constexpr uint32_t trap_next=0x00401080u;
-    assert(!nt::user_read_return_allowed(true,0x160u,0x7bu*4u,
+    assert(!nt::user_probe_return_allowed(true,0x160u,0x7bu*4u,
            trap_next,0x40000000u,trap_next,0x40010001u));
-    assert(!nt::user_read_return_allowed(true,0x160u,0x7bu*4u,
+    assert(!nt::user_probe_return_allowed(true,0x160u,0x7bu*4u,
            trap_next+2u,0x00000000u,trap_next,0x40010001u));
-    assert(!nt::user_read_return_allowed(true,0x160u,0x79u*4u,
+    assert(!nt::user_probe_return_allowed(true,0x160u,0x79u*4u,
            trap_next,0x00000000u,trap_next,0x40010001u));
-    assert(!nt::user_read_return_allowed(true,0x160u,0x7bu*4u,
+    assert(!nt::user_probe_return_allowed(true,0x160u,0x7bu*4u,
            trap_next,0x00000000u,trap_next,0x00010001u));
-    assert(!nt::user_read_return_allowed(false,0x160u,0x7bu*4u,
+    assert(!nt::user_probe_return_allowed(false,0x160u,0x7bu*4u,
            trap_next,0x00000000u,trap_next,0x40010001u));
-    assert(nt::user_read_return_allowed(true,0x160u,0x7bu*4u,
+    assert(nt::user_probe_return_allowed(true,0x160u,0x7bu*4u,
            trap_next,0x00000000u,trap_next,0x40010001u));
     std::puts("PASS guest 0xA0/0xC0: exact byte/PC, privileged foreground write, one-shot user read and exact TRAPA return");
 }
