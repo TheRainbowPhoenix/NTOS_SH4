@@ -50,7 +50,7 @@ jobs:
         run: |
           make -j4 ntx
           make -j4 nt-vm-dll-probes nt-exec-probes dist_ntprobe/MMROTEST.EXE
-          for p in VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE; do
+          for p in PROTSTATE.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE; do
             test -s "dist_ntprobe/$p"
           done
           python3 tools/check_large4m_pe.py dist_ntprobe/LARGE4M.EXE
@@ -88,7 +88,9 @@ jobs:
             dist_ntprobe/MMGUARD.EXE
             dist_ntprobe/MMREAD.EXE
             dist_ntprobe/MMRDINIT.EXE
+            dist_ntprobe/PROTSTATE.EXE
             dist_ntprobe/MMROTEST.EXE
+            dist_ntprobe/PROTSTATE.EXE
             dist_ntprobe/VMTEST.EXE
             dist_ntprobe/INITPASS.EXE
             dist_ntprobe/INITGOOD.DLL
@@ -106,6 +108,7 @@ jobs:
             dist_ntprobe/MMGUARD.EXE
             dist_ntprobe/MMREAD.EXE
             dist_ntprobe/MMRDINIT.EXE
+            dist_ntprobe/PROTSTATE.EXE
             dist_ntprobe/VMTEST.EXE
             dist_ntprobe/INITGOOD.DLL
             dist_ntprobe/INITFAIL.DLL
