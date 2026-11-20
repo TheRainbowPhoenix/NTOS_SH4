@@ -14,7 +14,11 @@ INCLUDES=-I$(SDK_DIR)/include #-I$(SOURCEDIR)
 # Pager validated in emulator: the default loader now handles graphs beyond
 # the 55-slot eager translation budget. Use DEFINES= for the conservative build.
 DEFINES=-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1
-FUNCTION_FLAGS=-flto=auto -ffat-lto-objects -fno-builtin -ffunction-sections -fdata-sections -gdwarf-5 -O2
+# The custom HH3 launcher restricts every PT_LOAD to 0x8C000000..0x8D000000.
+# The Ke/Ps build overran 0x8D000000 by 764 bytes because GCC emitted
+# ~6 KiB of unused .eh_frame metadata. NTOS is freestanding, has no C++
+# exception propagation/unwinder and must not allocate this RAM.
+FUNCTION_FLAGS=-flto=auto -ffat-lto-objects -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -gdwarf-5 -O2
 COMMON_FLAGS=$(FUNCTION_FLAGS) $(INCLUDES) $(WARNINGS) $(DEFINES)
 
 CC:=sh4a_nofpueb-elf-gcc
