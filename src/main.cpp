@@ -35,6 +35,7 @@
 #include "nt/mm_protect.hpp"
 #include "nt/launch_policy.hpp"
 #include "nt/picker.hpp"
+#include "nt/native_vm.hpp"
 #include "fs_guard.hpp"
 #include "nt/process.hpp"
 #include "nt/dll_lifecycle.hpp"
@@ -117,6 +118,12 @@ struct NtosApi {
     uint32_t (*guard_seen)(void);                         // [48] accepted violations
     uint32_t (*guard_status)(void);                       // [49] NTSTATUS
     uint32_t (*guard_fault_address)(void);                // [50] TEA
+    uint32_t (*nt_allocate_virtual_memory)(
+        uint32_t,uint32_t *,uint32_t,uint32_t *,uint32_t,uint32_t); // [51]
+    uint32_t (*nt_protect_virtual_memory)(
+        uint32_t,uint32_t *,uint32_t *,uint32_t,uint32_t *); // [52]
+    uint32_t (*nt_free_virtual_memory)(
+        uint32_t,uint32_t *,uint32_t *,uint32_t);         // [53]
 };
 
 static int cur_row = 0;
@@ -444,6 +451,11 @@ static uint32_t ntos_arm_guest_guard(uint32_t,uint32_t,uint32_t);
 static uint32_t ntos_guard_seen(void);
 static uint32_t ntos_guard_status(void);
 static uint32_t ntos_guard_fault_address(void);
+static uint32_t ntos_native_allocate(uint32_t,uint32_t *,uint32_t,
+                                     uint32_t *,uint32_t,uint32_t);
+static uint32_t ntos_native_protect(uint32_t,uint32_t *,uint32_t *,
+                                    uint32_t,uint32_t *);
+static uint32_t ntos_native_free(uint32_t,uint32_t *,uint32_t *,uint32_t);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -582,6 +594,9 @@ static NtosApi g_ntos_api = {
     &ntos_guard_seen, // [48]
     &ntos_guard_status, // [49]
     &ntos_guard_fault_address, // [50]
+    &ntos_native_allocate, // [51]
+    &ntos_native_protect, // [52]
+    &ntos_native_free, // [53]
 };
 
 // ---------------------------------------------------------------------------
@@ -903,6 +918,87 @@ static uint32_t ntos_guard_fault_address(void) {
     return ntos_hw::g_context.guest_guard.last_tea;
 #else
     return 0u;
+#endif
+}
+
+// NT-style process-local native VM service. Guest in/out pointers are
+// deliberately limited to *resident writable P0 pages* owned by the
+// current PE/VM. Never dereference an untrusted P1/host/SDK address here.
+// These syscalls never open files or allocate in the VBR ISR.
+#if NTOS_ENABLE_NT_PRIVATE_VM && NTOS_ENABLE_TLB_MISS_PAGER
+static bool native_guest_word(uint32_t *word) {
+    const uint32_t va=reinterpret_cast<uint32_t>(word);
+    if(!word || (va&3u) || va<0x1000u || va>=0x80000000u ||
+       (va&0xFFFu)>0xFFCu || ntos_vm_busy())
+        return false;
+    const auto &table=ntos_hw::g_context.table;
+    return table.lookup(va)>=0 &&
+           table.access(va)==ntos_mm::Access::read_write;
+}
+static nt::Status native_vm_reserve(void *,uint32_t preferred,uint32_t pages,
+                                    uint32_t *base) {
+    return g_nt_process.vm.reserve(
+        preferred,pages,base,&ntos_vm_collides,
+        &ntos_hw::g_context.table);
+}
+static nt::Status native_vm_commit(void *,uint32_t base,uint32_t pages,
+                                   uint32_t rights) {
+    return ntos_vm_commit(base,pages,rights);
+}
+static nt::Status native_vm_protect(void *,uint32_t base,uint32_t pages,
+                                    uint32_t rights,uint32_t *old) {
+    const nt::Status s=g_nt_process.vm.protect(
+        base,pages,static_cast<nt::VmAccess>(rights),
+        &ntos_vm_update_ptel,nullptr,old);
+    if(s==nt::INTERNAL_ERROR)g_fatal.reason=3u;
+    return s;
+}
+static nt::Status native_vm_release(void *,uint32_t base) {
+    return g_nt_process.vm.release(base);
+}
+static nt::NativeVmOps native_vm_hooks() {
+    return {nullptr,&native_vm_reserve,&native_vm_commit,
+                    &native_vm_protect,&native_vm_release};
+}
+#endif
+static uint32_t ntos_native_allocate(uint32_t process,uint32_t *base,
+                                      uint32_t zero_bits,uint32_t *bytes,
+                                      uint32_t type,uint32_t protection) {
+#if NTOS_ENABLE_NT_PRIVATE_VM && NTOS_ENABLE_TLB_MISS_PAGER
+    if(!native_guest_word(base) || !native_guest_word(bytes) ||
+       base==bytes)return nt::INVALID_PARAMETER;
+    return nt::nt_allocate_virtual_memory(
+        native_vm_hooks(),process,base,zero_bits,bytes,type,protection);
+#else
+    (void)process;(void)base;(void)zero_bits;(void)bytes;
+    (void)type;(void)protection;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_native_protect(uint32_t process,uint32_t *base,
+                                     uint32_t *bytes,uint32_t protection,
+                                     uint32_t *old) {
+#if NTOS_ENABLE_NT_PRIVATE_VM && NTOS_ENABLE_TLB_MISS_PAGER
+    if(!native_guest_word(base) || !native_guest_word(bytes) ||
+       !native_guest_word(old) || base==bytes || base==old ||
+       bytes==old)return nt::INVALID_PARAMETER;
+    return nt::nt_protect_virtual_memory(
+        native_vm_hooks(),process,base,bytes,protection,old);
+#else
+    (void)process;(void)base;(void)bytes;(void)protection;(void)old;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_native_free(uint32_t process,uint32_t *base,
+                                  uint32_t *bytes,uint32_t type) {
+#if NTOS_ENABLE_NT_PRIVATE_VM && NTOS_ENABLE_TLB_MISS_PAGER
+    if(!native_guest_word(base) || !native_guest_word(bytes) ||
+       base==bytes)return nt::INVALID_PARAMETER;
+    return nt::nt_free_virtual_memory(
+        native_vm_hooks(),process,base,bytes,type);
+#else
+    (void)process;(void)base;(void)bytes;(void)type;
+    return nt::NOT_SUPPORTED;
 #endif
 }
 
