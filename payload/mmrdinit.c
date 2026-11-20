@@ -5,6 +5,7 @@
  * A failed emulator-only experiment must NOT be repeated on real CP400. */
 #include <stdint.h>
 #include "ntapi_caps.h"
+#include "user_read_probe.h"
 typedef uint32_t u32;
 typedef u32 (*reserve_fn)(u32,u32);
 typedef u32 (*change_fn)(u32,u32,u32);
@@ -26,15 +27,12 @@ int main(const void *const *api,char **argv,char **envp) {
     u32 base=reserve(0u,1u);
     if(!base || commit(base,1u,3u)!=0u || hint(base)!=0)
         return 0xBAD96003u;
-    void *recovery=&&recovered;
-    __asm__ volatile("" : : "r"(recovery) : "memory");
-    if(arm(base,0x0A0u,(u32)(uintptr_t)recovery)!=0u)
+    const u32 recovery=(u32)(uintptr_t)&ntos_user_probe_trapa;
+    if(arm(base,0x0A0u,recovery)!=0u)
         return 0xBAD96004u;
-    volatile uint8_t x=((volatile uint8_t *)(uintptr_t)base)[0];
-    (void)x;
-    return 0xBAD96005u; // protection bypassed
-recovered:
-    if(seen()!=1u || status()!=0xC0000005u || tea()!=base)
+    ntos_user_probe_stub(base);
+    if(seen()!=1u)return 0xBAD96005u; // no genuine user-mode 0x0a0
+    if(status()!=0xC0000005u || tea()!=base)
         return 0xBAD96006u;
     if(protect(base,1u,2u)!=0u ||
        ((volatile uint8_t *)(uintptr_t)base)[0]!=0u)

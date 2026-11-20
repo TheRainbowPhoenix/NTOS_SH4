@@ -54,6 +54,13 @@ struct Context {
     ntos_fault::Pager table{};
     nt::GuestException guest_guard{};
     volatile uint32_t general_faults=0u;
+    // A tiny, stackless P0 user-mode read probe returns to the original
+    // privileged guest C frame using exactly one audited TRAPA #0x7B.
+    // No OS/SDK code may run during the user-mode instruction window.
+    bool user_read_session=false;
+    uint32_t user_read_trapa_next=0u;
+    uint32_t user_read_saved_sr=0u;
+    volatile uint32_t user_read_returns=0u;
     host_world::Snapshot host{};
     uint8_t *vectors_raw=nullptr;
     uint8_t *vectors=nullptr;
@@ -174,8 +181,39 @@ inline nt::Status arm_guest_guard(uint32_t address,uint32_t event,
             mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE_SUPERVISOR_ONLY))
         return nt::DEVICE_BUSY;
 #endif
-    return c.guest_guard.arm(address,event,resume_pc,
-                             &executable_page,&c.table);
+    uint32_t sr=0u;
+    __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+    const bool privileged=(sr&0x40000000u)!=0u;
+    // All current NTOS entry points run as privileged foreground guests.
+    // A supervisor can *read* PTEL.PR=01; only the narrow, stackless
+    // P0 user transition can provoke a genuine 0x0A0 fault.
+    if(event==nt::SH4_PROTECTION_READ) {
+        if(!privileged || (sr&0x30000000u)!=0u ||
+           c.user_read_session || resume_pc>0xFFFFFFFDu ||
+           !executable_page(&c.table,resume_pc+2u))
+            return nt::INVALID_PARAMETER;
+        // Verify actual SH4BE instructions in the *mapped guest image*:
+        // TRAPA #0x7B (C37B), immediately followed by RTS (000B).
+        // Never promote an arbitrary user PC back to supervisor mode.
+        const uint16_t trap=*reinterpret_cast<volatile const uint16_t *>(
+            resume_pc);
+        const uint16_t ret=*reinterpret_cast<volatile const uint16_t *>(
+            resume_pc+2u);
+        if(trap!=0xC37Bu || ret!=0x000Bu)
+            return nt::INVALID_PARAMETER;
+    }
+    const nt::Status status=c.guest_guard.arm(
+        address,event,resume_pc,&executable_page,&c.table,
+        event==nt::SH4_PROTECTION_WRITE && privileged);
+    if(status==nt::SUCCESS && event==nt::SH4_PROTECTION_READ) {
+        // resume_pc points at the single TRAPA #0x7B opcode inside
+        // the independently compiled, stackless guest .text stub.
+        // TRAPA stores SPC=opcode+2. On exit SSR restores host MD=1.
+        c.user_read_saved_sr=sr;
+        c.user_read_trapa_next=resume_pc+2u;
+        c.user_read_session=true;
+    }
+    return status;
 #else
     (void)address;(void)event;(void)resume_pc;
     return nt::NOT_SUPPORTED;
@@ -193,11 +231,31 @@ extern "C" int ntos_general_exception_callback(uint32_t tea,uint32_t event) {
     uint32_t spc=0u,ssr=0u;
     __asm__ volatile("stc spc,%0" : "=r"(spc) :: "memory");
     __asm__ volatile("stc ssr,%0" : "=r"(ssr) :: "memory");
+    // The narrow TRAPA return path must be checked before generic 0xA0/
+    // 0xC0 dispatch. Never turn unrelated app traps into privileged RTEs.
+    if(event==0x160u && c.user_read_session) {
+        const uint32_t tra=*reinterpret_cast<volatile uint32_t *>(
+            0xFF000020u);
+        if(!nt::user_read_return_allowed(
+               c.user_read_session,event,tra,spc,ssr,
+               c.user_read_trapa_next,c.user_read_saved_sr) ||
+           !ntos_hw::executable_page(&c.table,spc))
+            return 0;
+        c.user_read_session=false;
+        c.guest_guard.cancel();
+        c.user_read_returns=c.user_read_returns+1u;
+        // Restore the privileged guest's SR, including MD and IMASK.
+        // The entry stub made NO stack accesses in user mode, so SGR
+        // still contains the original (unchanged) privileged P1 SP.
+        const uint32_t restored=c.user_read_saved_sr;
+        __asm__ volatile("ldc %0,ssr" :: "r"(restored) : "memory");
+        return 1;
+    }
+    if(event!=nt::SH4_PROTECTION_READ &&
+       event!=nt::SH4_PROTECTION_WRITE)return 0;
     c.general_faults=c.general_faults+1u;
     c.last_tea=tea;c.last_expevt=event;
     c.last_spc=spc;c.last_ssr=ssr;c.last_mmucr=mmu::read_mmucr();
-    if(event!=nt::SH4_PROTECTION_READ &&
-       event!=nt::SH4_PROTECTION_WRITE)return 0;
     uint32_t landing=0u;
     if(!c.guest_guard.decide(tea,event,spc,ssr,
                              &ntos_hw::executable_page,&c.table,
@@ -288,6 +346,10 @@ inline ntos_irq::Hooks hooks(const host_world::Snapshot &host) {
     ctx.hint_calls=0u;
     ctx.guest_guard.reset();
     ctx.general_faults=0u;
+    ctx.user_read_session=false;
+    ctx.user_read_trapa_next=0u;
+    ctx.user_read_saved_sr=0u;
+    ctx.user_read_returns=0u;
     ctx.probe_armed=false;
     ctx.probe_page=0u;
     ctx.probe_event=0u;

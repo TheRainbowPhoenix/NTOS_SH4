@@ -4,6 +4,7 @@ on:
     branches:
       - feat/nt-vm-prot-exception-dll-init-20261120
       - fix/mm-prot-tlb-and-picker-jump-20261120
+      - fix/cp400-guest-prot-trap-user-probe-20261120
   workflow_dispatch:
 permissions:
   contents: read
@@ -49,11 +50,12 @@ jobs:
         run: |
           make -j4 ntx
           make -j4 nt-vm-dll-probes nt-exec-probes dist_ntprobe/MMROTEST.EXE
-          for p in VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE; do
+          for p in PROTSTATE.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE; do
             test -s "dist_ntprobe/$p"
           done
           python3 tools/check_large4m_pe.py dist_ntprobe/LARGE4M.EXE
           python3 tools/check_protected_pe.py dist_ntprobe/MMROTEST.EXE dist_ntprobe/MMGUARD.EXE
+          python3 tools/check_user_probe_elf.py obj_ntprobe/mmread.elf obj_ntprobe/mmrdinit.elf
           g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/pe_stream_test.cpp -o /tmp/pe-stream
           /tmp/pe-stream dist/COREDLL.DLL dist/CHAINTEST.EXE dist_ntprobe/LARGE4M.EXE
       - name: Upload physical-device opt-in VM and DLL fixture (NO illegal write)
@@ -78,6 +80,26 @@ jobs:
             dist/PAGERSTRESS.DLL
           if-no-files-found: error
           retention-days: 30
+      - name: Upload real-device opt-in VBR+0x100 guarded protection candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: NTOS-CP400-CONTROLLED-VBR-PROTECTION-TRAPA-REBOOT-RISK
+          path: |
+            dist_vm_guard/NTOS.hh3
+            dist_ntprobe/MMGUARD.EXE
+            dist_ntprobe/MMREAD.EXE
+            dist_ntprobe/MMRDINIT.EXE
+            dist_ntprobe/PROTSTATE.EXE
+            dist_ntprobe/MMROTEST.EXE
+            dist_ntprobe/PROTSTATE.EXE
+            dist_ntprobe/VMTEST.EXE
+            dist_ntprobe/INITPASS.EXE
+            dist_ntprobe/INITGOOD.DLL
+            dist/HELLO.EXE
+            dist/PAGERTEST.EXE
+            dist/PAGERSTRESS.DLL
+          if-no-files-found: error
+          retention-days: 30
       - name: Upload separately gated emulator-only read/write protection tests
         uses: actions/upload-artifact@v7
         with:
@@ -87,6 +109,7 @@ jobs:
             dist_ntprobe/MMGUARD.EXE
             dist_ntprobe/MMREAD.EXE
             dist_ntprobe/MMRDINIT.EXE
+            dist_ntprobe/PROTSTATE.EXE
             dist_ntprobe/VMTEST.EXE
             dist_ntprobe/INITGOOD.DLL
             dist_ntprobe/INITFAIL.DLL

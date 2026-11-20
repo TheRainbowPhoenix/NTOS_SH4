@@ -40,5 +40,32 @@ int main() {
     assert(g.arm(0x00405000u,0x0C0u,0x70000000u,
                  &executable,nullptr)==nt::INVALID_PARAMETER);
     g.cancel();
-    std::puts("PASS guest VBR+0x100 decision: exact 0xA0/0xC0, P0-only, valid executable recovery, one-shot, no arbitrary retry");
+    // Real NTOS foreground PE execution is currently privileged P0.
+    // It must recover its OWN pre-armed RO write fault but never accept
+    // a wrong-mode event for an unrelated host task.
+    g.reset();
+    assert(g.arm(0x00405000u,nt::SH4_PROTECTION_WRITE,0x00401080u,
+                 &executable,nullptr,true)==nt::SUCCESS);
+    assert(!g.decide(0x00405000u,0x0C0u,0x00401020u,
+                     0x04001001u,&executable,nullptr,&target));
+    assert(g.armed);
+    assert(g.decide(0x00405000u,0x0C0u,0x00401020u,
+                    0x40010001u,&executable,nullptr,&target));
+    assert(!g.armed && target==0x00401080u && g.accepted==1u);
+    // Renesas SH4A TRAPA is a processing-completion exception and
+    // saves SPC=trap instruction + 2, with TRA=imm*4.
+    constexpr uint32_t trap_next=0x00401080u;
+    assert(!nt::user_read_return_allowed(true,0x160u,0x7bu*4u,
+           trap_next,0x40000000u,trap_next,0x40010001u));
+    assert(!nt::user_read_return_allowed(true,0x160u,0x7bu*4u,
+           trap_next+2u,0x00000000u,trap_next,0x40010001u));
+    assert(!nt::user_read_return_allowed(true,0x160u,0x79u*4u,
+           trap_next,0x00000000u,trap_next,0x40010001u));
+    assert(!nt::user_read_return_allowed(true,0x160u,0x7bu*4u,
+           trap_next,0x00000000u,trap_next,0x00010001u));
+    assert(!nt::user_read_return_allowed(false,0x160u,0x7bu*4u,
+           trap_next,0x00000000u,trap_next,0x40010001u));
+    assert(nt::user_read_return_allowed(true,0x160u,0x7bu*4u,
+           trap_next,0x00000000u,trap_next,0x40010001u));
+    std::puts("PASS guest 0xA0/0xC0: exact byte/PC, privileged foreground write, one-shot user read and exact TRAPA return");
 }
