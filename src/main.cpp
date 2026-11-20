@@ -102,6 +102,12 @@ struct NtosApi {
     uint32_t (*mm_page_rights)(uint32_t);                  // [38] Mm RO/RW metadata
     int32_t (*mm_arm_fault_probe)(uint32_t,uint32_t);      // [39] VA, expected EXPEVT
     uint32_t (*mm_fault_probe_seen)(void);                 // [40] VBR canary callback count
+    uint32_t (*vm_reserve)(uint32_t,uint32_t);             // [41] preferred VA, pages -> VA or 0
+    uint32_t (*vm_commit)(uint32_t,uint32_t,uint32_t);     // [42] VA,pages,1 RO/2 RW -> NTSTATUS
+    uint32_t (*vm_protect)(uint32_t,uint32_t,uint32_t);    // [43] live PR update
+    uint32_t (*vm_query)(uint32_t);                       // [44] 0 reserved,1 RO,2 RW
+    uint32_t (*vm_release)(uint32_t);                     // [45] reserved-only release
+    uint32_t (*vm_committed_pages)(void);                 // [46] per-launch tracked frames
 };
 
 static int cur_row = 0;
@@ -419,6 +425,12 @@ static int32_t ntos_page_hint(uint32_t va);
 static uint32_t ntos_mm_page_rights(uint32_t va);
 static int32_t ntos_mm_arm_fault_probe(uint32_t va,uint32_t event);
 static uint32_t ntos_mm_fault_probe_seen(void);
+static uint32_t ntos_vm_reserve(uint32_t base,uint32_t pages);
+static uint32_t ntos_vm_commit(uint32_t base,uint32_t pages,uint32_t rights);
+static uint32_t ntos_vm_protect(uint32_t base,uint32_t pages,uint32_t rights);
+static uint32_t ntos_vm_query(uint32_t va);
+static uint32_t ntos_vm_release(uint32_t va);
+static uint32_t ntos_vm_committed_pages(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -547,6 +559,12 @@ static NtosApi g_ntos_api = {
     &ntos_mm_page_rights, // [38]
     &ntos_mm_arm_fault_probe, // [39]
     &ntos_mm_fault_probe_seen, // [40]
+    &ntos_vm_reserve, // [41]
+    &ntos_vm_commit, // [42]
+    &ntos_vm_protect, // [43]
+    &ntos_vm_query, // [44]
+    &ntos_vm_release, // [45]
+    &ntos_vm_committed_pages, // [46]
 };
 
 // ---------------------------------------------------------------------------
@@ -686,6 +704,12 @@ static void *align_page(void *p) {
         (reinterpret_cast<uint32_t>(p) + 0xFFFu) & ~0xFFFu);
 }
 #include "hardware_fault.hpp"
+#ifndef NTOS_ENABLE_NT_PRIVATE_VM
+#define NTOS_ENABLE_NT_PRIVATE_VM 0
+#endif
+#if NTOS_ENABLE_NT_PRIVATE_VM && !NTOS_ENABLE_TLB_MISS_PAGER
+#error "The private NT VM requires the RAM-backed SH4A TLB pager"
+#endif
 
 // This private NTOS API is a diagnostic only: a payload can ask the P1
 // stage0 to install a known backing page BEFORE accessing it. Emulator
@@ -1263,6 +1287,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #endif
     uint8_t *api_raw=nullptr;
     uint8_t *api_block=nullptr;
+    uint8_t *vm_raw=nullptr;
     int rc=-1;
 
 #if NTOS_STREAMED_IMAGE_LOADING
@@ -1465,6 +1490,16 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         flush_image(nodes[i].mapped.image,nodes[i].mapped.vsize);
     flush_image(api_block,0x4000u);
 
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    // Allocate once in restored P1 host world, before guest VBR ownership.
+    // Neither NtCommit nor the VBR fault callback can allocate SDK memory.
+    vm_raw=static_cast<uint8_t *>(Mem_Malloc(64u*4096u+0xFFFu));
+    if(!vm_raw){*err="cannot reserve private P1 VM frame arena";goto done;}
+    {
+        uint8_t *vm_frames=static_cast<uint8_t *>(align_page(vm_raw));
+        g_nt_process.vm.configure(vm_frames,mmu::phys_addr(vm_frames));
+    }
+#endif
     // Regular mode installs every page. Experimental fault mode installs
     // only the API window and each DLL's first page and EXE entry page;
     // the VBR+0x400 trampoline installs the remaining pages on demand.
@@ -1495,6 +1530,14 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                                     &nodes[i].hdr)) {
                 *err="cannot register virtual DLL backing";goto done;
             }
+#if NTOS_ENABLE_NT_PRIVATE_VM
+        ntos_hw::g_context.table.set_extra(
+            &g_nt_process.vm,[](void *owner,uint32_t va,uint32_t *pa,
+                                ntos_mm::Access *rights) {
+                return static_cast<nt::VirtualMemory<64,8> *>(owner)->
+                    resolve(va,pa,rights);
+            });
+#endif
         if(eager_experiment) {
             // Match the normal loader: all reachable code, data and IAT
             // pages are resident before the first P0 instruction executes.
@@ -1687,6 +1730,7 @@ done:
         rc=-2;  // only report after MMU/VBR ownership is restored
     }
 #endif
+    if(vm_raw) Mem_Free(vm_raw);
     if(api_raw) Mem_Free(api_raw);
     for(unsigned i=0u;i<NTOS_MAX_MODULES;++i) {
         if(nodes[i].mapped.raw) Mem_Free(nodes[i].mapped.raw);
