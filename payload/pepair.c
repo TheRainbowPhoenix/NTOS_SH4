@@ -7,6 +7,7 @@
 #include "ntapi_caps.h"
 typedef uint32_t u32;
 typedef u32 (*query_fn)(void);
+typedef int32_t (*hint_fn)(u32);
 typedef u32 (*create_fn)(u32,u32);
 typedef int (*entry_fn)(const void *const *,char **,char **);
 static uint8_t worker_stack[4096] __attribute__((aligned(4096)));
@@ -35,7 +36,7 @@ int main(const void *const *api,char **argv,char **envp) {
     peer_address=(query_fn)api[76];
     peer_progress=(query_fn)api[78];
     get_pid=(query_fn)api[55];get_tid=(query_fn)api[56];
-    query_fn hint=(query_fn)api[23];
+    hint_fn hint=(hint_fn)api[23];
     if(!create || !yield_ || !exit_ || !peer_address ||
        !peer_progress || !get_pid || !get_tid || !hint || !switches)
         return (int)0xBADB0002u;
