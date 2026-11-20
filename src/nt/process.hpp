@@ -4,11 +4,13 @@
 #pragma once
 #include "event.hpp"
 #include "pool.hpp"
+#include "virtual_memory.hpp"
 namespace nt {
 struct Process {
     Handles<64> handles{};
     Events<16> events{};
     Pool<128> pool{};
+    VirtualMemory<64,8> vm{}; // 256 KiB arena, allocated by loader before VBR
     Object file{};
     Object finder{};
     int32_t raw_file=-1,raw_finder=-1;
@@ -17,13 +19,15 @@ struct Process {
     // The caller MUST have closed the previous host SDK resource.
     bool begin() {
         if(active || handles.used || raw_file>=0 || raw_finder>=0 ||
-           pool.current)return false;
+           pool.current || vm.reserved_pages || vm.committed_pages)return false;
         ++launches;active=true;return true;
     }
     void finish() {
         // Does NOT issue any SDK File_Close, File_Read or File_Open.
         handles.close_all();
         pool.release_all();
+        // Called only AFTER MMU is disabled/UTLB flushed; no live aliases.
+        vm.clear();
         raw_file=-1;raw_finder=-1;
         active=false;
     }
