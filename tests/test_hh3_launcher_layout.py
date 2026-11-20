@@ -35,7 +35,7 @@ def rejects(data, margin=4096):
 def main():
     rejects(fixture(0x1500,datamem=0x1DFC))  # ACTUAL crash
     rejects(fixture(0x1000,datamem=0x1B00))  # still too little headroom
-    n,space,end=check(fixture(0x1000,datamem=0x0A00),4096)
+    n,space,end=check(fixture(0x400,datamem=0x0A00),4096)
     assert n==2 and end==0x8CFFEF00 and space>=4096
     rejects(fixture(0x1000,datava=0x8CFD0000,datamem=0x1000))
     rejects(fixture(0x1000,datava=0x8CFCFF00,datamem=0x200))
