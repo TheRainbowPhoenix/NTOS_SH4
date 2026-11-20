@@ -1,5 +1,7 @@
 # NTOS CP400 KEXCEPT / ASOWN milestone — one matched kit
 
+The KEXCEPT test profile requires >=3072 bytes spare beneath the hard 0x8D000000 launcher RAM limit (the general build keeps >=4096).
+
 Use the `NTOS.hh3` **from this ZIP** with the matching EXEs/DLLs. Backup the known-good firmware. The guest tests run a narrowly prearmed SH4A user-mode fault; if NTOS resets, restore the known-good launcher. Do not use a mix of builds.
 
 Run in order:

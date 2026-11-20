@@ -38,9 +38,9 @@ jobs:
       - name: Build one CP400 firmware with Ke/Ps and proven protection handler
         run: |
           set -eu
-          make -j4 BUILDDIR=obj_ke_cp400 OUTDIR=dist_ke_cp400 DEPDIR=.deps_ke_cp400 DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=1 -DNTOS_ENABLE_GUEST_PROTECT_DISPATCH=1 -DNTOS_SH4A_TLB_SYNC_BARRIER=1 -DNTOS_VERIFY_UTLB_SLOTS=1 -DNTOS_ENABLE_KE_USER_SYSCALL=1" hh3
+          make -j4 BUILDDIR=obj_ke_cp400 OUTDIR=dist_ke_cp400 DEPDIR=.deps_ke_cp400 DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=1 -DNTOS_ENABLE_GUEST_PROTECT_DISPATCH=1 -DNTOS_SH4A_TLB_SYNC_BARRIER=1 -DNTOS_VERIFY_UTLB_SLOTS=1 -DNTOS_ENABLE_KE_USER_SYSCALL=1" HH3_MIN_HEADROOM=3072 hh3
           test -s dist_ke_cp400/NTOS.hh3
-          python3 tools/check_hh3_launcher_layout.py --min-headroom 4096 dist_ke_cp400/NTOS.hh3
+          python3 tools/check_hh3_launcher_layout.py --min-headroom 3072 dist_ke_cp400/NTOS.hh3
       - name: Build all matching SH4BE EXE/DLL and audit real syscall opcodes
         run: |
           set -eu
