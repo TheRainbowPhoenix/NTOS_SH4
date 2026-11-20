@@ -51,6 +51,9 @@
 #ifndef NTOS_ENABLE_PE_PAIR
 #define NTOS_ENABLE_PE_PAIR 0
 #endif
+#ifndef NTOS_ENABLE_PSROOT
+#define NTOS_ENABLE_PSROOT 0
+#endif
 #ifndef NTOS_ENABLE_DLL_INIT_TRACE
 #define NTOS_ENABLE_DLL_INIT_TRACE 0
 #endif
@@ -162,6 +165,10 @@ struct NtosApi {
     uint32_t (*ps_peer_entry)(void);                   // [76] second EXE entry
     uint32_t (*ps_peer_tick)(void);                    // [77] secondary progress
     uint32_t (*ps_peer_progress)(void);                // [78] total ticks
+    uint32_t (*psroot_va)(void);                      // [79] P0 canary VA
+    uint32_t (*psroot_switch)(uint32_t);               // [80] NTSTATUS
+    uint32_t (*psroot_current)(void);                  // [81] root 0 or 1
+    uint32_t (*pstwin_child_pid)(void);                // [82] child Ps PID
 };
 
 static int cur_row = 0;
@@ -284,6 +291,17 @@ struct PePairState {
     bool ready=false;
 };
 static PePairState g_pe_pair{};
+#endif
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+// A bounded hardware two-root P0 *data-page* canary, independent of VM.
+struct PsRootHardware {
+    uint32_t va=0u,pa[2]{},parent_pid=0u,switches=0u;
+    uint8_t *backing[2]{};
+    unsigned module_index=0u,active=0u;
+    nt::KPROCESS child{};
+    bool ready=false,twin=false;
+};
+static PsRootHardware g_ps_root{};
 #endif
 #if NTOS_ENABLE_GUEST_IO
 struct NtIoBuiltIn {
@@ -597,6 +615,10 @@ static uint32_t ntos_nt_device_io_control(uint32_t,uint32_t,void *,uint32_t,
 static uint32_t ntos_ps_peer_entry(void);
 static uint32_t ntos_ps_peer_tick(void);
 static uint32_t ntos_ps_peer_progress(void);
+static uint32_t ntos_psroot_va(void);
+static uint32_t ntos_psroot_switch(uint32_t);
+static uint32_t ntos_psroot_current(void);
+static uint32_t ntos_pstwin_child_pid(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -767,6 +789,10 @@ static NtosApi g_ntos_api = {
     &ntos_ps_peer_entry, // [76]
     &ntos_ps_peer_tick, // [77]
     &ntos_ps_peer_progress, // [78]
+    &ntos_psroot_va, // [79]
+    &ntos_psroot_switch, // [80]
+    &ntos_psroot_current, // [81]
+    &ntos_pstwin_child_pid, // [82]
 };
 
 // ---------------------------------------------------------------------------
@@ -1240,6 +1266,11 @@ static uint32_t ntos_ke_arm_system_call(uint32_t trap_pc,uint32_t service) {
 #endif
 }
 static uint32_t ntos_ps_get_current_process_id(void) {
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    if(g_ps_root.twin && g_ps_root.ready && g_ps_root.active==1u &&
+       g_ps_root.child.active)
+        return g_ps_root.child.unique_process_id;
+#endif
     return g_nt_process.ke.process.active ?
         g_nt_process.ke.process.unique_process_id : 0u;
 }
@@ -1275,9 +1306,115 @@ static uint32_t ntos_ke_create_coop_thread(uint32_t entry,uint32_t sp) {
     if(g_ke_coop.create(g_nt_process.ke,entry,sp,sr,gbr,&tid)
        !=nt::SUCCESS)return 0u;
     g_nt_process.ke.process.threads=2u;
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    if(g_ps_root.twin && g_ps_root.ready && !g_ps_root.child.active) {
+        g_ps_root.child.unique_process_id=
+            g_nt_process.ke.process.unique_process_id+1u;
+        g_ps_root.child.inherited_from_process_id=
+            g_nt_process.ke.process.unique_process_id;
+        g_ps_root.child.image_base=g_pe_pair.base;
+        g_ps_root.child.image_bytes=4096u; // test-only PE image identity
+        g_ps_root.child.threads=1u;
+        g_ps_root.child.active=true;
+        g_ke_coop.peer.owning_process_id=
+            g_ps_root.child.unique_process_id;
+    }
+#endif
     return tid;
 #else
     (void)entry;(void)sp;return 0u;
+#endif
+}
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+// Root handoff is invoked from a normal privileged P1 Ke service, NEVER
+// on the VBR fault stack. Only one mapped P0 DATA page is replaced.
+// Cache writeback must precede loss of the guest P0 alias; API window,
+// text, stacks, VBR, and host pages are never invalidated here.
+static nt::Status psroot_activate(uint32_t target) {
+#if NTOS_VERIFY_UTLB_SLOTS
+    if(target>1u || !g_ps_root.ready || !g_nt_process.ke.running() ||
+       !mmu::at_enabled())return nt::INVALID_PARAMETER;
+    if(g_ps_root.active==target)return nt::SUCCESS;
+    auto &ctx=ntos_hw::g_context;
+    auto &pager=ctx.table;
+    const uint32_t va=g_ps_root.va;
+    const unsigned before=g_ps_root.active;
+    const int slot=pager.lookup(va);
+    if(!ctx.installed || ctx.service_armed || ctx.user_probe_session ||
+       ctx.guest_guard.armed || pager.servicing ||
+       g_ps_root.module_index>=pager.modules_used ||
+       pager.modules[g_ps_root.module_index].va!=va ||
+       pager.modules[g_ps_root.module_index].pa!=g_ps_root.pa[before] ||
+       slot<0 || !mmu::verify_slot(static_cast<uint32_t>(slot),
+                                    va,g_ps_root.pa[before]))
+        return nt::DEVICE_BUSY;
+    mmu::cache_writeback_invalidate_block(
+        reinterpret_cast<void *>(va),4096u);
+    mmu::cache_writeback_invalidate_block(g_ps_root.backing[before],4096u);
+    if(!pager.invalidate(va,[](void *,unsigned,uint32_t address,uint32_t) {
+           return mmu::invalidate_va_verified(address);
+       },nullptr))
+        return nt::DEVICE_BUSY;
+    pager.modules[g_ps_root.module_index].pa=g_ps_root.pa[target];
+    if(ntos_hw::prime(va,true)) {
+        const int new_slot=pager.lookup(va);
+        if(new_slot>=0 &&
+           mmu::verify_slot(static_cast<unsigned>(new_slot),
+                            va,g_ps_root.pa[target])) {
+            g_ps_root.active=target;
+            ++g_ps_root.switches;
+            return nt::SUCCESS;
+        }
+    }
+    // A failed target install must never publish a new process ID.
+    // Try to recover the old P0 mapping before allowing any guest return.
+    const int partial=pager.lookup(va);
+    if(partial>=0 && !pager.invalidate(va,
+          [](void *,unsigned,uint32_t address,uint32_t) {
+              return mmu::invalidate_va_verified(address);
+          },nullptr))return nt::INTERNAL_ERROR;
+    pager.modules[g_ps_root.module_index].pa=g_ps_root.pa[before];
+    if(!ntos_hw::prime(va,true))return nt::INTERNAL_ERROR;
+    const int recovered=pager.lookup(va);
+    return recovered>=0 &&
+           mmu::verify_slot(static_cast<unsigned>(recovered),
+                            va,g_ps_root.pa[before]) ?
+           nt::DEVICE_BUSY : nt::INTERNAL_ERROR;
+#else
+    (void)target;return nt::NOT_SUPPORTED;
+#endif
+}
+#endif
+static uint32_t ntos_psroot_va(void) {
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    return g_ps_root.ready && g_nt_process.ke.running() ?
+           g_ps_root.va : 0u;
+#else
+    return 0u;
+#endif
+}
+static uint32_t ntos_psroot_current(void) {
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    return g_ps_root.ready ? g_ps_root.active : 0xffffffffu;
+#else
+    return 0xffffffffu;
+#endif
+}
+static uint32_t ntos_psroot_switch(uint32_t target) {
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    // PSTWIN root changes belong exclusively to Ke's scheduler.
+    if(g_ps_root.twin)return nt::DEVICE_BUSY;
+    return psroot_activate(target);
+#else
+    (void)target;return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_pstwin_child_pid(void) {
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    return g_ps_root.twin && g_ps_root.child.active ?
+           g_ps_root.child.unique_process_id : 0u;
+#else
+    return 0u;
 #endif
 }
 static uint32_t ntos_ke_coop_yield(void) {
@@ -1288,6 +1425,12 @@ static uint32_t ntos_ke_coop_yield(void) {
        g_nt_process.ke.thread.exceptions.depth)
         return nt::DEVICE_BUSY;
     if(!g_ke_coop.created || g_ke_coop.exited)return nt::SUCCESS;
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    if(g_ps_root.twin) {
+        const nt::Status gate=psroot_activate(g_ke_coop.active^1u);
+        if(gate!=nt::SUCCESS)return gate;
+    }
+#endif
     nt::CoopSaved *from=nullptr;const nt::CoopSaved *to=nullptr;
     if(!g_ke_coop.next(g_nt_process.ke,&from,&to))
         return nt::DEVICE_BUSY;
@@ -1303,6 +1446,10 @@ static uint32_t ntos_ke_coop_exit(void) {
     if(ctx.service_armed || ctx.user_probe_session ||
        ctx.guest_guard.armed || !mmu::at_enabled())
         return nt::DEVICE_BUSY;
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    if(g_ps_root.twin && psroot_activate(0u)!=nt::SUCCESS)
+        return nt::DEVICE_BUSY;
+#endif
     nt::CoopSaved *from=nullptr;const nt::CoopSaved *to=nullptr;
     if(!g_ke_coop.exit_peer(g_nt_process.ke,&from,&to))
         return nt::INVALID_PARAMETER;
@@ -1350,7 +1497,7 @@ static bool nt_io_check(void *,const void *buffer,uint32_t bytes,bool write) {
 }
 static uint32_t nt_io_pid() {
     return g_nt_process.ke.running() && g_nt_process.space.valid() ?
-        g_nt_process.ke.process.unique_process_id : 0u;
+        ntos_ps_get_current_process_id() : 0u;
 }
 #endif
 static uint32_t ntos_nt_open_device(const char *name,uint32_t *out) {
@@ -1501,12 +1648,18 @@ static uint32_t ntos_ke_exception_depth(void) {
         g_nt_process.ke.thread.exceptions.depth : 0u;
 }
 static uint32_t ntos_ps_address_space_id(void) {
-    return g_nt_process.space.valid() ? g_nt_process.space.owner_pid : 0u;
+    return g_nt_process.space.valid() ?
+           ntos_ps_get_current_process_id() : 0u;
 }
 static uint32_t ntos_ps_address_space_epoch(void) {
     return g_nt_process.space.valid() ? g_nt_process.space.epoch : 0u;
 }
 static uint32_t ntos_ps_inherited_from_process_id(void) {
+#if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
+    if(g_ps_root.twin && g_ps_root.active==1u &&
+       g_ps_root.child.active)
+        return g_ps_root.child.inherited_from_process_id;
+#endif
     return g_nt_process.ke.process.active ?
         g_nt_process.ke.process.inherited_from_process_id : 0u;
 }
