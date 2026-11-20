@@ -1362,6 +1362,26 @@ static nt::Status psroot_activate(uint32_t target) {
        slot<0 || !mmu::verify_slot(static_cast<uint32_t>(slot),
                                     va,g_ps_root.pa[before]))
         return nt::DEVICE_BUSY;
+    // Protect the ENTIRE old-cache -> TLB purge -> new-root install
+    // transaction, not only the P4 associative invalidate. The CPU is
+    // single-core; Ke never runs this on an exception/IRQ stack.
+    struct IrqMask {
+        uint32_t previous=0u;
+        bool armed=false;
+        IrqMask() {
+            __asm__ volatile("stc sr,%0" : "=r"(previous) :: "memory");
+            if((previous&0x70000000u)!=0x40000000u)return;
+            const uint32_t masked=previous|0xF0u;
+            __asm__ volatile("ldc %0,sr\n\tnop" :: "r"(masked) : "memory");
+            armed=true;
+        }
+        ~IrqMask() {
+            if(armed)
+                __asm__ volatile("ldc %0,sr\n\tnop" ::
+                                 "r"(previous) : "memory");
+        }
+    } critical;
+    if(!critical.armed)return nt::DEVICE_BUSY;
     mmu::cache_writeback_invalidate_block(
         reinterpret_cast<void *>(va),4096u);
     mmu::cache_writeback_invalidate_block(g_ps_root.backing[before],4096u);
