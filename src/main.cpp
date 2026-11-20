@@ -766,7 +766,7 @@ static uint32_t ntos_mm_fault_probe_seen(void) {
     return 0u;
 #endif
 }
-static bool ntos_vm_busy() {
+[[maybe_unused]] static bool ntos_vm_busy() {
 #if NTOS_ENABLE_NT_PRIVATE_VM
     return !g_nt_process.active || !g_nt_process.vm.backing ||
            !ntos_hw::g_context.installed || !mmu::at_enabled();
@@ -774,7 +774,7 @@ static bool ntos_vm_busy() {
     return true;
 #endif
 }
-static bool ntos_vm_collides(void *opaque,uint32_t va,uint32_t pages) {
+[[maybe_unused]] static bool ntos_vm_collides(void *opaque,uint32_t va,uint32_t pages) {
 #if NTOS_ENABLE_NT_PRIVATE_VM
     const auto &table=*static_cast<const ntos_fault::Pager *>(opaque);
     for(unsigned i=0u;i<table.modules_used;++i)
@@ -821,7 +821,7 @@ static uint32_t ntos_vm_commit(uint32_t va,uint32_t pages,uint32_t prot) {
     return nt::NOT_SUPPORTED;
 #endif
 }
-static bool ntos_vm_update_ptel(void *,uint32_t va,
+[[maybe_unused]] static bool ntos_vm_update_ptel(void *,uint32_t va,
                                 ntos_mm::Access rights) {
 #if NTOS_ENABLE_NT_PRIVATE_VM
     return ntos_hw::g_context.table.reprotect(
