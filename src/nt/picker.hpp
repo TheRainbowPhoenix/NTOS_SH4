@@ -7,6 +7,33 @@
 namespace ntos_picker {
 constexpr unsigned VISIBLE=29u; // Debug rows 4..32, status/help at 1..3
 enum Action : uint8_t { none=0, redraw=1, launch=2, exit_host=3 };
+// 40-column padded row; actual physical glyph selection is explicit.
+// A two-digit ordinal remains correct for items 10..64; truncate a long
+// filename rather than overrun Debug_Printf's fixed-width framebuffer.
+inline void format_row(char (&line)[41],unsigned zero_based,
+                       unsigned selected,const char *name,uint32_t bytes) {
+    for(unsigned i=0u;i<40u;++i)line[i]=' ';
+    line[40]=0;
+    unsigned pos=0u;
+    const unsigned number=zero_based+1u;
+    line[pos++]=zero_based==selected ? '>' : ' ';
+    line[pos++]=' ';
+    line[pos++]=number>=10u ? char('0'+number/10u) : ' ';
+    line[pos++]=char('0'+number%10u);
+    line[pos++]=':';
+    line[pos++]=' ';
+    if(name)
+        for(unsigned i=0u;name[i] && pos<31u;++i)
+            line[pos++]=name[i];
+    if(pos<40u)line[pos++]=' ';
+    char reversed[12];
+    unsigned len=0u;
+    do {
+        reversed[len++]=char('0'+bytes%10u);
+        bytes/=10u;
+    }while(bytes && len<12u);
+    while(len && pos<40u)line[pos++]=reversed[--len];
+}
 struct Picker {
     unsigned count=0u, selected=0u, first=0u;
     unsigned typed=0u,typed_digits=0u;
