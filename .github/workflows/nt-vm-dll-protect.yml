@@ -39,7 +39,7 @@ jobs:
           test -s dist_vm_baseline/NTOS.hh3
       - name: Build opt-in real CP400 VM and DLL init (NO general exception trap)
         run: |
-          make -j4 BUILDDIR=obj_vm_device OUTDIR=dist_vm_device DEPDIR=.deps_vm_device DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=1" hh3
+          make -j4 BUILDDIR=obj_vm_device OUTDIR=dist_vm_device DEPDIR=.deps_vm_device DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=1 -DNTOS_SH4A_TLB_SYNC_BARRIER=1" hh3
           test -s dist_vm_device/NTOS.hh3
       - name: Build isolated emulator VBR+0x100 protection dispatcher candidate
         run: |
