@@ -1,8 +1,8 @@
-/* MMRDINIT.EXE -- emulator ONLY; protected-read as INITIAL mapping.
+/* MMRDINIT.EXE -- HIGH-RISK protected-read first-mapping probe.
  * Diagnostic pair for MMREAD.EXE, which uses live RW->supervisor PR change.
  * This installs PR=01 on its first UTLB fill; no stale old PR can survive.
  * Expected 0x52444931, PROT=1 REC=1 UNEXP=0, HINT=1, BAD=0.
- * A failed emulator-only experiment must NOT be repeated on real CP400. */
+ * Use only the matching opt-in CP400 VBR candidate; stop at any reset. */
 #include <stdint.h>
 #include "ntapi_caps.h"
 #include "user_read_probe.h"
