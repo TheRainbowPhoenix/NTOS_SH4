@@ -1000,12 +1000,41 @@ static nt::Status native_vm_protect(void *,uint32_t base,uint32_t pages,
     if(s==nt::INTERNAL_ERROR)g_fatal.reason=3u;
     return s;
 }
+// CPU-backed invalidation: single core, interrupts masked across P4 write.
+// The pager metadata is cleared ONLY after both UTLB+ITLB readback succeeds.
+static bool vm_hw_invalidate(void *,unsigned,uint32_t va,uint32_t) {
+    return mmu::invalidate_va_verified(va);
+}
+static bool vm_shootdown(void *,uint32_t va) {
+    auto &vm=g_nt_process.vm;
+    const int ix=vm.find(va);
+    if(ix<0 || vm.pages[ix].frame==0xFFFFu)return false;
+    // Discard old cached page contents before repurposing its P1 frame.
+    mmu::cache_flush_invalidate_block(
+        vm.backing+uint32_t(vm.pages[ix].frame)*4096u,4096u);
+    return ntos_hw::g_context.table.invalidate(
+        va,&vm_hw_invalidate,nullptr);
+}
+static nt::Status native_vm_decommit(void *,uint32_t base,uint32_t pages) {
+#if NTOS_VERIFY_UTLB_SLOTS && NTOS_ENABLE_NT_PRIVATE_VM
+    auto &ctx=ntos_hw::g_context;
+    if(ntos_vm_busy() || !g_nt_process.space.valid() ||
+       !g_nt_process.ke.running() ||
+       ctx.service_armed || ctx.user_probe_session ||
+       ctx.guest_guard.armed || ctx.table.servicing)
+        return nt::DEVICE_BUSY;
+    return g_nt_process.vm.decommit(base,pages,&vm_shootdown,nullptr);
+#else
+    (void)base;(void)pages;return nt::NOT_SUPPORTED;
+#endif
+}
 static nt::Status native_vm_release(void *,uint32_t base) {
     return g_nt_process.vm.release(base);
 }
 static nt::NativeVmOps native_vm_hooks() {
     return {nullptr,&native_vm_reserve,&native_vm_commit,
-                    &native_vm_protect,&native_vm_release};
+                    &native_vm_protect,&native_vm_release,
+                    &native_vm_decommit};
 }
 #endif
 static uint32_t ntos_native_allocate(uint32_t process,uint32_t *base,

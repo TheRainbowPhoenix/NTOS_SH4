@@ -24,6 +24,7 @@ struct NativeVmOps {
     Status (*commit)(void *,uint32_t,uint32_t,uint32_t)=nullptr;
     Status (*protect)(void *,uint32_t,uint32_t,uint32_t,uint32_t *)=nullptr;
     Status (*release)(void *,uint32_t)=nullptr;
+    Status (*decommit)(void *,uint32_t,uint32_t)=nullptr;
 };
 
 inline uint32_t nt_page_to_rights(uint32_t protect) {
@@ -102,11 +103,20 @@ inline Status nt_free_virtual_memory(
     const NativeVmOps &ops,uint32_t process,uint32_t *base,
     uint32_t *region_bytes,uint32_t type) {
     if(process!=NT_CURRENT_PROCESS || !base || !region_bytes ||
-       !ops.release || type!=NT_MEM_RELEASE || *region_bytes!=0u ||
        (*base&(NT_VM_PAGE-1u)) || *base==0u)
         return INVALID_PARAMETER;
+    if(type==NT_MEM_DECOMMIT) {
+        uint32_t pages=0u;
+        if(nt_vm_pages(*region_bytes,&pages)!=SUCCESS)return INVALID_PARAMETER;
+        if(!ops.decommit)return NOT_SUPPORTED;
+        const Status status=ops.decommit(ops.owner,*base,pages);
+        if(status==SUCCESS)*region_bytes=pages*NT_VM_PAGE;
+        return status; // never modify in/out arguments after failure
+    }
+    if(type!=NT_MEM_RELEASE || *region_bytes!=0u || !ops.release)
+        return INVALID_PARAMETER;
     const Status result=ops.release(ops.owner,*base);
-    if(result==SUCCESS)*base=0u; // only after reserved-only release
+    if(result==SUCCESS)*base=0u; // only after decommit or reserved-only release
     return result;
 }
 } // namespace nt

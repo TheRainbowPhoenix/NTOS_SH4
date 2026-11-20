@@ -122,7 +122,9 @@ struct Pager {
     bool invalidate(uint32_t va,Invalidate hw,void *ctx) {
         if(servicing || !hw)return false;
         const int ix=lookup(va);
-        if(ix<0)return true;
+        // Even a nonresident software entry may still have a stale ITLB
+        // alias. The hardware must confirm absence before frame release.
+        if(ix<0)return hw(ctx,SLOTS,va&~(PAGE-1u),0u);
         const Entry before=entries[static_cast<unsigned>(ix)];
         if(!hw(ctx,static_cast<unsigned>(ix),before.va,before.pa))
             return false;
