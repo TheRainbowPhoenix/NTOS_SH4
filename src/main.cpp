@@ -2155,7 +2155,7 @@ int main(int argc, char **argv, char **envp) {
         for(unsigned row=0u;row<ntos_picker::VISIBLE;++row) {
             char line[41];
             for(unsigned c=0u;c<40u;++c)line[c]=' ';
-            line[40]='\\0';
+            line[40]=0;
             const unsigned ordinal=ui.first+row;
             if(ordinal<ui.count) {
                 unsigned p=0u;
