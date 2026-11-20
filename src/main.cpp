@@ -1374,52 +1374,142 @@ static nt::Status psroot_activate(uint32_t target) {
        pager.modules[g_ps_root.module_index].va!=va ||
        pager.modules[g_ps_root.module_index].pa!=g_ps_root.pa[before] ||
        slot<0 || !mmu::verify_slot(static_cast<uint32_t>(slot),
-                                    va,g_ps_root.pa[before]))
+                                   va,g_ps_root.pa[before]))
         return nt::DEVICE_BUSY;
-    // Protect the ENTIRE old-cache -> TLB purge -> new-root install
-    // transaction, not only the P4 associative invalidate. The CPU is
-    // single-core; Ke never runs this on an exception/IRQ stack.
+#if NTOS_ENABLE_PS_EXEC
+    const unsigned code_pages=g_ps_root.exec_pages;
+    if(code_pages) {
+        if(code_pages>8u ||
+           g_ps_root.exec_module_index>=pager.modules_used ||
+           pager.modules[g_ps_root.exec_module_index].va!=
+               g_ps_root.exec_va ||
+           pager.modules[g_ps_root.exec_module_index].pa!=
+               g_ps_root.exec_pa[before] ||
+           pager.modules[g_ps_root.exec_module_index].pages!=code_pages)
+            return nt::DEVICE_BUSY;
+        for(uint32_t i=0u;i<code_pages;++i) {
+            const uint32_t code_va=g_ps_root.exec_va+i*4096u;
+            const int index=pager.lookup(code_va);
+            const uint32_t rights=pager.access(code_va)==
+                     ntos_mm::Access::read_only ?
+                     mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE;
+            if(index<0 || !mmu::verify_slot(
+                   static_cast<uint32_t>(index),code_va,
+                   g_ps_root.exec_pa[before]+i*4096u,rights))
+                return nt::DEVICE_BUSY;
+        }
+    }
+#endif
+    // The entire old-alias writeback / verified UTLB+ITLB removal /
+    // new-root reinstall is one IRQ-excluded transaction. Never call
+    // SDK, heap or host file functions during this privileged interval.
     uint32_t previous=0u;
     __asm__ volatile("stc sr,%0" : "=r"(previous) :: "memory");
     if((previous&0x70000000u)!=0x40000000u)
         return nt::DEVICE_BUSY;
     const uint32_t masked=previous|0xF0u;
     __asm__ volatile("ldc %0,sr\n\tnop" :: "r"(masked) : "memory");
-    // Explicit single restore below. No C++ destructor: an unwind table
-    // would incorrectly pull newlib/exception runtime into tiny HH3.
     const nt::Status result=[&]() -> nt::Status {
-    mmu::cache_writeback_invalidate_block(
-        reinterpret_cast<void *>(va),4096u);
-    mmu::cache_writeback_invalidate_block(g_ps_root.backing[before],4096u);
-    if(!pager.invalidate(va,[](void *,unsigned,uint32_t address,uint32_t) {
-           return mmu::invalidate_va_verified(address);
-       },nullptr))
-        return nt::DEVICE_BUSY;
-    pager.modules[g_ps_root.module_index].pa=g_ps_root.pa[target];
-    if(ntos_hw::prime(va,true)) {
-        const int new_slot=pager.lookup(va);
-        if(new_slot>=0 &&
-           mmu::verify_slot(static_cast<unsigned>(new_slot),
-                            va,g_ps_root.pa[target])) {
-            g_ps_root.active=target;
-            ++g_ps_root.switches;
-            return nt::SUCCESS;
+        auto invalidate=[](void *,unsigned,uint32_t addr,uint32_t) {
+            return mmu::invalidate_va_verified(addr);
+        };
+        // On any partial P4 failure, recover ALL old pages before
+        // allowing guest code to execute. PID/root is still unpublished.
+        auto recover=[&]() -> nt::Status {
+#if NTOS_ENABLE_PS_EXEC
+            for(uint32_t i=0u;i<code_pages;++i) {
+                const uint32_t code_va=g_ps_root.exec_va+i*4096u;
+                if(!pager.invalidate(code_va,invalidate,nullptr)) {
+                    g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+                }
+            }
+            if(code_pages)
+                pager.modules[g_ps_root.exec_module_index].pa=
+                    g_ps_root.exec_pa[before];
+#endif
+            if(!pager.invalidate(va,invalidate,nullptr)) {
+                g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+            }
+            pager.modules[g_ps_root.module_index].pa=g_ps_root.pa[before];
+#if NTOS_ENABLE_PS_EXEC
+            for(uint32_t i=0u;i<code_pages;++i) {
+                const uint32_t code_va=g_ps_root.exec_va+i*4096u;
+                if(!ntos_hw::prime(code_va,true)) {
+                    g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+                }
+                const int code_slot=pager.lookup(code_va);
+                const uint32_t flags=pager.access(code_va)==
+                           ntos_mm::Access::read_only ?
+                           mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE;
+                if(code_slot<0 || !mmu::verify_slot(
+                        static_cast<unsigned>(code_slot),code_va,
+                        g_ps_root.exec_pa[before]+i*4096u,flags)) {
+                    g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+                }
+            }
+#endif
+            if(!ntos_hw::prime(va,true)) {
+                g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+            }
+            const int old_slot=pager.lookup(va);
+            if(old_slot<0 || !mmu::verify_slot(
+                   static_cast<unsigned>(old_slot),va,g_ps_root.pa[before])) {
+                g_fatal.reason=4u;return nt::INTERNAL_ERROR;
+            }
+            return nt::DEVICE_BUSY;
+        };
+#if NTOS_ENABLE_PS_EXEC
+        // Purge BOTH guest P0 instruction-cache and P1 backing aliases
+        // before the physical text/data root changes at the SAME VPN.
+        for(uint32_t i=0u;i<code_pages;++i) {
+            const uint32_t code_va=g_ps_root.exec_va+i*4096u;
+            mmu::cache_writeback_invalidate_block(
+                reinterpret_cast<void *>(code_va),4096u);
+            mmu::cache_flush_invalidate_block(
+                reinterpret_cast<void *>(code_va),4096u);
+            mmu::cache_writeback_invalidate_block(
+                g_ps_root.exec_backing[before]+i*4096u,4096u);
         }
-    }
-    // A failed target install must never publish a new process ID.
-    // Try to recover the old P0 mapping before allowing any guest return.
-    const int partial=pager.lookup(va);
-    if(partial>=0 && !pager.invalidate(va,
-          [](void *,unsigned,uint32_t address,uint32_t) {
-              return mmu::invalidate_va_verified(address);
-          },nullptr))return nt::INTERNAL_ERROR;
-    pager.modules[g_ps_root.module_index].pa=g_ps_root.pa[before];
-    if(!ntos_hw::prime(va,true))return nt::INTERNAL_ERROR;
-    const int recovered=pager.lookup(va);
-    return recovered>=0 &&
-           mmu::verify_slot(static_cast<unsigned>(recovered),
-                            va,g_ps_root.pa[before]) ?
-           nt::DEVICE_BUSY : nt::INTERNAL_ERROR;
+        for(uint32_t i=0u;i<code_pages;++i)
+            if(!pager.invalidate(g_ps_root.exec_va+i*4096u,
+                                 invalidate,nullptr))
+                return recover();
+#endif
+        mmu::cache_writeback_invalidate_block(
+            reinterpret_cast<void *>(va),4096u);
+        mmu::cache_writeback_invalidate_block(
+            g_ps_root.backing[before],4096u);
+        if(!pager.invalidate(va,invalidate,nullptr))return recover();
+#if NTOS_ENABLE_PS_EXEC
+        if(code_pages)
+            pager.modules[g_ps_root.exec_module_index].pa=
+                g_ps_root.exec_pa[target];
+#endif
+        pager.modules[g_ps_root.module_index].pa=g_ps_root.pa[target];
+#if NTOS_ENABLE_PS_EXEC
+        for(uint32_t i=0u;i<code_pages;++i) {
+            const uint32_t code_va=g_ps_root.exec_va+i*4096u;
+            if(!ntos_hw::prime(code_va,true))return recover();
+            const int new_slot=pager.lookup(code_va);
+            const uint32_t flags=pager.access(code_va)==
+                        ntos_mm::Access::read_only ?
+                        mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE;
+            if(new_slot<0 || !mmu::verify_slot(
+                   static_cast<unsigned>(new_slot),code_va,
+                   g_ps_root.exec_pa[target]+i*4096u,flags))
+                return recover();
+        }
+#endif
+        if(!ntos_hw::prime(va,true))return recover();
+        const int new_slot=pager.lookup(va);
+        if(new_slot<0 ||
+           !mmu::verify_slot(static_cast<unsigned>(new_slot),
+                             va,g_ps_root.pa[target]))
+            return recover();
+        // Only now publish the new process root and its private P0 data.
+        g_ps_root.active=target;
+        ++g_ps_root.switches;
+        return nt::SUCCESS;
     }();
     __asm__ volatile("ldc %0,sr\n\tnop" :: "r"(previous) : "memory");
     return result;
