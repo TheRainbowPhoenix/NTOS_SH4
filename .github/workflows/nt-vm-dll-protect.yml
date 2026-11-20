@@ -1,11 +1,8 @@
-name: NT private VM, protected guest exception and DLL initialization
+name: Ke Ps SH4A user syscall and single CP400 bundle
 on:
   push:
     branches:
-      - feat/nt-vm-prot-exception-dll-init-20261120
-      - fix/mm-prot-tlb-and-picker-jump-20261120
-      - fix/cp400-guest-prot-trap-user-probe-20261120
-      - fix/cp400-protect-write-user-trap-ntvm-20261120
+      - feat/ke-ps-kthread-user-syscall-20261120
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   sh4be-vm-dll:
-    name: Host safety tests + three gated SH4BE firmware profiles
+    name: Ke/Ps host regressions + one proven-compatible CP400 SH4BE profile
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
@@ -29,96 +26,46 @@ jobs:
       - name: Run NT Ob/Ex, VM transactions, guarded exception, DLL rollback, FS, 55-slot and font host regressions
         run: |
           set -eu
-          for name in nt_picker_test nt_native_vm_test nt_virtual_memory_test nt_guest_exception_test nt_dll_lifecycle_test nt_mm_permissions_test nt_launch_policy_test fault_pager_test nt_p0p2_host_test nt_io_injection_test nt_executive_test nt_flash_guard_test fs_guard_test console_glyph_test console_host_test; do
+          for name in nt_ke_ps_test nt_picker_test nt_native_vm_test nt_virtual_memory_test nt_guest_exception_test nt_dll_lifecycle_test nt_mm_permissions_test nt_launch_policy_test fault_pager_test nt_p0p2_host_test nt_io_injection_test nt_executive_test nt_flash_guard_test fs_guard_test console_glyph_test console_host_test; do
             g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 "tests/$name.cpp" -o "/tmp/$name"
             "/tmp/$name"
           done
           gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/coredll-files
           /tmp/coredll-files
-      - name: Build unchanged-default no-new-feature SH4A firmware
+      - name: Build one CP400 firmware with Ke/Ps and proven protection handler
         run: |
-          make -j4 BUILDDIR=obj_vm_baseline OUTDIR=dist_vm_baseline DEPDIR=.deps_vm_baseline DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1" hh3
-          test -s dist_vm_baseline/NTOS.hh3
-      - name: Build opt-in real CP400 VM and DLL init (NO general exception trap)
+          set -eu
+          make -j4 BUILDDIR=obj_ke_cp400 OUTDIR=dist_ke_cp400 DEPDIR=.deps_ke_cp400 DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=1 -DNTOS_ENABLE_GUEST_PROTECT_DISPATCH=1 -DNTOS_SH4A_TLB_SYNC_BARRIER=1 -DNTOS_VERIFY_UTLB_SLOTS=1 -DNTOS_ENABLE_KE_USER_SYSCALL=1" hh3
+          test -s dist_ke_cp400/NTOS.hh3
+      - name: Build all matching SH4BE EXE/DLL and audit real syscall opcodes
         run: |
-          make -j4 BUILDDIR=obj_vm_device OUTDIR=dist_vm_device DEPDIR=.deps_vm_device DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=1 -DNTOS_SH4A_TLB_SYNC_BARRIER=1" hh3
-          test -s dist_vm_device/NTOS.hh3
-      - name: Build isolated emulator VBR+0x100 protection dispatcher candidate
-        run: |
-          make -j4 BUILDDIR=obj_vm_guard OUTDIR=dist_vm_guard DEPDIR=.deps_vm_guard DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=1 -DNTOS_ENABLE_GUEST_PROTECT_DISPATCH=1 -DNTOS_SH4A_TLB_SYNC_BARRIER=1 -DNTOS_VERIFY_UTLB_SLOTS=1" hh3
-          test -s dist_vm_guard/NTOS.hh3
-      - name: Build all matching real SH4BE PE init, VM, pager and loader fixtures
-        run: |
+          set -eu
           make -j4 ntx
           make -j4 nt-vm-dll-probes nt-exec-probes dist_ntprobe/MMROTEST.EXE
-          for p in PROTSTATE.EXE NATIVEVM.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE; do
+          for p in KTHREAD.EXE PROTSTATE.EXE NATIVEVM.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE IOTEST.EXE; do
             test -s "dist_ntprobe/$p"
           done
           python3 tools/check_large4m_pe.py dist_ntprobe/LARGE4M.EXE
           python3 tools/check_protected_pe.py dist_ntprobe/MMROTEST.EXE dist_ntprobe/MMGUARD.EXE
-          python3 tools/check_user_probe_elf.py obj_ntprobe/mmread.elf obj_ntprobe/mmrdinit.elf obj_ntprobe/mmguard.elf
+          python3 tools/check_user_probe_elf.py obj_ntprobe/mmread.elf obj_ntprobe/mmrdinit.elf obj_ntprobe/mmguard.elf obj_ntprobe/kthread.elf
           g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/pe_stream_test.cpp -o /tmp/pe-stream
           /tmp/pe-stream dist/COREDLL.DLL dist/CHAINTEST.EXE dist_ntprobe/LARGE4M.EXE
-      - name: Upload physical-device opt-in VM and DLL fixture (NO illegal write)
+      - name: Assemble ONE matching CP400 kit with firmware and ALL tests
+        run: |
+          set -eu
+          mkdir -p ntos_cp400_all
+          cp dist_ke_cp400/NTOS.hh3 ntos_cp400_all/NTOS.hh3
+          cp dist/*.EXE dist/*.DLL ntos_cp400_all/
+          cp dist_ntprobe/*.EXE dist_ntprobe/*.DLL ntos_cp400_all/
+          cp docs/NTOS_KE_PS_SYSTEM_SERVICE_20261120.md ntos_cp400_all/README.md
+          test -s ntos_cp400_all/NTOS.hh3
+          test -s ntos_cp400_all/KTHREAD.EXE
+          test -s ntos_cp400_all/COREDLL.DLL
+          test -s ntos_cp400_all/MMGUARD.EXE
+      - name: Upload ONLY ONE all-in-one CP400 package
         uses: actions/upload-artifact@v7
         with:
-          name: NTOS-CP400-PRIVATE-VM-DLL-LIFECYCLE-EXPERIMENTAL-NO-MMGUARD
-          path: |
-            dist_vm_device/NTOS.hh3
-            dist_ntprobe/NATIVEVM.EXE
-            dist_ntprobe/VMTEST.EXE
-            dist_ntprobe/MMROTEST.EXE
-            dist_ntprobe/INITGOOD.DLL
-            dist_ntprobe/INITFAIL.DLL
-            dist_ntprobe/INITPASS.EXE
-            dist_ntprobe/INITFAIL.EXE
-            dist_ntprobe/OBTEST.EXE
-            dist_ntprobe/PROCTEST.EXE
-            dist_ntprobe/PROCNEXT.EXE
-            dist_ntprobe/PROCFINAL.EXE
-            dist_ntprobe/IOTEST.EXE
-            dist/HELLO.EXE
-            dist/PAGERTEST.EXE
-            dist/PAGERSTRESS.DLL
-          if-no-files-found: error
-          retention-days: 30
-      - name: Upload real-device opt-in VBR+0x100 guarded protection candidate
-        uses: actions/upload-artifact@v7
-        with:
-          name: NTOS-CP400-CONTROLLED-VBR-PROTECTION-TRAPA-REBOOT-RISK
-          path: |
-            dist_vm_guard/NTOS.hh3
-            dist_ntprobe/MMGUARD.EXE
-            dist_ntprobe/MMREAD.EXE
-            dist_ntprobe/MMRDINIT.EXE
-            dist_ntprobe/PROTSTATE.EXE
-            dist_ntprobe/MMROTEST.EXE
-            dist_ntprobe/PROTSTATE.EXE
-            dist_ntprobe/NATIVEVM.EXE
-            dist_ntprobe/VMTEST.EXE
-            dist_ntprobe/INITPASS.EXE
-            dist_ntprobe/INITGOOD.DLL
-            dist/HELLO.EXE
-            dist/PAGERTEST.EXE
-            dist/PAGERSTRESS.DLL
-          if-no-files-found: error
-          retention-days: 30
-      - name: Upload separately gated emulator-only read/write protection tests
-        uses: actions/upload-artifact@v7
-        with:
-          name: NTOS-EMULATOR-ONLY-EXPEVT-0A0-0C0-RECOVERABLE-GUEST-TRAPS
-          path: |
-            dist_vm_guard/NTOS.hh3
-            dist_ntprobe/MMGUARD.EXE
-            dist_ntprobe/MMREAD.EXE
-            dist_ntprobe/MMRDINIT.EXE
-            dist_ntprobe/PROTSTATE.EXE
-            dist_ntprobe/NATIVEVM.EXE
-            dist_ntprobe/VMTEST.EXE
-            dist_ntprobe/INITGOOD.DLL
-            dist_ntprobe/INITFAIL.DLL
-            dist_ntprobe/INITPASS.EXE
-            dist_ntprobe/INITFAIL.EXE
-            dist/HELLO.EXE
+          name: NTOS-CP400-KE-PS-ALL-IN-ONE
+          path: ntos_cp400_all/
           if-no-files-found: error
           retention-days: 30
