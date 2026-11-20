@@ -1,6 +1,6 @@
 # CP400 kernel test order — SH4AL-DSP (NO FPU)
 
-Single matched ZIP. Back up the known-good NTOS.hh3. This candidate exercises a real P4 UTLB associative invalidation and ITLB readback. This experimental build requires >=2048 free bytes below 0x8D000000; normal builds keep a larger margin. Do not run on a kit you cannot recover; restore last validated HH3 on reset.
+Single matched ZIP. Back up the known-good NTOS.hh3. This candidate exercises a real P4 UTLB associative invalidation and ITLB readback. This experimental build requires >=1536 free bytes below 0x8D000000; normal builds keep a larger margin. Do not run on a kit you cannot recover; restore last validated HH3 on reset.
 
 1. `KTHREAD.EXE` => **0x4B540010**, SVC=3 YIELD=1 BADGATE=0.
 2. `KEXCEPT.EXE` => **0x4B455801**, PROT=1 USRRET=1.
