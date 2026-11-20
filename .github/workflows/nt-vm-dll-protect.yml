@@ -4,6 +4,7 @@ on:
     branches:
       - feat/ke-ps-kthread-user-syscall-20261120
       - feat/ke-thread-exception-dispatch-20261120
+      - feat/kexcept-aspace-prep-20261120
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,7 +28,7 @@ jobs:
       - name: Run NT Ob/Ex, VM transactions, guarded exception, DLL rollback, FS, 55-slot and font host regressions
         run: |
           set -eu
-          for name in nt_ke_ps_test nt_thread_exceptions_test nt_picker_test nt_native_vm_test nt_virtual_memory_test nt_guest_exception_test nt_dll_lifecycle_test nt_mm_permissions_test nt_launch_policy_test fault_pager_test nt_p0p2_host_test nt_io_injection_test nt_executive_test nt_flash_guard_test fs_guard_test console_glyph_test console_host_test; do
+          for name in nt_ke_ps_test nt_thread_exceptions_test nt_address_space_test nt_scheduler_test nt_live_decommit_test nt_picker_test nt_native_vm_test nt_virtual_memory_test nt_guest_exception_test nt_dll_lifecycle_test nt_mm_permissions_test nt_launch_policy_test fault_pager_test nt_p0p2_host_test nt_io_injection_test nt_executive_test nt_flash_guard_test fs_guard_test console_glyph_test console_host_test; do
             g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 "tests/$name.cpp" -o "/tmp/$name"
             "/tmp/$name"
           done
@@ -45,12 +46,12 @@ jobs:
           set -eu
           make -j4 ntx
           make -j4 nt-vm-dll-probes nt-exec-probes dist_ntprobe/MMROTEST.EXE
-          for p in KTHREAD.EXE PROTSTATE.EXE NATIVEVM.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE IOTEST.EXE; do
+          for p in KTHREAD.EXE KEXCEPT.EXE ASOWN.EXE PROTSTATE.EXE NATIVEVM.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE IOTEST.EXE; do
             test -s "dist_ntprobe/$p"
           done
           python3 tools/check_large4m_pe.py dist_ntprobe/LARGE4M.EXE
           python3 tools/check_protected_pe.py dist_ntprobe/MMROTEST.EXE dist_ntprobe/MMGUARD.EXE
-          python3 tools/check_user_probe_elf.py obj_ntprobe/mmread.elf obj_ntprobe/mmrdinit.elf obj_ntprobe/mmguard.elf obj_ntprobe/kthread.elf
+          python3 tools/check_user_probe_elf.py obj_ntprobe/mmread.elf obj_ntprobe/mmrdinit.elf obj_ntprobe/mmguard.elf obj_ntprobe/kthread.elf obj_ntprobe/kexcept.elf
           g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/pe_stream_test.cpp -o /tmp/pe-stream
           /tmp/pe-stream dist/COREDLL.DLL dist/CHAINTEST.EXE dist_ntprobe/LARGE4M.EXE
       - name: Assemble ONE matching CP400 kit with firmware and ALL tests
@@ -60,9 +61,11 @@ jobs:
           cp dist_ke_cp400/NTOS.hh3 ntos_cp400_all/NTOS.hh3
           cp dist/*.EXE dist/*.DLL ntos_cp400_all/
           cp dist_ntprobe/*.EXE dist_ntprobe/*.DLL ntos_cp400_all/
-          cp docs/NTOS_KE_PS_SYSTEM_SERVICE_20261120.md ntos_cp400_all/README.md
+          cp docs/NTOS_KE_EXCEPT_ASPACE_TEST_20261120.md ntos_cp400_all/README.md
           test -s ntos_cp400_all/NTOS.hh3
           test -s ntos_cp400_all/KTHREAD.EXE
+          test -s ntos_cp400_all/KEXCEPT.EXE
+          test -s ntos_cp400_all/ASOWN.EXE
           test -s ntos_cp400_all/COREDLL.DLL
           test -s ntos_cp400_all/MMGUARD.EXE
       - name: Upload ONLY ONE all-in-one CP400 package

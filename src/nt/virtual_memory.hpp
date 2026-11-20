@@ -24,6 +24,8 @@ enum class VmAccess : uint8_t {
 };
 using VmCollision=bool (*)(void *,uint32_t,uint32_t);
 using VmRemap=bool (*)(void *,uint32_t,ntos_mm::Access);
+// Must synchronously invalidate BOTH UTLB/ITLB before releasing any frame.
+using VmShootdown=bool (*)(void *,uint32_t);
 template<unsigned CAPACITY=64u,unsigned REGIONS=8u>
 struct VirtualMemory {
     static_assert(CAPACITY>0u && CAPACITY<=256u);
@@ -199,6 +201,29 @@ struct VirtualMemory {
                 }
                 return rollback_ok?DEVICE_BUSY:INTERNAL_ERROR;
             }
+        }
+        return SUCCESS;
+    }
+    // Staged live-decommit primitive. Not connected to guest APIs until the
+    // CPU callback guarantees IRQ exclusion + UTLB/ITLB readback. A partial
+    // failure leaves ALL frames owned; invalidated pages can fault back in.
+    Status decommit(uint32_t base,unsigned count,
+                    VmShootdown shootdown,void *context) {
+        if(!backing || !count || !is_reserved(base,count) || !shootdown)
+            return INVALID_PARAMETER;
+        for(unsigned i=0u;i<count;++i) {
+            const int ix=find(base+i*VM_PAGE);
+            if(ix<0 || pages[ix].frame==0xFFFFu)return NOT_COMMITTED;
+        }
+        for(unsigned i=0u;i<count;++i)
+            if(!shootdown(context,base+i*VM_PAGE))
+                return DEVICE_BUSY; // NO frame reuse on failed shootdown
+        for(unsigned i=0u;i<count;++i) {
+            Page &page=pages[static_cast<unsigned>(find(base+i*VM_PAGE))];
+            frames[page.frame]=false;
+            page.frame=0xFFFFu;
+            page.access=VmAccess::reserved;
+            --committed_pages;
         }
         return SUCCESS;
     }

@@ -38,6 +38,8 @@ struct Entry {
 // Install callback final argument: 0=RW, 1=RO, 2=debug-only supervisor.
 // Existing unprotected callers still pass 0. This is NOT a SH7705 way.
 using Install=bool (*)(void *,uint32_t,uint32_t,unsigned,unsigned);
+// Must prove old VA absent from UTLB AND ITLB; never a metadata-only drop.
+using Invalidate=bool (*)(void *,unsigned,uint32_t,uint32_t);
 // The private VM arena supplies committed physical frames from P1 RAM.
 // The VBR ISR never calls the allocator or filesystem.
 using ExtraResolve=bool (*)(void *,uint32_t,uint32_t *,ntos_mm::Access *);
@@ -114,6 +116,18 @@ struct Pager {
             if(entries[i].present && entries[i].va==va)
                 return static_cast<int>(i);
         return -1;
+    }
+    // Only clear pager metadata AFTER the hardware callback confirms its
+    // UTLB slot AND ITLB alias are invalidated. No callback => fail closed.
+    bool invalidate(uint32_t va,Invalidate hw,void *ctx) {
+        if(servicing || !hw)return false;
+        const int ix=lookup(va);
+        if(ix<0)return true;
+        const Entry before=entries[static_cast<unsigned>(ix)];
+        if(!hw(ctx,static_cast<unsigned>(ix),before.va,before.pa))
+            return false;
+        entries[static_cast<unsigned>(ix)]=Entry{};
+        return true;
     }
     // Reinstall the same slot with updated PTEL.PR rights. Nonresident
     // pages inherit their new permission when subsequently faulted in.
