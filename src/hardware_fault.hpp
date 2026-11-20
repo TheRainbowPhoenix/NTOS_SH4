@@ -287,7 +287,7 @@ extern "C" int ntos_general_exception_callback(
                 c.service_next_pc,c.service_saved_sr,
                 c.service_expected,guest_service) ||
            !ntos_hw::executable_page(&c.table,spc)) {
-            ++c.service_rejected;
+            c.service_rejected=c.service_rejected+1u;
             return 0; // always forward malformed/foreign traps to host
         }
         uint32_t sgr=0u;
@@ -296,11 +296,11 @@ extern "C" int ntos_general_exception_callback(
         const nt::Status result=c.ke->dispatch(
             spc,ssr,sgr,tra,guest_service,guest_arg,&output);
         if(result!=nt::SUCCESS) {
-            ++c.service_rejected;
+            c.service_rejected=c.service_rejected+1u;
             return 0;
         }
         c.service_armed=false;
-        ++c.service_completed;
+        c.service_completed=c.service_completed+1u;
         // In exception SR.RB=1; r0_bank names the suspended user r0.
         // Never patch bank-1 r0, which carries the trampoline result.
         __asm__ volatile("ldc %0,r0_bank" :: "r"(output) : "memory");
