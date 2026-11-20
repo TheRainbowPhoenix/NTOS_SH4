@@ -32,6 +32,8 @@
 #include "host_world.hpp"
 #include "irq_handoff.hpp"
 #include "mmu.hpp"
+#include "nt/mm_protect.hpp"
+#include "nt/launch_policy.hpp"
 #include "fs_guard.hpp"
 #include "nt/process.hpp"
 
@@ -97,6 +99,9 @@ struct NtosApi {
     uint32_t (*ex_pool_peak)(void);                         // [35]
     uint32_t (*ex_pool_live)(void);                         // [36]
     uint32_t (*ob_handle_count)(void);                      // [37]
+    uint32_t (*mm_page_rights)(uint32_t);                  // [38] Mm RO/RW metadata
+    int32_t (*mm_arm_fault_probe)(uint32_t,uint32_t);      // [39] VA, expected EXPEVT
+    uint32_t (*mm_fault_probe_seen)(void);                 // [40] VBR canary callback count
 };
 
 static int cur_row = 0;
@@ -411,6 +416,9 @@ static uint32_t ntos_getkey(void) {
 }
 
 static int32_t ntos_page_hint(uint32_t va);
+static uint32_t ntos_mm_page_rights(uint32_t va);
+static int32_t ntos_mm_arm_fault_probe(uint32_t va,uint32_t event);
+static uint32_t ntos_mm_fault_probe_seen(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -536,6 +544,9 @@ static NtosApi g_ntos_api = {
     &ntos_ex_pool_peak,  // [35]
     &ntos_ex_pool_live,  // [36]
     &ntos_ob_handle_count, // [37]
+    &ntos_mm_page_rights, // [38]
+    &ntos_mm_arm_fault_probe, // [39]
+    &ntos_mm_fault_probe_seen, // [40]
 };
 
 // ---------------------------------------------------------------------------
@@ -688,6 +699,31 @@ static int32_t ntos_page_hint(uint32_t va) {
 #else
     (void)va;
     return -1;
+#endif
+}
+static uint32_t ntos_mm_page_rights(uint32_t va) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    auto &ctx=ntos_hw::g_context;
+    if(!ctx.installed || !mmu::at_enabled())return 0u;
+    return ntos_hw::protection(va);
+#else
+    (void)va;
+    return 0u;
+#endif
+}
+static int32_t ntos_mm_arm_fault_probe(uint32_t va,uint32_t event) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    return ntos_hw::arm_probe(va,event);
+#else
+    (void)va;(void)event;
+    return -1;
+#endif
+}
+static uint32_t ntos_mm_fault_probe_seen(void) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    return ntos_hw::g_context.probe_seen;
+#else
+    return 0u;
 #endif
 }
 
@@ -1455,7 +1491,8 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         for(unsigned i=0u;i<count;++i)
             if(!ntos_hw::add_module(nodes[i].mapped.base,
                                     nodes[i].mapped.image,
-                                    nodes[i].mapped.npages)) {
+                                    nodes[i].mapped.npages,
+                                    &nodes[i].hdr)) {
                 *err="cannot register virtual DLL backing";goto done;
             }
         if(eager_experiment) {
@@ -1496,8 +1533,18 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         for(unsigned i=0u;i<count;++i) {
             const MappedImage &m=nodes[i].mapped;
             for(uint32_t p=0u;p<m.npages;++p,++slot)
-                mmu::map_page_at_index(m.base+p*0x1000u,
-                    mmu::phys_addr(m.image+p*0x1000u),slot,0u);
+                mmu::map_page_at_index_flags(
+                    m.base+p*0x1000u,
+                    mmu::phys_addr(m.image+p*0x1000u),
+                    slot,
+#if NTOS_ENFORCE_PE_PAGE_PERMISSIONS
+                    ntos_mm::pe_page_access(nodes[i].hdr,p)==
+                            ntos_mm::Access::read_only ?
+                        mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE
+#else
+                    mmu::PTEL_PAGE
+#endif
+                );
         }
         for(uint32_t p=0u;p<mmu::API_WINDOW_PAGES;++p)
             mmu::map_page_at_index(
@@ -1595,6 +1642,16 @@ done:
         log_text(p," MMUCR="); log_number(p,ntos_hw::g_context.last_mmucr,16,8);
         *p=0; ntos_puts(msg);
     }
+#if NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE
+    if(ntos_hw::g_context.probe_seen || ntos_hw::g_context.probe_armed) {
+        char msg[72], *p=msg;
+        log_text(p,"VBR-CANARY seen=");
+        log_number(p,ntos_hw::g_context.probe_seen,10);
+        log_text(p," other=");
+        log_number(p,ntos_hw::g_context.probe_unexpected,10);
+        *p=0;ntos_puts(msg);
+    }
+#endif
     LCD_Refresh();
 #endif
     // Payloads may exit or fail without calling CloseHandle/FindClose.
@@ -2089,13 +2146,21 @@ int main(int argc, char **argv, char **envp) {
                 wait_error_key_release();
             }
             if(!pending_app[0]) {
-                // A stub/Settings/Calculator exit goes straight back to Start.
-                bool is_home=true;const char *home="\\fls0\\STARTHOST.EXE";
-                for(unsigned j=0;home[j]||next[j];++j){char a=home[j],b=next[j];
-                    if(a>='a'&&a<='z')a-=32;
-                    if(b>='a'&&b<='z')b-=32;
-                    if(a!=b){is_home=false;break;}}
-                if(is_home)break;
+                // A stub/Settings/Calculator exit returns to Start only
+                // if that optional phone shell EXE is installed. Completed
+                // PROCTEST chains must return cleanly to the picker instead
+                // of producing a misleading missing-PE error.
+                const bool queue_home=ntos_launch_policy::queue_optional_home(
+                    next,[](const char *home) {
+                        // Called in restored host context after SDK close.
+                        // File_Stat is handle-free and never runs when the
+                        // single-owner gate is busy or poisoned.
+                        if(g_fs.busy() || g_fs.poisoned)return false;
+                        struct File_Stat st{};
+                        return File_Stat(home,&st)==0;
+                    });
+                if(!queue_home)break;
+                const char *home=ntos_launch_policy::HOME;
                 unsigned j=0;for(;home[j];++j)pending_app[j]=home[j];pending_app[j]=0;
             }
         }

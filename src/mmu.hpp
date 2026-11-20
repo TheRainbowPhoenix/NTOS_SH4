@@ -60,8 +60,15 @@ constexpr uint32_t SLOT_API_FIRST     = 0x37u;
 constexpr uint32_t SLOT_API_LAST      = 0x3Au;
 constexpr uint32_t SLOT_NULL_GUARD    = 0x3Fu;
 
-// Page entry flags: 4 KiB, shared, user RW, cacheable, valid.
+// Hardware SH4A PTEL.PR encodes privilege-independent access rights:
+// PR=10b -> read-only user/supervisor; PR=11b -> read/write.
+// These are REAL hardware mapping rights, not metadata-only annotations.
+// SH7305 has no NX bit. Keep API window RW for ABI compatibility.
 constexpr uint32_t PTEL_PAGE = 0x0000017Cu;
+constexpr uint32_t PTEL_PAGE_READ_ONLY = 0x0000015Cu;
+constexpr uint32_t PTEL_PR_MASK = 0x00000060u;
+static_assert((PTEL_PAGE&PTEL_PR_MASK)==0x60u);
+static_assert((PTEL_PAGE_READ_ONLY&PTEL_PR_MASK)==0x40u);
 
 // API window virtual address (OS330 C1A contract): first word of the window
 // points at the syscall table.
@@ -119,16 +126,21 @@ inline void flush_tlb(void) {
     cache_invalidate_all();
 }
 
-// Install one 4 KiB page mapping at a fixed UTLB slot. `pa` is a
-// physical page base, generally derived from a P1 address using PA_MASK.
-// The legacy final parameter is ignored: SH7305 has no 4-way UTLB index.
+// Only the two validated PR encodings are accepted. A protected PE module
+// cannot accidentally pass reserved flags or rewrite the API window.
+inline bool map_page_at_index_flags(uint32_t va,uint32_t pa,uint32_t slot,
+                                    uint32_t pte_flags) {
+    if(slot>=UTLB_ENTRIES ||
+       (pte_flags!=PTEL_PAGE && pte_flags!=PTEL_PAGE_READ_ONLY))
+        return false;
+    tlb_install_entry(va,pa&PA_MASK,pte_flags,slot);
+    return true;
+}
+
+// Backward-compatible OS330 RW map used by all existing unprotected builds.
 inline void map_page_at_index(uint32_t va, uint32_t pa, uint32_t slot,
                               uint32_t /*unused_way*/) {
-    // Protect the fixed API and rotating mappings from accidental slot
-    // overflow. The caller owns slot allocation, and this never infers
-    // a slot from VPN bits.
-    if(slot>=UTLB_ENTRIES) return;
-    tlb_install_entry(va, pa & PA_MASK, PTEL_PAGE, slot);
+    (void)map_page_at_index_flags(va,pa,slot,PTEL_PAGE);
 }
 
 // Opt-in diagnostic only. gint's SH7305 (NOT SH7705) arrays expose
@@ -138,7 +150,8 @@ inline void map_page_at_index(uint32_t va, uint32_t pa, uint32_t slot,
 #define NTOS_VERIFY_UTLB_SLOTS 0
 #endif
 #if NTOS_VERIFY_UTLB_SLOTS && defined(__sh__)
-inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa) {
+inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa,
+                        uint32_t expected_flags=PTEL_PAGE) {
     if(slot>=UTLB_ENTRIES)return false;
     const uint32_t addr=*reinterpret_cast<volatile const uint32_t *>(
         0xF6000000u+(slot<<8));
@@ -150,7 +163,9 @@ inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa) {
            (addr&0x00000100u)!=0u &&
            (data&0x00000100u)!=0u &&
            (data&0x1FFFF000u)==(pa&0x1FFFF000u) &&
-           (data&PTEL_PAGE)==PTEL_PAGE;
+           (expected_flags==PTEL_PAGE ||
+            expected_flags==PTEL_PAGE_READ_ONLY) &&
+           (data&PTEL_PAGE)==expected_flags;
 }
 #endif
 

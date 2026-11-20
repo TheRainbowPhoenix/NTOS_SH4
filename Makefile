@@ -586,6 +586,17 @@ $(NT_PROBE_DIST)/IOTEST.EXE: $(NT_PROBE_BUILD)/iotest.elf tools/elf2ntx.py
 	@mkdir -p $(NT_PROBE_DIST)
 	$(PYTHON) tools/elf2ntx.py $< -o $@
 
+# Actual SH7305 PR=10/11 (RO/RW) probe, only for opt-in Mm builds.
+# The deliberately unhinted FAULTCAN is strictly emulator-only. Keep it
+# separate from normal and safe-intent device bundles.
+$(NT_PROBE_DIST)/MMROTEST.EXE: $(NT_PROBE_BUILD)/mmrotest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/FAULTCAN.EXE: $(NT_PROBE_BUILD)/faultcan.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
 NT_SAFE_PROBES := $(addprefix $(NT_PROBE_DIST)/,POOLTEST.EXE EVTEST.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE MMTEST.EXE IOTEST.EXE)
 
 # Deliberately unresolved DLL import: exercises failure before guest entry.
