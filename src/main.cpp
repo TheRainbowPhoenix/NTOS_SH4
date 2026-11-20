@@ -2188,7 +2188,8 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         if(!read_pe_source("\\fls0\\PEPEER.EXE",false,false,
                            &second_hdr,&second_exe,&second_file_size,err))
             goto done;
-        if(second_hdr.oh.import_rva || !second_hdr.oh.entry_rva ||
+        if((second_hdr.fh.characteristics&pe::F_DLL) ||
+           second_hdr.oh.import_rva || !second_hdr.oh.entry_rva ||
            second_hdr.oh.size_of_image>65536u ||
            second_exe.npages>16u) {
             *err="PEPAIR second EXE must be import-free and <=64 KiB";
