@@ -2154,26 +2154,14 @@ int main(int argc, char **argv, char **envp) {
             "%s","EXE run | 0-9 jump | BACK edit | UP/DOWN");
         for(unsigned row=0u;row<ntos_picker::VISIBLE;++row) {
             char line[41];
-            for(unsigned c=0u;c<40u;++c)line[c]=' ';
-            line[40]=0;
             const unsigned ordinal=ui.first+row;
-            if(ordinal<ui.count) {
-                unsigned p=0u;
-                line[p++]=(ordinal==ui.selected ? '>' : ' ');
-                line[p++]=' ';
-                const unsigned shown=ordinal+1u;
-                line[p++]=shown>=10u ? char('0'+shown/10u) : ' ';
-                line[p++]=char('0'+shown%10u);
-                line[p++]=':';
-                line[p++]=' ';
-                const char *name=names[pick[ordinal]];
-                for(unsigned k=0u;name[k] && p<31u;++k)
-                    line[p++]=name[k];
-                line[p++]=' ';
-                char sz[12];
-                tiny_utoa(sizes[pick[ordinal]],sz);
-                for(unsigned k=0u;sz[k] && p<40u;++k)
-                    line[p++]=sz[k];
+            if(ordinal<ui.count)
+                ntos_picker::format_row(
+                    line,ordinal,ui.selected,names[pick[ordinal]],
+                    sizes[pick[ordinal]]);
+            else {
+                for(unsigned c=0u;c<40u;++c)line[c]=' ';
+                line[40]=0;
             }
             Debug_Printf(0,row+4u,false,0,"%s",line);
         }
