@@ -169,6 +169,7 @@ struct NtosApi {
     uint32_t (*psroot_switch)(uint32_t);               // [80] NTSTATUS
     uint32_t (*psroot_current)(void);                  // [81] root 0 or 1
     uint32_t (*pstwin_child_pid)(void);                // [82] child Ps PID
+    uint32_t (*io_replace_loop_driver)(uint32_t);      // [83] diagnostic IoReplaceDriver
 };
 
 static int cur_row = 0;
@@ -308,6 +309,7 @@ struct NtIoBuiltIn {
     nt::io::Manager<2u,8u> manager{};
     nt::io::DRIVER_OBJECT null_driver{};
     nt::io::DRIVER_OBJECT loop_driver{};
+    nt::io::DRIVER_OBJECT loop_swapped{};
     nt::io::DEVICE_OBJECT *null_device=nullptr,*loop_device=nullptr;
     uint8_t loop[64]{};
     uint32_t loop_bytes=0u;
@@ -335,7 +337,10 @@ struct NtIoBuiltIn {
             if(is_loop) {
                 transferred=irp.length<s->loop_bytes?irp.length:s->loop_bytes;
                 auto *dst=static_cast<uint8_t *>(irp.buffer);
-                for(uint32_t i=0u;i<transferred;++i)dst[i]=s->loop[i];
+                for(uint32_t i=0u;i<transferred;++i)
+                    dst[i]=dev.driver==&s->loop_swapped ?
+                           static_cast<uint8_t>(s->loop[i]^0xFFu) :
+                           s->loop[i];
             }
             break;
         case Major::device_control:
@@ -349,11 +354,18 @@ struct NtIoBuiltIn {
         *this=NtIoBuiltIn{};
         null_driver={&dispatch,this};
         loop_driver={&dispatch,this};
+        loop_swapped={&dispatch,this};
         enabled=true;
         return manager.IoCreateDevice("\\Device\\Null",&null_driver,
                           &null_device)==nt::SUCCESS &&
                manager.IoCreateDevice("\\Device\\Loopback",&loop_driver,
                           &loop_device)==nt::SUCCESS;
+    }
+    nt::Status replace_loop(uint32_t variant) {
+        if(!enabled || variant>1u || !loop_device)
+            return nt::INVALID_PARAMETER;
+        return manager.IoReplaceDriver(
+            *loop_device,variant?&loop_swapped:&loop_driver);
     }
     void shutdown(uint32_t pid) {
         if(enabled && pid)(void)manager.close_owner(pid);
@@ -619,6 +631,7 @@ static uint32_t ntos_psroot_va(void);
 static uint32_t ntos_psroot_switch(uint32_t);
 static uint32_t ntos_psroot_current(void);
 static uint32_t ntos_pstwin_child_pid(void);
+static uint32_t ntos_io_replace_loop_driver(uint32_t);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -793,6 +806,7 @@ static NtosApi g_ntos_api = {
     &ntos_psroot_switch, // [80]
     &ntos_psroot_current, // [81]
     &ntos_pstwin_child_pid, // [82]
+    &ntos_io_replace_loop_driver, // [83]
 };
 
 // ---------------------------------------------------------------------------
@@ -1577,6 +1591,13 @@ static uint32_t ntos_nt_device_io_control(uint32_t h,uint32_t code,
 #else
     (void)h;(void)code;(void)buffer;(void)bytes;(void)done;
     return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_io_replace_loop_driver(uint32_t variant) {
+#if NTOS_ENABLE_GUEST_IO
+    return nt_io_pid() ? g_nt_io.replace_loop(variant) : nt::DEVICE_BUSY;
+#else
+    (void)variant;return nt::NOT_SUPPORTED;
 #endif
 }
 static uint32_t ntos_ps_peer_entry(void) {
