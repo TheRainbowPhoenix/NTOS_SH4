@@ -803,7 +803,9 @@ static uint32_t ntos_vm_reserve(uint32_t preferred,uint32_t pages) {
 static uint32_t ntos_vm_commit(uint32_t va,uint32_t pages,uint32_t prot) {
 #if NTOS_ENABLE_NT_PRIVATE_VM
     if(ntos_vm_busy())return nt::DEVICE_BUSY;
-    if(prot!=1u && prot!=2u)return nt::INVALID_PARAMETER;
+    if(prot!=1u && prot!=2u &&
+       !(NTOS_ENABLE_GUEST_PROTECT_DISPATCH && prot==3u))
+        return nt::INVALID_PARAMETER;
     auto &vm=g_nt_process.vm;
     const nt::Status status=vm.commit(va,pages,static_cast<nt::VmAccess>(prot));
     if(status!=nt::SUCCESS)return status;
@@ -833,7 +835,9 @@ static uint32_t ntos_vm_commit(uint32_t va,uint32_t pages,uint32_t prot) {
 static uint32_t ntos_vm_protect(uint32_t va,uint32_t pages,uint32_t prot) {
 #if NTOS_ENABLE_NT_PRIVATE_VM
     if(ntos_vm_busy())return nt::DEVICE_BUSY;
-    if(prot!=1u && prot!=2u)return nt::INVALID_PARAMETER;
+    if(prot!=1u && prot!=2u &&
+       !(NTOS_ENABLE_GUEST_PROTECT_DISPATCH && prot==3u))
+        return nt::INVALID_PARAMETER;
     const nt::Status status=g_nt_process.vm.protect(
         va,pages,static_cast<nt::VmAccess>(prot),
         &ntos_vm_update_ptel,nullptr);
