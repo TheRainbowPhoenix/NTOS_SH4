@@ -750,6 +750,107 @@ static uint32_t ntos_mm_fault_probe_seen(void) {
     return 0u;
 #endif
 }
+static bool ntos_vm_busy() {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    return !g_nt_process.active || !g_nt_process.vm.backing ||
+           !ntos_hw::g_context.installed || !mmu::at_enabled();
+#else
+    return true;
+#endif
+}
+static bool ntos_vm_collides(void *opaque,uint32_t va,uint32_t pages) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    const auto &table=*static_cast<const ntos_fault::Pager *>(opaque);
+    for(unsigned i=0u;i<table.modules_used;++i)
+        if(ntos_rebase::overlap(va,pages,table.modules[i].va,
+                                 table.modules[i].pages))
+            return true;
+#else
+    (void)opaque;(void)va;(void)pages;
+#endif
+    return false;
+}
+static uint32_t ntos_vm_reserve(uint32_t preferred,uint32_t pages) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    if(ntos_vm_busy())return 0u;
+    uint32_t result=0u;
+    const auto &table=ntos_hw::g_context.table;
+    const nt::Status status=g_nt_process.vm.reserve(
+        preferred,pages,&result,&ntos_vm_collides,
+        const_cast<ntos_fault::Pager *>(&table));
+    return status==nt::SUCCESS?result:0u;
+#else
+    (void)preferred;(void)pages;
+    return 0u;
+#endif
+}
+static uint32_t ntos_vm_commit(uint32_t va,uint32_t pages,uint32_t prot) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    if(ntos_vm_busy())return nt::DEVICE_BUSY;
+    if(prot!=1u && prot!=2u)return nt::INVALID_PARAMETER;
+    auto &vm=g_nt_process.vm;
+    const nt::Status status=vm.commit(va,pages,static_cast<nt::VmAccess>(prot));
+    if(status!=nt::SUCCESS)return status;
+    for(uint32_t i=0u;i<pages;++i) {
+        const int index=vm.find(va+i*0x1000u);
+        if(index<0)return nt::INTERNAL_ERROR;
+        uint8_t *const p1=vm.backing+
+            static_cast<uint32_t>(vm.pages[index].frame)*0x1000u;
+        // Publish freshly zeroed P1 frames before a guest UTLB mapping.
+        flush_image(p1,0x1000u);
+    }
+    return nt::SUCCESS;
+#else
+    (void)va;(void)pages;(void)prot;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static bool ntos_vm_update_ptel(void *,uint32_t va,
+                                ntos_mm::Access rights) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    return ntos_hw::g_context.table.reprotect(
+        va,rights,&ntos_hw::commit_translation,nullptr);
+#else
+    (void)va;(void)rights;return false;
+#endif
+}
+static uint32_t ntos_vm_protect(uint32_t va,uint32_t pages,uint32_t prot) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    if(ntos_vm_busy())return nt::DEVICE_BUSY;
+    if(prot!=1u && prot!=2u)return nt::INVALID_PARAMETER;
+    const nt::Status status=g_nt_process.vm.protect(
+        va,pages,static_cast<nt::VmAccess>(prot),
+        &ntos_vm_update_ptel,nullptr);
+    if(status==nt::INTERNAL_ERROR)g_fatal.reason=3u; // failed rollback
+    return status;
+#else
+    (void)va;(void)pages;(void)prot;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_vm_query(uint32_t va) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    if(ntos_vm_busy())return 0u;
+    return static_cast<uint32_t>(g_nt_process.vm.query(va));
+#else
+    (void)va;return 0u;
+#endif
+}
+static uint32_t ntos_vm_release(uint32_t va) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    if(ntos_vm_busy())return nt::DEVICE_BUSY;
+    return g_nt_process.vm.release(va);
+#else
+    (void)va;return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_vm_committed_pages(void) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    return !ntos_vm_busy() ? g_nt_process.vm.committed_pages : 0u;
+#else
+    return 0u;
+#endif
+}
 
 
 // The eager mapper and the future demand pager share a file-to-page
