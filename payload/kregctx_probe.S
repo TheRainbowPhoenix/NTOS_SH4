@@ -16,9 +16,15 @@ _kreg_yield_checked:
     mov.l r12,@-r15
     mov.l r13,@-r15
     mov.l r14,@-r15
-    movs.l x0,@-r15
-    movs.l y0,@-r15
-    movs.l m0,@-r15
+    mov r15,r2
+    movs.l x0,@-r2
+    mov r2,r15
+    mov r15,r2
+    movs.l y0,@-r2
+    mov r2,r15
+    mov r15,r2
+    movs.l m0,@-r2
+    mov r2,r15
     mov r4,r14
     mov r5,r13
     mov r5,r8
@@ -31,15 +37,21 @@ _kreg_yield_checked:
     mov r5,r12
     add #4,r12
     mov.l r13,@-r15
-    movs.l @r15+,x0
+    mov r15,r2
+    movs.l @r2+,x0
+    mov r2,r15
     mov r13,r0
     add #1,r0
     mov.l r0,@-r15
-    movs.l @r15+,y0
+    mov r15,r2
+    movs.l @r2+,y0
+    mov r2,r15
     mov r13,r0
     add #2,r0
     mov.l r0,@-r15
-    movs.l @r15+,m0
+    mov r15,r2
+    movs.l @r2+,m0
+    mov r2,r15
 
     jsr @r14
     nop
@@ -64,17 +76,23 @@ _kreg_yield_checked:
     cmp/eq r12,r0
     bf 2f
 
-    movs.l x0,@-r15
+    mov r15,r2
+    movs.l x0,@-r2
+    mov r2,r15
     mov.l @r15+,r0
     cmp/eq r13,r0
     bf 2f
-    movs.l y0,@-r15
+    mov r15,r2
+    movs.l y0,@-r2
+    mov r2,r15
     mov.l @r15+,r0
     mov r13,r1
     add #1,r1
     cmp/eq r1,r0
     bf 2f
-    movs.l m0,@-r15
+    mov r15,r2
+    movs.l m0,@-r2
+    mov r2,r15
     mov.l @r15+,r0
     mov r13,r1
     add #2,r1
@@ -86,9 +104,15 @@ _kreg_yield_checked:
 2:
     mov #0,r0
 3:
-    movs.l @r15+,m0
-    movs.l @r15+,y0
-    movs.l @r15+,x0
+    mov r15,r2
+    movs.l @r2+,m0
+    mov r2,r15
+    mov r15,r2
+    movs.l @r2+,y0
+    mov r2,r15
+    mov r15,r2
+    movs.l @r2+,x0
+    mov r2,r15
     mov.l @r15+,r14
     mov.l @r15+,r13
     mov.l @r15+,r12
