@@ -8,6 +8,17 @@ static ntos_picker::Action press(Picker &p,uint32_t a,uint32_t b) {
 }
 int main() {
     Picker p{};
+    char row[41];
+    ntos_picker::format_row(row,21u,21u,"LONGNAME.EXE",4195840u);
+    assert(row[0]=='>' && row[1]==' ' && row[2]=='2' &&
+           row[3]=='2' && row[4]==':' && row[40]==0);
+    ntos_picker::format_row(row,0u,21u,"HELLO.EXE",123u);
+    assert(row[0]==' ' && row[2]==' ' && row[3]=='1');
+    ntos_picker::format_row(row,63u,63u,
+                           "OVERLONGFILENAME12345678901234567890.EXE",
+                           0xFFFFFFFFu);
+    assert(row[0]=='>' && row[2]=='6' && row[3]=='4' &&
+           row[40]==0);
     p.init(64u);
     assert(p.selected==0u && p.first==0u);
     // HH3 physical KEY_2 twice selects the one-based 22nd EXE.
