@@ -52,6 +52,17 @@ int main() {
     assert(g.decide(0x00405000u,0x0C0u,0x00401020u,
                     0x40010001u,&executable,nullptr,&target));
     assert(!g.armed && target==0x00401080u && g.accepted==1u);
+    // Updated MMGUARD uses the physically proven *user-origin* mechanism
+    // from MMREAD: a genuine 0x0C0 must NEVER accept privileged SSR.MD=1.
+    g.reset();
+    assert(g.arm(0x00405000u,nt::SH4_PROTECTION_WRITE,0x00401080u,
+                 &executable,nullptr,false)==nt::SUCCESS);
+    assert(!g.decide(0x00405000u,0x0C0u,0x00401020u,
+                     0x40010001u,&executable,nullptr,&target));
+    assert(g.armed && !target);
+    assert(g.decide(0x00405000u,0x0C0u,0x00401020u,
+                    0x00010001u,&executable,nullptr,&target));
+    assert(!g.armed && target==0x00401080u && g.accepted==1u);
     // Renesas SH4A TRAPA is a processing-completion exception and
     // saves SPC=trap instruction + 2, with TRA=imm*4.
     constexpr uint32_t trap_next=0x00401080u;
@@ -67,5 +78,5 @@ int main() {
            trap_next,0x00000000u,trap_next,0x40010001u));
     assert(nt::user_probe_return_allowed(true,0x160u,0x7bu*4u,
            trap_next,0x00000000u,trap_next,0x40010001u));
-    std::puts("PASS guest 0xA0/0xC0: exact byte/PC, privileged foreground write, one-shot user read and exact TRAPA return");
+    std::puts("PASS guest 0xA0/0xC0: user READ/WRITE mode gating, exact TEA/SPC, and one-shot TRAPA supervisor return");
 }
