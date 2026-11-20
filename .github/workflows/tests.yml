@@ -46,6 +46,8 @@ jobs:
         run: |
           g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/nt_executive_test.cpp -o /tmp/nt-executive-test
           /tmp/nt-executive-test
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/nt_thread_exceptions_test.cpp -o /tmp/nt-thread-exceptions-test
+          /tmp/nt-thread-exceptions-test
           g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/fs_guard_test.cpp -o /tmp/nt-fs-guard-test
           /tmp/nt-fs-guard-test
       - name: Produce and validate opt-in 4 MiB real SH4BE PE
