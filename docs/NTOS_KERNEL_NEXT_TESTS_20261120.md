@@ -31,3 +31,6 @@ The PSPARENT→PSCHILD probe now returns to the picker rather than launching STA
 
 ### Gated 500-cycle stress
 `MMSTRESS.EXE`: **0x4D535431** after 500 decommit/recommit cycles and independent second-page data verification. **Do not run MMSTRESS until the corrected MMREUSE returns 0x4D444331 on real hardware.** Stress is one foreground KTHREAD in this revision; a true cross-thread MMRACE remains gated on the real Ke context switch.
+
+### Ke-managed two KTHREAD experiment
+`K2THREAD.EXE`: expected **0x4B325431** for two kernel-owned TIDs alternating 1000 times, preserving integer ABI state and SH4AL-DSP register words. This is **privileged cooperative** switching (not arbitrary user-mode/RTE preemption and not two EXEs). Use the new API slots [67..70], which do not alter old slots. Test KCOOP and KTHREAD first. On a reset restore known-good firmware. This isolated firmware gate requires >=512 bytes below the hard HH3 loader limit.
