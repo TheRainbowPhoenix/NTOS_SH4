@@ -1879,14 +1879,14 @@ done:
     }
 #if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
     if(ntos_hw::g_context.general_faults ||
-       ntos_hw::g_context.user_read_returns) {
+       ntos_hw::g_context.user_probe_returns) {
         char msg[80], *p=msg;
         log_text(p,"PROT=");log_number(p,ntos_hw::g_context.general_faults,10);
         log_text(p," REC=");log_number(p,ntos_hw::g_context.guest_guard.accepted,10);
         log_text(p," UNEXP=");
         log_number(p,ntos_hw::g_context.guest_guard.forwarded,10);
         log_text(p," USRRET=");
-        log_number(p,ntos_hw::g_context.user_read_returns,10);
+        log_number(p,ntos_hw::g_context.user_probe_returns,10);
         *p=0;ntos_puts(msg);
     }
 #endif
