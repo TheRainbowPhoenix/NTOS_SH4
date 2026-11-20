@@ -94,14 +94,14 @@ not enable the new general-protection exception vector handler.
 
 ## Emulator-only protected-read AND protected-write ZIP
 
-`NTOS-EMULATOR-ONLY-EXPEVT-0C0-RECOVERABLE-GUEST-TRAP`
+`NTOS-EMULATOR-ONLY-EXPEVT-0A0-0C0-RECOVERABLE-GUEST-TRAPS`
 
 Run **MMGUARD.EXE only with the matching emulator-only NTOS.hh3**:
 - First hints its RO PE page, then arms one exactly matched
   `EXPEVT=0x0C0` write-protection fault at that page and performs
   one intentionally illegal write.
 - The P1 VBR+0x100 callback validates SSR.MD=0 (P0 guest),
-  the expected TEA page and event, both fault SPC and recovery SPC
+  the exact TEA byte address and event, both fault SPC and recovery SPC
   within PE executable sections, and atomically disarms the guard.
 - It sets the saved privileged SPC to a known in-function recovery
   label. RTE returns without retrying the illegal instruction.
@@ -128,7 +128,7 @@ Run **MMREAD.EXE** (same emulator-only ZIP) as a separate test:
 The dispatcher recognizes both SH4A protection event codes:
 `0x0A0` (read, tested using the debug-only PR=01 page) and
 `0x0C0` (write, tested using a normal RO PR=10 page).
-Both require explicit one-shot arming, an exact TEA page, a P0
+Both require explicit one-shot arming, an exact TEA byte address, a P0
 interrupted SSR and an executable PE recovery label. Unknown general
 exceptions still go to the original host vector; this is **not** an
 unrestricted NT user-mode structured-exception implementation.
