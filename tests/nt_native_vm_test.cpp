@@ -1,4 +1,5 @@
 #include "../src/nt/native_vm.hpp"
+#include "../src/nt/guest_buffer.hpp"
 #include "../src/nt/virtual_memory.hpp"
 #include <cassert>
 #include <cstdio>
@@ -38,6 +39,19 @@ struct Rig {
     }
 };
 int main() {
+    // Malformed P0 pointers must be rejected before any kernel deref.
+    auto allowed=[](void *,uint32_t va)->bool {
+        return va>=0x00410000u && va<0x00412000u;
+    };
+    assert(nt::guest_writable_word(0x00410000u,allowed,nullptr));
+    assert(nt::guest_writable_word(0x00411FFCu,allowed,nullptr));
+    assert(!nt::guest_writable_word(0u,allowed,nullptr));
+    assert(!nt::guest_writable_word(0x00410001u,allowed,nullptr));
+    assert(!nt::guest_writable_word(0x00412000u,allowed,nullptr));
+    assert(!nt::guest_writable_word(0x80000000u,allowed,nullptr));
+    assert(!nt::guest_writable_word(0xA0002000u,allowed,nullptr));
+    assert(!nt::guest_writable_word(0xF7000000u,allowed,nullptr));
+    assert(!nt::guest_writable_word(0x00410000u,nullptr,nullptr));
     Rig rig{};
     const auto ops=rig.callbacks();
     uint32_t base=0u,bytes=8193u;
