@@ -1435,7 +1435,7 @@ static uint32_t ntos_nt_device_io_control(uint32_t h,uint32_t code,
 static uint32_t ntos_ps_peer_entry(void) {
 #if NTOS_ENABLE_PE_PAIR && NTOS_ENABLE_COOP_KERNEL
     return g_pe_pair.ready && g_nt_process.ke.running() &&
-           !g_ke_coop.created ? g_pe_pair.entry : 0u;
+           g_pe_pair.entry!=0u ? g_pe_pair.entry : 0u;
 #else
     return 0u;
 #endif
