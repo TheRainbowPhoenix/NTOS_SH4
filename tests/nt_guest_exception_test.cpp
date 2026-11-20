@@ -15,24 +15,26 @@ int main() {
     assert(!g.decide(0x00405001u,0x0A0u,0x00401020u,
                      0x04001001u,&executable,nullptr,&target));
     assert(!target && g.armed && g.forwarded==1u);
+    assert(!g.decide(0x00405003u,0x0C0u,0x00401020u,
+                     0x04001001u,&executable,nullptr,&target)); // same-page, wrong byte
     assert(!g.decide(0x00407000u,0x0C0u,0x00401020u,
                      0x04001001u,&executable,nullptr,&target));
     assert(!g.decide(0x00405000u,0x0C0u,0x00401020u,
                      0x40010001u,&executable,nullptr,&target));
     assert(!g.decide(0x00405000u,0x0C0u,0x12340020u,
                      0x04001001u,&executable,nullptr,&target));
-    assert(g.decide(0x00405003u,0x0C0u,0x00401020u,
+    assert(g.decide(0x00405001u,0x0C0u,0x00401020u,
                     0x04001001u,&executable,nullptr,&target));
     assert(target==0x00401080u && g.accepted==1u && !g.armed);
     assert(g.last_status==nt::ACCESS_VIOLATION &&
-           g.last_tea==0x00405003u &&
+           g.last_tea==0x00405001u &&
            g.last_event==nt::SH4_PROTECTION_WRITE);
     assert(!g.decide(0x00405000u,0x0C0u,0x00401020u,
                      0x04001001u,&executable,nullptr,&target));
     assert(!target);
     assert(g.arm(0x00406000u,nt::SH4_PROTECTION_READ,0x00401080u,
                  &executable,nullptr)==nt::SUCCESS);
-    assert(g.decide(0x00406010u,nt::SH4_PROTECTION_READ,0x00401022u,
+    assert(g.decide(0x00406000u,nt::SH4_PROTECTION_READ,0x00401022u,
                     0x04001001u,&executable,nullptr,&target));
     assert(g.accepted==2u && g.last_status==nt::ACCESS_VIOLATION);
     assert(g.arm(0x00405000u,0x0C0u,0x70000000u,
