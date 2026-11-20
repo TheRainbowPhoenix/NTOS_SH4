@@ -22,6 +22,12 @@
 #ifndef NTOS_ENABLE_GUEST_PROTECT_DISPATCH
 #define NTOS_ENABLE_GUEST_PROTECT_DISPATCH 0
 #endif
+#ifndef NTOS_ENABLE_KE_USER_SYSCALL
+#define NTOS_ENABLE_KE_USER_SYSCALL 0
+#endif
+#if NTOS_ENABLE_KE_USER_SYSCALL && !NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+#error "Ke user trap requires proven +0x100 VBR protection dispatch"
+#endif
 #if NTOS_ENABLE_GUEST_PROTECT_DISPATCH && !NTOS_ENABLE_TLB_MISS_PAGER
 #error "Guarded protection-exception dispatch requires RAM-backed VBR paging"
 #endif
@@ -38,6 +44,7 @@
 #if NTOS_ENABLE_TLB_MISS_PAGER && NTOS_ENABLE_IRQ_OWNERSHIP
 #include "fault_pager.hpp"
 #include "nt/guest_exception.hpp"
+#include "nt/ke.hpp"
 #include "irq_handoff.hpp"
 
 extern "C" {
@@ -54,6 +61,13 @@ struct Context {
     ntos_fault::Pager table{};
     nt::GuestException guest_guard{};
     volatile uint32_t general_faults=0u;
+    nt::KernelContext *ke=nullptr;
+    bool service_armed=false;
+    uint32_t service_next_pc=0u;
+    uint32_t service_expected=0u;
+    uint32_t service_saved_sr=0u;
+    volatile uint32_t service_completed=0u;
+    volatile uint32_t service_rejected=0u;
     // A tiny, stackless P0 user-mode read probe returns to the original
     // privileged guest C frame using exactly one audited TRAPA #0x7B.
     // No OS/SDK code may run during the user-mode instruction window.
@@ -153,6 +167,37 @@ namespace ntos_hw {
     }
     return false; // VM pages and API windows are never recovery code
 }
+// Ke has no general user-mode PE scheduler yet. Arm exactly ONE short
+// TRAPA #0x7A entry at a verified executable PE instruction. The following
+// instruction must be RTS, so a successful RTE cannot run arbitrary user
+// code or use the host stack in user mode. Only current foreground KTHREAD.
+inline nt::Status arm_user_service(uint32_t trap_pc,uint32_t service) {
+#if NTOS_ENABLE_KE_USER_SYSCALL
+    Context &c=g_context;
+    if(!c.installed || !c.ke || !c.ke->running() ||
+       c.service_armed || c.user_probe_session ||
+       !mmu::at_enabled() ||
+       !nt::KernelContext::valid_service(service) ||
+       trap_pc>=0x7FFFFFFCu ||
+       !executable_page(&c.table,trap_pc) ||
+       !executable_page(&c.table,trap_pc+2u))
+        return nt::INVALID_PARAMETER;
+    const auto *instructions=
+        reinterpret_cast<volatile const uint16_t *>(trap_pc);
+    if(instructions[0]!=0xC37Au || instructions[1]!=0x000Bu)
+        return nt::INVALID_PARAMETER;
+    uint32_t sr=0u;
+    __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+    if((sr&0x70000000u)!=0x40000000u)return nt::INVALID_PARAMETER;
+    c.service_expected=service;
+    c.service_next_pc=trap_pc+2u;
+    c.service_saved_sr=sr;
+    c.service_armed=true;
+    return nt::SUCCESS;
+#else
+    (void)trap_pc;(void)service;return nt::NOT_SUPPORTED;
+#endif
+}
 inline nt::Status arm_guest_guard(uint32_t address,uint32_t event,
                                  uint32_t resume_pc) {
 #if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
@@ -220,12 +265,50 @@ inline nt::Status arm_guest_guard(uint32_t address,uint32_t event,
 // This callback can ONLY redirect a *pre-armed*, exact P0 protection fault
 // onto an executable PE recovery label. Nonmatching exceptions return 0
 // so the original host general vector receives them without RTE.
-extern "C" int ntos_general_exception_callback(uint32_t tea,uint32_t event) {
+extern "C" int ntos_general_exception_callback(
+    uint32_t tea,uint32_t event,uint32_t guest_service,uint32_t guest_arg) {
 #if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+    (void)guest_service;(void)guest_arg; // gated Ke trap consumes these
     auto &c=ntos_hw::g_context;
     uint32_t spc=0u,ssr=0u;
     __asm__ volatile("stc spc,%0" : "=r"(spc) :: "memory");
     __asm__ volatile("stc ssr,%0" : "=r"(ssr) :: "memory");
+    // First-party Ke syscall gate: true user-mode TRAPA #0x7A enters P1
+    // VBR+0x100 and reads the *interrupted bank-0* guest r4/r5, not the
+    // supervisor bank-1 r4/r5 (which now hold TEA/EXPEVT). The service
+    // is matched against an armed KTHREAD, returns into bank-0 r0, and
+    // restores privileged foreground SR with RTE. All Ke logic is P1-only.
+#if NTOS_ENABLE_KE_USER_SYSCALL
+    if(event==nt::SH4A_SYSTEM_SERVICE_EVENT && c.service_armed) {
+        const uint32_t tra=*reinterpret_cast<volatile uint32_t *>(
+            0xFF000020u);
+        if(!c.ke || !nt::user_service_trap_allowed(
+                *c.ke,c.service_armed,event,tra,spc,ssr,
+                c.service_next_pc,c.service_saved_sr,
+                c.service_expected,guest_service) ||
+           !ntos_hw::executable_page(&c.table,spc)) {
+            ++c.service_rejected;
+            return 0; // always forward malformed/foreign traps to host
+        }
+        uint32_t sgr=0u;
+        __asm__ volatile("stc sgr,%0" : "=r"(sgr) :: "memory");
+        uint32_t output=nt::INVALID_PARAMETER;
+        const nt::Status result=c.ke->dispatch(
+            spc,ssr,sgr,tra,guest_service,guest_arg,&output);
+        if(result!=nt::SUCCESS) {
+            ++c.service_rejected;
+            return 0;
+        }
+        c.service_armed=false;
+        ++c.service_completed;
+        // In exception SR.RB=1; r0_bank names the suspended user r0.
+        // Never patch bank-1 r0, which carries the trampoline result.
+        __asm__ volatile("ldc %0,r0_bank" :: "r"(output) : "memory");
+        const uint32_t restored=c.service_saved_sr;
+        __asm__ volatile("ldc %0,ssr" :: "r"(restored) : "memory");
+        return 1;
+    }
+#endif
     // The narrow TRAPA return path is shared by read AND write probes.
     // It is checked before generic protection dispatch, and can only
     // resume from the exact two-byte TRAPA+2, in the expected guest image.
@@ -260,7 +343,7 @@ extern "C" int ntos_general_exception_callback(uint32_t tea,uint32_t event) {
     __asm__ volatile("ldc %0,spc" :: "r"(landing) : "memory");
     return 1;
 #else
-    (void)tea;(void)event;return 0;
+    (void)tea;(void)event;(void)guest_service;(void)guest_arg;return 0;
 #endif
 }
 namespace ntos_hw {
@@ -342,6 +425,13 @@ inline ntos_irq::Hooks hooks(const host_world::Snapshot &host) {
     ctx.hint_calls=0u;
     ctx.guest_guard.reset();
     ctx.general_faults=0u;
+    ctx.ke=nullptr;
+    ctx.service_armed=false;
+    ctx.service_next_pc=0u;
+    ctx.service_expected=0u;
+    ctx.service_saved_sr=0u;
+    ctx.service_completed=0u;
+    ctx.service_rejected=0u;
     ctx.user_probe_session=false;
     ctx.user_probe_trapa_next=0u;
     ctx.user_probe_saved_sr=0u;
