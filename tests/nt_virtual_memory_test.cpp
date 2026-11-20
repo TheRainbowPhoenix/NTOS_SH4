@@ -11,7 +11,8 @@ using VM=nt::VirtualMemory<64,8>;
 struct Mock {
     VM vm{};
     ntos_fault::Pager pager{};
-    unsigned mapped_ro=0u,mapped_rw=0u,fail_index=9999u,remaps=0u;
+    unsigned mapped_ro=0u,mapped_rw=0u,mapped_priv=0u;
+    unsigned fail_index=9999u,remaps=0u;
     alignas(4096) uint8_t data[64u*4096u]{};
     static bool collide(void *p,uint32_t va,uint32_t count) {
         auto &ctx=*static_cast<Mock *>(p);
@@ -29,10 +30,12 @@ struct Mock {
     static bool install(void *p,uint32_t va,uint32_t pa,
                         unsigned slot,unsigned ro) {
         auto &m=*static_cast<Mock *>(p);
-        assert(slot<55u && (ro==0u || ro==1u));
+        assert(slot<55u && (ro==0u || ro==1u || ro==2u));
         assert(pa>=0x0C000000u && pa<0x0C040000u);
         assert((va&0xFFFu)==0u);
-        if(ro)m.mapped_ro++; else m.mapped_rw++;
+        if(ro==2u)m.mapped_priv++;
+        else if(ro==1u)m.mapped_ro++;
+        else m.mapped_rw++;
         return true;
     }
     static bool update(void *p,uint32_t va,ntos_mm::Access rights) {
@@ -105,6 +108,17 @@ int main() {
     assert(m.vm.release(other)==nt::SUCCESS);
     assert(m.vm.query(other)==nt::VmAccess::reserved);
     assert(m.vm.committed_pages==12u);
+    // Debug-only supervisor PR=01 is deliberately NOT exposed by normal
+    // device VM syscalls. Its physical mapping must retain code 2.
+    assert(m.vm.reserve(0u,1u,&other,&Mock::collide,&m)==nt::SUCCESS);
+    assert(m.vm.commit(other,1u,nt::VmAccess::emulator_user_denied)==nt::SUCCESS);
+    assert(m.pager.fault(other,&Mock::install,&m));
+    assert(m.mapped_priv==1u && m.pager.access(other)==
+                                  ntos_mm::Access::privileged_only);
+    assert(m.vm.protect(other,1u,nt::VmAccess::read_write,
+                        &Mock::update,&m)==nt::SUCCESS);
+    assert(m.pager.access(other)==ntos_mm::Access::read_write);
+    assert(m.vm.committed_pages==13u);
     m.vm.clear(); // only after caller restores host world
     assert(m.vm.committed_pages==0u && m.vm.reserved_pages==0u);
     assert(!m.vm.resolve(va,&previous,reinterpret_cast<ntos_mm::Access *>(&previous)));
