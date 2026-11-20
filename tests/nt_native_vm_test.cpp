@@ -8,7 +8,7 @@ struct Rig {
     alignas(4096) uint8_t bytes[64u*4096u]{};
     nt::VirtualMemory<64u,8u> vm{};
     bool fail_commit=false;
-    unsigned remap=0u;
+    unsigned remap_calls=0u;
     Rig() {vm.configure(bytes,0x0C100000u);}
     static nt::Status reserve(void *p,uint32_t preferred,uint32_t pages,
                               uint32_t *out) {
@@ -20,7 +20,7 @@ struct Rig {
         return r.vm.commit(base,pages,static_cast<nt::VmAccess>(rights));
     }
     static bool remap(void *p,uint32_t,ntos_mm::Access) {
-        ++static_cast<Rig *>(p)->remap;
+        ++static_cast<Rig *>(p)->remap_calls;
         return true;
     }
     static nt::Status protect(void *p,uint32_t base,uint32_t pages,
@@ -50,7 +50,7 @@ int main() {
     uint32_t pb=base,psz=2u*4096u,old=0u;
     assert(nt::nt_protect_virtual_memory(ops,nt::NT_CURRENT_PROCESS,
         &pb,&psz,nt::NT_PAGE_READONLY,&old)==nt::SUCCESS);
-    assert(old==nt::NT_PAGE_READWRITE && rig.remap==2u &&
+    assert(old==nt::NT_PAGE_READWRITE && rig.remap_calls==2u &&
            rig.vm.query(base)==nt::VmAccess::read_only);
     old=0u;
     assert(nt::nt_protect_virtual_memory(ops,nt::NT_CURRENT_PROCESS,
