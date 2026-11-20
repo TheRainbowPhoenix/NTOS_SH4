@@ -18,7 +18,10 @@ namespace nt {
 constexpr uint32_t VM_BASE=0x06000000u;
 constexpr uint32_t VM_END =0x07000000u;
 constexpr uint32_t VM_PAGE=4096u;
-enum class VmAccess : uint8_t { reserved=0u, read_only=1u, read_write=2u };
+enum class VmAccess : uint8_t {
+    reserved=0u, read_only=1u, read_write=2u,
+    emulator_user_denied=3u
+};
 using VmCollision=bool (*)(void *,uint32_t,uint32_t);
 using VmRemap=bool (*)(void *,uint32_t,ntos_mm::Access);
 template<unsigned CAPACITY=64u,unsigned REGIONS=8u>
@@ -120,7 +123,8 @@ struct VirtualMemory {
     }
     Status commit(uint32_t base,unsigned count,VmAccess rights) {
         if(!backing || !count || !is_reserved(base,count) ||
-           rights==VmAccess::reserved)
+           rights==VmAccess::reserved ||
+           static_cast<uint32_t>(rights)>3u)
             return INVALID_PARAMETER;
         if(free_frames()<count)return NO_MEMORY;
         // Never make partial commits. One physically assigned frame per VA.
@@ -146,7 +150,9 @@ struct VirtualMemory {
     static ntos_mm::Access convert(VmAccess a) {
         return a==VmAccess::read_write ? ntos_mm::Access::read_write :
                a==VmAccess::read_only ? ntos_mm::Access::read_only :
-                                        ntos_mm::Access::no_access;
+               a==VmAccess::emulator_user_denied ?
+                       ntos_mm::Access::privileged_only :
+                       ntos_mm::Access::no_access;
     }
     bool resolve(uint32_t va,uint32_t *out_pa,ntos_mm::Access *out) const {
         const int ix=find(va);
@@ -165,7 +171,8 @@ struct VirtualMemory {
     Status protect(uint32_t base,unsigned count,VmAccess rights,
                    VmRemap remap,void *context,uint32_t *out_old=nullptr) {
         if(!count || !is_reserved(base,count) ||
-           rights==VmAccess::reserved)return INVALID_PARAMETER;
+           (rights==VmAccess::reserved ||
+            static_cast<uint32_t>(rights)>3u))return INVALID_PARAMETER;
         VmAccess previous[CAPACITY]{};
         for(unsigned i=0u;i<count;++i) {
             const int ix=find(base+i*VM_PAGE);
