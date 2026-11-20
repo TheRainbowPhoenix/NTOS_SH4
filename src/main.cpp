@@ -129,6 +129,14 @@ struct NtosApi {
     uint32_t (*ps_get_current_process_id)(void);        // [55]
     uint32_t (*ps_get_current_thread_id)(void);         // [56]
     uint32_t (*ke_system_service_count)(void);          // [57]
+    uint32_t (*ke_register_exception)(uint32_t,uint32_t,uint32_t,uint32_t); // [58]
+    uint32_t (*ke_cancel_exception)(uint32_t);          // [59]
+    uint32_t (*ke_exception_delivered)(void);           // [60]
+    uint32_t (*ke_exception_status)(void);              // [61]
+    uint32_t (*ke_exception_address)(void);             // [62]
+    uint32_t (*ke_exception_depth)(void);               // [63]
+    uint32_t (*ps_address_space_id)(void);              // [64]
+    uint32_t (*ps_address_space_epoch)(void);           // [65]
 };
 
 static int cur_row = 0;
@@ -465,6 +473,14 @@ static uint32_t ntos_ke_arm_system_call(uint32_t,uint32_t);
 static uint32_t ntos_ps_get_current_process_id(void);
 static uint32_t ntos_ps_get_current_thread_id(void);
 static uint32_t ntos_ke_system_service_count(void);
+static uint32_t ntos_ke_register_exception(uint32_t,uint32_t,uint32_t,uint32_t);
+static uint32_t ntos_ke_cancel_exception(uint32_t);
+static uint32_t ntos_ke_exception_delivered(void);
+static uint32_t ntos_ke_exception_status(void);
+static uint32_t ntos_ke_exception_address(void);
+static uint32_t ntos_ke_exception_depth(void);
+static uint32_t ntos_ps_address_space_id(void);
+static uint32_t ntos_ps_address_space_epoch(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -610,6 +626,14 @@ static NtosApi g_ntos_api = {
     &ntos_ps_get_current_process_id, // [55]
     &ntos_ps_get_current_thread_id, // [56]
     &ntos_ke_system_service_count, // [57]
+    &ntos_ke_register_exception, // [58]
+    &ntos_ke_cancel_exception, // [59]
+    &ntos_ke_exception_delivered, // [60]
+    &ntos_ke_exception_status, // [61]
+    &ntos_ke_exception_address, // [62]
+    &ntos_ke_exception_depth, // [63]
+    &ntos_ps_address_space_id, // [64]
+    &ntos_ps_address_space_epoch, // [65]
 };
 
 // ---------------------------------------------------------------------------
@@ -1039,6 +1063,47 @@ static uint32_t ntos_ps_get_current_thread_id(void) {
 static uint32_t ntos_ke_system_service_count(void) {
     return g_nt_process.ke.process.active ?
         g_nt_process.ke.thread.syscall_count : 0u;
+}
+static uint32_t ntos_ke_register_exception(uint32_t tea,uint32_t ev,
+                                            uint32_t pc,uint32_t resume) {
+#if NTOS_ENABLE_KE_USER_SYSCALL && NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+    if(!g_nt_process.active || !g_nt_process.space.valid())return 0u;
+    return ntos_hw::arm_thread_exception(tea,ev,pc,resume);
+#else
+    (void)tea;(void)ev;(void)pc;(void)resume;return 0u;
+#endif
+}
+static uint32_t ntos_ke_cancel_exception(uint32_t token) {
+#if NTOS_ENABLE_KE_USER_SYSCALL && NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+    auto &c=ntos_hw::g_context;
+    if(!g_nt_process.ke.running())return nt::DEVICE_BUSY;
+    if(c.user_probe_session)return nt::DEVICE_BUSY;
+    return g_nt_process.ke.unregister_exception(token);
+#else
+    (void)token;return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_ke_exception_delivered(void) {
+    return g_nt_process.ke.running() ?
+        g_nt_process.ke.thread.exceptions.delivered : 0u;
+}
+static uint32_t ntos_ke_exception_status(void) {
+    return g_nt_process.ke.running() ?
+        g_nt_process.ke.thread.exceptions.last.code : 0u;
+}
+static uint32_t ntos_ke_exception_address(void) {
+    return g_nt_process.ke.running() ?
+        g_nt_process.ke.thread.exceptions.last.fault_address : 0u;
+}
+static uint32_t ntos_ke_exception_depth(void) {
+    return g_nt_process.ke.running() ?
+        g_nt_process.ke.thread.exceptions.depth : 0u;
+}
+static uint32_t ntos_ps_address_space_id(void) {
+    return g_nt_process.space.valid() ? g_nt_process.space.owner_pid : 0u;
+}
+static uint32_t ntos_ps_address_space_epoch(void) {
+    return g_nt_process.space.valid() ? g_nt_process.space.epoch : 0u;
 }
 
 // The eager mapper and the future demand pager share a file-to-page
@@ -1822,9 +1887,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             }
 #if NTOS_ENABLE_NT_PRIVATE_VM
         ntos_hw::g_context.table.set_extra(
-            &g_nt_process.vm,[](void *owner,uint32_t va,uint32_t *pa,
+            &g_nt_process.space,[](void *owner,uint32_t va,uint32_t *pa,
                                 ntos_mm::Access *rights) {
-                return static_cast<nt::VirtualMemory<64,8> *>(owner)->
+                return static_cast<nt::AddressSpaceRoot *>(owner)->
                     resolve(va,pa,rights);
             });
 #endif
@@ -1898,6 +1963,14 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         *err="Ps failed to initialize the foreground KTHREAD";
         goto done;
     }
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    if(!g_nt_process.space.bind(
+          g_nt_process.ke.process.unique_process_id,
+          &g_nt_process.ke.process.unique_process_id,
+          &g_nt_process.vm)) {
+        *err="Ps failed to bind process-private VA root";goto done;
+    }
+#endif
 #if NTOS_ENABLE_TLB_MISS_PAGER && NTOS_ENABLE_KE_USER_SYSCALL
     ntos_hw::g_context.ke=&g_nt_process.ke;
 #endif

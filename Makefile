@@ -618,6 +618,14 @@ $(NT_PROBE_DIST)/KTHREAD.EXE: $(NT_PROBE_BUILD)/kthread.elf tools/elf2ntx.py
 	@mkdir -p $(NT_PROBE_DIST)
 	$(PYTHON) tools/elf2ntx.py $< -o $@
 
+$(NT_PROBE_DIST)/KEXCEPT.EXE: $(NT_PROBE_BUILD)/kexcept.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/ASOWN.EXE: $(NT_PROBE_BUILD)/asown.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
 # Non-destructive SR.MD/RB/BL preflight for the privileged-guest bridge.
 $(NT_PROBE_DIST)/PROTSTATE.EXE: $(NT_PROBE_BUILD)/protstate.elf tools/elf2ntx.py
 	@mkdir -p $(NT_PROBE_DIST)
@@ -662,7 +670,7 @@ $(NT_PROBE_DIST)/INITFAIL.EXE: $(NT_PROBE_BUILD)/initfail_test.elf $(NT_PROBE_DI
 	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module INITFAIL.DLL
 
 .PHONY: nt-vm-dll-probes
-nt-vm-dll-probes: $(NT_PROBE_DIST)/KTHREAD.EXE $(NT_PROBE_DIST)/PROTSTATE.EXE $(NT_PROBE_DIST)/NATIVEVM.EXE $(NT_PROBE_DIST)/VMTEST.EXE $(NT_PROBE_DIST)/MMGUARD.EXE $(NT_PROBE_DIST)/MMREAD.EXE $(NT_PROBE_DIST)/MMRDINIT.EXE $(NT_PROBE_DIST)/INITGOOD.DLL $(NT_PROBE_DIST)/INITFAIL.DLL $(NT_PROBE_DIST)/INITPASS.EXE $(NT_PROBE_DIST)/INITFAIL.EXE
+nt-vm-dll-probes: $(NT_PROBE_DIST)/KTHREAD.EXE $(NT_PROBE_DIST)/KEXCEPT.EXE $(NT_PROBE_DIST)/ASOWN.EXE $(NT_PROBE_DIST)/PROTSTATE.EXE $(NT_PROBE_DIST)/NATIVEVM.EXE $(NT_PROBE_DIST)/VMTEST.EXE $(NT_PROBE_DIST)/MMGUARD.EXE $(NT_PROBE_DIST)/MMREAD.EXE $(NT_PROBE_DIST)/MMRDINIT.EXE $(NT_PROBE_DIST)/INITGOOD.DLL $(NT_PROBE_DIST)/INITFAIL.DLL $(NT_PROBE_DIST)/INITPASS.EXE $(NT_PROBE_DIST)/INITFAIL.EXE
 	@echo "NTOS private VM, DLL init and emulator-only protected-write probes"
 
 # Deliberately unresolved DLL import: exercises failure before guest entry.

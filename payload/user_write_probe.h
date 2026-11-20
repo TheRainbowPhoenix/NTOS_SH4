@@ -19,6 +19,8 @@ __asm__(
     "ldc r0,sr\n"
     "nop\n"
     "mov #0x37,r0\n"  /* test value, must NEVER reach RO page */
+    ".global _ntos_user_write_probe_store\n"
+    "_ntos_user_write_probe_store:\n"
     "mov.b r0,@r4\n" /* exactly one user-mode protected write */
     ".global _ntos_user_write_probe_trapa\n"
     "_ntos_user_write_probe_trapa:\n"
@@ -31,3 +33,4 @@ __asm__(
 );
 extern void ntos_user_write_probe_stub(uint32_t target);
 extern void ntos_user_write_probe_trapa(void);
+extern void ntos_user_write_probe_store(void);
