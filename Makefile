@@ -144,12 +144,12 @@ $(BUILDDIR)/.ntos-build-flags: ntos-config-force
 	@printf '%s\n' '$(DEFINES)' > $@.tmp
 	@if test -e $@ && cmp -s $@.tmp $@; then rm -f $@.tmp; else mv $@.tmp $@; fi
 
-# Only SH7305's SH4AL-DSP switcher needs the DSP ISA. GCC -m4al
-# enables -dsp in assembler while remaining strictly NO FPU; do not
-# change the compiler ISA or ABI for the rest of the firmware.
+# Only the SH7305 switcher needs SH4AL-DSP opcodes. The pinned
+# sh4a_nofpueb GCC lacks -m4al multilib; use assembler -dsp directly.
+# Keep the remaining project -m4a-nofpu and never generate FPU ops.
 $(BUILDDIR)/src/cooperative_switch.o: src/cooperative_switch.S
 	@mkdir -p $(dir $@)
-	$(AS) -m4al -c $< -o $@ $(AS_FLAGS)
+	$(AS) -Wa,-dsp -c $< -o $@ $(AS_FLAGS)
 
 $(OBJECTS): $(BUILDDIR)/.ntos-build-flags
 
