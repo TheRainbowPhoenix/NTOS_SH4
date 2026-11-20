@@ -16,9 +16,9 @@ static void child_entry(void) {
     for(u32 i=0u;i<500u;++i) {
         if(parent_count!=i || child_count!=i ||
            get_tid()!=peer_tid)error=0xBADDC101u;
+        ++child_count;
         if(kreg_yield_checked(yield_,0x00004310u+i)!=1u)
             error=0xBADDC102u;
-        ++child_count;
     }
     finished=1u;
     (void)exit_();
