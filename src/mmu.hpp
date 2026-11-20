@@ -90,6 +90,8 @@ void tlb_install_entry(uint32_t va, uint32_t pa, uint32_t pte_flags,
 void tlb_set_urc(uint32_t slot);
 void cache_invalidate_all(void);
 void cache_flush_invalidate_block(void *addr, uint32_t size);
+// OCBP writes back dirty data BEFORE invalidating: safe on failed decommit.
+void cache_writeback_invalidate_block(void *addr,uint32_t size);
 }
 
 // --- C helpers --------------------------------------------------------------

@@ -1009,8 +1009,9 @@ static bool vm_shootdown(void *,uint32_t va) {
     auto &vm=g_nt_process.vm;
     const int ix=vm.find(va);
     if(ix<0 || vm.pages[ix].frame==0xFFFFu)return false;
-    // Discard old cached page contents before repurposing its P1 frame.
-    mmu::cache_flush_invalidate_block(
+    // OCBP writes back dirty lines before invalidation: even if the
+    // P4 shootdown is rejected, the committed frame keeps its data.
+    mmu::cache_writeback_invalidate_block(
         vm.backing+uint32_t(vm.pages[ix].frame)*4096u,4096u);
     return ntos_hw::g_context.table.invalidate(
         va,&vm_hw_invalidate,nullptr);

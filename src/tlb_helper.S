@@ -141,6 +141,32 @@ _cache_flush_invalidate_block:
     rts
     nop
 
+! ---------------------------------------------------------------------------
+! void cache_writeback_invalidate_block(void *addr [r4], u32 size [r5])
+! OCBP writeback+invalidate preserves the old page on failed shootdown.
+! Uses a P1 physical alias so no guest translation can fault here.
+! ---------------------------------------------------------------------------
+    .global _cache_writeback_invalidate_block
+_cache_writeback_invalidate_block:
+    tst r5,r5
+    bt .Lpurge_done
+    mov #-32,r1
+    mov r4,r0
+    and r1,r0
+    add r5,r4
+    add #-1,r4
+    and r1,r4
+.Lpurge_loop:
+    ocbp @r0
+    icbi @r0
+    add #32,r0
+    cmp/hi r4,r0
+    bf .Lpurge_loop
+    synco
+.Lpurge_done:
+    rts
+    nop
+
     .align 2
 .Lmmucr:    .long 0xFF000010
 .Lpteh:     .long 0xFF000000
