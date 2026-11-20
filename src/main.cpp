@@ -36,6 +36,10 @@
 #include "nt/launch_policy.hpp"
 #include "fs_guard.hpp"
 #include "nt/process.hpp"
+#include "nt/dll_lifecycle.hpp"
+#ifndef NTOS_ENABLE_DLL_INIT_TRACE
+#define NTOS_ENABLE_DLL_INIT_TRACE 0
+#endif
 
 // Streaming is enabled on this development branch. Set 0 to compare the
 // previous eager full-file staging path during emulator/hardware testing.
@@ -102,6 +106,16 @@ struct NtosApi {
     uint32_t (*mm_page_rights)(uint32_t);                  // [38] Mm RO/RW metadata
     int32_t (*mm_arm_fault_probe)(uint32_t,uint32_t);      // [39] VA, expected EXPEVT
     uint32_t (*mm_fault_probe_seen)(void);                 // [40] VBR canary callback count
+    uint32_t (*vm_reserve)(uint32_t,uint32_t);             // [41] preferred VA, pages -> VA or 0
+    uint32_t (*vm_commit)(uint32_t,uint32_t,uint32_t);     // [42] VA,pages,1 RO/2 RW -> NTSTATUS
+    uint32_t (*vm_protect)(uint32_t,uint32_t,uint32_t);    // [43] live PR update
+    uint32_t (*vm_query)(uint32_t);                       // [44] 0 reserved,1 RO,2 RW
+    uint32_t (*vm_release)(uint32_t);                     // [45] reserved-only release
+    uint32_t (*vm_committed_pages)(void);                 // [46] per-launch tracked frames
+    uint32_t (*arm_guest_guard)(uint32_t,uint32_t,uint32_t); // [47] TEA,EV,resume PC
+    uint32_t (*guard_seen)(void);                         // [48] accepted violations
+    uint32_t (*guard_status)(void);                       // [49] NTSTATUS
+    uint32_t (*guard_fault_address)(void);                // [50] TEA
 };
 
 static int cur_row = 0;
@@ -419,6 +433,16 @@ static int32_t ntos_page_hint(uint32_t va);
 static uint32_t ntos_mm_page_rights(uint32_t va);
 static int32_t ntos_mm_arm_fault_probe(uint32_t va,uint32_t event);
 static uint32_t ntos_mm_fault_probe_seen(void);
+static uint32_t ntos_vm_reserve(uint32_t base,uint32_t pages);
+static uint32_t ntos_vm_commit(uint32_t base,uint32_t pages,uint32_t rights);
+static uint32_t ntos_vm_protect(uint32_t base,uint32_t pages,uint32_t rights);
+static uint32_t ntos_vm_query(uint32_t va);
+static uint32_t ntos_vm_release(uint32_t va);
+static uint32_t ntos_vm_committed_pages(void);
+static uint32_t ntos_arm_guest_guard(uint32_t,uint32_t,uint32_t);
+static uint32_t ntos_guard_seen(void);
+static uint32_t ntos_guard_status(void);
+static uint32_t ntos_guard_fault_address(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -547,6 +571,16 @@ static NtosApi g_ntos_api = {
     &ntos_mm_page_rights, // [38]
     &ntos_mm_arm_fault_probe, // [39]
     &ntos_mm_fault_probe_seen, // [40]
+    &ntos_vm_reserve, // [41]
+    &ntos_vm_commit, // [42]
+    &ntos_vm_protect, // [43]
+    &ntos_vm_query, // [44]
+    &ntos_vm_release, // [45]
+    &ntos_vm_committed_pages, // [46]
+    &ntos_arm_guest_guard, // [47]
+    &ntos_guard_seen, // [48]
+    &ntos_guard_status, // [49]
+    &ntos_guard_fault_address, // [50]
 };
 
 // ---------------------------------------------------------------------------
@@ -686,6 +720,12 @@ static void *align_page(void *p) {
         (reinterpret_cast<uint32_t>(p) + 0xFFFu) & ~0xFFFu);
 }
 #include "hardware_fault.hpp"
+#ifndef NTOS_ENABLE_NT_PRIVATE_VM
+#define NTOS_ENABLE_NT_PRIVATE_VM 0
+#endif
+#if NTOS_ENABLE_NT_PRIVATE_VM && !NTOS_ENABLE_TLB_MISS_PAGER
+#error "The private NT VM requires the RAM-backed SH4A TLB pager"
+#endif
 
 // This private NTOS API is a diagnostic only: a payload can ask the P1
 // stage0 to install a known backing page BEFORE accessing it. Emulator
@@ -726,7 +766,144 @@ static uint32_t ntos_mm_fault_probe_seen(void) {
     return 0u;
 #endif
 }
+[[maybe_unused]] static bool ntos_vm_busy() {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    return !g_nt_process.active || !g_nt_process.vm.backing ||
+           !ntos_hw::g_context.installed || !mmu::at_enabled();
+#else
+    return true;
+#endif
+}
+[[maybe_unused]] static bool ntos_vm_collides(void *opaque,uint32_t va,uint32_t pages) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    const auto &table=*static_cast<const ntos_fault::Pager *>(opaque);
+    for(unsigned i=0u;i<table.modules_used;++i)
+        if(ntos_rebase::overlap(va,pages,table.modules[i].va,
+                                 table.modules[i].pages))
+            return true;
+#else
+    (void)opaque;(void)va;(void)pages;
+#endif
+    return false;
+}
+static uint32_t ntos_vm_reserve(uint32_t preferred,uint32_t pages) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    if(ntos_vm_busy())return 0u;
+    uint32_t result=0u;
+    const auto &table=ntos_hw::g_context.table;
+    const nt::Status status=g_nt_process.vm.reserve(
+        preferred,pages,&result,&ntos_vm_collides,
+        const_cast<ntos_fault::Pager *>(&table));
+    return status==nt::SUCCESS?result:0u;
+#else
+    (void)preferred;(void)pages;
+    return 0u;
+#endif
+}
+static uint32_t ntos_vm_commit(uint32_t va,uint32_t pages,uint32_t prot) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    if(ntos_vm_busy())return nt::DEVICE_BUSY;
+    if(prot!=1u && prot!=2u &&
+       !(NTOS_ENABLE_GUEST_PROTECT_DISPATCH && prot==3u))
+        return nt::INVALID_PARAMETER;
+    auto &vm=g_nt_process.vm;
+    const nt::Status status=vm.commit(va,pages,static_cast<nt::VmAccess>(prot));
+    if(status!=nt::SUCCESS)return status;
+    for(uint32_t i=0u;i<pages;++i) {
+        const int index=vm.find(va+i*0x1000u);
+        if(index<0)return nt::INTERNAL_ERROR;
+        uint8_t *const p1=vm.backing+
+            static_cast<uint32_t>(vm.pages[index].frame)*0x1000u;
+        // Publish freshly zeroed P1 frames before a guest UTLB mapping.
+        flush_image(p1,0x1000u);
+    }
+    return nt::SUCCESS;
+#else
+    (void)va;(void)pages;(void)prot;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+[[maybe_unused]] static bool ntos_vm_update_ptel(void *,uint32_t va,
+                                ntos_mm::Access rights) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    return ntos_hw::g_context.table.reprotect(
+        va,rights,&ntos_hw::commit_translation,nullptr);
+#else
+    (void)va;(void)rights;return false;
+#endif
+}
+static uint32_t ntos_vm_protect(uint32_t va,uint32_t pages,uint32_t prot) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    if(ntos_vm_busy())return nt::DEVICE_BUSY;
+    if(prot!=1u && prot!=2u &&
+       !(NTOS_ENABLE_GUEST_PROTECT_DISPATCH && prot==3u))
+        return nt::INVALID_PARAMETER;
+    const nt::Status status=g_nt_process.vm.protect(
+        va,pages,static_cast<nt::VmAccess>(prot),
+        &ntos_vm_update_ptel,nullptr);
+    if(status==nt::INTERNAL_ERROR)g_fatal.reason=3u; // failed rollback
+    return status;
+#else
+    (void)va;(void)pages;(void)prot;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_vm_query(uint32_t va) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    if(ntos_vm_busy())return 0u;
+    return static_cast<uint32_t>(g_nt_process.vm.query(va));
+#else
+    (void)va;return 0u;
+#endif
+}
+static uint32_t ntos_vm_release(uint32_t va) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    if(ntos_vm_busy())return nt::DEVICE_BUSY;
+    return g_nt_process.vm.release(va);
+#else
+    (void)va;return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_vm_committed_pages(void) {
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    return !ntos_vm_busy() ? g_nt_process.vm.committed_pages : 0u;
+#else
+    return 0u;
+#endif
+}
 
+
+static uint32_t ntos_arm_guest_guard(uint32_t address,uint32_t event,
+                                      uint32_t recovery_pc) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    if(!g_nt_process.active)return nt::DEVICE_BUSY;
+    return ntos_hw::arm_guest_guard(address,event,recovery_pc);
+#else
+    (void)address;(void)event;(void)recovery_pc;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_guard_seen(void) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    return ntos_hw::g_context.guest_guard.accepted;
+#else
+    return 0u;
+#endif
+}
+static uint32_t ntos_guard_status(void) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    return ntos_hw::g_context.guest_guard.last_status;
+#else
+    return 0u;
+#endif
+}
+static uint32_t ntos_guard_fault_address(void) {
+#if NTOS_ENABLE_TLB_MISS_PAGER
+    return ntos_hw::g_context.guest_guard.last_tea;
+#else
+    return 0u;
+#endif
+}
 
 // The eager mapper and the future demand pager share a file-to-page
 // materializer. In the old mode this Reader uses a complete P1 RAM buffer;
@@ -1263,6 +1440,8 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #endif
     uint8_t *api_raw=nullptr;
     uint8_t *api_block=nullptr;
+    uint8_t *vm_raw=nullptr;
+    nt::DllLifecycle<NTOS_MAX_MODULES> dll_plan{};
     int rc=-1;
 
 #if NTOS_STREAMED_IMAGE_LOADING
@@ -1465,6 +1644,16 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         flush_image(nodes[i].mapped.image,nodes[i].mapped.vsize);
     flush_image(api_block,0x4000u);
 
+#if NTOS_ENABLE_NT_PRIVATE_VM
+    // Allocate once in restored P1 host world, before guest VBR ownership.
+    // Neither NtCommit nor the VBR fault callback can allocate SDK memory.
+    vm_raw=static_cast<uint8_t *>(Mem_Malloc(64u*4096u+0xFFFu));
+    if(!vm_raw){*err="cannot reserve private P1 VM frame arena";goto done;}
+    {
+        uint8_t *vm_frames=static_cast<uint8_t *>(align_page(vm_raw));
+        g_nt_process.vm.configure(vm_frames,mmu::phys_addr(vm_frames));
+    }
+#endif
     // Regular mode installs every page. Experimental fault mode installs
     // only the API window and each DLL's first page and EXE entry page;
     // the VBR+0x400 trampoline installs the remaining pages on demand.
@@ -1495,6 +1684,14 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                                     &nodes[i].hdr)) {
                 *err="cannot register virtual DLL backing";goto done;
             }
+#if NTOS_ENABLE_NT_PRIVATE_VM
+        ntos_hw::g_context.table.set_extra(
+            &g_nt_process.vm,[](void *owner,uint32_t va,uint32_t *pa,
+                                ntos_mm::Access *rights) {
+                return static_cast<nt::VirtualMemory<64,8> *>(owner)->
+                    resolve(va,pa,rights);
+            });
+#endif
         if(eager_experiment) {
             // Match the normal loader: all reachable code, data and IAT
             // pages are resident before the first P0 instruction executes.
@@ -1564,52 +1761,89 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         reinterpret_cast<void *>(mmu::VA_API_WINDOW),0x4000u);
 #endif
 
-    // WinCE loader invokes each DLL entry after its dependencies have
-    // been relocated and imports snapped, and before EXE entry. Reverse
-    // BFS gives a dependency-first order for the acyclic part of the graph;
-    // cyclic DLLs are supported for imports, but their init order remains
-    // deterministic rather than arbitrarily re-entrant. On failure,
-    // detach the DLLs that already accepted PROCESS_ATTACH.
-    {
-        using dll_entry=int (*)(uint32_t,uint32_t,void *);
-        using exe_entry=int (*)(const NtosApi *,char **,char **);
-        app_console_started = false;
-        bool attached[NTOS_MAX_MODULES]={};
-        bool attach_ok=true;
-        // DLL_PROCESS_ATTACH=1, DLL_PROCESS_DETACH=0 from WinCE SDK.
-        for(unsigned i=count;i-->1u;) {
-            const auto &mod=nodes[i];
-            if(!mod.hdr.oh.entry_rva)continue;
-            dll_entry entry=reinterpret_cast<dll_entry>(
-                mod.mapped.base+mod.hdr.oh.entry_rva);
-            if(!entry(mod.mapped.base,1u,nullptr)) {
-                attach_ok=false;
-                *err="DLL_PROCESS_ATTACH returned FALSE";
-                break;
+    // DllMain runs only AFTER the full graph is mapped, relocated and all
+    // IAT entries snapped. Initialize dependencies BEFORE their consumers.
+    // A rejected PROCESS_ATTACH rolls back EXACTLY the successfully
+    // attached DLLs in reverse order; never call EXE entry after failure.
+    if(!dll_plan.configure(count)) {
+        *err="invalid DLL graph for initialization";goto done;
+    }
+    for(unsigned i=1u;i<count;++i) {
+        if(!dll_plan.entry(i,nodes[i].hdr.oh.entry_rva!=0u)) {
+            *err="cannot register DLL entry";goto done;
+        }
+        const auto &m=nodes[i];
+        if(!m.hdr.oh.import_rva)continue;
+        bool terminated=false;
+        for(uint32_t di=0u;di<m.hdr.oh.import_size/20u;++di) {
+            pe::ImportDesc d{};
+            if(!pe::read_import_desc(m.hdr,m.mapped.image,
+                                     m.mapped.vsize,di,&d)) {
+                terminated=true;break;
             }
-            attached[i]=true;
+            char name[40]{};
+            if(!pe::rva_string(m.mapped.image,m.mapped.vsize,
+                               d.name_rva,name,sizeof(name))) {
+                *err="DLL initialization import name corrupted";goto done;
+            }
+            for(unsigned j=1u;j<count;++j)
+                if(i!=j && module_matches(name,nodes[j].name))
+                    (void)dll_plan.depends(i,j);
         }
-        if(attach_ok) {
-            exe_entry entry=reinterpret_cast<exe_entry>(
-                nodes[0].mapped.base+hdr.oh.entry_rva);
-            *out_ret=entry(&g_ntos_api,nullptr,nullptr);
-            *err="ok";
-            rc=0;
+        if(!terminated) {
+            *err="DLL initialization dependency graph unterminated";goto done;
         }
-        // Opposite of attach order: release all initialized modules.
-        for(unsigned i=1u;i<count;++i) {
-            if(!attached[i])continue;
-            const auto &mod=nodes[i];
+    }
+    if(!dll_plan.plan()) {
+        *err="could not order DLL_PROCESS_ATTACH";goto done;
+    }
+    {
+        // ABI: int DllMain(HINSTANCE module, DWORD reason, void *reserved)
+        // where PROCESS_ATTACH=1 and PROCESS_DETACH=0. Only successful
+        // attach callbacks are placed on the per-run detach stack.
+        using dll_entry=int (*)(uint32_t,uint32_t,void *);
+        auto callback=[](void *opaque,unsigned index,bool attach)->bool {
+            auto *modules=static_cast<ModuleNode *>(opaque);
+            const ModuleNode &m=modules[index];
+            if(!m.hdr.oh.entry_rva)return true;
             dll_entry entry=reinterpret_cast<dll_entry>(
-                mod.mapped.base+mod.hdr.oh.entry_rva);
-            (void)entry(mod.mapped.base,0u,nullptr);
+                m.mapped.base+m.hdr.oh.entry_rva);
+            const int result=entry(m.mapped.base,attach?1u:0u,nullptr);
+            return !attach || result!=0;
+        };
+        app_console_started=false;
+        if(!dll_plan.attach(callback,nodes)) {
+            *err="DLL_PROCESS_ATTACH returned FALSE";
+            // attach() already detached exactly the accepted dependencies.
+            goto done;
         }
+        using exe_entry=int (*)(const NtosApi *,char **,char **);
+        exe_entry entry=reinterpret_cast<exe_entry>(
+            nodes[0].mapped.base+hdr.oh.entry_rva);
+        *out_ret=entry(&g_ntos_api,nullptr,nullptr);
+        *err="ok";
+        rc=0;
+        dll_plan.detach(callback,nodes);
     }
 
 done:
     mmu::disable_at_flush();
     irq_owner.release();
     host_world::restore(host_state);
+#if NTOS_ENABLE_DLL_INIT_TRACE
+    if(dll_plan.planned) {
+        char msg[80], *p=msg;
+        log_text(p,"DLL init: attach=");
+        log_number(p,dll_plan.detached,10);
+        log_text(p," detach=");
+        log_number(p,dll_plan.detached,10);
+        log_text(p," rejected=");
+        log_number(p,dll_plan.failed,10);
+        log_text(p," cycles=");
+        log_number(p,dll_plan.cycle_breaks,10);
+        *p=0;ntos_puts(msg);
+    }
+#endif
 #if NTOS_STREAMED_IMAGE_LOADING
     if(source_path) {
         char msg[72], *p=msg;
@@ -1642,6 +1876,16 @@ done:
         log_text(p," MMUCR="); log_number(p,ntos_hw::g_context.last_mmucr,16,8);
         *p=0; ntos_puts(msg);
     }
+#if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+    if(ntos_hw::g_context.general_faults) {
+        char msg[80], *p=msg;
+        log_text(p,"PROT=");log_number(p,ntos_hw::g_context.general_faults,10);
+        log_text(p," REC=");log_number(p,ntos_hw::g_context.guest_guard.accepted,10);
+        log_text(p," UNEXP=");
+        log_number(p,ntos_hw::g_context.guest_guard.forwarded,10);
+        *p=0;ntos_puts(msg);
+    }
+#endif
 #if NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE
     if(ntos_hw::g_context.probe_seen || ntos_hw::g_context.probe_armed) {
         char msg[72], *p=msg;
@@ -1687,6 +1931,7 @@ done:
         rc=-2;  // only report after MMU/VBR ownership is restored
     }
 #endif
+    if(vm_raw) Mem_Free(vm_raw);
     if(api_raw) Mem_Free(api_raw);
     for(unsigned i=0u;i<NTOS_MAX_MODULES;++i) {
         if(nodes[i].mapped.raw) Mem_Free(nodes[i].mapped.raw);

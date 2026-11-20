@@ -11,7 +11,12 @@
 #include "../pe.hpp"
 
 namespace ntos_mm {
-enum class Access : uint8_t { no_access=0u, read_only=1u, read_write=2u };
+// privileged_only is a DEBUG-ONLY user-inaccessible P0 mapping (PTEL.PR=01),
+// used to provoke a genuine SH4A EXPEVT=0x0A0 in the emulator. It is NOT
+// an NT PAGE_NOACCESS implementation and is never enabled on CP400 kits.
+enum class Access : uint8_t {
+    no_access=0u, read_only=1u, read_write=2u, privileged_only=3u
+};
 constexpr uint32_t PAGE=4096u;
 inline bool writable(Access a) { return a==Access::read_write; }
 inline bool readable(Access a) { return a!=Access::no_access; }
@@ -43,5 +48,25 @@ inline Access pe_page_access(const pe::Image &image,uint32_t page) {
     }
     return !covered ? Access::no_access :
            write ? Access::read_write : Access::read_only;
+}
+// The SH4A has no NX bit. This EXECUTE check is still useful when
+// validating a guest recovery-PC target before changing privileged SPC.
+inline bool pe_page_executable(const pe::Image &image,uint32_t page) {
+    if(page>0xFFFFFFFFu/PAGE)return false;
+    const uint32_t start=page*PAGE;
+    if(start>=image.oh.size_of_image)return false;
+    const uint32_t end=start+((image.oh.size_of_image-start)<PAGE ?
+                             image.oh.size_of_image-start:PAGE);
+    for(uint32_t i=0u;i<image.section_count && i<8u;++i) {
+        const auto &sec=image.sections[i];
+        const uint32_t size=sec.vsize>sec.raw_size ?
+                            sec.vsize:sec.raw_size;
+        if(sec.rva>=image.oh.size_of_image ||
+           size>image.oh.size_of_image-sec.rva)continue;
+        if(sec.rva<end && start<sec.rva+size &&
+           (sec.characteristics&pe::SCN_MEM_EXECUTE))
+            return true;
+    }
+    return false;
 }
 } // namespace ntos_mm
