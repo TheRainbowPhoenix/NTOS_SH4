@@ -69,6 +69,15 @@ _tlb_install_entry:
 
     ldtlb                           ! commit into UTLB[URC]
 
+#if NTOS_SH4A_TLB_SYNC_BARRIER
+    ! Renesas SH4A MMU section 7.4.3: after LDTLB, before returning to
+    ! an MMU-translated P0 instruction, execute ICBI for ANY address
+    ! (or RTE; an ordinary syscall here returns via RTS, not RTE).
+    ! The P1 exception/host stack is available and is not executable.
+    icbi    @r15
+    synco
+#endif
+
     ! CCR |= 1 again (OS330 invalidates after LDTLB too)
     mov.l   .Lccr, r1
     mov.l   @r1, r0
