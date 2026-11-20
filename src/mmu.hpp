@@ -66,9 +66,13 @@ constexpr uint32_t SLOT_NULL_GUARD    = 0x3Fu;
 // SH7305 has no NX bit. Keep API window RW for ABI compatibility.
 constexpr uint32_t PTEL_PAGE = 0x0000017Cu;
 constexpr uint32_t PTEL_PAGE_READ_ONLY = 0x0000015Cu;
+// PTEL.PR=01: privileged RW, USER ACCESS DENIED. Only the separately
+// gated emulator test may request this; do not expose on physical kits.
+constexpr uint32_t PTEL_PAGE_SUPERVISOR_ONLY = 0x0000013Cu;
 constexpr uint32_t PTEL_PR_MASK = 0x00000060u;
 static_assert((PTEL_PAGE&PTEL_PR_MASK)==0x60u);
 static_assert((PTEL_PAGE_READ_ONLY&PTEL_PR_MASK)==0x40u);
+static_assert((PTEL_PAGE_SUPERVISOR_ONLY&PTEL_PR_MASK)==0x20u);
 
 // API window virtual address (OS330 C1A contract): first word of the window
 // points at the syscall table.
@@ -131,7 +135,8 @@ inline void flush_tlb(void) {
 inline bool map_page_at_index_flags(uint32_t va,uint32_t pa,uint32_t slot,
                                     uint32_t pte_flags) {
     if(slot>=UTLB_ENTRIES ||
-       (pte_flags!=PTEL_PAGE && pte_flags!=PTEL_PAGE_READ_ONLY))
+       (pte_flags!=PTEL_PAGE && pte_flags!=PTEL_PAGE_READ_ONLY &&
+        pte_flags!=PTEL_PAGE_SUPERVISOR_ONLY))
         return false;
     tlb_install_entry(va,pa&PA_MASK,pte_flags,slot);
     return true;
@@ -164,7 +169,8 @@ inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa,
            (data&0x00000100u)!=0u &&
            (data&0x1FFFF000u)==(pa&0x1FFFF000u) &&
            (expected_flags==PTEL_PAGE ||
-            expected_flags==PTEL_PAGE_READ_ONLY) &&
+            expected_flags==PTEL_PAGE_READ_ONLY ||
+            expected_flags==PTEL_PAGE_SUPERVISOR_ONLY) &&
            (data&PTEL_PAGE)==expected_flags;
 }
 #endif
