@@ -318,11 +318,13 @@ static PsRootHardware g_ps_root{};
 #endif
 #if NTOS_ENABLE_GUEST_IO
 struct NtIoBuiltIn {
-    nt::io::Manager<2u,8u> manager{};
+    nt::io::Manager<3u,8u> manager{};
     nt::io::DRIVER_OBJECT null_driver{};
     nt::io::DRIVER_OBJECT loop_driver{};
     nt::io::DRIVER_OBJECT loop_swapped{};
-    nt::io::DEVICE_OBJECT *null_device=nullptr,*loop_device=nullptr;
+    nt::io::DRIVER_OBJECT display_driver{};
+    nt::io::DEVICE_OBJECT *null_device=nullptr,*loop_device=nullptr,
+                          *display_device=nullptr;
     uint8_t loop[64]{};
     uint32_t loop_bytes=0u;
     bool enabled=false;
@@ -331,9 +333,36 @@ struct NtIoBuiltIn {
         auto *s=static_cast<NtIoBuiltIn *>(opaque);
         if(!s || !s->enabled)return nt::DEVICE_BUSY;
         using namespace nt::io;
-        const bool is_loop=&dev==s->loop_device;
         nt::Status status=nt::SUCCESS;
         uint32_t transferred=0u;
+        if(&dev==s->display_device) {
+            // First hardware-facing NT driver: use the already proven
+            // CP400 framebuffer HAL. Never call GetInput, File_* or
+            // manipulate VBR/IRQ state from this normal Ke service.
+            if(irp.major==Major::create || irp.major==Major::close) {
+                // Nothing to acquire; ownership stays in the HH3 HAL.
+            } else if(irp.major==Major::device_control &&
+                      irp.control_code==0x4E540001u &&
+                      irp.length==12u && irp.buffer) {
+                const auto *v=static_cast<const uint8_t *>(irp.buffer);
+                auto rd=[&](unsigned i)->uint32_t {
+                    return (uint32_t(v[i])<<24)|
+                           (uint32_t(v[i+1u])<<16)|
+                           (uint32_t(v[i+2u])<<8)|v[i+3u];
+                };
+                const uint32_t x=rd(0u),y=rd(4u),color=rd(8u);
+                if(x>=static_cast<uint32_t>(width) ||
+                   y>=static_cast<uint32_t>(height) ||
+                   color>0xFFFFu)status=nt::INVALID_PARAMETER;
+                else {
+                    ntos_pixel(x,y,color);
+                    transferred=12u;
+                }
+            } else status=nt::NOT_SUPPORTED;
+            return IoCompleteRequest(irp,status,transferred)==nt::SUCCESS ?
+                status : nt::INTERNAL_ERROR;
+        }
+        const bool is_loop=&dev==s->loop_device;
         switch(irp.major) {
         case Major::create:case Major::close: break;
         case Major::write:
@@ -367,11 +396,14 @@ struct NtIoBuiltIn {
         null_driver={&dispatch,this};
         loop_driver={&dispatch,this};
         loop_swapped={&dispatch,this};
+        display_driver={&dispatch,this};
         enabled=true;
         return manager.IoCreateDevice("\\Device\\Null",&null_driver,
                           &null_device)==nt::SUCCESS &&
                manager.IoCreateDevice("\\Device\\Loopback",&loop_driver,
-                          &loop_device)==nt::SUCCESS;
+                          &loop_device)==nt::SUCCESS &&
+               manager.IoCreateDevice("\\Device\\Display",&display_driver,
+                          &display_device)==nt::SUCCESS;
     }
     nt::Status replace_loop(uint32_t variant) {
         if(!enabled || variant>1u || !loop_device)
