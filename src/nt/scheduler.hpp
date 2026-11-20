@@ -16,6 +16,10 @@ struct SH4Context {
     Sh4AlDsp dsp{};
     bool complete=false;
 };
+// Cross-process changes MUST first obtain an interrupt-safe root/TLB
+// acknowledgement. A refused switch must leave both scheduler state
+// and source registers unchanged.
+using BeforeProcessSwitch=bool (*)(void *,uint32_t,uint32_t);
 struct DispatchSlot {
     uint32_t pid=0u,tid=0u;
     SH4Context context{};
@@ -41,7 +45,8 @@ struct CooperativeScheduler {
     }
     // Host-only decision; hardware context switch must be separate.
     Status yield(const SH4Context &saved,unsigned *next,
-                 SH4Context *restore) {
+                 SH4Context *restore,BeforeProcessSwitch gate=nullptr,
+                 void *gate_context=nullptr) {
         if(!next || !restore || active>=COUNT || !saved.complete)
             return INVALID_PARAMETER;
         unsigned choice=COUNT;
@@ -52,6 +57,12 @@ struct CooperativeScheduler {
             }
         }
         if(choice==COUNT)return DEVICE_BUSY;
+        // Same-PID KTHREAD switch needs no address-space flush. An
+        // independent KPROCESS switch MUST not proceed without a gate.
+        if(slots[choice].pid!=slots[active].pid &&
+           (!gate || !gate(gate_context,slots[active].pid,
+                            slots[choice].pid)))
+            return DEVICE_BUSY;
         slots[active].context=saved;
         *restore=slots[choice].context;*next=choice;
         active=choice;return SUCCESS;

@@ -28,3 +28,6 @@ Milestones remaining: full interrupt-safe SH4AL-DSP context swap across two KTHR
 - `0x4D444331`: success
 
 The PSPARENT→PSCHILD probe now returns to the picker rather than launching STARTHOST.
+
+### Gated 500-cycle stress
+`MMSTRESS.EXE`: **0x4D535431** after 500 decommit/recommit cycles and independent second-page data verification. **Do not run MMSTRESS until the corrected MMREUSE returns 0x4D444331 on real hardware.** Stress is one foreground KTHREAD in this revision; a true cross-thread MMRACE remains gated on the real Ke context switch.
