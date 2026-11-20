@@ -54,6 +54,18 @@ _ntos_vbr_template_start:
     mov.l @r0,r4
     mov.l .Lgeneral_expevt,r0
     mov.l @r0,r5
+#if NTOS_ENABLE_KE_USER_SYSCALL
+    /* After TRAPA the CPU set SR.RB=1. Guest r4/r5 survive in BANK0,
+     * NOT current supervisor bank1. Pass guest service/arg in r6/r7
+     * (SH4 C ABI third/fourth argument), while r4/r5 stay TEA/EXPEVT.
+     * This is needed for an actual user->kernel call, not an armed
+     * precomputed response. Saved bank1 r6/r7 are restored below. */
+    stc r4_bank,r6
+    stc r5_bank,r7
+#else
+    mov #0,r6
+    mov #0,r7
+#endif
     mov.l .Lgeneral_callback,r0
     jsr @r0
     nop
