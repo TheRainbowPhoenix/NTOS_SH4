@@ -2372,6 +2372,16 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                         goto done;
                     }
             }
+#if NTOS_ENABLE_PE_PAIR
+            // Separate PE .data/.bss must also be resident, not just its
+            // entry instruction. Eager budget includes these pages.
+            if(second_exe.raw)
+                for(uint32_t p=0u;p<second_exe.npages;++p)
+                    if(!ntos_hw::prime(second_exe.base+p*0x1000u,true)) {
+                        *err="cannot prime secondary executable data";
+                        goto done;
+                    }
+#endif
         } else {
             // Oversized graphs need the experimental miss path. Only their
             // entry/bootstrap pages are pinned to leave eviction capacity.
