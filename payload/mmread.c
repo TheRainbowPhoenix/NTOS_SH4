@@ -7,6 +7,7 @@
  * NEVER package with physical CP400 candidate firmware. */
 #include <stdint.h>
 #include "ntapi_caps.h"
+#include "user_read_probe.h"
 typedef uint32_t u32;
 typedef u32 (*reserve_fn)(u32,u32);
 typedef u32 (*change_fn)(u32,u32,u32);
@@ -31,15 +32,15 @@ int main(const void *const *api,char **argv,char **envp) {
     volatile uint8_t *p=(volatile uint8_t *)(uintptr_t)base;
     p[0]=0xA5u;
     if(protect(base,1u,3u)!=0u)return 0xBAD94004u;
-    void *recovery=&&recovered;
-    __asm__ volatile("" : : "r"(recovery) : "memory");
-    if(arm(base,0x0A0u,(u32)(uintptr_t)recovery)!=0u)
+    // NTOS's normal direct-call guest runs privileged: PR=01 permits its
+    // reads. The isolated stackless P0 user stub *really* sets MD=0,
+    // executes one read, then TRAPA #0x7b restores the privileged SR.
+    const u32 recovery=(u32)(uintptr_t)&ntos_user_probe_trapa;
+    if(arm(base,0x0A0u,recovery)!=0u)
         return 0xBAD94005u;
-    volatile uint8_t value=p[0]; // deliberate P0 read protection fault
-    (void)value;
-    return 0xBAD94006u;         // fault bypassed: failure
-recovered:
-    if(seen()!=1u || status()!=0xC0000005u || tea()!=base)
+    ntos_user_probe_stub(base);
+    if(seen()!=1u)return 0xBAD94006u; // no real 0x0a0 occurred
+    if(status()!=0xC0000005u || tea()!=base)
         return 0xBAD94007u;
     if(protect(base,1u,2u)!=0u || p[0]!=0xA5u)
         return 0xBAD94008u;
