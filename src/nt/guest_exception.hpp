@@ -18,6 +18,7 @@ constexpr uint32_t SH4_PROTECTION_READ=0x0A0u;
 constexpr uint32_t SH4_PROTECTION_WRITE=0x0C0u;
 using GuestExecutable=bool (*)(void *,uint32_t);
 struct GuestException {
+    uint32_t target_address=0u;
     uint32_t target_page=0u;
     uint32_t event=0u;
     uint32_t recovery_pc=0u;
@@ -31,6 +32,7 @@ struct GuestException {
            (pc&1u) || !pc || !executable ||
            !executable(context,pc))
             return INVALID_PARAMETER;
+        target_address=va;
         target_page=va&~0xFFFu;
         event=expected;
         recovery_pc=pc;
@@ -46,7 +48,7 @@ struct GuestException {
         *out_pc=0u;
         if(!armed || !executable ||
            (ssr&0x40000000u)!=0u || code!=event ||
-           (tea&~0xFFFu)!=target_page ||
+           tea!=target_address || (tea&~0xFFFu)!=target_page ||
            (spc&1u)!=0u || !executable(context,spc) ||
            !executable(context,recovery_pc)) {
             ++forwarded;
