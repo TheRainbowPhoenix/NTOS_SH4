@@ -126,7 +126,6 @@ struct Pager {
         Entry &e=entries[static_cast<unsigned>(ix)];
         if(!install(ctx,e.va,e.pa,static_cast<unsigned>(ix),
                     rights==ntos_mm::Access::privileged_only ? 2u :
-                    rights==ntos_mm::Access::privileged_only ? 2u :
                     rights==ntos_mm::Access::read_only ? 1u : 0u))
             return false;
         e.access=rights;
@@ -175,6 +174,7 @@ struct Pager {
         if(victim<0){servicing=false;return false;}
         Entry &out=entries[static_cast<unsigned>(victim)];
         if(!install(ctx,vpn,pa,static_cast<unsigned>(victim),
+                    rights==ntos_mm::Access::privileged_only ? 2u :
                     rights==ntos_mm::Access::read_only ? 1u : 0u)) {
             servicing=false;return false;
         }
