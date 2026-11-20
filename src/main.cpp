@@ -1962,7 +1962,7 @@ static void banner(void) {
     cur_row = 3;
 }
 
-static void tiny_utoa(uint32_t v, char *buf) {
+[[maybe_unused]] static void tiny_utoa(uint32_t v, char *buf) {
     char tmp[12];
     int n = 0;
     if (v == 0) {
