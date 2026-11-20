@@ -10,7 +10,7 @@ int main(uint32_t module,uint32_t reason,void *reserved) {
     (void)module;(void)reserved;
     if(reason==1u) {
         // Only a fully initialized dependency may reach here.
-        return NT_CALL(initgood_state,())==1u ? 0 : 0;
+        return NT_CALL(initgood_state,())==1u ? 0 : 1;
     }
     return 1;
 }
