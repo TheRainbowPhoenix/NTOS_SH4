@@ -40,9 +40,13 @@
 #include "fs_guard.hpp"
 #include "nt/process.hpp"
 #include "nt/ke_coop.hpp"
+#include "nt/io_manager.hpp"
 #include "nt/dll_lifecycle.hpp"
 #ifndef NTOS_ENABLE_COOP_KERNEL
 #define NTOS_ENABLE_COOP_KERNEL 0
+#endif
+#ifndef NTOS_ENABLE_GUEST_IO
+#define NTOS_ENABLE_GUEST_IO 0
 #endif
 #ifndef NTOS_ENABLE_DLL_INIT_TRACE
 #define NTOS_ENABLE_DLL_INIT_TRACE 0
@@ -146,6 +150,12 @@ struct NtosApi {
     uint32_t (*ke_coop_yield)(void);                   // [68]
     uint32_t (*ke_coop_exit)(void);                    // [69] secondary-only
     uint32_t (*ke_coop_switch_count)(void);            // [70]
+    uint32_t (*nt_open_device)(const char *,uint32_t *); // [71] NTSTATUS
+    uint32_t (*nt_read_device)(uint32_t,void *,uint32_t,uint32_t *); // [72]
+    uint32_t (*nt_write_device)(uint32_t,const void *,uint32_t,uint32_t *); // [73]
+    uint32_t (*nt_close_device)(uint32_t);              // [74] NTSTATUS
+    uint32_t (*nt_device_io_control)(uint32_t,uint32_t,void *,uint32_t,
+                                      uint32_t *);      // [75] NTSTATUS
 };
 
 static int cur_row = 0;
@@ -262,6 +272,65 @@ static ntos_fs::Gate g_fs;
 // This is NOT a protected process address space: it is the owner of one
 // foreground application graph, its NT handles, events and Ex allocations.
 static nt::Process g_nt_process{};
+#if NTOS_ENABLE_GUEST_IO
+struct NtIoBuiltIn {
+    nt::io::Manager<2u,8u> manager{};
+    nt::io::DRIVER_OBJECT null_driver{};
+    nt::io::DRIVER_OBJECT loop_driver{};
+    nt::io::DEVICE_OBJECT *null_device=nullptr,*loop_device=nullptr;
+    uint8_t loop[64]{};
+    uint32_t loop_bytes=0u;
+    bool enabled=false;
+    static nt::Status dispatch(void *opaque,nt::io::DEVICE_OBJECT &dev,
+                               nt::io::IRP &irp) {
+        auto *s=static_cast<NtIoBuiltIn *>(opaque);
+        if(!s || !s->enabled)return nt::DEVICE_BUSY;
+        using namespace nt::io;
+        const bool is_loop=&dev==s->loop_device;
+        nt::Status status=nt::SUCCESS;
+        uint32_t transferred=0u;
+        switch(irp.major) {
+        case Major::create:case Major::close: break;
+        case Major::write:
+            transferred=irp.length;
+            if(is_loop) {
+                if(irp.length>sizeof(s->loop))return nt::INVALID_PARAMETER;
+                const auto *src=static_cast<const uint8_t *>(irp.buffer);
+                for(uint32_t i=0u;i<irp.length;++i)s->loop[i]=src[i];
+                s->loop_bytes=irp.length;
+            }
+            break;
+        case Major::read:
+            if(is_loop) {
+                transferred=irp.length<s->loop_bytes?irp.length:s->loop_bytes;
+                auto *dst=static_cast<uint8_t *>(irp.buffer);
+                for(uint32_t i=0u;i<transferred;++i)dst[i]=s->loop[i];
+            }
+            break;
+        case Major::device_control:
+            status=nt::NOT_SUPPORTED;break;
+        default:status=nt::INVALID_PARAMETER;break;
+        }
+        return nt::io::IoCompleteRequest(irp,status,transferred)==nt::SUCCESS ?
+               status : nt::INTERNAL_ERROR;
+    }
+    bool reset() {
+        *this=NtIoBuiltIn{};
+        null_driver={&dispatch,this};
+        loop_driver={&dispatch,this};
+        enabled=true;
+        return manager.IoCreateDevice("\\Device\\Null",&null_driver,
+                          &null_device)==nt::SUCCESS &&
+               manager.IoCreateDevice("\\Device\\Loopback",&loop_driver,
+                          &loop_device)==nt::SUCCESS;
+    }
+    void shutdown(uint32_t pid) {
+        if(enabled && pid)(void)manager.close_owner(pid);
+        enabled=false; // no P0 dereferences or SDK access during teardown
+    }
+};
+static NtIoBuiltIn g_nt_io{};
+#endif
 #if NTOS_ENABLE_COOP_KERNEL
 static nt::KeCoop g_ke_coop{};
 extern "C" void ntos_ke_coop_swap(nt::CoopSaved *,const nt::CoopSaved *);
@@ -270,6 +339,9 @@ static void *nt_host_alloc(void *,size_t n) {return Mem_Malloc(n);}
 static void nt_host_free(void *,void *p) {Mem_Free(p);}
 static void nt_process_configure() {
     g_nt_process.pool.configure(nullptr,&nt_host_alloc,&nt_host_free);
+#if NTOS_ENABLE_GUEST_IO
+    (void)g_nt_io.reset();
+#endif
 #if NTOS_ENABLE_COOP_KERNEL
     // Only called before the next mapped guest. Never reset live stacks.
     g_ke_coop.reset();
@@ -503,6 +575,12 @@ static uint32_t ntos_ke_create_coop_thread(uint32_t,uint32_t);
 static uint32_t ntos_ke_coop_yield(void);
 static uint32_t ntos_ke_coop_exit(void);
 static uint32_t ntos_ke_coop_switch_count(void);
+static uint32_t ntos_nt_open_device(const char *,uint32_t *);
+static uint32_t ntos_nt_read_device(uint32_t,void *,uint32_t,uint32_t *);
+static uint32_t ntos_nt_write_device(uint32_t,const void *,uint32_t,uint32_t *);
+static uint32_t ntos_nt_close_device(uint32_t);
+static uint32_t ntos_nt_device_io_control(uint32_t,uint32_t,void *,uint32_t,
+                                           uint32_t *);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -665,6 +743,11 @@ static NtosApi g_ntos_api = {
     &ntos_ke_coop_yield, // [68]
     &ntos_ke_coop_exit, // [69]
     &ntos_ke_coop_switch_count, // [70]
+    &ntos_nt_open_device, // [71]
+    &ntos_nt_read_device, // [72]
+    &ntos_nt_write_device, // [73]
+    &ntos_nt_close_device, // [74]
+    &ntos_nt_device_io_control, // [75]
 };
 
 // ---------------------------------------------------------------------------
@@ -1216,6 +1299,118 @@ static uint32_t ntos_ke_coop_switch_count(void) {
     return g_nt_process.ke.running() ? g_ke_coop.switches : 0u;
 #else
     return 0u;
+#endif
+}
+// I/O fast-path services are normal privileged C-ABI calls, NOT VBR IRQs.
+// Every guest pointer is checked against its resident P0 page + rights
+// BEFORE dereference. No SDK file handles or direct SH7305 MMIO here.
+#if NTOS_ENABLE_GUEST_IO
+static bool nt_io_range(const void *address,uint32_t bytes,bool writable) {
+    if(!g_nt_process.active || !g_nt_process.space.valid() ||
+       !ntos_hw::g_context.installed || !mmu::at_enabled() ||
+       !address || !bytes || bytes>4096u)return false;
+    const uint32_t v=static_cast<uint32_t>(
+        reinterpret_cast<uintptr_t>(address));
+    if(v<0x1000u || v>=0x80000000u || bytes>0x80000000u-v)
+        return false;
+    auto &pager=ntos_hw::g_context.table;
+    const uint32_t last=v+bytes-1u;
+    for(uint32_t page=v&~0xFFFu;page<=last;page+=4096u) {
+        if(pager.lookup(page)<0)return false;
+        const auto a=pager.access(page);
+        if(writable ? a!=ntos_mm::Access::read_write :
+           (a!=ntos_mm::Access::read_only &&
+            a!=ntos_mm::Access::read_write))
+            return false;
+        if(page>=0x7FFFF000u)break;
+    }
+    return true;
+}
+static bool nt_io_check(void *,const void *buffer,uint32_t bytes,bool write) {
+    return nt_io_range(buffer,bytes,write);
+}
+static uint32_t nt_io_pid() {
+    return g_nt_process.ke.running() && g_nt_process.space.valid() ?
+        g_nt_process.ke.process.unique_process_id : 0u;
+}
+#endif
+static uint32_t ntos_nt_open_device(const char *name,uint32_t *out) {
+#if NTOS_ENABLE_GUEST_IO
+    const uint32_t pid=nt_io_pid();
+    if(!pid || !g_nt_io.enabled || !out ||
+       (reinterpret_cast<uintptr_t>(out)&3u) ||
+       !nt_io_range(out,4u,true) || !name)return nt::INVALID_PARAMETER;
+    char safe[40]{};
+    for(unsigned i=0u;i<sizeof(safe);++i) {
+        if(!nt_io_range(name+i,1u,false))return nt::INVALID_PARAMETER;
+        safe[i]=name[i];
+        if(safe[i]==0)return g_nt_io.manager.open(pid,safe,out);
+    }
+    return nt::INVALID_PARAMETER;
+#else
+    (void)name;(void)out;return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_nt_read_device(uint32_t h,void *buffer,uint32_t bytes,
+                                     uint32_t *done) {
+#if NTOS_ENABLE_GUEST_IO
+    const uint32_t pid=nt_io_pid();
+    if(!pid || !done || (reinterpret_cast<uintptr_t>(done)&3u) ||
+       !nt_io_range(done,4u,true) || !bytes || bytes>64u)
+        return nt::INVALID_PARAMETER;
+    nt::io::IoStatusBlock io{};
+    const nt::Status status=g_nt_io.manager.request(
+        pid,h,nt::io::Major::read,buffer,bytes,0u,&io,&nt_io_check,nullptr);
+    if(status==nt::SUCCESS)*done=io.information;
+    return status;
+#else
+    (void)h;(void)buffer;(void)bytes;(void)done;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_nt_write_device(uint32_t h,const void *buffer,
+                                      uint32_t bytes,uint32_t *done) {
+#if NTOS_ENABLE_GUEST_IO
+    const uint32_t pid=nt_io_pid();
+    if(!pid || !done || (reinterpret_cast<uintptr_t>(done)&3u) ||
+       !nt_io_range(done,4u,true) || !bytes || bytes>64u)
+        return nt::INVALID_PARAMETER;
+    nt::io::IoStatusBlock io{};
+    const nt::Status status=g_nt_io.manager.request(
+        pid,h,nt::io::Major::write,const_cast<void *>(buffer),bytes,0u,
+        &io,&nt_io_check,nullptr);
+    if(status==nt::SUCCESS)*done=io.information;
+    return status;
+#else
+    (void)h;(void)buffer;(void)bytes;(void)done;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_nt_close_device(uint32_t h) {
+#if NTOS_ENABLE_GUEST_IO
+    const uint32_t pid=nt_io_pid();
+    return pid ? g_nt_io.manager.close(pid,h) : nt::DEVICE_BUSY;
+#else
+    (void)h;return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_nt_device_io_control(uint32_t h,uint32_t code,
+                                        void *buffer,uint32_t bytes,
+                                        uint32_t *done) {
+#if NTOS_ENABLE_GUEST_IO
+    const uint32_t pid=nt_io_pid();
+    if(!pid || !done || (reinterpret_cast<uintptr_t>(done)&3u) ||
+       !nt_io_range(done,4u,true) || !bytes || bytes>64u)
+        return nt::INVALID_PARAMETER;
+    nt::io::IoStatusBlock io{};
+    const nt::Status status=g_nt_io.manager.request(
+        pid,h,nt::io::Major::device_control,buffer,bytes,code,&io,
+        &nt_io_check,nullptr);
+    if(status==nt::SUCCESS)*done=io.information;
+    return status;
+#else
+    (void)h;(void)code;(void)buffer;(void)bytes;(void)done;
+    return nt::NOT_SUPPORTED;
 #endif
 }
 static uint32_t ntos_ke_system_service_count(void) {
@@ -2313,6 +2508,9 @@ done:
     // descriptor is confirmed closed (or the gate is permanently poisoned).
     const uint32_t leaked_handles=g_nt_process.handles.used;
     const uint32_t leaked_pool=g_nt_process.pool.current;
+#if NTOS_ENABLE_GUEST_IO
+    g_nt_io.shutdown(g_nt_process.ke.process.unique_process_id);
+#endif
     g_nt_process.finish(); // NEVER calls SDK File_Close a second time
     if(leaked_handles || leaked_pool) {
         char msg[80], *p=msg;
