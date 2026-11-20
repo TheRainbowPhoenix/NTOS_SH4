@@ -52,8 +52,9 @@ int main(const void *const *api,char **argv,char **envp) {
     if(allocate(CURRENT,base,0u,size,COMMIT,PAGE_RW)!=0u ||
        hint(vm_base)!=0 || count()!=2u)
         return (int)0xBAD9E008u;
-    if(p[0]!=0u || p[4095]!=0u || p[4096]!=0x5Au)
-        return (int)0xBAD9E009u;
+    if(p[0]!=0u)return (int)0xBAD9E091u;
+    if(p[4095]!=0u)return (int)0xBAD9E092u;
+    if(p[4096]!=0x5Au)return (int)0xBAD9E093u;
     p[0]=0x39u;
     vm_bytes=8192u;
     if(free_(CURRENT,base,size,DECOMMIT)!=0u ||

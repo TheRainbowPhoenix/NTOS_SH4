@@ -17,3 +17,14 @@ Single matched ZIP. Back up the known-good NTOS.hh3. This candidate exercises a 
 Report exact return code, PF/HINT/EV/BAD, and whether it returns to picker after each. Do not run anything after a hardware hang until restarting with the last known-good firmware.
 
 Milestones remaining: full interrupt-safe SH4AL-DSP context swap across two KTHREADs and independent *concurrent* process page-table root switching. This build does NOT claim hardware multitasking.
+
+### Failure codes for MMREUSE v2
+- `0xBAD9E007`: decommit failed, page metadata/counter wrong
+- `0xBAD9E008`: recommit or software prefault failed
+- `0xBAD9E091`: byte 0 of recommitted frame not zero
+- `0xBAD9E092`: byte 4095 of recommitted frame not zero
+- `0xBAD9E093`: neighbor page lost its 0x5A value
+- `0xBAD9E00A..0D`: later decommit/release/re-reserve/zero check
+- `0x4D444331`: success
+
+The PSPARENT→PSCHILD probe now returns to the picker rather than launching STARTHOST.

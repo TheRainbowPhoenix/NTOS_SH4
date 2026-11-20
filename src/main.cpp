@@ -1009,12 +1009,33 @@ static bool vm_shootdown(void *,uint32_t va) {
     auto &vm=g_nt_process.vm;
     const int ix=vm.find(va);
     if(ix<0 || vm.pages[ix].frame==0xFFFFu)return false;
-    // OCBP writes back dirty lines before invalidation: even if the
-    // P4 shootdown is rejected, the committed frame keeps its data.
+    auto &pager=ntos_hw::g_context.table;
+    const int slot=pager.lookup(va);
+    // P0 and P1 can occupy different SH4A OC indices for the same
+    // physical page. Never free the frame based on P1 purge alone.
+    // Missing residency means P0 dirty-cache aliases cannot be proven
+    // absent by this early-stage routine: fail CLOSED.
+    if(slot<0 || slot>=static_cast<int>(ntos_fault::SLOTS))
+        return false;
+#if NTOS_VERIFY_UTLB_SLOTS
+    uint32_t phys=0u;
+    phys=vm.physical+uint32_t(vm.pages[ix].frame)*4096u;
+    if(!mmu::verify_slot(static_cast<uint32_t>(slot),va,phys,
+                        vm.query(va)==nt::VmAccess::read_only ?
+                        mmu::PTEL_PAGE_READ_ONLY :
+                        vm.query(va)==nt::VmAccess::emulator_user_denied ?
+                        mmu::PTEL_PAGE_SUPERVISOR_ONLY :
+                        mmu::PTEL_PAGE))
+        return false;
+#endif
+    // First write back+invalidate the *guest P0 alias* while its
+    // translation is still resident. Then purge the backing P1 alias.
+    // If invalidation later fails, contents remain intact in RAM.
+    mmu::cache_writeback_invalidate_block(
+        reinterpret_cast<void *>(va),4096u);
     mmu::cache_writeback_invalidate_block(
         vm.backing+uint32_t(vm.pages[ix].frame)*4096u,4096u);
-    return ntos_hw::g_context.table.invalidate(
-        va,&vm_hw_invalidate,nullptr);
+    return pager.invalidate(va,&vm_hw_invalidate,nullptr);
 }
 static nt::Status native_vm_decommit(void *,uint32_t base,uint32_t pages) {
 #if NTOS_VERIFY_UTLB_SLOTS && NTOS_ENABLE_NT_PRIVATE_VM
