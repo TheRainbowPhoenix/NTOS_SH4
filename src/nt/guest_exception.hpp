@@ -17,6 +17,20 @@ namespace nt {
 constexpr uint32_t SH4_PROTECTION_READ=0x0A0u;
 constexpr uint32_t SH4_PROTECTION_WRITE=0x0C0u;
 using GuestExecutable=bool (*)(void *,uint32_t);
+// SH4A TRAPA #0x7B: EXPEVT=0x160, TRA=0x1EC, SPC=TRAPA_PC+2.
+// Only an active, exact user-origin probe may restore a saved MD=1 SR.
+constexpr uint32_t SH4_TRAPA_EVENT=0x160u;
+constexpr uint32_t READ_RETURN_TRAPA=0x7Bu;
+inline bool user_read_return_allowed(bool active,uint32_t event,
+                                     uint32_t tra,uint32_t spc,
+                                     uint32_t ssr,uint32_t expected_next,
+                                     uint32_t saved_sr) {
+    return active && event==SH4_TRAPA_EVENT &&
+           tra==READ_RETURN_TRAPA*4u &&
+           (ssr&0x40000000u)==0u &&
+           (saved_sr&0x70000000u)==0x40000000u &&
+           spc==expected_next && (spc&1u)==0u;
+}
 struct GuestException {
     uint32_t target_address=0u;
     uint32_t target_page=0u;
