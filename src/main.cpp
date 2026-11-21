@@ -3752,6 +3752,10 @@ int main(int argc, char **argv, char **envp) {
         }
         count = npick;
     }
+    // File_FindFirst order is filesystem-dependent; sort the visible EXEs
+    // by filename while preserving the original size/path catalog indices.
+    ntos_picker::sort_by_name(*catalog_owner.catalog,
+                              static_cast<unsigned>(count));
 
     if (count == 0) {
         Debug_SetCursorPosition(0, 3);
