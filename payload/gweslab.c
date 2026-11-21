@@ -20,6 +20,7 @@ NT_IMPORT(U,NtosDialogResult,(U))
 NT_IMPORT(int,NtosDialogRelease,(U))
 NT_IMPORT(U,NtosDialogTop,(void))
 NT_IMPORT(int,NtosDialogSetText,(U,U,const WCHAR16 *))
+NT_IMPORT(int,NtosDialogDraw,(void))
 NT_IMPORT(int,MessageBoxW,(void *,const WCHAR16 *,const WCHAR16 *,U))
 NT_IMPORT(void *,GetDC,(void *))
 NT_IMPORT(int,ReleaseDC,(void *,void *))
@@ -44,6 +45,7 @@ NT_DEFINE(NtosDialogResult)
 NT_DEFINE(NtosDialogRelease)
 NT_DEFINE(NtosDialogTop)
 NT_DEFINE(NtosDialogSetText)
+NT_DEFINE(NtosDialogDraw)
 NT_DEFINE(MessageBoxW)
 NT_DEFINE(GetDC)
 NT_DEFINE(ReleaseDC)
@@ -112,7 +114,8 @@ static int open_demo_dialog(U owner) {
         NT_CALL(NtosDialogEnd,(dlg,0x3EBu));
         NT_CALL(NtosDialogRelease,(dlg));return 0;
     }
-    active_dialog=dlg;return 1;
+    active_dialog=dlg;
+    return NT_CALL(NtosDialogDraw,());
 }
 static void draw_panel(void *dc,U id,int n) {
     RECT a;
@@ -156,7 +159,7 @@ static void draw_panel(void *dc,U id,int n) {
             ui_text(dc,12,297,
                 last_dialog_result==0x3EAu?"Dialog: OK":
                 last_dialog_result==0x3EBu?"Dialog: Cancel":
-                "Drag dialog title to move",ink,0);
+                "Dialog: tap OK, Cancel or X",ink,0);
             ui_text(dc,12,321,
                 ui_theme==0u?"Theme: NTOS White":
                 ui_theme==1u?"Theme: Classic 98":
@@ -253,7 +256,12 @@ static int wndproc(void *hwnd,DWORD msg,DWORD w,DWORD lp) {
         }
         return 0;
     }
-    if(msg==0x0111u || msg==0x001Au) { /* edit EN_CHANGE / SIP changed */
+    if(msg==0x0111u) {
+        /* COREDLL paints/flips only the edited field: never repaint the
+         * whole desktop after every character. */
+        return 0;
+    }
+    if(msg==0x001Au) { /* SIP work-area changed */
         changed(hwnd);return 0;
     }
     if(msg==0x0002u) {
