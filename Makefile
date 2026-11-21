@@ -152,6 +152,15 @@ $(BUILDDIR)/.ntos-build-flags: ntos-config-force
 ifeq ($(KE_COOP_SMALL),1)
 $(BUILDDIR)/src/main.o: CXX_FLAGS += -Os
 endif
+# CPDoom uses section-level dead-code removal and LTO, both already present
+# in NTOS.  Its -Ofast and custom segment-address layout are NOT safe
+# substitutes for a checked PT_LOAD end.  This independent profile extends
+# -Os to other kernel C++ modules (LTO included), disables unused C++ runtime
+# features, and must pass the exact same SH7305 firmware/PE regression tests.
+ifeq ($(NTOS_KERNEL_SIZE),1)
+$(OBJECTS): CXX_FLAGS += -Os -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit
+LD_FLAGS += -Os -fno-exceptions -fno-rtti
+endif
 
 $(BUILDDIR)/src/cooperative_switch.o: src/cooperative_switch.S
 	@mkdir -p $(dir $@)
