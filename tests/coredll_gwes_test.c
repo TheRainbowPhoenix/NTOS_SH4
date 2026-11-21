@@ -15,7 +15,8 @@
 #include "../payload/coredll.c"
 #undef main
 const void *ntos_host_table[28];
-static unsigned pixels,rects,events,commands;
+static unsigned pixels,rects,events,commands,refreshes;
+static void refresh(void) {++refreshes;}
 static void pixel(u32 x,u32 y,u32 color) {
     assert(x<320u && y<528u && color<=65535u);++pixels;
 }
@@ -33,6 +34,7 @@ static int proc(void *h,u32 msg,u32 wp,u32 lp) {
     return 1;
 }
 int main(void) {
+    ntos_host_table[2]=(const void *)refresh;
     ntos_host_table[7]=(const void *)pixel;
     ntos_host_table[9]=(const void *)fill;
     ntos_host_table[15]=(const void *)fake_touch;
@@ -84,6 +86,9 @@ int main(void) {
     tap.hwnd=win;tap.message=0x0201u;tap.pt.x=20;tap.pt.y=72;
     assert(DispatchMessageW(&tap));
     assert(SipGetInfo(&sip) && (sip.flags&1u));
+    assert(refreshes==0u); /* keyboard is deferred until parent WM_PAINT */
+    assert(UpdateWindow(win));
+    assert(refreshes==1u); /* parent+SIP one frame */
     /* Ignore the WinCE WM_SETTINGCHANGE queued by SipShowIM: test the
        next real hardware-style touch -> COREDLL WM_CHAR conversion. */
     g_qhead=g_qtail;g_window.invalidated=0;
