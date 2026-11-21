@@ -10,7 +10,11 @@ find_package(Gint 2.11 REQUIRED)
 # Native stage 0: no ELF/EDL second loader, no other C/C++ runtime.
 # The EX-word gint linker script enforces the 128 KiB D01 image and the
 # separate 0x7400xxxx RAM/stack regions.
-add_executable(ntos_sh main.cpp storage.c)
+add_executable(ntos_sh main.cpp storage.c pe_runner.cpp profile.cpp invoke.S
+  ../payload/coredll.c)
+set_source_files_properties(../payload/coredll.c PROPERTIES COMPILE_DEFINITIONS
+  "NTOS_CORE_HOST_TEST;NTOS_EXWORD;main=ntos_exword_dll_main")
+set_target_properties(ntos_sh PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
 target_include_directories(ntos_sh PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../src")
 target_compile_options(ntos_sh PRIVATE -Os -ffunction-sections -fdata-sections
   -fno-stack-protector -fno-pic -fno-pie
