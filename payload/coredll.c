@@ -1058,6 +1058,7 @@ static unsigned nt_glyph_div(unsigned numerator, unsigned denominator)
 static int nt_fontwidth(u16 ch)
 {
     int raw = (ch >= 32 && ch < 127) ? nt_font_advance[ch - 32] : 8;
+    if(g_font_height==14)return raw; /* native atlas needs no divide */
     return (int)nt_glyph_div((unsigned)(raw * g_font_height + 7), 14u);
 }
 static int nt_glyph(void *hdc, int x, int y, u16 ch)
@@ -1065,13 +1066,37 @@ static int nt_glyph(void *hdc, int x, int y, u16 ch)
     const void **api = ntapi();
     u32 fg = rgb565(g_text_color), bg = rgb565(g_bk_color);
     int h = g_font_height;
-    int w = (int)nt_glyph_div((unsigned)(8 * h + 7), 14u);
     GDI_BITMAP *bitmap=gdi_selected(hdc);
     if (!hdc || (!bitmap &&
          (!gdi_device_dc(hdc) || !api || !api[7])))
         return 0;
     if (ch < 32 || ch >= 127)
         ch = '?';
+    if(h==14) {
+        /* The stock TouchKB/dialog font is exactly 8x14. The generic
+         * scaler ran a 32-bit software divider per glyph plus hundreds
+         * of shift/threshold operations even at native size. */
+        for(int yy=0;yy<14;++yy) {
+            const unsigned bits=nt_font_rows[ch-32][yy];
+            for(int xx=0;xx<8;++xx) {
+                const int active=(bits>>xx)&1;
+                if(active || g_bk_mode!=1) {
+                    const int px=x+xx,py=y+yy;
+                    if(bitmap) {
+                        if(px>=0 && px<bitmap->w &&
+                           py>=0 && py<bitmap->h)
+                            bitmap->pixels[(u32)py*(u32)bitmap->w+
+                                           (u32)px]=(u16)(active?fg:bg);
+                    } else if(px>=0 && px<320 && py>=0 && py<528) {
+                        ((void (*)(u32,u32,u32))api[7])
+                            ((u32)px,(u32)py,active?fg:bg);
+                    }
+                }
+            }
+        }
+        return 1;
+    }
+    const int w=(int)nt_glyph_div((unsigned)(8*h+7),14u);
     int sr = 0, ry = 0;
     for (int yy = 0; yy < h; ++yy) {
         unsigned bits = nt_font_rows[ch - 32][sr];
