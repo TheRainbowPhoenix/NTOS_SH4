@@ -127,6 +127,13 @@ static inline int nt_dlg_layout(NT_DIALOG *d,const NT_GWES *g) {
     int available=base.bottom-base.top;
     int height=nt_dlg_height(available,d->height);
     if(!height)return 0;
+    /* A docked SIP reduces usable height. Preserve enough room for the
+       dialog's existing controls instead of hiding its OK/Cancel row. */
+    for(unsigned i=0;i<d->count;++i) {
+        int required=d->items[i].bounds.bottom+24+8;
+        if(height<required)height=required;
+    }
+    if(height>bottom-4)height=bottom-4;
     int width=d->width>0?d->width:(base.right-base.left-20);
     width=nt_dlg_clamp(width,96,NT_GWES_WIDTH-8);
     int cx=(base.left+base.right-width)/2;
@@ -186,7 +193,13 @@ static inline int nt_dlg_add(NT_DIALOGS *s,uint32_t token,
        item->bounds.top<0 || item->bounds.right<=item->bounds.left ||
        item->bounds.bottom<=item->bounds.top ||
        item->bounds.right>d->bounds.right-d->bounds.left-8 ||
-       item->bounds.bottom>d->bounds.bottom-d->bounds.top-24-6)return 0;
+       item->bounds.bottom+32>
+           ((d->bounds.bottom-d->bounds.top)+
+            ((d->bounds.bottom-d->bounds.top)<(NT_GWES_HEIGHT-4)?
+             (NT_GWES_HEIGHT-4):0)))return 0;
+    if((item->type==NT_DLG_BUTTON || item->type==NT_DLG_EDIT) &&
+       (item->bounds.right-item->bounds.left<32 ||
+        item->bounds.bottom-item->bounds.top<18))return 0;
     d->items[d->count]=*item;
     nt_dlg_copy(d->items[d->count].text,48u,item->text);
     ++d->count;return 1;

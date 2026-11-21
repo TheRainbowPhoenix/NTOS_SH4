@@ -207,6 +207,8 @@ int NtosDialogDraw(void) {
     nt_dialog_init_once();
     nt_dialog_paint();coredll_refresh();return 1;
 }
+static u32 nt_dialog_drag;
+static int nt_dialog_drag_x,nt_dialog_drag_y;
 static int nt_dialog_capture(const NT_MSG *msg) {
     if(!msg || !nt_dialog_active())return 0;
     NT_DIALOG *d=nt_dlg_top(&g_nt_dialogs);
@@ -214,9 +216,19 @@ static int nt_dialog_capture(const NT_MSG *msg) {
     if(msg->message==0x0201u) { /* touch down */
         const u32 id=d->token;
         u32 element=0u;
+        int title_drag=msg->pt.y>=d->bounds.top &&
+             msg->pt.y<d->bounds.top+24 &&
+             msg->pt.x>=d->bounds.left &&
+             msg->pt.x<d->bounds.right-26;
         int routed=nt_dlg_route(&g_nt_dialogs,&g_nt_gwes,
                                 msg->pt.x,msg->pt.y,&element);
+        if(title_drag && d->state==1u) {
+            nt_dialog_drag=d->token;
+            nt_dialog_drag_x=msg->pt.x-d->bounds.left;
+            nt_dialog_drag_y=msg->pt.y-d->bounds.top;
+        }
         if(d->state==2u) {
+            nt_dialog_drag=0u;
             nt_dialog_finished(d);
         } else if(routed==3 && d->focused &&
                   (nt_sip_flags&1u)==0u) {
@@ -230,8 +242,15 @@ static int nt_dialog_capture(const NT_MSG *msg) {
         }
         return 1;
     }
-    if(msg->message==0x0200u || msg->message==0x0202u)
-        return 1; /* background pointer/drag/up capture */
+    if(msg->message==0x0200u) {
+        if(nt_dialog_drag && nt_dialog_drag==d->token)
+            NtosDialogMove(d->token,msg->pt.x-nt_dialog_drag_x,
+                          msg->pt.y-nt_dialog_drag_y);
+        return 1;
+    }
+    if(msg->message==0x0202u) {
+        nt_dialog_drag=0u;return 1;
+    } /* background pointer/drag/up capture */
     if(msg->message==0x0102u || msg->message==0x0100u) {
         unsigned ch=msg->wParam;
         nt_dlg_key(&g_nt_dialogs,ch);
@@ -245,7 +264,7 @@ static int nt_dialog_capture(const NT_MSG *msg) {
  * Only MB_OK (0) and MB_OKCANCEL (1) are implemented; unsupported button
  * combinations fail rather than impersonating WinCE API semantics. */
 int MessageBoxW(void *hwnd,const u16 *message,const u16 *title,u32 type) {
-    if(type & 0xFu)return 0; /* only MB_OK in this initial implementation */
+    if((type&0xFu)!=0u && (type&0xFu)!=1u)return 0;
     (void)hwnd;
     NT_DLG_CONFIG config={
         sizeof(config),0u,35u,NT_DLG_ALIGN_CENTER,
@@ -269,6 +288,18 @@ int MessageBoxW(void *hwnd,const u16 *message,const u16 *title,u32 type) {
     if(!NtosDialogAdd(dlg,&item)) {
         NtosDialogEnd(dlg,NT_DIALOG_CANCEL);
         NtosDialogRelease(dlg);return 0;
+    }
+    if((type&0xFu)==1u) {
+        NT_DLG_ITEM cancel={0};
+        cancel.size=sizeof(cancel);cancel.type=NT_DLG_BUTTON;
+        cancel.id=NT_DIALOG_CANCEL;
+        cancel.bounds=(NT_GW_RECT){178,70,266,102};
+        const u16 caption_cancel[]={'C','a','n','c','e','l',0};
+        nt_dlg_copy(cancel.text,48u,caption_cancel);
+        if(!NtosDialogAdd(dlg,&cancel)) {
+            NtosDialogEnd(dlg,NT_DIALOG_CANCEL);
+            NtosDialogRelease(dlg);return 0;
+        }
     }
     for(unsigned turns=0u;!NtosDialogResult(dlg) && turns<4096u;++turns) {
         NT_MSG msg={0};
