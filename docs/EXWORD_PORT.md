@@ -28,7 +28,7 @@ Expected native locations include
 `\\crd0\CASIO\NTOSH\_CONTENT\SYSROOT`. NTOSH searches actual
 directory-entry spelling, including lower-case installer names; it still
 offers raw volume browsing if SYSROOT is missing. LEFT/RIGHT selects disk,
-UP/DOWN navigates (48-entry pages), EXE opens/runs, EXIT goes up or returns
+UP/DOWN navigates (16-entry pages), EXE opens/runs, EXIT goes up or returns
 at the SYSROOT root, and ACON/MENU quits.
 
 Exe imports are resolved recursively: first alongside the requesting

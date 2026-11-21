@@ -3,7 +3,7 @@
 #ifndef NTOS_EXWORD_STORAGE_H
 #define NTOS_EXWORD_STORAGE_H
 #include <stdint.h>
-#define NTOS_EXWORD_LIST_MAX 48u
+#define NTOS_EXWORD_LIST_MAX 16u
 #define NTOS_EXWORD_NAME_MAX 48u
 #define NTOS_EXWORD_PATH_MAX 160u
 struct ntos_exword_listing {
@@ -24,6 +24,9 @@ int ntos_exword_scan(unsigned volume, struct ntos_exword_listing *out);
 /* Resolve installed app's SYSROOT with case-accurate directory entries.
  * Returns 0 only when SYSROOT is actually visible on the given volume. */
 int ntos_exword_find_sysroot(unsigned volume, char out[NTOS_EXWORD_PATH_MAX]);
+/* One shared temporary enumeration page. Not reentrant; callers must
+ * finish a scan before starting another. UI has its own separate page. */
+struct ntos_exword_listing *ntos_exword_scratch(void);
 int ntos_exword_scan_path(const char *pattern, struct ntos_exword_listing *out);
 int ntos_exword_scan_page(const char *pattern,unsigned skip,
                          struct ntos_exword_listing *out,unsigned *more);

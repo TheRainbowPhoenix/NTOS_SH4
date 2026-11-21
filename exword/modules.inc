@@ -18,7 +18,6 @@ static Module modules[MAX_MODULES];
 static unsigned count;
 static uint32_t cursor,limit;
 static unsigned attach_order[MAX_MODULES],attach_count;
-static ntos_exword_listing directory;
 
 static unsigned str_len(const char *p) {
     unsigned n=0u;
@@ -66,15 +65,16 @@ static bool in_dir(const char *dir,const char *filename,
     if(ntos_exword_file_size(out,&size)==0)return true;
     char pattern[NTOS_EXWORD_PATH_MAX];
     if(!joined(dir,"*",pattern))return false;
+    ntos_exword_listing *directory=ntos_exword_scratch();
     unsigned skip=0u,more=0u;
     do {
-        if(ntos_exword_scan_page(pattern,skip,&directory,&more)<0)return false;
-        for(unsigned i=0u;i<directory.count;++i)
-            if(directory.kinds[i]!=5u &&
-               same_case(directory.names[i],filename))
-                return joined(dir,directory.names[i],out);
-        if(!directory.count)break;
-        skip+=directory.count;
+        if(ntos_exword_scan_page(pattern,skip,directory,&more)<0)return false;
+        for(unsigned i=0u;i<directory->count;++i)
+            if(directory->kinds[i]!=5u &&
+               same_case(directory->names[i],filename))
+                return joined(dir,directory->names[i],out);
+        if(!directory->count)break;
+        skip+=directory->count;
     } while(more && skip<=4096u);
     return false;
 }

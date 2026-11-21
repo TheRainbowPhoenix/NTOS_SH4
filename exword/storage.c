@@ -196,6 +196,8 @@ int ntos_exword_close_fd(int fd)
  * returned by native directory enumeration, including case-sensitive cards.
  * No writing/guessing physical disk paths. */
 static struct ntos_exword_listing g_sysroot_scan;
+struct ntos_exword_listing *ntos_exword_scratch(void)
+{ return &g_sysroot_scan; }
 static int ntos_caseeq(const char *a,const char *b)
 {
     while(*a && *b) {
