@@ -15,8 +15,9 @@
 #include "../payload/coredll.c"
 #undef main
 const void *ntos_host_table[28];
-static unsigned pixels,rects,app_events;
+static unsigned pixels,rects,app_events,refreshes;
 static unsigned fake_script;
+static void refresh(void) {++refreshes;}
 static void pixel(u32 x,u32 y,u32 color) {
     assert(x<320u && y<528u && color<=65535u);++pixels;
 }
@@ -44,6 +45,7 @@ static NT_MSG mouse(u32 type,int x,int y) {
     return msg;
 }
 int main(void) {
+    ntos_host_table[2]=(const void *)refresh;
     ntos_host_table[7]=(const void *)pixel;
     ntos_host_table[9]=(const void *)rect;
     ntos_host_table[15]=(const void *)input;
@@ -88,6 +90,9 @@ int main(void) {
     assert(NtosDialogAdd(first,&cancel));
     assert(NtosDialogSetText(first,11u,title));
     assert(!NtosDialogSetText(first,999u,title));
+    assert(refreshes==0u); /* opening and adding controls do not refresh */
+    assert(NtosDialogDraw());
+    assert(refreshes==1u); /* complete control tree presented once */
     u32 second=NtosDialogOpen(&cfg);
     assert(second && second!=first && NtosDialogTop()==second);
     /* Outside modal, click is swallowed; app receives nothing. */
@@ -95,13 +100,17 @@ int main(void) {
     assert(DispatchMessageW(&msg));
     assert(app_events==0u && NtosDialogResult(second)==0u);
     NT_RECT sr;assert(NtosDialogGetRect(second,&sr));
-    /* Modal title supports dragging, with viewport bounds clamped. */
+    /* Modal title is no longer draggable; no refresh on pointer motion. */
+    NT_RECT before=sr;
+    unsigned before_refresh=refreshes;
     msg=mouse(0x0201u,sr.left+12,sr.top+8);
     assert(DispatchMessageW(&msg));
     msg=mouse(0x0200u,308,501);
     assert(DispatchMessageW(&msg));
     assert(NtosDialogGetRect(second,&sr));
-    assert(sr.right<=320 && sr.bottom<=528);
+    assert(sr.left==before.left && sr.top==before.top &&
+           sr.right==before.right && sr.bottom==before.bottom);
+    assert(refreshes==before_refresh);
     msg=mouse(0x0202u,308,501);assert(DispatchMessageW(&msg));
     msg=mouse(0x0201u,sr.right-9,sr.top+8);
     assert(DispatchMessageW(&msg));
@@ -134,5 +143,5 @@ int main(void) {
     assert(MessageBoxW(0,body,title,0u)==1); /* IDOK */
     assert(fake_script==2u);
     assert(MessageBoxW(0,body,title,4u)==0); /* MB_YESNO not faked */
-    puts("PASS COREDLL modal: 4 themes, nested dialog top z-order, draggable title, modal blocked input, Edit+SIP WM_CHAR, MessageBoxW IDOK/IDCANCEL");
+    puts("PASS COREDLL modal: 4 themes, nested dialog top z-order, fixed position, modal blocked input, Edit+SIP WM_CHAR, MessageBoxW IDOK/IDCANCEL");
 }
