@@ -83,9 +83,7 @@ static void nt_dialog_frame(NT_DIALOG *d) {
 }
 static void nt_dialog_paint(void) {
     if(!nt_dialog_active())return;
-    /* Screen is redrawn by foreground app. SIP is always foreground to
-       the app but behind its modal dialog. No alpha blending or AA. */
-    if(nt_sip_flags&1u)nt_sip_paint();
+    /* The final presenter paints the SIP AFTER all modal overlays. */
     uint32_t after=0u;
     for(unsigned pass=0u;pass<NT_DIALOG_MAX;++pass) {
         NT_DIALOG *next=0;
@@ -97,16 +95,20 @@ static void nt_dialog_paint(void) {
         if(!next)break;
         nt_dlg_layout(next,&g_nt_gwes);
         nt_dialog_frame(next);
+        next->rendered=1u;
         after=next->serial;
     }
 }
 int NtosThemeSet(u32 theme) {
     nt_dialog_init_once();
     if(!nt_dlg_theme_set(&g_nt_dialogs,theme))return 0;
+    unsigned visible=0u;
     for(unsigned i=0;i<NT_DIALOG_MAX;++i)
-        if(g_nt_dialogs.slots[i].state==1u)
+        if(g_nt_dialogs.slots[i].state==1u) {
             g_nt_dialogs.slots[i].theme=theme;
-    nt_dialog_paint();coredll_refresh();
+            visible|=g_nt_dialogs.slots[i].rendered;
+        }
+    if(visible) {nt_present_overlays();coredll_refresh();}
     return 1;
 }
 u32 NtosThemeGet(void) {
@@ -125,23 +127,30 @@ u32 NtosDialogOpen(const NT_DLG_CONFIG *cfg) {
     }
     NT_DIALOG *d=nt_dlg_find(&g_nt_dialogs,id);
     if(d)d->keyboard_prev=prior;
-    nt_dialog_paint();coredll_refresh();
+    /* Keep requested SIP mode for this dialog, including keyboard=1.
+     * A dialog is not visible until the caller finishes its elements
+     * and calls NtosDialogDraw. */
     return id;
 }
 int NtosDialogAdd(u32 dialog,const NT_DLG_ITEM *item) {
     nt_dialog_init_once();
     if(!nt_dlg_add(&g_nt_dialogs,dialog,item))return 0;
-    nt_dialog_paint();coredll_refresh();return 1;
+    NT_DIALOG *d=nt_dlg_find(&g_nt_dialogs,dialog);
+    if(d && d->rendered) {nt_present_overlays();coredll_refresh();}
+    return 1;
 }
 int NtosDialogMove(u32 dialog,int x,int y) {
     nt_dialog_init_once();
     if(!nt_dlg_move(&g_nt_dialogs,&g_nt_gwes,dialog,x,y))return 0;
-    /* Repaint the underlying top-level window to erase old rectangle.
-       The next composited pass draws the dialog at its new position. */
-    if(g_window.magic) {
-        g_window.invalidated=1;
-        UpdateWindow((void *)&g_window);
-    } else {nt_dialog_paint();coredll_refresh();}
+    NT_DIALOG *d=nt_dlg_find(&g_nt_dialogs,dialog);
+    /* Programmatic move remains testable, but touch dragging is disabled.
+     * Moving a not-yet-drawn fixture never repaints the background. */
+    if(d && d->rendered) {
+        if(g_window.magic) {
+            g_window.invalidated=1;
+            UpdateWindow((void *)&g_window);
+        } else {nt_present_overlays();coredll_refresh();}
+    }
     return 1;
 }
 int NtosDialogGetRect(u32 dialog,NT_RECT *out) {
@@ -160,11 +169,13 @@ u32 NtosDialogTop(void) {
 static void nt_dialog_finished(NT_DIALOG *d) {
     if(!d || d->state!=2u)return;
     const u32 keyboard=d->keyboard_prev;
-    if((nt_sip_flags&1u)!=keyboard)SipShowIM(keyboard);
+    const int sip_changed=(nt_sip_flags&1u)!=keyboard;
+    if(sip_changed)SipShowIM(keyboard);
+    if(!d->rendered)return; /* no intermediate test frame to erase */
     if(g_window.magic) {
         g_window.invalidated=1;UpdateWindow((void *)&g_window);
     } else {
-        nt_dialog_paint();coredll_refresh();
+        nt_present_overlays();coredll_refresh();
     }
 }
 int NtosDialogEnd(u32 dialog,u32 result) {
@@ -199,16 +210,17 @@ int NtosDialogSetText(u32 dialog,u32 element,const u16 *text) {
     for(unsigned i=0;i<d->count;++i)
         if(d->items[i].id==element) {
             nt_dlg_copy(d->items[i].text,48u,text);
-            nt_dialog_paint();coredll_refresh();return 1;
+            if(d->rendered) {nt_present_overlays();coredll_refresh();}
+            return 1;
         }
     return 0;
 }
 int NtosDialogDraw(void) {
     nt_dialog_init_once();
-    nt_dialog_paint();coredll_refresh();return 1;
+    nt_present_overlays();
+    coredll_refresh();
+    return 1;
 }
-static u32 nt_dialog_drag;
-static int nt_dialog_drag_x,nt_dialog_drag_y;
 static int nt_dialog_capture(const NT_MSG *msg) {
     if(!msg || !nt_dialog_active())return 0;
     NT_DIALOG *d=nt_dlg_top(&g_nt_dialogs);
@@ -216,24 +228,14 @@ static int nt_dialog_capture(const NT_MSG *msg) {
     if(msg->message==0x0201u) { /* touch down */
         const u32 id=d->token;
         uint32_t element=0u; /* typed model's uint32_t* */
-        int title_drag=msg->pt.y>=d->bounds.top &&
-             msg->pt.y<d->bounds.top+24 &&
-             msg->pt.x>=d->bounds.left &&
-             msg->pt.x<d->bounds.right-26;
         int routed=nt_dlg_route(&g_nt_dialogs,&g_nt_gwes,
                                 msg->pt.x,msg->pt.y,&element);
-        if(title_drag && d->state==1u) {
-            nt_dialog_drag=d->token;
-            nt_dialog_drag_x=msg->pt.x-d->bounds.left;
-            nt_dialog_drag_y=msg->pt.y-d->bounds.top;
-        }
         if(d->state==2u) {
-            nt_dialog_drag=0u;
             nt_dialog_finished(d);
         } else if(routed==3 && d->focused &&
                   (nt_sip_flags&1u)==0u) {
             SipShowIM(1u);
-            nt_dialog_paint();coredll_refresh();
+            nt_present_overlays();coredll_refresh();
         } else if(routed==3u) {
             if(element && element!=NT_DIALOG_OK &&
                element!=NT_DIALOG_CANCEL && g_window.magic)
@@ -242,15 +244,8 @@ static int nt_dialog_capture(const NT_MSG *msg) {
         }
         return 1;
     }
-    if(msg->message==0x0200u) {
-        if(nt_dialog_drag && nt_dialog_drag==d->token)
-            NtosDialogMove(d->token,msg->pt.x-nt_dialog_drag_x,
-                          msg->pt.y-nt_dialog_drag_y);
-        return 1;
-    }
-    if(msg->message==0x0202u) {
-        nt_dialog_drag=0u;return 1;
-    } /* background pointer/drag/up capture */
+    if(msg->message==0x0200u || msg->message==0x0202u)
+        return 1; /* no drag redraws on the slow SH7305 LCD */ /* background pointer/drag/up capture */
     if(msg->message==0x0102u || msg->message==0x0100u) {
         unsigned ch=msg->wParam;
         nt_dlg_key(&g_nt_dialogs,ch);
@@ -303,6 +298,8 @@ int MessageBoxW(void *hwnd,const u16 *message,const u16 *title,u32 type) {
             NtosDialogRelease(dlg);return 0;
         }
     }
+    /* Publish the finished modal only once after adding all controls. */
+    NtosDialogDraw();
     for(unsigned turns=0u;!NtosDialogResult(dlg) && turns<4096u;++turns) {
         NT_MSG msg;
         nt_dlg_zero(&msg,sizeof(msg));
