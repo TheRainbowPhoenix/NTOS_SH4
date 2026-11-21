@@ -193,10 +193,7 @@ static inline int nt_dlg_add(NT_DIALOGS *s,uint32_t token,
        item->bounds.top<0 || item->bounds.right<=item->bounds.left ||
        item->bounds.bottom<=item->bounds.top ||
        item->bounds.right>d->bounds.right-d->bounds.left-8 ||
-       item->bounds.bottom+32>
-           ((d->bounds.bottom-d->bounds.top)+
-            ((d->bounds.bottom-d->bounds.top)<(NT_GWES_HEIGHT-4)?
-             (NT_GWES_HEIGHT-4):0)))return 0;
+       item->bounds.bottom+32>NT_GWES_HEIGHT-4)return 0;
     if((item->type==NT_DLG_BUTTON || item->type==NT_DLG_EDIT) &&
        (item->bounds.right-item->bounds.left<32 ||
         item->bounds.bottom-item->bounds.top<18))return 0;
