@@ -43,3 +43,21 @@ if(EXWORD_METADATA_SOURCE)
     APPID NTOSH TITLE "NTOSH" HTML_DIR "${EXWORD_METADATA_SOURCE}/html"
     OUTPUT_DIR "${CMAKE_BINARY_DIR}/packages" LOCALES ja cn)
 endif()
+
+# Package SYSROOT beside ntos_sh.d01. The transfer tool maps these
+# supplemental files beneath the installed _CONTENT directory on device.
+# The sentinel keeps the directory non-empty for archive/install tools.
+foreach(NTOSH_LOCALE IN ITEMS ja cn)
+  if(EXWORD_METADATA_SOURCE)
+    add_custom_target("ntos_sh_sysroot_${NTOSH_LOCALE}" ALL
+      COMMAND "${CMAKE_COMMAND}" -E make_directory
+        "${CMAKE_BINARY_DIR}/packages/${NTOSH_LOCALE}/NTOSH/SYSROOT/DLL"
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/SYSROOT/README.TXT"
+        "${CMAKE_BINARY_DIR}/packages/${NTOSH_LOCALE}/NTOSH/SYSROOT/README.TXT"
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/SYSROOT/DLL/README.TXT"
+        "${CMAKE_BINARY_DIR}/packages/${NTOSH_LOCALE}/NTOSH/SYSROOT/DLL/README.TXT"
+      DEPENDS "ntos_sh_package_${NTOSH_LOCALE}" VERBATIM)
+  endif()
+endforeach()

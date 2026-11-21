@@ -14,6 +14,8 @@ for locale in ("ja", "cn"):
         continue
     assert (dest / "ntos_sh.d01").read_bytes() == native
     assert (dest / "fileinfo.cji").is_file()
+    assert (dest / "SYSROOT" / "README.TXT").is_file()
+    assert (dest / "SYSROOT" / "DLL" / "README.TXT").is_file()
     assert any(dest.glob("*.htm")), "missing EX-word installer metadata"
     assert all(b"@APP" not in h.read_bytes() for h in dest.glob("*.htm"))
 print(f"PASS NTOSH direct D01 {len(native)} / 131072 bytes, no EDL stage 2")

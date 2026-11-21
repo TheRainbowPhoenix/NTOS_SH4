@@ -1,0 +1,1 @@
+NTOSH SYSROOT\n\nDrop SH4 big-endian WinCE *.EXE here or into subdirectories.\nDrop dependency DLLs here or in DLL/.\nNTOSH first looks in the EXE directory, then SYSROOT/DLL, then SYSROOT.\nDo not overwrite ntos_sh.d01 or add a second EDL loader.\n

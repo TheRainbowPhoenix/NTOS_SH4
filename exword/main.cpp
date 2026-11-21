@@ -4,6 +4,8 @@
  */
 #include <gint/display.h>
 #include <gint/keyboard.h>
+#include <gint/drivers/touch.h>
+#include <gint/gint.h>
 #include <stdint.h>
 #include "storage.h"
 #include "pe_runner.hpp"
@@ -199,7 +201,7 @@ int main(void)
     for(;;) {
         key_event_t e=getkey();
         if(e.type!=KEYEV_DOWN && e.type!=KEYEV_HOLD)continue;
-        if(e.key==KEY_ACON)break;
+        if(e.key==KEY_ACON || e.key==KEY_MENU)break;
         if(e.key==KEY_EXIT) {
             if(length(g_dir)>6u){parent();scan();draw();continue;}
             break;
@@ -229,6 +231,12 @@ int main(void)
         draw();
     }
     /* Main-return goes through gint's native state restoration. */
+    /* EX-word expects the native shell return code -2 (Edelweiss uses
+     * this contract). Returning 0 leaves the current D01 marked resumable.
+     * Explicitly quiesce the pen/I2C driver before gint unbinds the world. */
     g_kernel.finish();
-    return 0;
+    clearevents();
+    touch_exword_quit();
+    gint_setrestart(0);
+    return -2;
 }
