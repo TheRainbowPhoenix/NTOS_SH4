@@ -63,6 +63,7 @@ NT_DEFINE(NtosGwesKeyboard)
 NT_DEFINE(NtosGwesReset)
 static U window_id[2];
 static void *edit;
+static int edit_shown=-1;
 static const WCHAR16 cls[]={'N','T','W','M',0};
 static const WCHAR16 title[]={'N','T','O','S',' ','G','W','E','S',0};
 static const WCHAR16 editname[]={'E','d','i','t',0};
@@ -182,8 +183,13 @@ static void repaint(void *hwnd) {
     draw_panel(dc,window_id[1],1);
     U mode=NT_CALL(NtosGwesGetMode,());
     if(edit) {
-        NT_CALL(ShowWindow,(edit,mode==0u?1:0));
-        if(mode==0u)NT_CALL(UpdateWindow,(edit));
+        const int wanted=(mode==0u);
+        if(edit_shown!=wanted) {
+            NT_CALL(ShowWindow,(edit,wanted));
+            edit_shown=wanted;
+        } else if(wanted) {
+            NT_CALL(UpdateWindow,(edit));
+        }
     }
     NT_CALL(ReleaseDC,(hwnd,dc));
 }
@@ -196,7 +202,7 @@ static int wndproc(void *hwnd,DWORD msg,DWORD w,DWORD lp) {
     if(msg==0x0001u) { /* WM_CREATE */
         edit=NT_CALL(CreateWindowExW,(0u,editname,0,0u,
                     12,69,296,32,hwnd,0,0,0));
-        if(edit)NT_CALL(ShowWindow,(edit,1));
+        /* The first complete WM_PAINT shows the Edit once. */
         return 0;
     }
     if(msg==WM_PAINT) {
