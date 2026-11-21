@@ -544,8 +544,20 @@ int DispatchMessageW(const NT_MSG *msg)
         PostQuitMessage(0);
         return 0;
     }
-    if (is_hwnd(msg->hwnd) && g_window.proc)
-        return g_window.proc(msg->hwnd, msg->message, msg->wParam, msg->lParam);
+    if(is_hwnd(msg->hwnd) && g_window.proc) {
+        if(msg->message==0x000Fu) {
+            /* Normal GetMessageW -> DispatchMessageW paints must batch too.
+             * Otherwise GWESLAB's child Edit and parent ReleaseDC each
+             * refresh the complete hardware LCD separately. */
+            ++g_nt_paint_depth;
+            int result=g_window.proc(msg->hwnd,msg->message,
+                                     msg->wParam,msg->lParam);
+            g_nt_paint_pending=1u;
+            nt_finish_paint();
+            return result;
+        }
+        return g_window.proc(msg->hwnd,msg->message,msg->wParam,msg->lParam);
+    }
     return DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
 }
 int TranslateMessage(const NT_MSG *msg)
