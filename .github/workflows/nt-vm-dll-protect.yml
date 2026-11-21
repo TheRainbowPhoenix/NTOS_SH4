@@ -122,6 +122,16 @@ jobs:
           test -s ntos_cp400_all/GWESLAB.EXE
           test -s ntos_cp400_all/DLGCHK.EXE
           test -s ntos_cp400_all/MMGUARD.EXE
+          # Identify mixed/stale CP400 copies without depending on device logs.
+          {
+            printf 'commit=%s\n' "$(git rev-parse HEAD)"
+            printf 'branch=%s\n' "${GITHUB_REF_NAME:-unknown}"
+            printf 'run=%s\n' "${GITHUB_RUN_ID:-local}"
+            printf 'profile=nt-vm-dll-protect-all-in-one\n'
+          } > ntos_cp400_all/BUILD-ID.txt
+          (cd ntos_cp400_all && sha256sum NTOS.hh3 COREDLL.DLL GDIBLIT.EXE GWESCHK.EXE GWESLAB.EXE DLGCHK.EXE > BUILD-SHA256.txt)
+          test -s ntos_cp400_all/BUILD-ID.txt
+          test -s ntos_cp400_all/BUILD-SHA256.txt
       - name: Upload ONLY ONE all-in-one CP400 package
         uses: actions/upload-artifact@v7
         with:
