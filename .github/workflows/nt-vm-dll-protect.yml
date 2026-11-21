@@ -12,6 +12,7 @@ on:
       - feat/psroot-pstwin-ke-io-hardware-20261120
       - feat/ps-exec-root-ke-trap-hal-display-20261121
       - feat/ps-user-stack-dual-owner-irq-io-20261121
+      - feat/ps-p1-resident-hal-tmu-20261121
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,7 +36,7 @@ jobs:
       - name: Run NT Ob/Ex, VM transactions, guarded exception, DLL rollback, FS, 55-slot and font host regressions
         run: |
           set -eu
-          for name in nt_ke_ps_test nt_thread_exceptions_test nt_address_space_test nt_parent_process_test nt_ps_dual_space_test nt_ps_dual_image_root_test nt_ps_exec_root_test nt_ps_child_lifecycle_test nt_two_exe_scheduler_test nt_two_kernel_threads_test nt_irq_scheduler_test nt_ke_coop_test nt_vm_two_threads_stress_test nt_io_manager_test nt_sh7305_adapter_test nt_sh7305_input_queue_test nt_native_decommit_test nt_scheduler_test nt_live_decommit_test nt_picker_test nt_native_vm_test nt_virtual_memory_test nt_guest_exception_test nt_dll_lifecycle_test nt_mm_permissions_test nt_launch_policy_test fault_pager_test nt_p0p2_host_test nt_io_injection_test nt_executive_test nt_flash_guard_test fs_guard_test console_glyph_test console_host_test; do
+          for name in nt_ke_ps_test nt_thread_exceptions_test nt_address_space_test nt_parent_process_test nt_ps_dual_space_test nt_ps_dual_image_root_test nt_ps_exec_root_test nt_ps_child_lifecycle_test nt_two_exe_scheduler_test nt_two_kernel_threads_test nt_irq_scheduler_test nt_ke_coop_test nt_vm_two_threads_stress_test nt_io_manager_test nt_sh7305_adapter_test nt_sh7305_input_queue_test nt_sh7305_tmu_snapshot_test nt_sh7305_usb_power_test nt_native_decommit_test nt_scheduler_test nt_live_decommit_test nt_picker_test nt_native_vm_test nt_virtual_memory_test nt_guest_exception_test nt_dll_lifecycle_test nt_mm_permissions_test nt_launch_policy_test fault_pager_test nt_p0p2_host_test nt_io_injection_test nt_executive_test nt_flash_guard_test fs_guard_test console_glyph_test console_host_test; do
             g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 "tests/$name.cpp" -o "/tmp/$name"
             "/tmp/$name"
           done
@@ -45,7 +46,7 @@ jobs:
       - name: Build one CP400 firmware with Ke/Ps and proven protection handler
         run: |
           set -eu
-          make -j4 BUILDDIR=obj_ke_cp400 OUTDIR=dist_ke_cp400 DEPDIR=.deps_ke_cp400 DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=0 -DNTOS_PE_STREAM_LOG=0 -DNTOS_NO_LOADER_PROGRESS_LOG=1 -DNTOS_ENABLE_GUEST_PROTECT_DISPATCH=1 -DNTOS_SH4A_TLB_SYNC_BARRIER=1 -DNTOS_VERIFY_UTLB_SLOTS=1 -DNTOS_ENABLE_KE_USER_SYSCALL=1 -DNTOS_ENABLE_COOP_KERNEL=1 -DNTOS_ENABLE_GUEST_IO=1 -DNTOS_ENABLE_PE_PAIR=1 -DNTOS_ENABLE_PSROOT=1 -DNTOS_ENABLE_PS_EXEC=1 -DNTOS_ENABLE_PSUSER=1 -DNTOS_ENABLE_CHILD_PS_RESOURCES=1" KE_COOP_SMALL=1 NTOS_KERNEL_SIZE=1 HH3_MIN_HEADROOM=1024 hh3
+          make -j4 BUILDDIR=obj_ke_cp400 OUTDIR=dist_ke_cp400 DEPDIR=.deps_ke_cp400 DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=0 -DNTOS_PE_STREAM_LOG=0 -DNTOS_NO_LOADER_PROGRESS_LOG=1 -DNTOS_ENABLE_GUEST_PROTECT_DISPATCH=1 -DNTOS_SH4A_TLB_SYNC_BARRIER=1 -DNTOS_VERIFY_UTLB_SLOTS=1 -DNTOS_ENABLE_KE_USER_SYSCALL=1 -DNTOS_ENABLE_COOP_KERNEL=1 -DNTOS_ENABLE_GUEST_IO=1 -DNTOS_ENABLE_PE_PAIR=1 -DNTOS_ENABLE_PSROOT=1 -DNTOS_ENABLE_PS_EXEC=1 -DNTOS_ENABLE_PSUSER=1 -DNTOS_ENABLE_CHILD_PS_RESOURCES=1 -DNTOS_PROCESS_HEAP_RESIDENT=1 -DNTOS_NATIVE_TMU_SNAPSHOT=1 -DNTOS_NATIVE_USB_SNAPSHOT=1" KE_COOP_SMALL=1 NTOS_KERNEL_SIZE=1 HH3_MIN_HEADROOM=1024 hh3
           test -s dist_ke_cp400/NTOS.hh3
           python3 tools/check_hh3_launcher_layout.py --min-headroom 1024 dist_ke_cp400/NTOS.hh3
       - name: Build all matching SH4BE EXE/DLL and audit real syscall opcodes
@@ -53,7 +54,7 @@ jobs:
           set -eu
           make -j4 ntx
           make -j4 nt-vm-dll-probes nt-exec-probes dist_ntprobe/MMROTEST.EXE
-          for p in KTHREAD.EXE KEXCEPT.EXE ASOWN.EXE PSPARENT.EXE PSCHILD.EXE MMREUSE.EXE MMSTRESS.EXE MMRACE.EXE KCOOP.EXE K2THREAD.EXE DEVNULL.EXE DEVLOOP.EXE PEPAIR.EXE PEPEER.EXE PSROOT.EXE PSTWIN.EXE TWINCHILD.EXE KREGCTX.EXE DEVREPL.EXE PSCODE.EXE CODEA.EXE CODEB.EXE KTRAPREG.EXE PSUSER.EXE PSKILL.EXE KILLCHILD.EXE DEVDISP.EXE PROTSTATE.EXE NATIVEVM.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE IOTEST.EXE; do
+          for p in KTHREAD.EXE KEXCEPT.EXE ASOWN.EXE PSPARENT.EXE PSCHILD.EXE MMREUSE.EXE MMSTRESS.EXE MMRACE.EXE KCOOP.EXE K2THREAD.EXE DEVNULL.EXE DEVLOOP.EXE PEPAIR.EXE PEPEER.EXE PSROOT.EXE PSTWIN.EXE TWINCHILD.EXE KREGCTX.EXE DEVREPL.EXE PSCODE.EXE CODEA.EXE CODEB.EXE KTRAPREG.EXE PSUSER.EXE PSSTACK.EXE HALTMU.EXE HALUSB.EXE PSKILL.EXE KILLCHILD.EXE DEVDISP.EXE PROTSTATE.EXE NATIVEVM.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE IOTEST.EXE; do
             test -s "dist_ntprobe/$p"
           done
           python3 tools/check_large4m_pe.py dist_ntprobe/LARGE4M.EXE
@@ -94,6 +95,9 @@ jobs:
           test -s ntos_cp400_all/CODEB.EXE
           test -s ntos_cp400_all/KTRAPREG.EXE
           test -s ntos_cp400_all/PSUSER.EXE
+          test -s ntos_cp400_all/HALTMU.EXE
+          test -s ntos_cp400_all/HALUSB.EXE
+          test -s ntos_cp400_all/PSSTACK.EXE
           test -s ntos_cp400_all/PSKILL.EXE
           test -s ntos_cp400_all/KILLCHILD.EXE
           test -s ntos_cp400_all/DEVDISP.EXE

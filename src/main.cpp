@@ -42,6 +42,8 @@
 #include "nt/process.hpp"
 #include "nt/ke_coop.hpp"
 #include "nt/io_manager.hpp"
+#include "hal/sh7305_tmu_snapshot.hpp"
+#include "hal/sh7305_usb_power.hpp"
 #include "nt/dll_lifecycle.hpp"
 #ifndef NTOS_ENABLE_COOP_KERNEL
 #define NTOS_ENABLE_COOP_KERNEL 0
@@ -315,7 +317,25 @@ static bool kernel_path(char *out, const char *in) {
 static ntos_fs::Gate g_fs;
 // This is NOT a protected process address space: it is the owner of one
 // foreground application graph, its NT handles, events and Ex allocations.
+#ifndef NTOS_PROCESS_HEAP_RESIDENT
+#define NTOS_PROCESS_HEAP_RESIDENT 0
+#endif
+#ifndef NTOS_NATIVE_TMU_SNAPSHOT
+#define NTOS_NATIVE_TMU_SNAPSHOT 0
+#endif
+#ifndef NTOS_NATIVE_USB_SNAPSHOT
+#define NTOS_NATIVE_USB_SNAPSHOT 0
+#endif
+#if NTOS_PROCESS_HEAP_RESIDENT
+// The foreground Process is much larger than the 64-KiB HH3 stage0.
+// Construct it ONCE in external P1 memory before the first guest and
+// preserve its exact address across launches (handles/events hold pointers).
+// NEVER allocate or free this object while the NTOS VBR/MMU is installed.
+static nt::Process *g_nt_process_storage=nullptr;
+#define g_nt_process (*g_nt_process_storage)
+#else
 static nt::Process g_nt_process{};
+#endif
 #if NTOS_ENABLE_PE_PAIR
 struct PePairState {
     uint32_t entry=0u,base=0u,progress=0u;
@@ -363,11 +383,20 @@ static PsUserStack g_ps_user{};
 #endif
 #if NTOS_ENABLE_GUEST_IO
 struct NtIoBuiltIn {
-    nt::io::Manager<3u,8u> manager{};
+    nt::io::Manager<3u+NTOS_NATIVE_TMU_SNAPSHOT+
+                    NTOS_NATIVE_USB_SNAPSHOT,8u> manager{};
     nt::io::DRIVER_OBJECT null_driver{};
     nt::io::DRIVER_OBJECT loop_driver{};
     nt::io::DRIVER_OBJECT loop_swapped{};
     nt::io::DRIVER_OBJECT display_driver{};
+#if NTOS_NATIVE_TMU_SNAPSHOT
+    nt::io::DRIVER_OBJECT timer_driver{};
+    nt::io::DEVICE_OBJECT *timer_device=nullptr;
+#endif
+#if NTOS_NATIVE_USB_SNAPSHOT
+    nt::io::DRIVER_OBJECT usb_power_driver{};
+    nt::io::DEVICE_OBJECT *usb_power_device=nullptr;
+#endif
     nt::io::DEVICE_OBJECT *null_device=nullptr,*loop_device=nullptr,
                           *display_device=nullptr;
     uint8_t loop[64]{};
@@ -380,6 +409,48 @@ struct NtIoBuiltIn {
         using namespace nt::io;
         nt::Status status=nt::SUCCESS;
         uint32_t transferred=0u;
+#if NTOS_NATIVE_USB_SNAPSHOT
+        if(&dev==s->usb_power_device) {
+            if(irp.major==Major::create || irp.major==Major::close) {
+                // USB power state and host OS USB IRQ ownership unchanged.
+            } else if(irp.major!=Major::device_control) {
+                status=nt::NOT_SUPPORTED;
+            } else {
+                uint32_t sr=0u;
+                __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+                if((sr&0x70000000u)!=0x40000000u)
+                    status=nt::DEVICE_BUSY;
+                else status=ntos_hal::usb_power_status(
+                    irp.buffer,irp.length,irp.control_code,
+                    &ntos_hal::usb_power_read_native,nullptr);
+                if(status==nt::SUCCESS)
+                    transferred=sizeof(ntos_hal::UsbPowerStatus);
+            }
+            return IoCompleteRequest(irp,status,transferred)==nt::SUCCESS ?
+                status : nt::INTERNAL_ERROR;
+        }
+#endif
+#if NTOS_NATIVE_TMU_SNAPSHOT
+        if(&dev==s->timer_device) {
+            if(irp.major==Major::create || irp.major==Major::close) {
+                // No timer state touched on open/close.
+            } else if(irp.major!=Major::device_control) {
+                status=nt::NOT_SUPPORTED;
+            } else {
+                uint32_t sr=0u;
+                __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+                if((sr&0x70000000u)!=0x40000000u)
+                    status=nt::DEVICE_BUSY;
+                else status=ntos_hal::tmu_snapshot(
+                    irp.buffer,irp.length,irp.control_code,
+                    &ntos_hal::tmu_read_native,nullptr);
+                if(status==nt::SUCCESS)
+                    transferred=sizeof(ntos_hal::TmuSnapshot);
+            }
+            return IoCompleteRequest(irp,status,transferred)==nt::SUCCESS ?
+                status : nt::INTERNAL_ERROR;
+        }
+#endif
         if(&dev==s->display_device) {
             // First hardware-facing NT driver: use the already proven
             // CP400 framebuffer HAL. Never call GetInput, File_* or
@@ -442,13 +513,28 @@ struct NtIoBuiltIn {
         loop_driver={&dispatch,this};
         loop_swapped={&dispatch,this};
         display_driver={&dispatch,this};
+#if NTOS_NATIVE_TMU_SNAPSHOT
+        timer_driver={&dispatch,this};
+#endif
+#if NTOS_NATIVE_USB_SNAPSHOT
+        usb_power_driver={&dispatch,this};
+#endif
         enabled=true;
         return manager.IoCreateDevice("\\Device\\Null",&null_driver,
                           &null_device)==nt::SUCCESS &&
                manager.IoCreateDevice("\\Device\\Loopback",&loop_driver,
                           &loop_device)==nt::SUCCESS &&
                manager.IoCreateDevice("\\Device\\Display",&display_driver,
-                          &display_device)==nt::SUCCESS;
+                          &display_device)==nt::SUCCESS
+#if NTOS_NATIVE_TMU_SNAPSHOT
+            && manager.IoCreateDevice("\\Device\\Timer",&timer_driver,
+                          &timer_device)==nt::SUCCESS
+#endif
+#if NTOS_NATIVE_USB_SNAPSHOT
+            && manager.IoCreateDevice("\\Device\\UsbStatus",
+                          &usb_power_driver,&usb_power_device)==nt::SUCCESS
+#endif
+            ;
     }
     nt::Status replace_loop(uint32_t variant) {
         if(!enabled || variant>1u || !loop_device)
@@ -469,7 +555,14 @@ extern "C" void ntos_ke_coop_swap(nt::CoopSaved *,const nt::CoopSaved *);
 #endif
 static void *nt_host_alloc(void *,size_t n) {return Mem_Malloc(n);}
 static void nt_host_free(void *,void *p) {Mem_Free(p);}
-static void nt_process_configure() {
+static bool nt_process_configure() {
+#if NTOS_PROCESS_HEAP_RESIDENT
+    if(!g_nt_process_storage) {
+        void *raw=Mem_Malloc(sizeof(nt::Process));
+        if(!raw)return false;
+        g_nt_process_storage=::new(raw) nt::Process{};
+    }
+#endif
     g_nt_process.pool.configure(nullptr,&nt_host_alloc,&nt_host_free);
 #if NTOS_ENABLE_GUEST_IO
     (void)g_nt_io.reset();
@@ -478,6 +571,7 @@ static void nt_process_configure() {
     // Only called before the next mapped guest. Never reset live stacks.
     g_ke_coop.reset();
 #endif
+    return true;
 }
 struct FatalSnapshot {
     uint32_t tea=0,expevt=0,spc=0,ssr=0,mmucr=0,reason=0;
@@ -2487,7 +2581,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     if((host_state.mmucr&1u)!=0u) {
         *err="host MMU is already active";return -1;
     }
-    nt_process_configure();
+    if(!nt_process_configure()) {
+        *err="cannot allocate P1 Ps-owned foreground Process";return -1;
+    }
 #if NTOS_ENABLE_PE_PAIR
     g_pe_pair=PePairState{};
 #endif
@@ -2551,7 +2647,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #endif
     bool root_requested=source_path &&
         (ntos_launch_policy::ascii_equal_ci(source_path,
-                                            "\\fls0\\PSROOT.EXE")
+                                            "\\fls0\\PSROOT.EXE") ||
+         ntos_launch_policy::ascii_equal_ci(source_path,
+                                            "\\fls0\\PSSTACK.EXE")
 #if NTOS_ENABLE_PE_PAIR
          || twin_requested || kill_requested
 #endif
@@ -3420,8 +3518,34 @@ done:
 // ---------------------------------------------------------------------------
 // UI
 // ---------------------------------------------------------------------------
-constexpr int kMaxFiles = 64; // 12 stress DLLs plus runtime DLLs and EXEs
-constexpr int kMaxName = 25;
+constexpr int kMaxFiles=static_cast<int>(ntos_picker::MAX_FILES);
+constexpr int kMaxName=static_cast<int>(ntos_picker::MAX_NAME);
+// Lifetime guard for the launcher catalog. With 256 entries, this cannot
+// reside on the host C stack or in the HH3 BSS. Every return/continue
+// from the picker releases P1 heap memory, even on PE errors.
+struct PickerCatalogOwner {
+    ntos_picker::Catalog *catalog=nullptr;
+    bool allocate() {
+        void *raw=Mem_Malloc(sizeof(ntos_picker::Catalog));
+        if(!raw)return false;
+        // Do not value-initialize an 8.5 KiB aggregate: GCC SH4 can
+        // materialize an 8.5 KiB zero-image in firmware PT_LOAD.
+        // Construct in-place without the large initializer, then zero
+        // the actual P1 allocation with the existing SDK routine.
+        catalog=::new(raw) ntos_picker::Catalog;
+        Mem_Memset(catalog,0,sizeof(*catalog));
+        return true;
+    }
+    ~PickerCatalogOwner() {
+        if(catalog) {
+            catalog->~Catalog();
+            Mem_Free(catalog);
+        }
+    }
+    PickerCatalogOwner(const PickerCatalogOwner &)=delete;
+    PickerCatalogOwner &operator=(const PickerCatalogOwner &)=delete;
+    PickerCatalogOwner()=default;
+};
 
 static char_const16_t g_find_pattern_exe[] = {
     '\\', 'f', 'l', 's', '0', '\\', '*', '.', 'E', 'X', 'E', 0,
@@ -3512,7 +3636,18 @@ static void wait_error_key_release(void) {
 // Exit to Hollyhock only after attempting to release the last NTOS-owned
 // descriptor, including the no-files and user-CLEAR picker paths.
 static int safe_host_exit(int status) {
-    return fs_recover() ? status : -1;
+    const bool recovered=fs_recover();
+#if NTOS_PROCESS_HEAP_RESIDENT
+    // The caller must have exited every P0 image and restored HH3
+    // VBR/MMU before releasing the heap-backed Process.
+    if(g_nt_process_storage &&
+       !mmu::at_enabled() && !g_nt_process.active) {
+        g_nt_process_storage->~Process();
+        Mem_Free(g_nt_process_storage);
+        g_nt_process_storage=nullptr;
+    }
+#endif
+    return recovered ? status : -1;
 }
 int main(int argc, char **argv, char **envp) {
     (void)argc;
@@ -3534,8 +3669,14 @@ int main(int argc, char **argv, char **envp) {
     // a COREDLL.DLL / COREDLL.EXE as the shared module every EXE imports
     // from; it is not shown in the picker. File_FindFirst returns UCS-16
     // names; File_Open takes ANSI paths, so convert on the way in.
-    char names[kMaxFiles][kMaxName + 1] = {};
-    uint32_t sizes[kMaxFiles] = {};
+    PickerCatalogOwner catalog_owner{};
+    if(!catalog_owner.allocate()) {
+        ntos_puts("EXE catalog P1 allocation failed");
+        LCD_Refresh();
+        return safe_host_exit(-1);
+    }
+    auto &names=catalog_owner.catalog->names;
+    auto &sizes=catalog_owner.catalog->sizes;
     // HH3's physical key enum layout is part of our bitfield contract.
     static_assert(KEY_3==0x00000008u && KEY_6==0x00000010u &&
                   KEY_9==0x00000020u && KEY_BACKSPACE==0x00000080u &&
@@ -3572,7 +3713,7 @@ int main(int argc, char **argv, char **envp) {
 
     // Build the pickable list (everything except COREDLL.*) and find the
     // coredll module for the loader.
-    int pick[kMaxFiles] = {};
+    auto &pick=catalog_owner.catalog->pick;
     int coredll_idx = -1;
     int xamlui_idx = -1;
     {
@@ -3617,9 +3758,8 @@ int main(int argc, char **argv, char **envp) {
         return safe_host_exit(0);
     }
 
-    // The 320x528 display cannot show all 64 file entries at once.
-    // Present a 29-row viewport and an always-visible "> " selection
-    // marker (including when the user types a two-digit index).
+    // The LCD displays 29 rows of a 256-entry heap-backed catalog.
+    // UP/DOWN scroll across every entry, with 1..256 numeric jump.
     auto draw_picker=[&](const ntos_picker::Picker &ui) {
         Debug_Printf(0,2,true,0,"Selected %u/%u   Jump:%s%u%s       ",
             ui.selected+1u,ui.count,
@@ -3811,8 +3951,7 @@ int main(int argc, char **argv, char **envp) {
         using entry_fn = int (*)(const NtosApi *, char **, char **);
         entry_fn entry = reinterpret_cast<entry_fn>(
             reinterpret_cast<uint32_t>(image) + hdr.oh.entry_rva);
-        nt_process_configure();
-        if(!g_nt_process.begin()) {
+        if(!nt_process_configure() || !g_nt_process.begin()) {
             app_load_error("NT process resources still held");
             Mem_Free(image);
             if(file)Mem_Free(file);

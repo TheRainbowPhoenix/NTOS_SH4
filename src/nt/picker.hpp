@@ -1,4 +1,4 @@
-// Physical-key NTOS EXE picker: 1-based two-digit quick jump.
+// Physical-key NTOS EXE picker: 1-based three-digit quick jump.
 // HH3 getKey() supplies two level bitfields (verified against calc.h).
 // No heap, no SDK, no filesystem or background scanning during selection.
 // Rendering is deliberately separate; callers show '>' at selected index.
@@ -6,10 +6,20 @@
 #include <stdint.h>
 namespace ntos_picker {
 constexpr unsigned VISIBLE=29u; // Debug rows 4..32, status/help at 1..3
+// The menu catalog lives in the P1 heap: never allocate this 8.5 KiB
+// buffer on the 4 KiB host C stack or in the 64 KiB HH3 .bss.
+constexpr unsigned MAX_FILES=256u;
+constexpr unsigned MAX_NAME=25u;
+struct Catalog {
+    char names[MAX_FILES][MAX_NAME+1];
+    uint32_t sizes[MAX_FILES];
+    int pick[MAX_FILES];
+};
+static_assert(sizeof(Catalog)<12288u);
 enum Action : uint8_t { none=0, redraw=1, launch=2, exit_host=3 };
 // 40-column padded row; actual physical glyph selection is explicit.
-// A two-digit ordinal remains correct for items 10..64; truncate a long
-// filename rather than overrun Debug_Printf's fixed-width framebuffer.
+// Three fixed-width decimal digits render 1..256 without overflowing the
+// display; truncate filenames to preserve Debug_Printf's 40-column width.
 inline void format_row(char (&line)[41],unsigned zero_based,
                        unsigned selected,const char *name,uint32_t bytes) {
     for(unsigned i=0u;i<40u;++i)line[i]=' ';
@@ -18,7 +28,8 @@ inline void format_row(char (&line)[41],unsigned zero_based,
     const unsigned number=zero_based+1u;
     line[pos++]=zero_based==selected ? '>' : ' ';
     line[pos++]=' ';
-    line[pos++]=number>=10u ? char('0'+number/10u) : ' ';
+    line[pos++]=number>=100u ? char('0'+(number/100u)%10u) : ' ';
+    line[pos++]=number>=10u ? char('0'+(number/10u)%10u) : ' ';
     line[pos++]=char('0'+number%10u);
     line[pos++]=':';
     line[pos++]=' ';
@@ -81,9 +92,10 @@ struct Picker {
         }
         const int d=digit(fresh1,fresh2);
         if(d>=0) {
-            // max two decimal digits for at most 64 entries; a third key
-            // starts a new query. Type 2 -> item2, 22 -> item22.
-            if(typed_digits>=2u){typed=0u;typed_digits=0u;}
+            // Three digits for up to 256 EXEs, two for <=99. A further
+            // digit begins a new query; held keys cannot repeat.
+            const unsigned max_digits=count>99u?3u:2u;
+            if(typed_digits>=max_digits){typed=0u;typed_digits=0u;}
             typed=typed*10u+static_cast<unsigned>(d);
             ++typed_digits;
             // Zero/out-of-range is visible in "Jump:" but never selects a
