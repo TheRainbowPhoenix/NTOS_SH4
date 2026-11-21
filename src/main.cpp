@@ -57,6 +57,12 @@
 #ifndef NTOS_ENABLE_PS_EXEC
 #define NTOS_ENABLE_PS_EXEC 0
 #endif
+#ifndef NTOS_ENABLE_PSUSER
+#define NTOS_ENABLE_PSUSER 0
+#endif
+#if NTOS_ENABLE_PSUSER && (!NTOS_ENABLE_KE_USER_SYSCALL || !NTOS_ENABLE_TLB_MISS_PAGER)
+#error "PSUSER requires Ke TRAPA and the P0 pager"
+#endif
 #if NTOS_ENABLE_PS_EXEC && (!NTOS_ENABLE_PSROOT || !NTOS_ENABLE_TLB_MISS_PAGER)
 #error "PSCODE requires physical PSROOT and the owned VBR pager"
 #endif
@@ -177,6 +183,9 @@ struct NtosApi {
     uint32_t (*pstwin_child_pid)(void);                // [82] child Ps PID
     uint32_t (*io_replace_loop_driver)(uint32_t);      // [83] diagnostic IoReplaceDriver
     uint32_t (*ps_exec_entry)(void);                    // [84] same-VA executable entry
+    uint32_t (*ps_user_stack_top)(void);                 // [85] actual P0 user stack
+    uint32_t (*ps_user_arm)(uint32_t,uint32_t);          // [86] vetted TRAPA sites
+    uint32_t (*ps_user_syscalls)(void);                  // [87] actual VBR dispatches
 };
 
 static int cur_row = 0;
@@ -315,6 +324,14 @@ struct PsRootHardware {
     bool ready=false,twin=false;
 };
 static PsRootHardware g_ps_root{};
+#endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+struct PsUserStack {
+    uint32_t va=0u,physical=0u;
+    uint8_t *backing=nullptr;
+    bool ready=false;
+};
+static PsUserStack g_ps_user{};
 #endif
 #if NTOS_ENABLE_GUEST_IO
 struct NtIoBuiltIn {
@@ -677,6 +694,9 @@ static uint32_t ntos_psroot_current(void);
 static uint32_t ntos_pstwin_child_pid(void);
 static uint32_t ntos_io_replace_loop_driver(uint32_t);
 static uint32_t ntos_ps_exec_entry(void);
+static uint32_t ntos_ps_user_stack_top(void);
+static uint32_t ntos_ps_user_arm(uint32_t,uint32_t);
+static uint32_t ntos_ps_user_syscalls(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -853,6 +873,9 @@ static NtosApi g_ntos_api = {
     &ntos_pstwin_child_pid, // [82]
     &ntos_io_replace_loop_driver, // [83]
     &ntos_ps_exec_entry, // [84]
+    &ntos_ps_user_stack_top, // [85]
+    &ntos_ps_user_arm, // [86]
+    &ntos_ps_user_syscalls, // [87]
 };
 
 // ---------------------------------------------------------------------------
@@ -1572,6 +1595,34 @@ static uint32_t ntos_psroot_switch(uint32_t target) {
     return psroot_activate(target);
 #else
     (void)target;return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_ps_user_stack_top(void) {
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    return g_ps_user.ready && g_nt_process.ke.running() ?
+           g_ps_user.va+4096u : 0u;
+#else
+    return 0u;
+#endif
+}
+static uint32_t ntos_ps_user_arm(uint32_t loop_pc,uint32_t exit_pc) {
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    if(!g_ps_user.ready || !g_nt_process.ke.running())
+        return nt::DEVICE_BUSY;
+#if NTOS_ENABLE_COOP_KERNEL
+    if(g_ke_coop.created)return nt::DEVICE_BUSY;
+#endif
+    return ntos_hw::arm_user_loop(
+        loop_pc,exit_pc,g_ps_user.va,g_ps_user.va+4096u);
+#else
+    (void)loop_pc;(void)exit_pc;return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_ps_user_syscalls(void) {
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    return ntos_hw::g_context.user_loop_calls;
+#else
+    return 0u;
 #endif
 }
 static uint32_t ntos_ps_exec_entry(void) {
@@ -2370,6 +2421,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #if NTOS_ENABLE_PE_PAIR
     g_pe_pair=PePairState{};
 #endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    g_ps_user=PsUserStack{};
+#endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     g_ps_root=PsRootHardware{};
 #endif
@@ -2387,6 +2441,13 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     uint8_t *api_raw=nullptr;
     uint8_t *api_block=nullptr;
     uint8_t *vm_raw=nullptr;
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    uint8_t *ps_user_raw=nullptr;
+    uint32_t ps_user_va=0u;
+    bool user_requested=source_path &&
+        ntos_launch_policy::ascii_equal_ci(source_path,
+                                           "\\fls0\\PSUSER.EXE");
+#endif
 #if NTOS_ENABLE_PE_PAIR
     MappedImage second_exe{};
     pe::Image second_hdr{};
@@ -2616,6 +2677,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #if NTOS_ENABLE_PS_EXEC
     image_pages+=exec_images[0].npages;
 #endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    if(user_requested)++image_pages;
+#endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(root_requested)++image_pages;
 #endif
@@ -2696,6 +2760,23 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         g_ps_root.exec_entry=exec_va+exec_headers[0].oh.entry_rva;
     }
 #endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    if(user_requested) {
+        if(!ntos_fault::choose_virtual(0x00710000u,1u,
+                                      reservations,count,&ps_user_va)) {
+            *err="no private P0 user-stack VA";goto done;
+        }
+        ps_user_raw=static_cast<uint8_t *>(Mem_Malloc(4096u+4095u));
+        if(!ps_user_raw) {
+            *err="no physical P1 user stack";goto done;
+        }
+        auto *aligned=static_cast<uint8_t *>(align_page(ps_user_raw));
+        Mem_Memset(aligned,0,4096u);
+        g_ps_user.va=ps_user_va;
+        g_ps_user.physical=mmu::phys_addr(aligned);
+        g_ps_user.backing=aligned;
+    }
+#endif
     for(unsigned i=0u;i<count;++i) {
         if(!ntos_rebase::apply(nodes[i].hdr,nodes[i].mapped.image,
                                nodes[i].mapped.vsize,nodes[i].mapped.base,err))
@@ -2772,6 +2853,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             flush_image(exec_images[i].image,
                         exec_images[i].npages*4096u);
 #endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    if(user_requested)flush_image(g_ps_user.backing,4096u);
+#endif
     flush_image(api_block,0x4000u);
 
 #if NTOS_ENABLE_NT_PRIVATE_VM
@@ -2840,6 +2924,12 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             }
         }
 #endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+        if(user_requested && !ntos_hw::g_context.table.add(
+                ps_user_va,g_ps_user.physical,1u,nullptr,false)) {
+            *err="cannot register unprivileged user stack";goto done;
+        }
+#endif
 #if NTOS_ENABLE_NT_PRIVATE_VM
         ntos_hw::g_context.table.set_extra(
             &g_nt_process.space,[](void *owner,uint32_t va,uint32_t *pa,
@@ -2900,6 +2990,11 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                     *err="cannot pin private executable pages";goto done;
                 }
 #endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+        if(user_requested && !ntos_hw::prime(ps_user_va,true)) {
+            *err="cannot pin user-mode P0 stack";goto done;
+        }
+#endif
         // Never call Hollyhock Debug_Printf/LCD_Refresh while our
         // experimental VBR+0x400 exception handler owns VBR. SDK output
         // can temporarily switch MMU/interrupt worlds behind our back.
@@ -2908,6 +3003,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         }
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
         if(root_requested)g_ps_root.ready=true;
+#endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+        if(user_requested)g_ps_user.ready=true;
 #endif
     }
 #else
@@ -3046,6 +3144,10 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 done:
 #if NTOS_ENABLE_PE_PAIR
     g_pe_pair.ready=false;
+#endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    g_ps_user.ready=false;
+    ntos_hw::g_context.user_loop_armed=false;
 #endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(g_ps_root.ready && mmu::at_enabled() &&
@@ -3190,6 +3292,9 @@ done:
 #endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(psroot_raw)Mem_Free(psroot_raw);
+#endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    if(ps_user_raw)Mem_Free(ps_user_raw);
 #endif
 #if NTOS_ENABLE_PS_EXEC
     for(unsigned i=0u;i<2u;++i)
