@@ -250,3 +250,24 @@ from proprietary WinCE or NT5 trees is copied.
 
 ### Modal dialogs, theming, action bar (GWES v2)
 An original pure-C modal system supports heights 25/35/55/60/75/95%, top/center/bottom, parent/screen centering, drag/move, SIP work-area clamp, up to three nested topmost overlays, six child label/button/edit elements and DialogResultOK (0x3EA) or DialogResultCancel (0x3EB). COREDLL exports real MessageBoxW MB_OK/MB_OKCANCEL and 14 native NtosDialog/NtosTheme services. White-default, Win98, WinXP-like and flat themes use integer RGB565 rendering; no antialiasing or Microsoft .msstyles file parser. The physical ClassPad action bar RESIZE/SWAP/ROTATE/ESC events flow through the host bridge into COREDLL; modal windows capture input. Host tests cover real COREDLL modal routing, keyboard, themes and 10,000 stale-token cycles. This is not yet cross-process DWM.
+
+
+### Avoid stale GDI/GWES hardware test mixes
+
+The **dedicated** `Ke Ps SH4A user syscall and single CP400 bundle`
+workflow on `feat/gwes-tiles-sip-edit-20261121` publishes one matching
+`NTOS-CP400-KE-PS-ALL-IN-ONE` kit. Do not combine its
+`NTOS.hh3`, `COREDLL.DLL`, or GDI/GWES test EXEs with the normal `main`
+device package or `dist_ce_demo` CE COREDLL. Remove old root copies
+before copying the kit; preserve personal files/other unrelated data.
+
+The ZIP includes `BUILD-ID.txt` with the source commit and GitHub Actions
+run number, plus `BUILD-SHA256.txt` with exact hashes for the matching
+firmware, DLL and `GDIBLIT.EXE`, `GWESCHK.EXE`, `GWESLAB.EXE`,
+`DLGCHK.EXE`. If `GDIBLIT` returns `0xBADF7102`, the immediate
+failure is `CreateCompatibleDC` returning null; compare the installed
+COREDLL hash before assuming a GDI allocation failure. A loader error
+`named/ordinal WinCE export missing` on GWESCHK/GWESLAB and a missing
+DLGCHK program both strongly suggest a stale/mixed kit. Static export
+checks run in CI; the actual SH7305 runtime must still be tested.
+
