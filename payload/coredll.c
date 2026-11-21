@@ -1544,6 +1544,28 @@ int main(void *module,u32 reason,void *reserved)
 {
     (void)module;(void)reserved;
     if(reason==0u)gdi_release_all(); /* DLL_PROCESS_DETACH */
+#ifdef NTOS_EXWORD
+    if(reason==0u) {
+        /* Here COREDLL is built into D01 instead of reloaded per EXE.
+         * Close the guest's remaining WinCE descriptors and reset its
+         * synthetic window/keyboard state before the next test EXE. */
+        const void **api=ntapi();
+        for(unsigned i=0u;i<32u;++i)if(nt_files[i].used) {
+            if(api && api[14])
+                ((int (*)(int))api[14])(nt_files[i].fd);
+            nt_files[i].used=0;
+            nt_files[i].fd=-1;
+            nt_files[i].token=0u;
+        }
+        g_window.magic=0u;
+        g_edit.magic=0u;
+        g_nt_gwes_initialized=0u;
+        g_nt_dialogs_initialized=0u;
+        nt_sip_flags=2u;
+        g_qhead=g_qtail=0u;
+        g_nt_paint_depth=g_nt_paint_pending=0u;
+    }
+#endif
     return 1;
 }
 
