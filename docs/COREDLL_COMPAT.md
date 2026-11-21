@@ -44,11 +44,22 @@ TranslateMessage does not synthesize WM_CHAR events.
 `Rectangle`, `TextOutW`, `DrawTextW`, `CreateFontIndirectW`,
 `SelectObject`, `SetTextColor`, `SetBkColor`, `SetBkMode`.
 
-A single synthetic full-screen DC; drawing uses RGB565 conversion and SDK
-pixels/lines. TextOutW rasterizes 16-row, monochrome Selawik glyphs, not the SDK debug font.
-Brushes are color-coded synthetic handles. There is no clipping region,
-full Unicode font selection, bitmap/blit pipeline, actual GDI object ownership, or
-window compositing. BeginPaint/EndPaint currently operate on the same DC.
+A single synthetic full-screen DC uses RGB565 conversion and the SDK pixel/line
+services. **Memory DC support** adds `CreateCompatibleDC`, `DeleteDC`,
+`CreateCompatibleBitmap`, memory-`SelectObject`, `GetPixel`, and
+`BitBlt` (SRCCOPY, memory source to memory or screen destination). Up to
+four independently owned memory DCs and four bitmaps per COREDLL process
+instance, each bitmap at most 320x528 RGB565. Selection prevents deletion
+while in use; stale opaque bitmap/DC handles are rejected. `SetPixel` and
+`FillRect` operate on selected bitmaps as well as the screen. BitBlt clips
+source/destination and handles same-bitmap overlaps correctly.
+TextOutW rasterizes the verified UGUI glyph atlas, not the SDK debug font.
+Full clipping regions, screen readback, DIBSECTION, arbitrary GDI ROPs, selected
+memory-DC font/text rendering, window compositing and real GDI object handles
+across independent kernel processes remain unimplemented. Screen BitBlt uses
+individual validated SDK framebuffer pixel writes; full-screen compositing
+will need a later accelerated framebuffer transfer backend.
+BeginPaint/EndPaint continue to use the screen DC.
 
 ### File I/O
 
@@ -188,3 +199,7 @@ For larger WinCE GUI ports: per-window paint regions, more than one window,
 WM_CHAR generation, focus/input routing, font handling, GDI pens and
 SelectObject, clipping and BitBlt, and per-thread message queues. Each should
 be implemented and device-tested rather than silently mapped to a zero stub.
+
+### New GDI integration gate (COREDLL bitmap/blit)
+- `GDIBLIT.EXE` expected `0x47444931` (`GDI1`). This is a real SH4BE PE importing its new GDI exports by name from `COREDLL.DLL`; creates a 16x16 offscreen RGB565 bitmap, selects it into a memory DC, tests RGB565 `SetPixel`/`GetPixel`, `FillRect`, unsupported ROP and deletion while selected, then SRCCOPY blits a tiny patch at x=280,y=80 and restores the patch to white. No native display MMIO or VBR calls. `BADF71xx` identifies the stage that failed. A separate host C test compiles **the actual COREDLL implementation** and checks overlapping self-blits, clipping, invalid/stale/selected handles and no allocation leaks. This is a compatibility-layer graphics milestone, **not** arbitrary user-mode process protection.
+- Run against the exact `NTOS.hh3` and `COREDLL.DLL` from the same CI kit. Verify the original GUIWIN, WINLAB, METROWIN, DEVDISP and PSROOT/KTRAPREG/PSUSER/PSKILL regressions still behave. Keep the original known-good firmware until confirmed.

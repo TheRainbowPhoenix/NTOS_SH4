@@ -13,6 +13,7 @@ on:
       - feat/ps-exec-root-ke-trap-hal-display-20261121
       - feat/ps-user-stack-dual-owner-irq-io-20261121
       - feat/ps-p1-resident-hal-tmu-20261121
+      - feat/coredll-memory-gdi-userland-20261121
   workflow_dispatch:
 permissions:
   contents: read
@@ -42,6 +43,8 @@ jobs:
           done
           gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/coredll-files
           /tmp/coredll-files
+          gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_gdi_test.c -o /tmp/coredll-gdi
+          /tmp/coredll-gdi
           python3 tests/test_hh3_launcher_layout.py
       - name: Build one CP400 firmware with Ke/Ps and proven protection handler
         run: |
@@ -53,6 +56,7 @@ jobs:
         run: |
           set -eu
           make -j4 ntx
+          test -s dist/GDIBLIT.EXE
           make -j4 nt-vm-dll-probes nt-exec-probes dist_ntprobe/MMROTEST.EXE
           for p in KTHREAD.EXE KEXCEPT.EXE ASOWN.EXE PSPARENT.EXE PSCHILD.EXE MMREUSE.EXE MMSTRESS.EXE MMRACE.EXE KCOOP.EXE K2THREAD.EXE DEVNULL.EXE DEVLOOP.EXE PEPAIR.EXE PEPEER.EXE PSROOT.EXE PSTWIN.EXE TWINCHILD.EXE KREGCTX.EXE DEVREPL.EXE PSCODE.EXE CODEA.EXE CODEB.EXE KTRAPREG.EXE PSUSER.EXE PSSTACK.EXE HALTMU.EXE HALUSB.EXE PSKILL.EXE KILLCHILD.EXE DEVDISP.EXE PROTSTATE.EXE NATIVEVM.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE IOTEST.EXE; do
             test -s "dist_ntprobe/$p"
@@ -102,6 +106,7 @@ jobs:
           test -s ntos_cp400_all/KILLCHILD.EXE
           test -s ntos_cp400_all/DEVDISP.EXE
           test -s ntos_cp400_all/COREDLL.DLL
+          test -s ntos_cp400_all/GDIBLIT.EXE
           test -s ntos_cp400_all/MMGUARD.EXE
       - name: Upload ONLY ONE all-in-one CP400 package
         uses: actions/upload-artifact@v7
