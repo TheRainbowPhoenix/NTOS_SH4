@@ -107,6 +107,23 @@ int main(void) {
     assert(!DeleteObject(bmp));
     assert(DeleteObject(again));
     assert(allocated==freed);
-    puts("PASS COREDLL GDI: true WinCE memory DC RGB565, SRCCOPY + clipped/overlapping blits, typed generation handles, no leaks");
+    /* Intentionally leave a selected bitmap (plus an unselected one)
+       allocated. The real exported DLL entrypoint MUST release both
+       even if the application never issued DeleteDC/DeleteObject. */
+    void *leaked_dc=CreateCompatibleDC(GDI_SCREEN_DC);
+    void *leaked_bmp=CreateCompatibleBitmap(GDI_SCREEN_DC,16,16);
+    void *leaked_extra=CreateCompatibleBitmap(GDI_SCREEN_DC,5,6);
+    assert(leaked_dc && leaked_bmp && leaked_extra);
+    assert(SelectObject(leaked_dc,leaked_bmp)==GDI_STOCK_BITMAP);
+    assert(!DeleteObject(leaked_bmp));
+    assert(coredll_dll_entry((void *)(uintptr_t)0x10000000u,0u,0)==1);
+    assert(allocated==freed);
+    assert(!DeleteDC(leaked_dc));
+    assert(!DeleteObject(leaked_bmp) && !DeleteObject(leaked_extra));
+    /* A new process may reuse table slots but never a stale token. */
+    void *fresh=CreateCompatibleBitmap(GDI_SCREEN_DC,8,8);
+    assert(fresh && fresh!=leaked_bmp && fresh!=leaked_extra);
+    assert(DeleteObject(fresh) && allocated==freed);
+    puts("PASS COREDLL GDI: WinCE memory DC RGB565, SRCCOPY clipping/overlap, monotonic typed handles and forced DllMain detach cleanup");
     return 0;
 }

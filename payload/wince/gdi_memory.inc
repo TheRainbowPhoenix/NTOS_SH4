@@ -197,3 +197,22 @@ int BitBlt(void *destination,int x,int y,int width,int height,
     }
     return 1;
 }
+
+/* The actual loader calls COREDLL DllMain(DLL_PROCESS_DETACH) before
+ * unmapping its P0 image and before disabling the MMU. Do not let an
+ * application which forgot DeleteObject leak P1 SDK allocations.
+ * This is NOT an IRQ/VBR operation; no MMIO or filesystem is used.
+ */
+static void gdi_release_all(void)
+{
+    for(unsigned d=0;d<GDI_MAX_DCS;++d) {
+        gdi_dcs[d].bitmap=0u;
+        gdi_dcs[d].handle=0u;
+    }
+    for(unsigned k=0;k<GDI_MAX_BITMAPS;++k) {
+        GDI_BITMAP *bmp=&gdi_bitmaps[k];
+        if(bmp->pixels)coredll_free(bmp->pixels);
+        bmp->pixels=0;bmp->w=0;bmp->h=0;
+        bmp->selected_dc=0u;bmp->handle=0u;
+    }
+}

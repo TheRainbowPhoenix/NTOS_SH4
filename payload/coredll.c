@@ -1258,10 +1258,13 @@ int coredll_stub(void)
     return 0;
 }
 
-/* PE DLL_PROCESS_ATTACH/DETACH: no OS-side initialization yet. */
-int main(void)
+/* WinCE DllMain(HINSTANCE,reason,reserved): detach releases any GDI
+ * surfaces still live when an EXE exits without calling DeleteObject. */
+int main(void *module,u32 reason,void *reserved)
 {
-    return 1; /* BOOL TRUE, WinCE DLL initialization contract */
+    (void)module;(void)reserved;
+    if(reason==0u)gdi_release_all(); /* DLL_PROCESS_DETACH */
+    return 1;
 }
 
 /* NTOS_PHONE_SIP_FINDER: WinCE public APIs over bounded native services. */
