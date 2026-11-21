@@ -1,1 +1,7 @@
-NTOSH SYSROOT\n\nDrop SH4 big-endian WinCE *.EXE here or into subdirectories.\nDrop dependency DLLs here or in DLL/.\nNTOSH first looks in the EXE directory, then SYSROOT/DLL, then SYSROOT.\nDo not overwrite ntos_sh.d01 or add a second EDL loader.\n
+NTOSH SYSROOT
+Drop SH4BE WinCE *.EXE here or into Apps\subfolders.
+Compiled NTOS *.EXE and *.DLL are automatically included by the build.
+All shared DLLs are in Windows\System32; EXE-local DLLs take precedence.
+COREDLL.DLL is included for a complete WinCE tree, but NTOSH resolves
+its supported COREDLL functions from the resident D01 implementation.
+No EDL stage-two loader is needed.
