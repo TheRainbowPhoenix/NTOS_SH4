@@ -98,9 +98,35 @@ int main(void) {
     assert(SelectObject(dc,GDI_STOCK_BITMAP)==bmp);
     assert(DeleteObject(bmp));
     assert(!DeleteObject(bmp));
+    /* WinCE nearest-neighbour no-AA scaling, 2x2 -> 6x6. */
+    void *scale_dc=CreateCompatibleDC(GDI_SCREEN_DC);
+    void *scale_bmp=CreateCompatibleBitmap(GDI_SCREEN_DC,6,6);
+    assert(scale_dc && scale_bmp && SelectObject(scale_dc,scale_bmp)==GDI_STOCK_BITMAP);
+    void *source_dc=CreateCompatibleDC(GDI_SCREEN_DC);
+    void *source_bmp=CreateCompatibleBitmap(GDI_SCREEN_DC,2,2);
+    assert(source_dc && source_bmp && SelectObject(source_dc,source_bmp)==GDI_STOCK_BITMAP);
+    assert(SetPixel(source_dc,0,0,0x000000FFu)==0x000000FFu);
+    assert(SetPixel(source_dc,1,0,0x0000FF00u)==0x0000FF00u);
+    assert(SetPixel(source_dc,0,1,0x00FF0000u)==0x00FF0000u);
+    assert(SetPixel(source_dc,1,1,0x00FFFFFFu)==0x00FFFFFFu);
+    assert(StretchBlt(scale_dc,0,0,6,6,source_dc,0,0,2,2,GDI_SRCCOPY));
+    assert(GetPixel(scale_dc,0,0)==0x000000FFu);
+    assert(GetPixel(scale_dc,2,2)==0x000000FFu);
+    assert(GetPixel(scale_dc,3,0)==0x0000FF00u);
+    assert(GetPixel(scale_dc,5,2)==0x0000FF00u);
+    assert(GetPixel(scale_dc,0,3)==0x00FF0000u);
+    assert(GetPixel(scale_dc,3,3)==0x00FFFFFFu);
+    assert(!StretchBlt(source_dc,0,0,2,2,source_dc,0,0,1,1,GDI_SRCCOPY));
+    assert(!StretchBlt(scale_dc,0,0,6,6,GDI_SCREEN_DC,0,0,2,2,GDI_SRCCOPY));
+    assert(!StretchBlt(scale_dc,0,0,6,6,source_dc,0,0,2,2,0xFFFFFFFFu));
+    assert(StretchBlt(GDI_SCREEN_DC,318,526,6,6,source_dc,0,0,2,2,GDI_SRCCOPY));
+    assert(SelectObject(source_dc,GDI_STOCK_BITMAP)==source_bmp);
+    assert(SelectObject(scale_dc,GDI_STOCK_BITMAP)==scale_bmp);
+    assert(DeleteObject(source_bmp) && DeleteObject(scale_bmp));
+    assert(DeleteDC(source_dc) && DeleteDC(scale_dc));
     assert(DeleteDC(dc));
     assert(!DeleteDC(dc));
-    assert(allocated==freed && allocated==2u);
+    assert(allocated==freed && allocated==4u); /* two GDI and two scale bitmaps */
     /* Slot reuse cannot resurrect an earlier opaque handle. */
     void *again=CreateCompatibleBitmap(GDI_SCREEN_DC,4,4);
     assert(again && again!=bmp);
@@ -124,6 +150,39 @@ int main(void) {
     void *fresh=CreateCompatibleBitmap(GDI_SCREEN_DC,8,8);
     assert(fresh && fresh!=leaked_bmp && fresh!=leaked_extra);
     assert(DeleteObject(fresh) && allocated==freed);
-    puts("PASS COREDLL GDI: WinCE memory DC RGB565, SRCCOPY clipping/overlap, monotonic typed handles and forced DllMain detach cleanup");
+    /* Rasterized real COREDLL UGUI glyph must render onto a selected
+     * memory bitmap, not leak pixels to the hardware display surface.
+     * SH4/no-FPU nearest-neighbour and LSB-left atlas must be exact.
+     */
+    void *font_dc=CreateCompatibleDC(GDI_SCREEN_DC);
+    void *font_bitmap=CreateCompatibleBitmap(GDI_SCREEN_DC,20,20);
+    NT_LOGFONTW lf={0};
+    lf.lfHeight=-14;
+    void *font=CreateFontIndirectW(&lf);
+    assert(font_dc && font_bitmap && font);
+    assert(SelectObject(font_dc,font_bitmap)==GDI_STOCK_BITMAP);
+    void *old_font=SelectObject(font_dc,font);
+    assert(old_font);
+    SetTextColor(font_dc,0x000000FFu);
+    SetBkColor(font_dc,0x00FFFFFFu);
+    SetBkMode(font_dc,2); /* OPAQUE */
+    u16 letter[2]={'A',0};
+    unsigned before=sent;
+    assert(TextOutW(font_dc,0,0,letter,1));
+    assert(sent==before); /* a true offscreen surface */
+    unsigned dark=0u,light=0u;
+    for(int yy=0;yy<14;++yy)
+        for(int xx=0;xx<8;++xx) {
+            u32 value=GetPixel(font_dc,xx,yy);
+            if(value==0x000000FFu)++dark;
+            if(value==0x00FFFFFFu)++light;
+        }
+    assert(dark>8u && light>8u);
+    assert(SelectObject(font_dc,old_font)==font);
+    assert(SelectObject(font_dc,GDI_STOCK_BITMAP)==font_bitmap);
+    assert(DeleteObject(font));
+    assert(DeleteObject(font_bitmap) && DeleteDC(font_dc));
+    assert(allocated==freed);
+    puts("PASS COREDLL GDI: WinCE memory DC RGB565, pixel-exact no-AA StretchBlt, offscreen TextOutW, safe handles and DllMain cleanup");
     return 0;
 }
