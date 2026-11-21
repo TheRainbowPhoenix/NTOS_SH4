@@ -1165,14 +1165,17 @@ include payload/phone/phone.mk
 EXWORD_TOOLCHAIN ?=
 EXWORD_GINT_PREFIX ?=
 EXWORD_METADATA_SOURCE ?=
+EXWORD_PAYLOAD_DIR ?= $(abspath $(OUTDIR))
 .PHONY: exword
-exword:
+# Build the same NTOS WinCE SH4BE modules used by the HH3 device first.
+exword: ntx
 	@test -n "$(EXWORD_TOOLCHAIN)" && test -n "$(EXWORD_GINT_PREFIX)" || { \
 		echo "Usage: make exword EXWORD_TOOLCHAIN=/path/EXWORD.cmake EXWORD_GINT_PREFIX=/path/gint-exword"; exit 2; }
 	cmake -S exword -B build-exword \
 	  -DCMAKE_TOOLCHAIN_FILE="$(EXWORD_TOOLCHAIN)" \
 	  -DCMAKE_PREFIX_PATH="$(EXWORD_GINT_PREFIX)" \
 	  '-DCMAKE_MODULE_PATH=$(EXWORD_GINT_PREFIX)/lib/cmake/fxsdk;$(dir $(EXWORD_TOOLCHAIN))' \
+	  -DEXWORD_PAYLOAD_DIR="$(EXWORD_PAYLOAD_DIR)" \
 	  $(if $(EXWORD_METADATA_SOURCE),-DEXWORD_METADATA_SOURCE="$(EXWORD_METADATA_SOURCE)",)
 	cmake --build build-exword --parallel 2
-	$(PYTHON) tools/check_exword_d01.py build-exword
+	$(PYTHON) tools/check_exword_d01.py build-exword $(EXWORD_PAYLOAD_DIR)

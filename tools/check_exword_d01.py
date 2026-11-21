@@ -2,8 +2,10 @@
 """Validate a real EX-word gint D01 and its optional JP/CN installation."""
 import pathlib
 import sys
+from package_exword_sysroot import check as check_payloads
 
 build = pathlib.Path(sys.argv[1])
+pe_dist = pathlib.Path(sys.argv[2]) if len(sys.argv) >= 3 else None
 native = (build / "ntos_sh.d01").read_bytes()
 assert native.startswith(b"CASIODICPLUGIN10"), "wrong native EX-word D01 magic"
 assert 128 < len(native) <= 128 * 1024, "EX-word D01 exceeds 128 KiB"
@@ -15,7 +17,9 @@ for locale in ("ja", "cn"):
     assert (dest / "ntos_sh.d01").read_bytes() == native
     assert (dest / "fileinfo.cji").is_file()
     assert (dest / "SYSROOT" / "README.TXT").is_file()
-    assert (dest / "SYSROOT" / "DLL" / "README.TXT").is_file()
+    assert (dest / "SYSROOT" / "Windows" / "System32" / "README.TXT").is_file()
+    if pe_dist is not None:
+        check_payloads(pe_dist, dest)
     assert any(dest.glob("*.htm")), "missing EX-word installer metadata"
     assert all(b"@APP" not in h.read_bytes() for h in dest.glob("*.htm"))
 print(f"PASS NTOSH direct D01 {len(native)} / 131072 bytes, no EDL stage 2")
