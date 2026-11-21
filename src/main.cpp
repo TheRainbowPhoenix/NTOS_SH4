@@ -42,6 +42,7 @@
 #include "nt/process.hpp"
 #include "nt/ke_coop.hpp"
 #include "nt/io_manager.hpp"
+#include "hal/sh7305_tmu_snapshot.hpp"
 #include "nt/dll_lifecycle.hpp"
 #ifndef NTOS_ENABLE_COOP_KERNEL
 #define NTOS_ENABLE_COOP_KERNEL 0
@@ -318,6 +319,9 @@ static ntos_fs::Gate g_fs;
 #ifndef NTOS_PROCESS_HEAP_RESIDENT
 #define NTOS_PROCESS_HEAP_RESIDENT 0
 #endif
+#ifndef NTOS_NATIVE_TMU_SNAPSHOT
+#define NTOS_NATIVE_TMU_SNAPSHOT 0
+#endif
 #if NTOS_PROCESS_HEAP_RESIDENT
 // The foreground Process is much larger than the 64-KiB HH3 stage0.
 // Construct it ONCE in external P1 memory before the first guest and
@@ -375,11 +379,15 @@ static PsUserStack g_ps_user{};
 #endif
 #if NTOS_ENABLE_GUEST_IO
 struct NtIoBuiltIn {
-    nt::io::Manager<3u,8u> manager{};
+    nt::io::Manager<NTOS_NATIVE_TMU_SNAPSHOT ? 4u : 3u,8u> manager{};
     nt::io::DRIVER_OBJECT null_driver{};
     nt::io::DRIVER_OBJECT loop_driver{};
     nt::io::DRIVER_OBJECT loop_swapped{};
     nt::io::DRIVER_OBJECT display_driver{};
+#if NTOS_NATIVE_TMU_SNAPSHOT
+    nt::io::DRIVER_OBJECT timer_driver{};
+    nt::io::DEVICE_OBJECT *timer_device=nullptr;
+#endif
     nt::io::DEVICE_OBJECT *null_device=nullptr,*loop_device=nullptr,
                           *display_device=nullptr;
     uint8_t loop[64]{};
@@ -392,6 +400,27 @@ struct NtIoBuiltIn {
         using namespace nt::io;
         nt::Status status=nt::SUCCESS;
         uint32_t transferred=0u;
+#if NTOS_NATIVE_TMU_SNAPSHOT
+        if(&dev==s->timer_device) {
+            if(irp.major==Major::create || irp.major==Major::close) {
+                // No timer state touched on open/close.
+            } else if(irp.major!=Major::device_control) {
+                status=nt::NOT_SUPPORTED;
+            } else {
+                uint32_t sr=0u;
+                __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+                if((sr&0x70000000u)!=0x40000000u)
+                    status=nt::DEVICE_BUSY;
+                else status=ntos_hal::tmu_snapshot(
+                    irp.buffer,irp.length,irp.control_code,
+                    &ntos_hal::tmu_read_native,nullptr);
+                if(status==nt::SUCCESS)
+                    transferred=sizeof(ntos_hal::TmuSnapshot);
+            }
+            return IoCompleteRequest(irp,status,transferred)==nt::SUCCESS ?
+                status : nt::INTERNAL_ERROR;
+        }
+#endif
         if(&dev==s->display_device) {
             // First hardware-facing NT driver: use the already proven
             // CP400 framebuffer HAL. Never call GetInput, File_* or
@@ -454,13 +483,21 @@ struct NtIoBuiltIn {
         loop_driver={&dispatch,this};
         loop_swapped={&dispatch,this};
         display_driver={&dispatch,this};
+#if NTOS_NATIVE_TMU_SNAPSHOT
+        timer_driver={&dispatch,this};
+#endif
         enabled=true;
         return manager.IoCreateDevice("\\Device\\Null",&null_driver,
                           &null_device)==nt::SUCCESS &&
                manager.IoCreateDevice("\\Device\\Loopback",&loop_driver,
                           &loop_device)==nt::SUCCESS &&
                manager.IoCreateDevice("\\Device\\Display",&display_driver,
-                          &display_device)==nt::SUCCESS;
+                          &display_device)==nt::SUCCESS
+#if NTOS_NATIVE_TMU_SNAPSHOT
+            && manager.IoCreateDevice("\\Device\\Timer",&timer_driver,
+                          &timer_device)==nt::SUCCESS
+#endif
+            ;
     }
     nt::Status replace_loop(uint32_t variant) {
         if(!enabled || variant>1u || !loop_device)
