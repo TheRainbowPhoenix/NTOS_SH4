@@ -148,6 +148,103 @@ static void host_draw_text(uint32_t x,uint32_t y,const char *s)
 }
 static void host_free(void *p){heap_free(p);}
 static void *host_malloc(uint32_t n){return heap_alloc(n);}
+/* Each EXE gets its own bounded descriptor table. The original WinCE
+ * \fls0 path aliases the currently selected EX-word volume. Other native
+ * paths can name \drv0 and \crd0 explicitly. Native disk writes are OFF.
+ */
+static unsigned g_guest_disk;
+static NtosExwordArena g_guest_area;
+struct GuestFile {int os_fd;bool live;};
+static GuestFile g_guest_files[8];
+static bool guest_path(const char *input,char out[NTOS_EXWORD_PATH_MAX])
+{
+    if(!input)return false;
+    unsigned pre=0u;
+    while(input[pre]=='\\' && pre<2u)++pre;
+    const char *name=input+pre;
+    const char *root=nullptr,*tail=nullptr;
+    char x=name[0],y=name[1],z=name[2];
+    if(x>='A'&&x<='Z')x=(char)(x-'A'+'a');
+    if(y>='A'&&y<='Z')y=(char)(y-'A'+'a');
+    if(z>='A'&&z<='Z')z=(char)(z-'A'+'a');
+    if(x=='f'&&y=='l'&&z=='s'&&name[3]=='0'&&name[4]=='\\') {
+        root=g_guest_disk?"\\\\crd0":"\\\\drv0";tail=name+4;
+    } else if(x=='d'&&y=='r'&&z=='v'&&name[3]=='0'&&name[4]=='\\') {
+        root="\\\\drv0";tail=name+4;
+    } else if(x=='c'&&y=='r'&&z=='d'&&name[3]=='0'&&name[4]=='\\') {
+        root="\\\\crd0";tail=name+4;
+    } else return false;
+    unsigned n=0u,i=0u;
+    while(root[i] && n+1u<NTOS_EXWORD_PATH_MAX)out[n++]=root[i++];
+    i=0u;
+    while(tail[i] && n+1u<NTOS_EXWORD_PATH_MAX)out[n++]=tail[i++];
+    out[n]=0;
+    return !tail[i] && n>=7u;
+}
+static int guest_open(const char *path,uint32_t flags)
+{
+    if(flags!=1u)return -5; /* No write/create until hardware tested. */
+    char native[NTOS_EXWORD_PATH_MAX];
+    if(!guest_path(path,native))return -2;
+    unsigned i=0u;
+    while(i<8u && g_guest_files[i].live)++i;
+    if(i>=8u)return -4;
+    int fd=ntos_exword_open_read(native);
+    if(fd<0)return fd;
+    g_guest_files[i]={fd,true};
+    return (int)(i+1u);
+}
+static GuestFile *guest_fd(int id) {
+    return id>0 && id<=8 && g_guest_files[id-1].live ?
+           &g_guest_files[id-1]:nullptr;
+}
+static bool guest_buffer(void *p,uint32_t n)
+{
+    uint32_t at=(uint32_t)(uintptr_t)p;
+    return (at>=g_guest_area.image_start && at<=g_guest_area.image_end &&
+            n<=g_guest_area.image_end-at) ||
+           (at>=g_guest_area.stack_start && at<=g_guest_area.stack_end &&
+            n<=g_guest_area.stack_end-at);
+}
+static int guest_read(int id,void *to,uint32_t bytes)
+{
+    GuestFile *f=guest_fd(id);
+    if(!f || !guest_buffer(to,bytes))return -2;
+    return ntos_exword_read_fd(f->os_fd,to,bytes);
+}
+static int guest_close(int id)
+{
+    GuestFile *f=guest_fd(id);
+    if(!f)return -1;
+    int result=ntos_exword_close_fd(f->os_fd);
+    if(result>=0)*f={};
+    return result;
+}
+static int guest_size(int id)
+{
+    GuestFile *f=guest_fd(id);
+    return f?ntos_exword_size_fd(f->os_fd):-1;
+}
+static int guest_seek(int id,int offset,uint32_t method)
+{
+    GuestFile *f=guest_fd(id);
+    return f?ntos_exword_seek_fd(f->os_fd,offset,method):-1;
+}
+static int guest_stat(const char *path)
+{
+    char native[NTOS_EXWORD_PATH_MAX];
+    if(!guest_path(path,native))return -2;
+    uint32_t size=0u;
+    return ntos_exword_file_size(native,&size);
+}
+static void guest_close_all()
+{
+    for(GuestFile &f:g_guest_files)if(f.live) {
+        (void)ntos_exword_close_fd(f.os_fd);
+        f={};
+    }
+}
+
 static void init_host_api()
 {
     for(unsigned i=0;i<28u;++i)ntos_host_table[i]=nullptr;
@@ -161,7 +258,13 @@ static void init_host_api()
     ntos_host_table[8]=(const void *)&host_line;
     ntos_host_table[9]=(const void *)&host_fillrect;
     ntos_host_table[10]=(const void *)&host_input;
+    ntos_host_table[11]=(const void *)&guest_open;
+    ntos_host_table[12]=(const void *)&guest_read;
+    ntos_host_table[14]=(const void *)&guest_close;
     ntos_host_table[16]=(const void *)&host_draw_text;
+    ntos_host_table[17]=(const void *)&guest_size;
+    ntos_host_table[18]=(const void *)&guest_seek;
+    ntos_host_table[22]=(const void *)&guest_stat;
 }
 struct Source {const char *path;};
 static bool file_read(void *context,uint32_t off,uint8_t *to,uint32_t n)
@@ -293,6 +396,9 @@ int ntos_exword_run_pe(const char *path,uint32_t *exit_code)
         set_error("invalid executable entrypoint");
         ntos_exword_arena_release(area);return -9;
     }
+    g_guest_disk=path[2]=='c'?1u:0u;
+    g_guest_area=area;
+    for(GuestFile &f:g_guest_files)f={};
     for(Allocation &a:g_alloc)a={};
     g_heap_base=(area.image_start+image_size+7u)&~7u;
     g_heap_end=area.image_end;
@@ -310,6 +416,7 @@ int ntos_exword_run_pe(const char *path,uint32_t *exit_code)
     const int rc=ntos_exword_invoke(entry,ntos_host_table,area.stack_end-16u);
     /* Release GDI surfaces while the PE heap is still valid. */
     ntos_exword_dll_main(nullptr,0u,nullptr);
+    guest_close_all();
     *exit_code=(uint32_t)rc;
     set_error("ok");
     ntos_exword_arena_release(area);
