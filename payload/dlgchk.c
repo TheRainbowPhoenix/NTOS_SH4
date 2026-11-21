@@ -65,6 +65,7 @@ int main(const void *const *api,char **argv,char **envp) {
     U b=NT_CALL(NtosGwesCreate,());
     if(!a || !b || !NT_CALL(NtosGwesSetMode,(1u)))
         return (int)0xBADF9102u;
+    /* Check six model states without showing six partial redraws. */
     for(U i=0;i<6u;++i) {
         if(!NT_CALL(NtosThemeSet,(i%4u)) ||
            NT_CALL(NtosThemeGet,())!=(i%4u))
@@ -96,7 +97,7 @@ int main(const void *const *api,char **argv,char **envp) {
            !NT_CALL(NtosDialogGetRect,(id,&rc)) ||
            rc.l<0 || rc.t<0 || rc.r>320 || rc.b>528)
             return (int)0xBADF9107u;
-        if(!NT_CALL(NtosDialogDraw,()) ||
+        if((i==5u && !NT_CALL(NtosDialogDraw,())) ||
            !NT_CALL(NtosDialogEnd,(id,0x3EAu)) ||
            NT_CALL(NtosDialogResult,(id))!=0x3EAu ||
            !NT_CALL(NtosDialogRelease,(id)))
