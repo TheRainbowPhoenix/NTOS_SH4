@@ -3528,7 +3528,12 @@ struct PickerCatalogOwner {
     bool allocate() {
         void *raw=Mem_Malloc(sizeof(ntos_picker::Catalog));
         if(!raw)return false;
-        catalog=::new(raw) ntos_picker::Catalog{};
+        // Do not value-initialize an 8.5 KiB aggregate: GCC SH4 can
+        // materialize an 8.5 KiB zero-image in firmware PT_LOAD.
+        // Construct in-place without the large initializer, then zero
+        // the actual P1 allocation with the existing SDK routine.
+        catalog=::new(raw) ntos_picker::Catalog;
+        Mem_Memset(catalog,0,sizeof(*catalog));
         return true;
     }
     ~PickerCatalogOwner() {

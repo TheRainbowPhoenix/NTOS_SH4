@@ -11,9 +11,9 @@ constexpr unsigned VISIBLE=29u; // Debug rows 4..32, status/help at 1..3
 constexpr unsigned MAX_FILES=256u;
 constexpr unsigned MAX_NAME=25u;
 struct Catalog {
-    char names[MAX_FILES][MAX_NAME+1]{};
-    uint32_t sizes[MAX_FILES]{};
-    int pick[MAX_FILES]{};
+    char names[MAX_FILES][MAX_NAME+1];
+    uint32_t sizes[MAX_FILES];
+    int pick[MAX_FILES];
 };
 static_assert(sizeof(Catalog)<12288u);
 enum Action : uint8_t { none=0, redraw=1, launch=2, exit_host=3 };
