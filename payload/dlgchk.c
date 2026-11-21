@@ -53,6 +53,10 @@ NT_DEFINE(NtosGwesReset)
 static const W title[]={'G','W','E','S',' ','D','i','a','l','o','g',0};
 static const W body[]={'P','i','x','e','l',' ','t','h','e','m','e',0};
 static const U heights[6]={25u,35u,55u,60u,75u,95u};
+static void ui_nocrt_zero(void *ptr,unsigned bytes) {
+    volatile unsigned char *p=(volatile unsigned char *)ptr;
+    for(unsigned i=0;i<bytes;++i)p[i]=0u;
+}
 int main(const void *const *api,char **argv,char **envp) {
     (void)api;(void)argv;(void)envp;
     if(!NT_CALL(NtosGwesReset,()))
@@ -74,12 +78,18 @@ int main(const void *const *api,char **argv,char **envp) {
            rc.l<0 || rc.t<0 || rc.r>320 || rc.b>528 ||
            rc.r-rc.l!=260 || rc.b-rc.t<70)
             return (int)0xBADF9104u;
-        ITEM label={sizeof(label),1u,11u,{12,12,228,33},{0}};
+        ITEM label;
+        ui_nocrt_zero(&label,sizeof(label));
+        label.size=sizeof(label);label.type=1u;label.id=11u;
+        label.bounds=(RECT){12,12,228,33};
         if(!NT_CALL(NtosDialogAdd,(id,&label)) ||
            !NT_CALL(NtosDialogSetText,(id,11u,body)))
             return (int)0xBADF9105u;
-        ITEM ok={sizeof(ok),2u,0x3EAu,{12,42,116,76},
-                 {'O','K',0}};
+        ITEM ok;
+        ui_nocrt_zero(&ok,sizeof(ok));
+        ok.size=sizeof(ok);ok.type=2u;ok.id=0x3EAu;
+        ok.bounds=(RECT){12,42,116,76};
+        ok.text[0]='O';ok.text[1]='K';ok.text[2]=0u;
         if(!NT_CALL(NtosDialogAdd,(id,&ok)))
             return (int)0xBADF9106u;
         if(!NT_CALL(NtosDialogMove,(id,10+(int)i*12,8+(int)i*15)) ||

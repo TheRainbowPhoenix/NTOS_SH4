@@ -78,15 +78,32 @@ static void maybe_release_dialog(void) {
     NT_CALL(NtosDialogRelease,(active_dialog));
     active_dialog=0u;
 }
+static void ui_nocrt_zero(void *ptr,unsigned bytes) {
+    volatile unsigned char *p=(volatile unsigned char *)ptr;
+    for(unsigned i=0;i<bytes;++i)p[i]=0u;
+}
 static int open_demo_dialog(U owner) {
     if(NT_CALL(NtosDialogTop,()))return 0;
     DLG_CONFIG cfg={sizeof(cfg),owner,55u,1u,0xFFFFFFFFu,0u,-1,-1,0,dialog_title};
     U dlg=NT_CALL(NtosDialogOpen,(&cfg));
     if(!dlg)return 0;
-    DLG_ITEM label={sizeof(label),1u,11u,{10,9,224,36},{0}};
-    DLG_ITEM entry={sizeof(entry),3u,12u,{10,38,224,65},{0}};
-    DLG_ITEM ok={sizeof(ok),2u,0x3EAu,{10,73,101,105},{'O','K',0}};
-    DLG_ITEM cancel={sizeof(cancel),2u,0x3EBu,{111,73,222,105},{'C','a','n','c','e','l',0}};
+    DLG_ITEM label,entry,ok,cancel;
+    ui_nocrt_zero(&label,sizeof(label));
+    ui_nocrt_zero(&entry,sizeof(entry));
+    ui_nocrt_zero(&ok,sizeof(ok));
+    ui_nocrt_zero(&cancel,sizeof(cancel));
+    label.size=sizeof(label);label.type=1u;label.id=11u;
+    label.bounds=(RECT){10,9,224,36};
+    entry.size=sizeof(entry);entry.type=3u;entry.id=12u;
+    entry.bounds=(RECT){10,38,224,65};
+    ok.size=sizeof(ok);ok.type=2u;ok.id=0x3EAu;
+    ok.bounds=(RECT){10,73,101,105};
+    ok.text[0]='O';ok.text[1]='K';ok.text[2]=0u;
+    cancel.size=sizeof(cancel);cancel.type=2u;cancel.id=0x3EBu;
+    cancel.bounds=(RECT){111,73,222,105};
+    cancel.text[0]='C';cancel.text[1]='a';cancel.text[2]='n';
+    cancel.text[3]='c';cancel.text[4]='e';cancel.text[5]='l';
+    cancel.text[6]=0u;
     if(!NT_CALL(NtosDialogAdd,(dlg,&label)) ||
        !NT_CALL(NtosDialogAdd,(dlg,&entry)) ||
        !NT_CALL(NtosDialogAdd,(dlg,&ok)) ||
