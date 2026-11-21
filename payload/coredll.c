@@ -1979,3 +1979,7 @@ static int legacy_nav_input(NT_MSG *msg)
     }
     return 1;
 }
+
+#ifdef NTOS_EXWORD
+#include "../exword/ntos_exword_core_exports.inc"
+#endif
