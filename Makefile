@@ -92,6 +92,9 @@ GWESCHK_EXE := $(OUTDIR)/GWESCHK.EXE
 GWESLAB_OBJ := $(BUILDDIR)/payload/gweslab.o
 GWESLAB_ELF := $(BUILDDIR)/payload/gweslab.elf
 GWESLAB_EXE := $(OUTDIR)/GWESLAB.EXE
+DLGCHK_OBJ := $(BUILDDIR)/payload/dlgchk.o
+DLGCHK_ELF := $(BUILDDIR)/payload/dlgchk.elf
+DLGCHK_EXE := $(OUTDIR)/DLGCHK.EXE
 METROWIN_OBJ := $(BUILDDIR)/payload/metrowin.o
 METROWIN_ELF := $(BUILDDIR)/payload/metrowin.elf
 METROWIN_EXE := $(OUTDIR)/METROWIN.EXE
@@ -186,7 +189,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(GDIBLIT_EXE) $(GWESCHK_EXE) $(GWESLAB_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(GDIBLIT_EXE) $(GWESCHK_EXE) $(GWESLAB_EXE) $(DLGCHK_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -320,6 +323,18 @@ $(GUIWIN_EXE): $(GUIWIN_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(GUIWIN_ELF) -o $@ --import-module COREDLL.DLL
 
+
+$(DLGCHK_OBJ): $(PAYLOAD_DIR)/dlgchk.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(DLGCHK_ELF): $(DLGCHK_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(DLGCHK_OBJ)
+
+$(DLGCHK_EXE): $(DLGCHK_ELF) $(COREDLL_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
 
 $(GWESCHK_OBJ): $(PAYLOAD_DIR)/gweschk.c $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)

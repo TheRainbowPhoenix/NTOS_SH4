@@ -14,6 +14,13 @@ GDI = {
     "ReleaseDC", "CreateCompatibleDC", "CreateCompatibleBitmap",
     "SelectObject", "DeleteObject", "DeleteDC", "CreateSolidBrush",
 }
+DIALOG = {
+    "NtosThemeSet", "NtosThemeGet", "NtosDialogOpen",
+    "NtosDialogAdd", "NtosDialogMove", "NtosDialogGetRect",
+    "NtosDialogTop", "NtosDialogEnd", "NtosDialogResult",
+    "NtosDialogRelease", "NtosDialogEvent", "NtosDialogGetText",
+    "NtosDialogSetText", "NtosDialogDraw", "MessageBoxW",
+}
 CE = {
     "SipShowIM", "SipGetInfo", "SipSetInfo", "CreateWindowExW",
     "GetMessageW", "DispatchMessageW", "SetWindowTextW",
@@ -21,12 +28,12 @@ CE = {
 }
 
 def main() -> None:
-    if len(sys.argv) != 4:
-        raise SystemExit("usage: check_gwes_exports.py COREDLL.DLL GWESCHK.EXE GWESLAB.EXE")
+    if len(sys.argv) != 5:
+        raise SystemExit("usage: check_gwes_exports.py COREDLL.DLL GWESCHK.EXE GWESLAB.EXE DLGCHK.EXE")
     dll=PE(sys.argv[1])
     table=dll.exports()
     stub=table["AbortDoc"]
-    required=GWES|GDI|CE
+    required=GWES|GDI|CE|DIALOG
     for symbol in sorted(required):
         if not table.get(symbol) or table[symbol]==stub:
             raise ValueError(f"GWES unresolved or STUB: {symbol}")
@@ -39,7 +46,20 @@ def main() -> None:
     lab=PE(sys.argv[3]).imports().get("COREDLL.DLL",set())
     if not GWES.issubset(lab) or not {"SipShowIM","CreateWindowExW","GetMessageW","DispatchMessageW"}.issubset(lab):
         raise ValueError("GWESLAB missing actual GWES/SIP/WinCE message imports")
-    print(f"PASS GWES SH4BE PE32: {len(required)} non-stub WinCE+GWES+GDI exports, {len(probe)} probe imports, {len(lab)} live window/SIP demo imports")
+    dialog=PE(sys.argv[4]).imports().get("COREDLL.DLL",set())
+    expected={
+        "NtosThemeSet", "NtosThemeGet", "NtosDialogOpen",
+        "NtosDialogAdd", "NtosDialogMove", "NtosDialogGetRect",
+        "NtosDialogTop", "NtosDialogEnd", "NtosDialogResult",
+        "NtosDialogRelease", "NtosDialogSetText", "NtosDialogDraw",
+        "NtosGwesCreate", "NtosGwesClose",
+        "NtosGwesSetMode", "NtosGwesReset",
+    }
+    if dialog != expected:
+        raise ValueError(f"DLGCHK IAT mismatch: missing={sorted(expected-dialog)} extra={sorted(dialog-expected)}")
+    if not {"NtosDialogOpen","NtosDialogAdd","MessageBoxW","NtosThemeSet"}.issubset(lab):
+        raise ValueError("GWESLAB missing real modal dialog/MessageBoxW/theme imports")
+    print(f"PASS GWES SH4BE PE32: {len(required)} non-stub WinCE/GDI/GWES/dialog exports, {len(probe)} GWESCHK, {len(lab)} GWESLAB, {len(dialog)} DLGCHK imports")
 
 if __name__=="__main__":
     main()
