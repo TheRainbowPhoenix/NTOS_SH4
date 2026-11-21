@@ -247,3 +247,6 @@ from proprietary WinCE or NT5 trees is copied.
   LCD orientation or coordinates.
 
 - **Offscreen type:** the same LSB-left 8×14 GDI `TextOutW`/nearest-neighbour font code can now target a selected bitmap in a memory DC without touching the LCD until the application explicitly blits it. Text remains pixel-exact, with global text style rather than true per-DC font state. Host tests require both foreground and opaque background bitmap pixels and **zero** screen device-pixel calls during offscreen rasterization.
+
+### Modal dialogs, theming, action bar (GWES v2)
+An original pure-C modal system supports heights 25/35/55/60/75/95%, top/center/bottom, parent/screen centering, drag/move, SIP work-area clamp, up to three nested topmost overlays, six child label/button/edit elements and DialogResultOK (0x3EA) or DialogResultCancel (0x3EB). COREDLL exports real MessageBoxW MB_OK/MB_OKCANCEL and 14 native NtosDialog/NtosTheme services. White-default, Win98, WinXP-like and flat themes use integer RGB565 rendering; no antialiasing or Microsoft .msstyles file parser. The physical ClassPad action bar RESIZE/SWAP/ROTATE/ESC events flow through the host bridge into COREDLL; modal windows capture input. Host tests cover real COREDLL modal routing, keyboard, themes and 10,000 stale-token cycles. This is not yet cross-process DWM.

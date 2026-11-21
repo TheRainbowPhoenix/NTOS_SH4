@@ -46,7 +46,7 @@ jobs:
           /tmp/coredll-files
           gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_gdi_test.c -o /tmp/coredll-gdi
           /tmp/coredll-gdi
-          for name in nt_gwes_model_test nt_touchkb_test coredll_gwes_test; do
+          for name in nt_gwes_model_test nt_touchkb_test coredll_gwes_test nt_dialog_model_test coredll_dialog_test; do
             gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-function -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast "tests/$name.c" -o "/tmp/$name"
             "/tmp/$name"
           done

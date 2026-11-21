@@ -1910,3 +1910,17 @@ NtosGwesGetRect
 NtosGwesHit
 NtosGwesKeyboard
 NtosGwesReset
+NtosThemeSet
+NtosThemeGet
+NtosDialogOpen
+NtosDialogAdd
+NtosDialogMove
+NtosDialogGetRect
+NtosDialogTop
+NtosDialogEnd
+NtosDialogResult
+NtosDialogRelease
+NtosDialogEvent
+NtosDialogGetText
+NtosDialogSetText
+NtosDialogDraw
