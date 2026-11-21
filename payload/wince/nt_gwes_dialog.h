@@ -147,7 +147,7 @@ static inline uint32_t nt_dlg_open(NT_DIALOGS *s,const NT_GWES *g,
                                    const NT_DLG_CONFIG *cfg) {
     if(!s || !cfg || cfg->size!=sizeof(*cfg) || s->next_id>=0xFFFFu ||
        cfg->align>NT_DLG_ALIGN_BOTTOM ||
-       cfg->theme>NT_DLG_THEME_FLAT ||
+       (cfg->theme>NT_DLG_THEME_FLAT && cfg->theme!=0xFFFFFFFFu) ||
        (cfg->keyboard!=0u && cfg->keyboard!=1u) ||
        cfg->width>320 || cfg->width<-1 ||
        !nt_dlg_height(528,cfg->height))return 0u;
@@ -160,7 +160,8 @@ static inline uint32_t nt_dlg_open(NT_DIALOGS *s,const NT_GWES *g,
             d->serial=s->serial++;
             d->parent=cfg->parent;d->height=cfg->height;
             d->align=cfg->align;d->x=cfg->x;d->y=cfg->y;
-            d->width=cfg->width;d->theme=cfg->theme;
+            d->width=cfg->width;
+            d->theme=cfg->theme==0xFFFFFFFFu?s->theme:cfg->theme;
             d->keyboard=cfg->keyboard;d->state=1u;
             nt_dlg_copy(d->title,NT_DIALOG_TITLE,cfg->title);
             nt_kb_edit_init(&d->edit);
@@ -184,7 +185,8 @@ static inline int nt_dlg_add(NT_DIALOGS *s,uint32_t token,
        d->count==NT_DIALOG_ELEMENTS || item->bounds.left<0 ||
        item->bounds.top<0 || item->bounds.right<=item->bounds.left ||
        item->bounds.bottom<=item->bounds.top ||
-       item->bounds.right>320 || item->bounds.bottom>528)return 0;
+       item->bounds.right>d->bounds.right-d->bounds.left-8 ||
+       item->bounds.bottom>d->bounds.bottom-d->bounds.top-24-6)return 0;
     d->items[d->count]=*item;
     nt_dlg_copy(d->items[d->count].text,48u,item->text);
     ++d->count;return 1;
