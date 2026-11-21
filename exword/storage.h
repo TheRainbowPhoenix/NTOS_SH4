@@ -1,12 +1,11 @@
-/* EX-word HAL: bounded, read-only volume enumeration.
- * Never call these native firmware APIs without gint_world_switch().
- * Path spelling comes from the verified Edelweiss EX-word backend.
- */
+/* EX-word OS-world FS bridge. No firmware syscall from gint world.
+ * Read-only guest files; both native disks are browseable. */
 #ifndef NTOS_EXWORD_STORAGE_H
 #define NTOS_EXWORD_STORAGE_H
 #include <stdint.h>
-#define NTOS_EXWORD_LIST_MAX 8u
+#define NTOS_EXWORD_LIST_MAX 48u
 #define NTOS_EXWORD_NAME_MAX 48u
+#define NTOS_EXWORD_PATH_MAX 160u
 struct ntos_exword_listing {
     unsigned count;
     int result;
@@ -22,6 +21,9 @@ static inline const char *ntos_exword_pattern(unsigned volume)
 extern "C" {
 #endif
 int ntos_exword_scan(unsigned volume, struct ntos_exword_listing *out);
+int ntos_exword_scan_path(const char *pattern, struct ntos_exword_listing *out);
+int ntos_exword_file_size(const char *path, uint32_t *size);
+int ntos_exword_read_at(const char *path, uint32_t offset, void *out, uint32_t count);
 #ifdef __cplusplus
 }
 #endif
