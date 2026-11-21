@@ -186,6 +186,7 @@ struct NtosApi {
     uint32_t (*ps_user_stack_top)(void);                 // [85] actual P0 user stack
     uint32_t (*ps_user_arm)(uint32_t,uint32_t);          // [86] vetted TRAPA sites
     uint32_t (*ps_user_syscalls)(void);                  // [87] actual VBR dispatches
+    uint32_t (*io_open_handle_count)(void);             // [88] kernel Io FILE_OBJECT count
 };
 
 static int cur_row = 0;
@@ -697,6 +698,7 @@ static uint32_t ntos_ps_exec_entry(void);
 static uint32_t ntos_ps_user_stack_top(void);
 static uint32_t ntos_ps_user_arm(uint32_t,uint32_t);
 static uint32_t ntos_ps_user_syscalls(void);
+static uint32_t ntos_io_open_handle_count(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -876,6 +878,7 @@ static NtosApi g_ntos_api = {
     &ntos_ps_user_stack_top, // [85]
     &ntos_ps_user_arm, // [86]
     &ntos_ps_user_syscalls, // [87]
+    &ntos_io_open_handle_count, // [88]
 };
 
 // ---------------------------------------------------------------------------
@@ -1597,6 +1600,14 @@ static uint32_t ntos_psroot_switch(uint32_t target) {
     (void)target;return nt::NOT_SUPPORTED;
 #endif
 }
+static uint32_t ntos_io_open_handle_count(void) {
+#if NTOS_ENABLE_GUEST_IO
+    return g_nt_io.enabled && g_nt_process.ke.running() ?
+        g_nt_io.manager.open_count : 0xffffffffu;
+#else
+    return 0xffffffffu;
+#endif
+}
 static uint32_t ntos_ps_user_stack_top(void) {
 #if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
     return g_ps_user.ready && g_nt_process.ke.running() ?
@@ -1673,6 +1684,17 @@ static uint32_t ntos_ke_coop_exit(void) {
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(g_ps_root.twin && psroot_activate(0u)!=nt::SUCCESS)
         return nt::DEVICE_BUSY;
+#if NTOS_ENABLE_GUEST_IO
+    // Revoke every child-owned FILE_OBJECT while still on its P1 Ke
+    // exit path. Io close only carries handles, never guest pointers.
+    // Parent objects and driver mappings must survive the child death.
+    if(g_ps_root.twin && g_ps_root.child.active &&
+       g_nt_io.manager.close_owner(
+           g_ps_root.child.unique_process_id)!=nt::SUCCESS)
+        return nt::DEVICE_BUSY;
+#endif
+    if(g_ps_root.twin && g_ps_root.child.active)
+        g_ps_root.child.active=false;
 #endif
     nt::CoopSaved *from=nullptr;const nt::CoopSaved *to=nullptr;
     if(!g_ke_coop.exit_peer(g_nt_process.ke,&from,&to))
@@ -2456,10 +2478,13 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     bool twin_requested=source_path &&
         ntos_launch_policy::ascii_equal_ci(source_path,
                                            "\\fls0\\PSTWIN.EXE");
+    bool kill_requested=source_path &&
+        ntos_launch_policy::ascii_equal_ci(source_path,
+                                           "\\fls0\\PSKILL.EXE");
     bool pair_requested=source_path &&
         (ntos_launch_policy::ascii_equal_ci(source_path,
                                             "\\fls0\\PEPAIR.EXE") ||
-         twin_requested);
+         twin_requested || kill_requested);
 #endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     uint8_t *psroot_raw=nullptr;
@@ -2477,7 +2502,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         (ntos_launch_policy::ascii_equal_ci(source_path,
                                             "\\fls0\\PSROOT.EXE")
 #if NTOS_ENABLE_PE_PAIR
-         || twin_requested
+         || twin_requested || kill_requested
 #endif
 #if NTOS_ENABLE_PS_EXEC
          || exec_requested
@@ -2609,8 +2634,10 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 
 #if NTOS_ENABLE_PE_PAIR && NTOS_ENABLE_COOP_KERNEL && NTOS_STREAMED_IMAGE_LOADING
     if(pair_requested) {
-        const char *second_name=twin_requested ?
-            "\\fls0\\TWINCHILD.EXE" : "\\fls0\\PEPEER.EXE";
+        const char *second_name=kill_requested ?
+            "\\fls0\\KILLCHILD.EXE" :
+            twin_requested ? "\\fls0\\TWINCHILD.EXE" :
+            "\\fls0\\PEPEER.EXE";
         if(!read_pe_source(second_name,false,false,
                            &second_hdr,&second_exe,&second_file_size,err))
             goto done;
@@ -2735,7 +2762,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         g_ps_root.pa[0]=mmu::phys_addr(aligned);
         g_ps_root.pa[1]=mmu::phys_addr(aligned+4096u);
 #if NTOS_ENABLE_PE_PAIR
-        g_ps_root.twin=twin_requested;
+        g_ps_root.twin=twin_requested || kill_requested;
 #endif
     }
 #endif
