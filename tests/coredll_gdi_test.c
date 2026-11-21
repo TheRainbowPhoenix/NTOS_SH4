@@ -174,6 +174,10 @@ int main(void) {
     for(int yy=0;yy<14;++yy)
         for(int xx=0;xx<8;++xx) {
             u32 value=GetPixel(font_dc,xx,yy);
+            /* Fast 8x14 raster must match each LSB-left reference bit. */
+            const u32 expected=(nt_font_rows['A'-32][yy]&(1u<<xx))?
+                0x000000FFu:0x00FFFFFFu;
+            assert(value==expected);
             if(value==0x000000FFu)++dark;
             if(value==0x00FFFFFFu)++light;
         }
