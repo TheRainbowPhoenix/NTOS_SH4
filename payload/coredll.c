@@ -280,7 +280,15 @@ typedef struct {
     u16 title[48];
 } NT_WINDOW;
 
+#include "wince/ntgwes_model.h"
+#include "wince/nt_touchkb.h"
 static NT_WINDOW g_window;
+static NT_GWES g_nt_gwes;
+static unsigned g_nt_gwes_initialized;
+static NT_TOUCHKB g_nt_keyboard;
+static u32 nt_sip_flags = 2u; /* docked, on = bit zero */
+static void nt_sip_paint(void);
+int SipShowIM(u32 flags);
 static NT_WNDPROC g_class_proc;
 static u16 g_class_name[48];
 static NT_MSG g_messages[16];
@@ -535,6 +543,7 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
 }
 
 #include "wince/gdi_memory.inc"
+#include "wince/ntgwes_api.inc"
 
 void *GetDC(void *hwnd)
 {
@@ -1383,7 +1392,6 @@ typedef struct {
     u32 data_size;
     void *data;
 } NT_SIP_INFO;
-static u32 nt_sip_flags = 2u; /* SIPF_DOCKED; SIPF_ON is bit zero. */
 int SipShowIM(u32 flags)
 {
     if (flags > 1u) {
