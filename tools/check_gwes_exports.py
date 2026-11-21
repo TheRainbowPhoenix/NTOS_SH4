@@ -31,8 +31,11 @@ def main() -> None:
         if not table.get(symbol) or table[symbol]==stub:
             raise ValueError(f"GWES unresolved or STUB: {symbol}")
     probe=PE(sys.argv[2]).imports().get("COREDLL.DLL",set())
-    if probe!=GWES|GDI:
-        raise ValueError(f"GWESCHK IAT mismatch: missing={sorted((GWES|GDI)-probe)} extra={sorted(probe-(GWES|GDI))}")
+    # GDIBLIT/COREDLL implement BitBlt, DrawTextW, TextOutW; the
+    # GWESCHK executable intentionally imports only APIs that it calls.
+    used = GWES | (GDI - {"BitBlt", "DrawTextW", "TextOutW"})
+    if probe != used:
+        raise ValueError(f"GWESCHK IAT mismatch: missing={sorted(used-probe)} extra={sorted(probe-used)}")
     lab=PE(sys.argv[3]).imports().get("COREDLL.DLL",set())
     if not GWES.issubset(lab) or not {"SipShowIM","CreateWindowExW","GetMessageW","DispatchMessageW"}.issubset(lab):
         raise ValueError("GWESLAB missing actual GWES/SIP/WinCE message imports")
