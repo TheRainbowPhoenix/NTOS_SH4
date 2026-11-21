@@ -79,6 +79,9 @@
 #ifndef NTOS_PE_STREAM_LOG
 #define NTOS_PE_STREAM_LOG 1
 #endif
+#ifndef NTOS_NO_LOADER_PROGRESS_LOG
+#define NTOS_NO_LOADER_PROGRESS_LOG 0
+#endif
 
 // Streaming is enabled on this development branch. Set 0 to compare the
 // previous eager full-file staging path during emulator/hardware testing.
@@ -2917,10 +2920,14 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             if(n<0) goto done;
             total+=n;
         }
+#if NTOS_NO_LOADER_PROGRESS_LOG
+        (void)total;
+#else
         char msg[80], *p=msg;
         log_text(p,"Linked "); log_number(p,static_cast<uint32_t>(total),10);
         log_text(p," import(s), "); log_number(p,count-1u,10);
         log_text(p," DLL(s)"); *p=0; ntos_puts(msg);
+#endif
     }
     api_raw=static_cast<uint8_t *>(Mem_Malloc(0x4000u+0xFFFu));
     if(!api_raw){*err="API mapping allocation failed";goto done;}
