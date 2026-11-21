@@ -14,6 +14,14 @@ static void nt_dialog_init_once(void) {
 static int nt_dialog_active(void) {
     return g_nt_dialogs_initialized && nt_dlg_top(&g_nt_dialogs)!=0;
 }
+static int nt_dialog_sip(unsigned flags) {
+    /* The modal presenter draws the SIP in the same final frame.
+     * Suppress the redundant WM_SETTINGCHANGE -> full HWND repaint. */
+    ++g_nt_sip_silent;
+    int result=SipShowIM(flags);
+    --g_nt_sip_silent;
+    return result;
+}
 static void nt_dialog_word(int x,int y,const uint16_t *text,unsigned cap,
                            uint32_t color) {
     if(!text || !cap)return;
@@ -119,10 +127,10 @@ u32 NtosDialogOpen(const NT_DLG_CONFIG *cfg) {
     if(!cfg || cfg->size!=sizeof(*cfg))return 0u;
     const u32 prior=nt_sip_flags&1u;
     const u32 wanted=cfg->keyboard?1u:0u;
-    if(prior!=wanted && !SipShowIM(wanted))return 0u;
+    if(prior!=wanted && !nt_dialog_sip(wanted))return 0u;
     uint32_t id=nt_dlg_open(&g_nt_dialogs,&g_nt_gwes,cfg);
     if(!id) {
-        if(prior!=wanted)SipShowIM(prior);
+        if(prior!=wanted)nt_dialog_sip(prior);
         return 0u;
     }
     NT_DIALOG *d=nt_dlg_find(&g_nt_dialogs,id);
@@ -170,7 +178,7 @@ static void nt_dialog_finished(NT_DIALOG *d) {
     if(!d || d->state!=2u)return;
     const u32 keyboard=d->keyboard_prev;
     const int sip_changed=(nt_sip_flags&1u)!=keyboard;
-    if(sip_changed)SipShowIM(keyboard);
+    if(sip_changed)nt_dialog_sip(keyboard);
     if(!d->rendered)return; /* no intermediate test frame to erase */
     if(g_window.magic) {
         g_window.invalidated=1;UpdateWindow((void *)&g_window);
@@ -234,7 +242,7 @@ static int nt_dialog_capture(const NT_MSG *msg) {
             nt_dialog_finished(d);
         } else if(routed==3 && d->focused &&
                   (nt_sip_flags&1u)==0u) {
-            SipShowIM(1u);
+            nt_dialog_sip(1u);
             nt_present_overlays();coredll_refresh();
         } else if(routed==3u) {
             if(element && element!=NT_DIALOG_OK &&
