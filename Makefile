@@ -25,7 +25,10 @@ CC:=sh4a_nofpueb-elf-gcc
 CC_FLAGS=-std=c23 $(COMMON_FLAGS)
 
 CXX:=sh4a_nofpueb-elf-g++
-CXX_FLAGS=-std=c++20 $(COMMON_FLAGS)
+# NTOS never throws or catches C++ exceptions. In the standard build,
+# RAII resource cleanup must not drag the SH4 libstdc++ EH/unwinder into
+# the strictly bounded 64 KiB HH3 PT_LOAD segment.
+CXX_FLAGS=-std=c++20 -fno-exceptions $(COMMON_FLAGS)
 
 LD:=sh4a_nofpueb-elf-g++
 LD_FLAGS:=$(FUNCTION_FLAGS) -Wl,--gc-sections -Wl,-T,tools/ntos_no_unwind.ld

@@ -52,12 +52,7 @@ jobs:
       - name: Build all matching SH4BE EXE/DLL and audit real syscall opcodes
         run: |
           set -eu
-          make -j4 ntx || {
-            echo "Default HH3 size failure - largest linked SH4 symbols:"
-            sh4a_nofpueb-elf-nm --size-sort -S dist/NTOS.elf | tail -n 35 || true
-            sh4a_nofpueb-elf-readelf -l dist/NTOS.elf || true
-            exit 1
-          }
+          make -j4 ntx
           make -j4 nt-vm-dll-probes nt-exec-probes dist_ntprobe/MMROTEST.EXE
           for p in KTHREAD.EXE KEXCEPT.EXE ASOWN.EXE PSPARENT.EXE PSCHILD.EXE MMREUSE.EXE MMSTRESS.EXE MMRACE.EXE KCOOP.EXE K2THREAD.EXE DEVNULL.EXE DEVLOOP.EXE PEPAIR.EXE PEPEER.EXE PSROOT.EXE PSTWIN.EXE TWINCHILD.EXE KREGCTX.EXE DEVREPL.EXE PSCODE.EXE CODEA.EXE CODEB.EXE KTRAPREG.EXE PSUSER.EXE PSSTACK.EXE HALTMU.EXE HALUSB.EXE PSKILL.EXE KILLCHILD.EXE DEVDISP.EXE PROTSTATE.EXE NATIVEVM.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE IOTEST.EXE; do
             test -s "dist_ntprobe/$p"
