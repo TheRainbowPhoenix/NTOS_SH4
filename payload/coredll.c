@@ -57,8 +57,12 @@ u32 coredll_getkey(void)
     return 0;
 }
 
+/* The pixel and rectangle gates write immediately, but an HWND paint
+ * transaction presents the completed frame only once. */
+static unsigned g_nt_paint_depth, g_nt_paint_pending;
 void coredll_refresh(void)
 {
+    if(g_nt_paint_depth) {g_nt_paint_pending=1u;return;}
     const void **api = ntapi();
     if (api != 0 && api[2] != 0)
         ((void (*)(void))api[2])();
@@ -295,6 +299,19 @@ static void nt_dialog_paint(void);
 int UpdateWindow(void *hwnd);
 static u32 nt_sip_flags = 2u; /* docked, on = bit zero */
 static void nt_sip_paint(void);
+static void nt_present_overlays(void) {
+    /* Final z-order: foreground app, dialogs, keyboard. */
+    nt_dialog_paint();
+    nt_sip_paint();
+}
+static void nt_finish_paint(void) {
+    if(!g_nt_paint_depth)return;
+    --g_nt_paint_depth;
+    if(g_nt_paint_depth || !g_nt_paint_pending)return;
+    g_nt_paint_pending=0u;
+    nt_present_overlays();
+    coredll_refresh();
+}
 int SipShowIM(u32 flags);
 static NT_WNDPROC g_class_proc;
 static u16 g_class_name[48];
@@ -487,7 +504,11 @@ int DispatchMessageW(const NT_MSG *msg)
     if(is_edit_hwnd(msg->hwnd)) {
         if(msg->message==0x0102u) {
             int changed=nt_kb_edit_char(&g_edit.value,msg->wParam);
-            if(changed==1)nt_edit_paint();
+            if(changed==1) {
+                nt_edit_paint();
+                nt_sip_paint(); /* SIP remains above the Edit text. */
+                coredll_refresh();
+            }
             if(changed && g_window.proc)
                 g_window.proc((void *)&g_window,0x0111u,0u,0u);
             return changed!=0;
@@ -497,7 +518,11 @@ int DispatchMessageW(const NT_MSG *msg)
     if(g_edit.magic && g_edit.visible &&
        msg->message==0x0102u && g_edit.focused) {
         int changed=nt_kb_edit_char(&g_edit.value,msg->wParam);
-        if(changed==1)nt_edit_paint();
+        if(changed==1) {
+            nt_edit_paint();
+            nt_sip_paint();
+            coredll_refresh();
+        }
         if(changed && g_window.proc)
             g_window.proc((void *)&g_window,0x0111u,0u,0u);
         return changed!=0;
@@ -609,9 +634,17 @@ sip_next_event:
         y>=NT_KB_TOP && y<NT_KB_BOTTOM) {
         unsigned ch=0u;
         if(direction!=2u && direction!=0x40u) {
+            const unsigned shift=g_nt_keyboard.shift;
+            const unsigned caps=g_nt_keyboard.caps;
+            const unsigned numbers=g_nt_keyboard.numbers;
             ch=nt_kb_press(&g_nt_keyboard,(int)x,(int)y);
-            nt_sip_paint();
-            coredll_refresh();
+            /* Most key taps do not alter the key labels. Avoid redrawing
+             * all 40 keys after each typed character. */
+            if(shift!=g_nt_keyboard.shift || caps!=g_nt_keyboard.caps ||
+               numbers!=g_nt_keyboard.numbers) {
+                nt_sip_paint();
+                coredll_refresh();
+            }
         }
         if(!ch)goto sip_next_event;
         msg->hwnd=is_hwnd(hwnd)?hwnd:
@@ -709,8 +742,8 @@ void *GetDC(void *hwnd)
 int ReleaseDC(void *hwnd, void *hdc)
 {
     (void)hwnd;
-    if (hdc) {
-        nt_dialog_paint();
+    if(hdc) {
+        if(!g_nt_paint_depth)nt_present_overlays();
         coredll_refresh();
     }
     return hdc ? 1 : 0;
@@ -760,7 +793,7 @@ int EndPaint(void *hwnd, const NT_PAINT *paint)
     ntos_paint_titlebar();
     legacy_nav_paint();
     nt_edit_paint();
-    nt_sip_paint();
+    if(!g_nt_paint_depth)nt_present_overlays();
     coredll_refresh();
     return 1;
 }
@@ -1108,16 +1141,24 @@ int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
 int UpdateWindow(void *hwnd)
 {
     if(is_edit_hwnd(hwnd)) {
-        nt_edit_paint();nt_dialog_paint();coredll_refresh();return 1;
+        nt_edit_paint();
+        if(!g_nt_paint_depth)nt_present_overlays();
+        coredll_refresh();
+        return 1;
     }
-    if (is_hwnd(hwnd) && g_window.invalidated) {
-        g_window.invalidated = 0;
-        if (g_window.proc)
-            g_window.proc(hwnd, 0x000Fu, 0, 0);
+    if(is_hwnd(hwnd) && g_window.invalidated) {
+        g_window.invalidated=0;
+        ++g_nt_paint_depth;
+        if(g_window.proc)g_window.proc(hwnd,0x000Fu,0,0);
+        /* Nested UpdateWindow(Edit), ReleaseDC and EndPaint must not
+         * upload incomplete frames to the slow physical LCD. */
+        g_nt_paint_pending=1u;
+        nt_finish_paint();
+        return 1;
     }
-    /* Always compose open modal surfaces AFTER the underlying WNDPROC. */
     if(nt_dialog_active()) {
-        nt_dialog_paint();coredll_refresh();
+        nt_present_overlays();
+        coredll_refresh();
     }
     return 1;
 }
@@ -1575,6 +1616,7 @@ int SipShowIM(u32 flags)
         g_last_error = 87;
         return 0;
     }
+    if((nt_sip_flags&1u)==flags)return 1;
     nt_sip_flags = 2u | flags;
     if(g_nt_gwes_initialized)
         nt_gwes_sip(&g_nt_gwes,flags);
@@ -1582,7 +1624,9 @@ int SipShowIM(u32 flags)
         g_window.invalidated=1;
         enqueue((void *)&g_window, 0x001Au, 0, 0); /* WM_SETTINGCHANGE */
     }
-    if(flags) {
+    /* HWNDs redraw after WM_SETTINGCHANGE. Painting the SIP first
+     * wastes an LCD refresh and lets the parent erase it afterwards. */
+    if(flags && !g_window.magic) {
         nt_sip_paint();
         coredll_refresh();
     }
