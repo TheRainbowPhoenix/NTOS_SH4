@@ -215,7 +215,7 @@ static int nt_dialog_capture(const NT_MSG *msg) {
     if(!d)return 0;
     if(msg->message==0x0201u) { /* touch down */
         const u32 id=d->token;
-        u32 element=0u;
+        uint32_t element=0u; /* typed model's uint32_t* */
         int title_drag=msg->pt.y>=d->bounds.top &&
              msg->pt.y<d->bounds.top+24 &&
              msg->pt.x>=d->bounds.left &&
