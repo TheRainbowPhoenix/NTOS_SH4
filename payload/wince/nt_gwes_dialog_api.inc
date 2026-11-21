@@ -89,6 +89,33 @@ static void nt_dialog_frame(NT_DIALOG *d) {
     }
     g_font_height=height_before;
 }
+/* Character input only changes the focused Edit; keep title, buttons and
+ * keyboard untouched. This is two RGB565 fills + the short edited text,
+ * not a complete expensive 320x528 modal redraw per WM_CHAR. */
+static void nt_dialog_edit_only(NT_DIALOG *d) {
+    if(!d || d->state!=1u || !d->rendered ||
+       d->focused<1 || d->focused>(int)d->count)return;
+    const NT_DLG_ITEM *item=&d->items[d->focused-1];
+    if(item->type!=NT_DLG_EDIT)return;
+    const NT_GW_RECT r=d->bounds,e=item->bounds;
+    const int left=r.left+e.left,top=r.top+24+e.top;
+    int right=r.left+e.right,bottom=r.top+24+e.bottom;
+    if(right>r.right-3)right=r.right-3;
+    if(bottom>r.bottom-3)bottom=r.bottom-3;
+    if(left>=right || top>=bottom)return;
+    const NT_DLG_STYLE theme=nt_dlg_theme(d->theme);
+    const int saved=g_font_height;
+    g_font_height=14;
+    ntos_fillrect((u32)left,(u32)top,(u32)right,(u32)bottom,
+                  theme.border);
+    ntos_fillrect((u32)(left+1),(u32)(top+1),
+                  (u32)(right-1),(u32)(bottom-1),0x00FFFFFFu);
+    const unsigned room=(unsigned)(right-left-8)/8u;
+    const unsigned len=d->edit.length;
+    const unsigned skip=len>room?len-room:0u;
+    nt_dialog_word(left+4,top+4,d->edit.text+skip,room,theme.ink);
+    g_font_height=saved;
+}
 static void nt_dialog_paint(void) {
     if(!nt_dialog_active())return;
     /* The final presenter paints the SIP AFTER all modal overlays. */
@@ -256,9 +283,17 @@ static int nt_dialog_capture(const NT_MSG *msg) {
         return 1; /* no drag redraws on the slow SH7305 LCD */ /* background pointer/drag/up capture */
     if(msg->message==0x0102u || msg->message==0x0100u) {
         unsigned ch=msg->wParam;
-        nt_dlg_key(&g_nt_dialogs,ch);
+        const int changed=nt_dlg_key(&g_nt_dialogs,ch);
         if(d->state==2u)nt_dialog_finished(d);
-        else {nt_dialog_paint();coredll_refresh();}
+        else if(changed) {
+            if(d->rendered && d->focused>0 &&
+               d->focused<=(int)d->count &&
+               d->items[d->focused-1].type==NT_DLG_EDIT)
+                nt_dialog_edit_only(d);
+            else
+                nt_dialog_paint();
+            coredll_refresh();
+        }
         return 1;
     }
     return 0;
