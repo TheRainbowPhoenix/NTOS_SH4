@@ -14,6 +14,7 @@ on:
       - feat/ps-user-stack-dual-owner-irq-io-20261121
       - feat/ps-p1-resident-hal-tmu-20261121
       - feat/coredll-memory-gdi-userland-20261121
+      - feat/gwes-tiles-sip-edit-20261121
   workflow_dispatch:
 permissions:
   contents: read
@@ -45,6 +46,10 @@ jobs:
           /tmp/coredll-files
           gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_gdi_test.c -o /tmp/coredll-gdi
           /tmp/coredll-gdi
+          for name in nt_gwes_model_test nt_touchkb_test coredll_gwes_test; do
+            gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast "tests/$name.c" -o "/tmp/$name"
+            "/tmp/$name"
+          done
           python3 tests/test_hh3_launcher_layout.py
       - name: Build one CP400 firmware with Ke/Ps and proven protection handler
         run: |

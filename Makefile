@@ -229,7 +229,7 @@ $(HELLO_EXE): $(HELLO_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(HELLO_ELF) -o $@
 
-$(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c $(PAYLOAD_DIR)/wince/gdi_memory.inc $(PAYLOAD_DIR)/ugui_font.h $(PAYLOAD_DIR)/ntapi_caps.h
+$(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c $(PAYLOAD_DIR)/wince/ntgwes_model.h $(PAYLOAD_DIR)/wince/ntgwes_api.inc $(PAYLOAD_DIR)/wince/nt_touchkb.h $(PAYLOAD_DIR)/wince/nt_touchkb_render.inc $(PAYLOAD_DIR)/wince/gdi_memory.inc $(PAYLOAD_DIR)/ugui_font.h $(PAYLOAD_DIR)/ntapi_caps.h
 	@mkdir -p $(dir $@)
 	$(CC) -c $(PAYLOAD_DIR)/coredll.c -o $@ $(PAYLOAD_CFLAGS)
 

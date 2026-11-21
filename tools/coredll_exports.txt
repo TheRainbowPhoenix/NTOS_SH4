@@ -1900,3 +1900,13 @@ wsprintfW
 wvsprintfW
 TextOutW
 DimRect
+NtosGwesCreate
+NtosGwesClose
+NtosGwesSetMode
+NtosGwesGetMode
+NtosGwesSwap
+NtosGwesFocus
+NtosGwesGetRect
+NtosGwesHit
+NtosGwesKeyboard
+NtosGwesReset
