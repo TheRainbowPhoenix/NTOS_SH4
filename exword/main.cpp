@@ -22,7 +22,7 @@ static bool g_ready;
 /* Avoid depending on a second C++ runtime allocator in stage 0. The
  * same NTOS Ex tagged pool manages a single bounded, private bootstrap
  * scratch allocation; future HAL work can replace these callbacks. */
-static alignas(8) unsigned char g_boot_scratch[64];
+alignas(8) static unsigned char g_boot_scratch[64];
 static bool g_boot_scratch_busy;
 static void *pool_alloc(void *,size_t n) {
     if(!n || n>sizeof(g_boot_scratch) || g_boot_scratch_busy)return nullptr;
@@ -106,16 +106,19 @@ int main(void)
      * OS-owned mappings to the P1 runtime. No manual MMUCR writes here. */
     g_ready=init_kernel();
     if(g_ready)ntos_exword_scan(g_volume,&g_listing);
+    draw();
     for(;;) {
-        draw();
+        /* The slow LCD must not redraw on every key-up, auto-repeat or
+         * spurious input event. Only a changed volume/list needs a frame. */
         key_event_t e=getkey();
-        if(e.type!=KEYEV_DOWN && e.type!=KEYEV_HOLD)continue;
+        if(e.type!=KEYEV_DOWN)continue;
         if(e.key==KEY_EXIT || e.key==KEY_ACON)break;
         if(!g_ready)continue;
         if(e.key==KEY_LEFT || e.key==KEY_RIGHT)
             g_volume^=1u;
         else if(e.key!=KEY_EXE)continue;
         ntos_exword_scan(g_volume,&g_listing);
+        draw();
     }
     /* No guest mappings were installed. gint restores saved OS state
      * after main returns, unlike CP400's private UTLB handoff. */
