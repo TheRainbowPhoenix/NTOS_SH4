@@ -5,6 +5,11 @@ on:
   pull_request:
     paths:
       - "exword/**"
+      - "Makefile"
+      - "payload/**"
+      - "tools/elf2ntx.py"
+      - "tools/package_exword_sysroot.py"
+      - "tests/exword_packaging_test.py"
       - "src/nt/**"
       - "src/pe.hpp"
       - "src/pe_stream.hpp"
@@ -20,18 +25,49 @@ concurrency:
   group: ntosh-exword-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  pe-payloads:
+    name: Build shared NTOS SH4BE EXE/DLL payloads
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.2
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build NTOS.hh3, EXEs, DLLs and phone applications
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -j4
+          test -s dist/HELLO.EXE
+          test -s dist/HELLOCORE.EXE
+          test -s dist/COREDLL.DLL
+          test -s dist/XAMLUI.DLL
+          test "$(find dist/Apps -mindepth 2 -maxdepth 2 -iname '*.exe' | wc -l)" -eq 24
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NTOSH-SH4BE-PE-build
+          path: dist/
+          if-no-files-found: error
   build:
+    needs: pe-payloads
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/therainbowphoenix/gint-docker:main
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: NTOSH-SH4BE-PE-build
+          path: ntos-pe-dist
       - name: Test portable NTOS Ke/Ps/Ob/Ex code used in D01
         shell: bash
         run: |
           set -euo pipefail
           c++ -std=c++17 -Os -Wall -Wextra -Werror tests/exword_port_test.cpp -o /tmp/ntosh-exword-port-test
           /tmp/ntosh-exword-port-test
+          python3 tests/exword_packaging_test.py
           for test in pe_stream_test pe_fixup_types_test pe_forwarder_test; do
             c++ -std=c++20 -Os -Wall -Wextra -Werror "tests/${test}.cpp" -o "/tmp/${test}"
             "/tmp/${test}"
@@ -69,9 +105,10 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=/tmp/fxsdk-exword/lib/cmake/fxsdk/EXWORD.cmake \
             -DCMAKE_PREFIX_PATH=/tmp/gint-exword \
             '-DCMAKE_MODULE_PATH=/tmp/gint-exword/lib/cmake/fxsdk;/tmp/fxsdk-exword/lib/cmake/fxsdk' \
-            -DEXWORD_METADATA_SOURCE=/tmp/exword-metadata
+            -DEXWORD_METADATA_SOURCE=/tmp/exword-metadata \
+            -DEXWORD_PAYLOAD_DIR="$GITHUB_WORKSPACE/ntos-pe-dist"
           cmake --build build-exword --parallel 2
-          python3 tools/check_exword_d01.py build-exword
+          python3 tools/check_exword_d01.py build-exword ntos-pe-dist
           sh-elf-readelf -h build-exword/ntos_sh
           sh-elf-nm build-exword/ntos_sh | grep -E '_exword_entry|_mmu_exword_prepare|_main'
           (cd build-exword && sha256sum ntos_sh.d01 NTOS.d01 > BUILD-SHA256.txt)
