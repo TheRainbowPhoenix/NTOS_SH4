@@ -205,3 +205,43 @@ be implemented and device-tested rather than silently mapped to a zero stub.
 - Run against the exact `NTOS.hh3` and `COREDLL.DLL` from the same CI kit. Verify the original GUIWIN, WINLAB, METROWIN, DEVDISP and PSROOT/KTRAPREG/PSUSER/PSKILL regressions still behave. Keep the original known-good firmware until confirmed.
 
 - **Process lifetime:** COREDLL's loader-invoked `DLL_PROCESS_DETACH` now walks the bounded bitmap table and releases all backing allocations, including selected memory-DC objects that a crashing or early-returning EXE never deleted. The CE MSVC compatibility wrapper also calls this cleanup when unloading its own instance; it does not call the SDK under VBR/interrupt ownership.
+
+## NTOS GWES prototype (2026-11-21)
+
+**WinCE precedent:** COREDLL provides the client entrypoints; GWES/GDI are
+window/input/graphics backends, not an arbitrary new standard GDI.DLL. The
+original NTOS implementation is a process-local bounded frontend; no source
+from proprietary WinCE or NT5 trees is copied.
+
+- **GWESCHK.EXE** returns `0x47574531` on success; `0xBADF81xx` indicates
+  exact step. It imports ~22 real COREDLL functions (PE32 import/export
+  directory is statically audited in CI), tests two logical pane handles,
+  full-screen default, top/bottom 264px split, rotated left/right 160px split,
+  order swap, close, keyboard occlusion at y=271, and *nearest-neighbour*
+  8x8→32x32 RGB565 `StretchBlt` without antialiasing.
+- **GWESLAB.EXE** returns `0x47574C31` on CLEAR; interactive white-theme
+  app with two logical panels ("Notes", "Gallery"), touch targets
+  `[]` layout toggle, `<>` swap, `X` close, F2 keyboard toggle.
+  `Edit` child HWND uses standard `CreateWindowExW("Edit")`,
+  `GetWindowTextW`, and COREDLL `SipShowIM` -> touch `WM_CHAR`
+  -> 128-UTF-16-unit bounded edit; press hardware CLEAR to exit.
+  Keyboard derives familiar 4-row CP400 `fingerkb.c` geometry, but
+  is independently implemented for actual WinCE/COREDLL ABI using
+  integer UGUI glyphs and RGB565 rectangles. Its input is delivered
+  through the normal WinCE message loop, not the phone UIX renderer.
+- **Host gates** compile exact COREDLL implementations with fake pixels,
+  touch events and Edit HWND. Additional tests cover 2,500 split/rotate
+  geometry cycles, 1,000-char edit saturation, WM_CHAR delivery, GDI
+  2x2→6x6 nearest-neighbour exact pixels, unsupported ROP/overlap cases,
+  stale handles and existing COREDLL file/window regressions.
+- **Scope/limits:** these are two logical windows inside *one foreground*
+  user PE, not two independently scheduled processes, preemptive DWM,
+  multi-window HWND compositor or native display MMIO. COREDLL's legacy
+  one-top-level HWND path remains compatible. Built-in standard Edit
+  is one single-line child with no IME, text selection, undo or multiline.
+  Existing separate CE COMMCTRL implementation is not falsely described
+  as automatically portable just because an export name matches:
+  calling convention, thread, message routing and object layout must be
+  verified independently. Full screen display can be split by user choice;
+  screen "rotation" means splitting the panes by width, **not** changing
+  LCD orientation or coordinates.
