@@ -20,7 +20,8 @@ _psuser_run:
     mov r4,r9
     mov r5,r15
     mov #0,r10
-    mov #128,r11
+    mov #127,r11
+    add #1,r11
     mov #1,r12
     /* The SR transition itself runs privileged; r15 is now P0, but
        user instructions will only access the P0 arena. */
