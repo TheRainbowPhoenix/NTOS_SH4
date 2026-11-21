@@ -1,6 +1,7 @@
 #include "../src/nt/picker.hpp"
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 using ntos_picker::Picker;
 static ntos_picker::Action press(Picker &p,uint32_t a,uint32_t b) {
     assert(p.key(0u,0u)==ntos_picker::none);
@@ -93,7 +94,32 @@ int main() {
     assert(p.selected==0u);
     p.init(0u);
     assert(press(p,0u,0x00080000u)==ntos_picker::none);
+    // Flash enumeration is not sorted. Compare only indices so the catalog
+    // keeps the original filename-size pairing used to launch the PE.
+    static ntos_picker::Catalog catalog{};
+    const char *unordered[]={
+        "WINLAB.EXE","GWESLAB.EXE","DLGCHK.EXE","GDIBLIT.EXE",
+        "GWESCHK.EXE","alpha.EXE","ALPHA.EXE","B.EXE"
+    };
+    constexpr unsigned entries=sizeof(unordered)/sizeof(unordered[0]);
+    for(unsigned i=0u;i<entries;++i) {
+        std::strcpy(catalog.names[i],unordered[i]);
+        catalog.sizes[i]=100u+i;
+        catalog.pick[i]=static_cast<int>(i);
+    }
+    ntos_picker::sort_by_name(catalog,entries);
+    const int expected[]={5,6,7,2,3,4,1,0};
+    for(unsigned i=0u;i<entries;++i) {
+        assert(catalog.pick[i]==expected[i]);
+        assert(catalog.sizes[catalog.pick[i]]==100u+static_cast<unsigned>(expected[i]));
+    }
+    // A second sort is idempotent; equal case-insensitive names stay stable.
+    ntos_picker::sort_by_name(catalog,entries);
+    for(unsigned i=0u;i<entries;++i)assert(catalog.pick[i]==expected[i]);
+    ntos_picker::sort_by_name(catalog,0u);
+    ntos_picker::sort_by_name(catalog,1u);
+    for(unsigned i=0u;i<entries;++i)assert(catalog.pick[i]==expected[i]);
     static_assert(ntos_picker::MAX_FILES==256u);
     static_assert(sizeof(ntos_picker::Catalog)<12288u);
-    std::puts("PASS picker: 256 EXE/DLL discoveries, three-digit 100/256 jump, 29-row scroll, no held repeats");
+    std::puts("PASS picker: alphabetic EXE order, 256 discoveries, three-digit 100/256 jump, 29-row scroll, no held repeats");
 }
