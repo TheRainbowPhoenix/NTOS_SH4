@@ -11,7 +11,6 @@
 #include <gint/display.h>
 #include <gint/keyboard.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include "storage.h"
 #include "../src/nt/process.hpp"
 
@@ -20,8 +19,19 @@ static ntos_exword_listing g_listing;
 static unsigned g_volume;
 static bool g_ready;
 
-static void *pool_alloc(void *,size_t n) {return malloc(n);}
-static void pool_free(void *,void *p) {free(p);}
+/* Avoid depending on a second C++ runtime allocator in stage 0. The
+ * same NTOS Ex tagged pool manages a single bounded, private bootstrap
+ * scratch allocation; future HAL work can replace these callbacks. */
+static alignas(8) unsigned char g_boot_scratch[64];
+static bool g_boot_scratch_busy;
+static void *pool_alloc(void *,size_t n) {
+    if(!n || n>sizeof(g_boot_scratch) || g_boot_scratch_busy)return nullptr;
+    g_boot_scratch_busy=true;
+    return g_boot_scratch;
+}
+static void pool_free(void *,void *p) {
+    if(p==g_boot_scratch)g_boot_scratch_busy=false;
+}
 
 static bool init_kernel()
 {
