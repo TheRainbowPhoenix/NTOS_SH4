@@ -97,7 +97,7 @@ static void changed(void *hwnd) {
     NT_CALL(InvalidateRect,(hwnd,0,0));
     NT_CALL(UpdateWindow,(hwnd));
 }
-static int wndproc(void *hwnd,U msg,U w,U lp) {
+static int wndproc(void *hwnd,DWORD msg,DWORD w,DWORD lp) {
     (void)w;
     if(msg==0x0001u) { /* WM_CREATE */
         edit=NT_CALL(CreateWindowExW,(0u,editname,0,0u,
