@@ -25,6 +25,12 @@
 #ifndef NTOS_ENABLE_KE_USER_SYSCALL
 #define NTOS_ENABLE_KE_USER_SYSCALL 0
 #endif
+#ifndef NTOS_ENABLE_PSUSER
+#define NTOS_ENABLE_PSUSER 0
+#endif
+#if NTOS_ENABLE_PSUSER && !NTOS_ENABLE_KE_USER_SYSCALL
+#error "PSUSER requires the proved VBR Ke trap dispatcher"
+#endif
 #if NTOS_ENABLE_KE_USER_SYSCALL && !NTOS_ENABLE_GUEST_PROTECT_DISPATCH
 #error "Ke user trap requires proven +0x100 VBR protection dispatch"
 #endif
@@ -68,6 +74,17 @@ struct Context {
     uint32_t service_saved_sr=0u;
     volatile uint32_t service_completed=0u;
     volatile uint32_t service_rejected=0u;
+#if NTOS_ENABLE_PSUSER
+    // Dedicated P0 user-stack session. For THIS exact canary, Ke permits
+    // repeated user-mode instructions and returns to user SSR after each
+    // validated PID query. A final distinct trap returns privileged.
+    // No other P0 entry point or syscall number is authorized here.
+    bool user_loop_armed=false;
+    uint32_t user_loop_pc=0u,user_loop_exit_pc=0u;
+    uint32_t user_stack_lo=0u,user_stack_hi=0u;
+    uint32_t user_loop_supervisor_sr=0u;
+    volatile uint32_t user_loop_calls=0u,user_loop_rejected=0u;
+#endif
     // A tiny, stackless P0 user-mode read probe returns to the original
     // privileged guest C frame using exactly one audited TRAPA #0x7B.
     // No OS/SDK code may run during the user-mode instruction window.
@@ -198,6 +215,46 @@ inline nt::Status arm_user_service(uint32_t trap_pc,uint32_t service) {
     (void)trap_pc;(void)service;return nt::NOT_SUPPORTED;
 #endif
 }
+#if NTOS_ENABLE_PSUSER
+// Unlike the earlier one-op syscall stub, PSUSER can execute an actual
+// bounded loop and PUSH/POP on its own P0 stack in SR.MD=0 between traps.
+// This is a transitional single-process test; NOT a general syscall ABI.
+inline nt::Status arm_user_loop(uint32_t pc,uint32_t exit_pc,
+                                uint32_t stack_lo,uint32_t stack_hi) {
+    Context &c=g_context;
+    if(!c.installed || !c.ke || !c.ke->running() ||
+       !mmu::at_enabled() || c.service_armed || c.user_probe_session ||
+       c.user_loop_armed || c.guest_guard.armed ||
+       !pc || !exit_pc || pc==exit_pc ||
+       (pc&1u) || (exit_pc&1u) ||
+       !stack_lo || (stack_lo&4095u) ||
+       stack_hi-stack_lo!=4096u ||
+       !executable_page(&c.table,pc) ||
+       !executable_page(&c.table,pc+2u) ||
+       !executable_page(&c.table,exit_pc) ||
+       !executable_page(&c.table,exit_pc+2u) ||
+       c.table.lookup(stack_lo)<0 ||
+       c.table.access(stack_lo)!=ntos_mm::Access::read_write)
+        return nt::INVALID_PARAMETER;
+    const auto *op=reinterpret_cast<volatile const uint16_t *>(pc);
+    const auto *end=reinterpret_cast<volatile const uint16_t *>(exit_pc);
+    if(*op!=0xC37Au || *end!=0xC37Au)
+        return nt::INVALID_PARAMETER;
+    uint32_t sr=0u;
+    __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+    if((sr&0x70000000u)!=0x40000000u)
+        return nt::DEVICE_BUSY;
+    c.user_loop_pc=pc;
+    c.user_loop_exit_pc=exit_pc;
+    c.user_stack_lo=stack_lo;
+    c.user_stack_hi=stack_hi;
+    c.user_loop_supervisor_sr=sr;
+    c.user_loop_calls=0u;
+    c.user_loop_rejected=0u;
+    c.user_loop_armed=true;
+    return nt::SUCCESS;
+}
+#endif
 // Exact one-instruction KTHREAD exception canary. Only live, resident,
  // hardware-confirmed protected pages; NO generic user callback.
 inline uint32_t arm_thread_exception(uint32_t tea,uint32_t event,
@@ -327,6 +384,46 @@ extern "C" int ntos_general_exception_callback(
     // supervisor bank-1 r4/r5 (which now hold TEA/EXPEVT). The service
     // is matched against an armed KTHREAD, returns into bank-0 r0, and
     // restores privileged foreground SR with RTE. All Ke logic is P1-only.
+#if NTOS_ENABLE_PSUSER
+    if(event==nt::SH4A_SYSTEM_SERVICE_EVENT && c.user_loop_armed) {
+        const uint32_t tra=*reinterpret_cast<volatile uint32_t *>(
+            0xFF000020u);
+        uint32_t sgr=0u;
+        __asm__ volatile("stc sgr,%0" : "=r"(sgr) :: "memory");
+        const bool is_loop=spc==c.user_loop_pc+2u;
+        const bool is_exit=spc==c.user_loop_exit_pc+2u;
+        const bool valid=tra==nt::SH4A_SYSTEM_SERVICE_TRA &&
+            (ssr&0x70000000u)==0u && (ssr&0xF0u)==0xF0u &&
+            sgr>=c.user_stack_lo+16u && sgr<=c.user_stack_hi &&
+            (sgr&3u)==0u && (is_loop || is_exit) &&
+            c.ke && c.ke->running() &&
+            ntos_hw::executable_page(&c.table,spc);
+        if(!valid ||
+           (is_loop && (guest_service!=nt::SERVICE_QUERY_PROCESS_ID ||
+                        c.user_loop_calls>=128u)) ||
+           (is_exit && (guest_service!=0x10FFu ||
+                        c.user_loop_calls!=128u))) {
+            c.user_loop_rejected=c.user_loop_rejected+1u;
+            return 0; // Reject untrusted trap; never spoof an NT service
+        }
+        uint32_t output=nt::SUCCESS;
+        if(is_loop) {
+            if(c.ke->dispatch(spc,ssr,sgr,tra,guest_service,
+                              guest_arg,&output)!=nt::SUCCESS) {
+                c.user_loop_rejected=c.user_loop_rejected+1u;return 0;
+            }
+            c.user_loop_calls=c.user_loop_calls+1u;
+        } else {
+            c.user_loop_armed=false;
+            // The trusted exit stub restores its original P1 SP
+            // immediately after this RTE, before touching the C stack.
+        }
+        __asm__ volatile("ldc %0,r0_bank" :: "r"(output) : "memory");
+        const uint32_t resume=is_loop?ssr:c.user_loop_supervisor_sr;
+        __asm__ volatile("ldc %0,ssr" :: "r"(resume) : "memory");
+        return 1;
+    }
+#endif
 #if NTOS_ENABLE_KE_USER_SYSCALL
     if(event==nt::SH4A_SYSTEM_SERVICE_EVENT && c.service_armed) {
         const uint32_t tra=*reinterpret_cast<volatile uint32_t *>(
@@ -491,6 +588,14 @@ inline ntos_irq::Hooks hooks(const host_world::Snapshot &host) {
     ctx.service_saved_sr=0u;
     ctx.service_completed=0u;
     ctx.service_rejected=0u;
+#if NTOS_ENABLE_PSUSER
+    ctx.user_loop_armed=false;
+    ctx.user_loop_pc=ctx.user_loop_exit_pc=0u;
+    ctx.user_stack_lo=ctx.user_stack_hi=0u;
+    ctx.user_loop_supervisor_sr=0u;
+    ctx.user_loop_calls=0u;
+    ctx.user_loop_rejected=0u;
+#endif
     ctx.user_probe_session=false;
     ctx.user_probe_trapa_next=0u;
     ctx.user_probe_saved_sr=0u;

@@ -22,7 +22,7 @@ struct ProcessSpaces {
         AddressSpaceRoot root{};
         ImageRange images[IMAGE_RANGES]{};
         unsigned image_count=0u;
-        bool live=false;
+        bool live=false,ever_active=false;
     };
     static bool overlaps(uint32_t a,uint32_t a_pages,
                          uint32_t b,uint32_t b_pages) {
@@ -88,11 +88,15 @@ struct ProcessSpaces {
                      bool shared=false) {
         // After the first guest root becomes current, any live PE
         // mapping change requires a separate hardware TLB transaction.
-        if(current_pid)return DEVICE_BUSY;
         Slot *owner=nullptr;
         for(auto &slot:slots)
             if(slot.live && slot.process.unique_process_id==pid)
                 owner=&slot;
+        // A newly created, never-dispatched child can safely populate
+        // its PE graph while its parent is running. Old/active roots may
+        // NOT change without a distinct live P4 shootdown transaction.
+        if(current_pid && owner && owner->ever_active)
+            return DEVICE_BUSY;
         if(!owner || owner->image_count>=IMAGE_RANGES ||
            !count || !va || !pa || (va&(VM_PAGE-1u)) ||
            (pa&(VM_PAGE-1u)) ||
@@ -128,7 +132,10 @@ struct ProcessSpaces {
         return SUCCESS;
     }
     Status switch_to(uint32_t pid,SpaceSwitchFlush flush,void *context) {
-        const Slot *target=find(pid);
+        Slot *target=nullptr;
+        for(auto &s:slots)
+            if(s.live && s.process.unique_process_id==pid)
+                target=&s;
         if(!target)return INVALID_PARAMETER;
         if(current_pid==pid)return SUCCESS;
         if(current_pid && (!flush ||
@@ -136,6 +143,28 @@ struct ProcessSpaces {
             return DEVICE_BUSY;
         // Never publish the new PID until the prior ASID/TLB is gone.
         current_pid=pid;
+        target->ever_active=true;
+        return SUCCESS;
+    }
+    // Reap one KPROCESS only AFTER a verified global UTLB+ITLB flush.
+    // Even an inactive child may leave stale untagged translations in
+    // SH7305 (MMUCR.SV=1): never reuse any of its P1 frames without
+    // this synchronous acknowledgment. Revoke is fail-closed.
+    Status destroy(uint32_t pid,SpaceSwitchFlush revoke,void *context) {
+        Slot *target=nullptr;
+        for(auto &s:slots)
+            if(s.live && s.process.unique_process_id==pid)
+                target=&s;
+        if(!target)return INVALID_PARAMETER;
+        if(!revoke || !revoke(context,current_pid,pid))
+            return DEVICE_BUSY;
+        auto *vm=target->root.vm;
+        target->root.unbind();
+        if(vm)vm->clear();
+        if(current_pid==pid)current_pid=0u;
+        *target=Slot{};
+        // last_pid stays monotonic: no recycled child PID or stale
+        // handle/process identity after terminate.
         return SUCCESS;
     }
     bool resolve_current(uint32_t va,uint32_t *pa,ntos_mm::Access *rights)

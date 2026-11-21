@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
+#include <new>
 #include <sdk/calc/calc.h>
 #include <sdk/os/debug.h>
 #include <sdk/os/file.h>
@@ -57,11 +58,29 @@
 #ifndef NTOS_ENABLE_PS_EXEC
 #define NTOS_ENABLE_PS_EXEC 0
 #endif
+#ifndef NTOS_ENABLE_PSUSER
+#define NTOS_ENABLE_PSUSER 0
+#endif
+#ifndef NTOS_ENABLE_CHILD_PS_RESOURCES
+#define NTOS_ENABLE_CHILD_PS_RESOURCES 0
+#endif
+#if NTOS_ENABLE_CHILD_PS_RESOURCES && (!NTOS_ENABLE_PE_PAIR || !NTOS_ENABLE_PSROOT)
+#error "child Ps tables require dual Ke/Ps canaries"
+#endif
+#if NTOS_ENABLE_PSUSER && (!NTOS_ENABLE_KE_USER_SYSCALL || !NTOS_ENABLE_TLB_MISS_PAGER)
+#error "PSUSER requires Ke TRAPA and the P0 pager"
+#endif
 #if NTOS_ENABLE_PS_EXEC && (!NTOS_ENABLE_PSROOT || !NTOS_ENABLE_TLB_MISS_PAGER)
 #error "PSCODE requires physical PSROOT and the owned VBR pager"
 #endif
 #ifndef NTOS_ENABLE_DLL_INIT_TRACE
 #define NTOS_ENABLE_DLL_INIT_TRACE 0
+#endif
+#ifndef NTOS_PE_STREAM_LOG
+#define NTOS_PE_STREAM_LOG 1
+#endif
+#ifndef NTOS_NO_LOADER_PROGRESS_LOG
+#define NTOS_NO_LOADER_PROGRESS_LOG 0
 #endif
 
 // Streaming is enabled on this development branch. Set 0 to compare the
@@ -177,6 +196,10 @@ struct NtosApi {
     uint32_t (*pstwin_child_pid)(void);                // [82] child Ps PID
     uint32_t (*io_replace_loop_driver)(uint32_t);      // [83] diagnostic IoReplaceDriver
     uint32_t (*ps_exec_entry)(void);                    // [84] same-VA executable entry
+    uint32_t (*ps_user_stack_top)(void);                 // [85] actual P0 user stack
+    uint32_t (*ps_user_arm)(uint32_t,uint32_t);          // [86] vetted TRAPA sites
+    uint32_t (*ps_user_syscalls)(void);                  // [87] actual VBR dispatches
+    uint32_t (*io_open_handle_count)(void);             // [88] kernel Io FILE_OBJECT count
 };
 
 static int cur_row = 0;
@@ -315,6 +338,28 @@ struct PsRootHardware {
     bool ready=false,twin=false;
 };
 static PsRootHardware g_ps_root{};
+#endif
+#if NTOS_ENABLE_CHILD_PS_RESOURCES
+// Held in external P1 HH3 heap, NOT 64KiB launcher data/BSS. Construct
+// before VBR takeover, clear and release only after all child mappings die.
+static nt::Process *g_ps_child_process=nullptr;
+static nt::Process &ntos_process_current() {
+    return g_ps_child_process && g_ps_child_process->active &&
+           g_ps_root.twin && g_ps_root.active==1u ?
+           *g_ps_child_process : g_nt_process;
+}
+#else
+static nt::Process &ntos_process_current() {
+    return g_nt_process;
+}
+#endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+struct PsUserStack {
+    uint32_t va=0u,physical=0u;
+    uint8_t *backing=nullptr;
+    bool ready=false;
+};
+static PsUserStack g_ps_user{};
 #endif
 #if NTOS_ENABLE_GUEST_IO
 struct NtIoBuiltIn {
@@ -677,6 +722,10 @@ static uint32_t ntos_psroot_current(void);
 static uint32_t ntos_pstwin_child_pid(void);
 static uint32_t ntos_io_replace_loop_driver(uint32_t);
 static uint32_t ntos_ps_exec_entry(void);
+static uint32_t ntos_ps_user_stack_top(void);
+static uint32_t ntos_ps_user_arm(uint32_t,uint32_t);
+static uint32_t ntos_ps_user_syscalls(void);
+static uint32_t ntos_io_open_handle_count(void);
 
 // Directory results are bounced through P1 just like file reads.
 static void copy_find(NtosFind *out,const char_const16_t *name,const File_FindInfo &info) {
@@ -719,41 +768,47 @@ static int32_t ntos_find_close(int32_t handle) {
 // NT Executive additions. NTSTATUS values are returned unmodified.
 static int32_t ntos_create_event(uint32_t manual,uint32_t initial) {
     uint32_t token=0u;
-    const nt::Status s=g_nt_process.create_event(manual!=0u,initial!=0u,&token);
+    const nt::Status s=ntos_process_current().create_event(
+        manual!=0u,initial!=0u,&token);
     return s==nt::SUCCESS?static_cast<int32_t>(token):static_cast<int32_t>(s);
 }
 static uint32_t ntos_set_event(uint32_t token) {
-    return g_nt_process.event_set(token);
+    return ntos_process_current().event_set(token);
 }
 static uint32_t ntos_reset_event(uint32_t token) {
-    return g_nt_process.event_reset(token);
+    return ntos_process_current().event_reset(token);
 }
 static uint32_t ntos_wait_event(uint32_t token,uint32_t ms) {
-    return g_nt_process.event_poll(token,ms);
+    return ntos_process_current().event_poll(token,ms);
 }
 static uint32_t ntos_close_object(uint32_t token) {
+    auto &owner=ntos_process_current();
     nt::Object *o=nullptr;
-    const nt::Status s=g_nt_process.handles.get(token,nt::Type::none,&o);
+    const nt::Status s=owner.handles.get(token,nt::Type::none,&o);
     if(s!=nt::SUCCESS)return s;
     if(o->type==nt::Type::file)
-        return ntos_file_close(static_cast<int32_t>(token))==0 ?
+        return &owner==&g_nt_process &&
+               ntos_file_close(static_cast<int32_t>(token))==0 ?
             nt::SUCCESS : nt::DEVICE_BUSY;
     if(o->type==nt::Type::finder)
-        return ntos_find_close(static_cast<int32_t>(token))==0 ?
+        return &owner==&g_nt_process &&
+               ntos_find_close(static_cast<int32_t>(token))==0 ?
             nt::SUCCESS : nt::DEVICE_BUSY;
-    return g_nt_process.handles.close(token);
+    return owner.handles.close(token);
 }
 static void *ntos_ex_alloc(uint32_t bytes,uint32_t allocation_tag) {
-    return g_nt_process.active ?
-        g_nt_process.pool.alloc(bytes,allocation_tag) : nullptr;
+    auto &owner=ntos_process_current();
+    return owner.active ?
+        owner.pool.alloc(bytes,allocation_tag) : nullptr;
 }
 static uint32_t ntos_ex_free(void *ptr,uint32_t allocation_tag) {
-    return g_nt_process.active ?
-        g_nt_process.pool.free(ptr,allocation_tag) : nt::DEVICE_BUSY;
+    auto &owner=ntos_process_current();
+    return owner.active ?
+        owner.pool.free(ptr,allocation_tag) : nt::DEVICE_BUSY;
 }
-static uint32_t ntos_ex_pool_peak() {return g_nt_process.pool.peak;}
-static uint32_t ntos_ex_pool_live() {return g_nt_process.pool.current;}
-static uint32_t ntos_ob_handle_count() {return g_nt_process.handles.used;}
+static uint32_t ntos_ex_pool_peak() {return ntos_process_current().pool.peak;}
+static uint32_t ntos_ex_pool_live() {return ntos_process_current().pool.current;}
+static uint32_t ntos_ob_handle_count() {return ntos_process_current().handles.used;}
 
 static char pending_app[96];
 static uint32_t pending_parent_pid=0u;
@@ -853,6 +908,10 @@ static NtosApi g_ntos_api = {
     &ntos_pstwin_child_pid, // [82]
     &ntos_io_replace_loop_driver, // [83]
     &ntos_ps_exec_entry, // [84]
+    &ntos_ps_user_stack_top, // [85]
+    &ntos_ps_user_arm, // [86]
+    &ntos_ps_user_syscalls, // [87]
+    &ntos_io_open_handle_count, // [88]
 };
 
 // ---------------------------------------------------------------------------
@@ -1376,6 +1435,16 @@ static uint32_t ntos_ke_create_coop_thread(uint32_t entry,uint32_t sp) {
         g_ps_root.child.image_bytes=4096u; // test-only PE image identity
         g_ps_root.child.threads=1u;
         g_ps_root.child.active=true;
+#if NTOS_ENABLE_CHILD_PS_RESOURCES
+        if(g_ps_child_process && g_ps_child_process->active) {
+            g_ps_child_process->ke.process=g_ps_root.child;
+            g_ps_child_process->ke.thread.owning_process_id=
+                g_ps_root.child.unique_process_id;
+            g_ps_child_process->ke.thread.unique_thread_id=tid;
+            g_ps_child_process->ke.thread.start_address=g_pe_pair.entry;
+            g_ps_child_process->ke.thread.state=nt::KTHREAD_STATE::ready;
+        }
+#endif
         g_ke_coop.peer.owning_process_id=
             g_ps_root.child.unique_process_id;
     }
@@ -1574,6 +1643,42 @@ static uint32_t ntos_psroot_switch(uint32_t target) {
     (void)target;return nt::NOT_SUPPORTED;
 #endif
 }
+static uint32_t ntos_io_open_handle_count(void) {
+#if NTOS_ENABLE_GUEST_IO
+    return g_nt_io.enabled && g_nt_process.ke.running() ?
+        g_nt_io.manager.open_count : 0xffffffffu;
+#else
+    return 0xffffffffu;
+#endif
+}
+static uint32_t ntos_ps_user_stack_top(void) {
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    return g_ps_user.ready && g_nt_process.ke.running() ?
+           g_ps_user.va+4096u : 0u;
+#else
+    return 0u;
+#endif
+}
+static uint32_t ntos_ps_user_arm(uint32_t loop_pc,uint32_t exit_pc) {
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    if(!g_ps_user.ready || !g_nt_process.ke.running())
+        return nt::DEVICE_BUSY;
+#if NTOS_ENABLE_COOP_KERNEL
+    if(g_ke_coop.created)return nt::DEVICE_BUSY;
+#endif
+    return ntos_hw::arm_user_loop(
+        loop_pc,exit_pc,g_ps_user.va,g_ps_user.va+4096u);
+#else
+    (void)loop_pc;(void)exit_pc;return nt::NOT_SUPPORTED;
+#endif
+}
+static uint32_t ntos_ps_user_syscalls(void) {
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    return ntos_hw::g_context.user_loop_calls;
+#else
+    return 0u;
+#endif
+}
 static uint32_t ntos_ps_exec_entry(void) {
 #if NTOS_ENABLE_PS_EXEC
     return g_ps_root.ready && g_ps_root.exec_pages &&
@@ -1622,6 +1727,22 @@ static uint32_t ntos_ke_coop_exit(void) {
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(g_ps_root.twin && psroot_activate(0u)!=nt::SUCCESS)
         return nt::DEVICE_BUSY;
+#if NTOS_ENABLE_GUEST_IO
+    // Revoke every child-owned FILE_OBJECT while still on its P1 Ke
+    // exit path. Io close only carries handles, never guest pointers.
+    // Parent objects and driver mappings must survive the child death.
+    if(g_ps_root.twin && g_ps_root.child.active &&
+       g_nt_io.manager.close_owner(
+           g_ps_root.child.unique_process_id)!=nt::SUCCESS)
+        return nt::DEVICE_BUSY;
+#endif
+    if(g_ps_root.twin && g_ps_root.child.active) {
+#if NTOS_ENABLE_CHILD_PS_RESOURCES
+        if(g_ps_child_process && g_ps_child_process->active)
+            g_ps_child_process->finish();
+#endif
+        g_ps_root.child.active=false;
+    }
 #endif
     nt::CoopSaved *from=nullptr;const nt::CoopSaved *to=nullptr;
     if(!g_ke_coop.exit_peer(g_nt_process.ke,&from,&to))
@@ -2370,6 +2491,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #if NTOS_ENABLE_PE_PAIR
     g_pe_pair=PePairState{};
 #endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    g_ps_user=PsUserStack{};
+#endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     g_ps_root=PsRootHardware{};
 #endif
@@ -2387,6 +2511,16 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     uint8_t *api_raw=nullptr;
     uint8_t *api_block=nullptr;
     uint8_t *vm_raw=nullptr;
+#if NTOS_ENABLE_CHILD_PS_RESOURCES
+    g_ps_child_process=nullptr;
+#endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    uint8_t *ps_user_raw=nullptr;
+    uint32_t ps_user_va=0u;
+    bool user_requested=source_path &&
+        ntos_launch_policy::ascii_equal_ci(source_path,
+                                           "\\fls0\\PSUSER.EXE");
+#endif
 #if NTOS_ENABLE_PE_PAIR
     MappedImage second_exe{};
     pe::Image second_hdr{};
@@ -2395,10 +2529,13 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     bool twin_requested=source_path &&
         ntos_launch_policy::ascii_equal_ci(source_path,
                                            "\\fls0\\PSTWIN.EXE");
+    bool kill_requested=source_path &&
+        ntos_launch_policy::ascii_equal_ci(source_path,
+                                           "\\fls0\\PSKILL.EXE");
     bool pair_requested=source_path &&
         (ntos_launch_policy::ascii_equal_ci(source_path,
                                             "\\fls0\\PEPAIR.EXE") ||
-         twin_requested);
+         twin_requested || kill_requested);
 #endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     uint8_t *psroot_raw=nullptr;
@@ -2416,7 +2553,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         (ntos_launch_policy::ascii_equal_ci(source_path,
                                             "\\fls0\\PSROOT.EXE")
 #if NTOS_ENABLE_PE_PAIR
-         || twin_requested
+         || twin_requested || kill_requested
 #endif
 #if NTOS_ENABLE_PS_EXEC
          || exec_requested
@@ -2548,8 +2685,10 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 
 #if NTOS_ENABLE_PE_PAIR && NTOS_ENABLE_COOP_KERNEL && NTOS_STREAMED_IMAGE_LOADING
     if(pair_requested) {
-        const char *second_name=twin_requested ?
-            "\\fls0\\TWINCHILD.EXE" : "\\fls0\\PEPEER.EXE";
+        const char *second_name=kill_requested ?
+            "\\fls0\\KILLCHILD.EXE" :
+            twin_requested ? "\\fls0\\TWINCHILD.EXE" :
+            "\\fls0\\PEPEER.EXE";
         if(!read_pe_source(second_name,false,false,
                            &second_hdr,&second_exe,&second_file_size,err))
             goto done;
@@ -2616,6 +2755,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #if NTOS_ENABLE_PS_EXEC
     image_pages+=exec_images[0].npages;
 #endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    if(user_requested)++image_pages;
+#endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(root_requested)++image_pages;
 #endif
@@ -2671,7 +2813,7 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         g_ps_root.pa[0]=mmu::phys_addr(aligned);
         g_ps_root.pa[1]=mmu::phys_addr(aligned+4096u);
 #if NTOS_ENABLE_PE_PAIR
-        g_ps_root.twin=twin_requested;
+        g_ps_root.twin=twin_requested || kill_requested;
 #endif
     }
 #endif
@@ -2694,6 +2836,43 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         g_ps_root.exec_pages=exec_images[0].npages;
         g_ps_root.exec_va=exec_va;
         g_ps_root.exec_entry=exec_va+exec_headers[0].oh.entry_rva;
+    }
+#endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    if(user_requested) {
+        if(!ntos_fault::choose_virtual(0x00710000u,1u,
+                                      reservations,count,&ps_user_va)) {
+            *err="no private P0 user-stack VA";goto done;
+        }
+        ps_user_raw=static_cast<uint8_t *>(Mem_Malloc(4096u+4095u));
+        if(!ps_user_raw) {
+            *err="no physical P1 user stack";goto done;
+        }
+        auto *aligned=static_cast<uint8_t *>(align_page(ps_user_raw));
+        Mem_Memset(aligned,0,4096u);
+        g_ps_user.va=ps_user_va;
+        g_ps_user.physical=mmu::phys_addr(aligned);
+        g_ps_user.backing=aligned;
+    }
+#endif
+#if NTOS_ENABLE_CHILD_PS_RESOURCES
+    if(
+#if NTOS_ENABLE_PE_PAIR
+       twin_requested || kill_requested
+#else
+       false
+#endif
+    ) {
+        void *mem=Mem_Malloc(sizeof(nt::Process));
+        if(!mem) {
+            *err="cannot reserve child Ps-owned resource table";goto done;
+        }
+        g_ps_child_process=::new(mem) nt::Process{};
+        g_ps_child_process->pool.configure(
+            nullptr,&nt_host_alloc,&nt_host_free);
+        if(!g_ps_child_process->begin()) {
+            *err="child Ps resource object refused start";goto done;
+        }
     }
 #endif
     for(unsigned i=0u;i<count;++i) {
@@ -2741,10 +2920,14 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             if(n<0) goto done;
             total+=n;
         }
+#if NTOS_NO_LOADER_PROGRESS_LOG
+        (void)total;
+#else
         char msg[80], *p=msg;
         log_text(p,"Linked "); log_number(p,static_cast<uint32_t>(total),10);
         log_text(p," import(s), "); log_number(p,count-1u,10);
         log_text(p," DLL(s)"); *p=0; ntos_puts(msg);
+#endif
     }
     api_raw=static_cast<uint8_t *>(Mem_Malloc(0x4000u+0xFFFu));
     if(!api_raw){*err="API mapping allocation failed";goto done;}
@@ -2771,6 +2954,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         for(unsigned i=0u;i<2u;++i)
             flush_image(exec_images[i].image,
                         exec_images[i].npages*4096u);
+#endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    if(user_requested)flush_image(g_ps_user.backing,4096u);
 #endif
     flush_image(api_block,0x4000u);
 
@@ -2840,6 +3026,12 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
             }
         }
 #endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+        if(user_requested && !ntos_hw::g_context.table.add(
+                ps_user_va,g_ps_user.physical,1u,nullptr,false)) {
+            *err="cannot register unprivileged user stack";goto done;
+        }
+#endif
 #if NTOS_ENABLE_NT_PRIVATE_VM
         ntos_hw::g_context.table.set_extra(
             &g_nt_process.space,[](void *owner,uint32_t va,uint32_t *pa,
@@ -2900,6 +3092,11 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
                     *err="cannot pin private executable pages";goto done;
                 }
 #endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+        if(user_requested && !ntos_hw::prime(ps_user_va,true)) {
+            *err="cannot pin user-mode P0 stack";goto done;
+        }
+#endif
         // Never call Hollyhock Debug_Printf/LCD_Refresh while our
         // experimental VBR+0x400 exception handler owns VBR. SDK output
         // can temporarily switch MMU/interrupt worlds behind our back.
@@ -2908,6 +3105,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
         }
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
         if(root_requested)g_ps_root.ready=true;
+#endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+        if(user_requested)g_ps_user.ready=true;
 #endif
     }
 #else
@@ -3047,6 +3247,10 @@ done:
 #if NTOS_ENABLE_PE_PAIR
     g_pe_pair.ready=false;
 #endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    g_ps_user.ready=false;
+    ntos_hw::g_context.user_loop_armed=false;
+#endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(g_ps_root.ready && mmu::at_enabled() &&
        ntos_hw::g_context.table.lookup(g_ps_root.va)>=0) {
@@ -3074,7 +3278,7 @@ done:
         *p=0;ntos_puts(msg);
     }
 #endif
-#if NTOS_STREAMED_IMAGE_LOADING
+#if NTOS_STREAMED_IMAGE_LOADING && NTOS_PE_STREAM_LOG
     if(source_path) {
         char msg[72], *p=msg;
         log_text(p,"Skipped PE source buffers: ");
@@ -3190,6 +3394,17 @@ done:
 #endif
 #if NTOS_ENABLE_PSROOT && NTOS_ENABLE_TLB_MISS_PAGER
     if(psroot_raw)Mem_Free(psroot_raw);
+#endif
+#if NTOS_ENABLE_PSUSER && NTOS_ENABLE_TLB_MISS_PAGER
+    if(ps_user_raw)Mem_Free(ps_user_raw);
+#endif
+#if NTOS_ENABLE_CHILD_PS_RESOURCES
+    if(g_ps_child_process) {
+        if(g_ps_child_process->active)g_ps_child_process->finish();
+        g_ps_child_process->~Process();
+        Mem_Free(g_ps_child_process);
+        g_ps_child_process=nullptr;
+    }
 #endif
 #if NTOS_ENABLE_PS_EXEC
     for(unsigned i=0u;i<2u;++i)
