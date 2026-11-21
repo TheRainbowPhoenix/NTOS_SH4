@@ -3518,8 +3518,25 @@ done:
 // ---------------------------------------------------------------------------
 // UI
 // ---------------------------------------------------------------------------
-constexpr int kMaxFiles = 64; // 12 stress DLLs plus runtime DLLs and EXEs
-constexpr int kMaxName = 25;
+constexpr int kMaxFiles=static_cast<int>(ntos_picker::MAX_FILES);
+constexpr int kMaxName=static_cast<int>(ntos_picker::MAX_NAME);
+// Lifetime guard for the launcher catalog. With 256 entries, this cannot
+// reside on the host C stack or in the HH3 BSS. Every return/continue
+// from the picker releases P1 heap memory, even on PE errors.
+struct PickerCatalogOwner {
+    ntos_picker::Catalog *catalog=nullptr;
+    bool allocate() {
+        catalog=static_cast<ntos_picker::Catalog *>(
+            Mem_Malloc(sizeof(ntos_picker::Catalog)));
+        if(!catalog)return false;
+        Mem_Memset(catalog,0,sizeof(*catalog));
+        return true;
+    }
+    ~PickerCatalogOwner() {if(catalog)Mem_Free(catalog);}
+    PickerCatalogOwner(const PickerCatalogOwner &)=delete;
+    PickerCatalogOwner &operator=(const PickerCatalogOwner &)=delete;
+    PickerCatalogOwner()=default;
+};
 
 static char_const16_t g_find_pattern_exe[] = {
     '\\', 'f', 'l', 's', '0', '\\', '*', '.', 'E', 'X', 'E', 0,
@@ -3643,8 +3660,14 @@ int main(int argc, char **argv, char **envp) {
     // a COREDLL.DLL / COREDLL.EXE as the shared module every EXE imports
     // from; it is not shown in the picker. File_FindFirst returns UCS-16
     // names; File_Open takes ANSI paths, so convert on the way in.
-    char names[kMaxFiles][kMaxName + 1] = {};
-    uint32_t sizes[kMaxFiles] = {};
+    PickerCatalogOwner catalog_owner{};
+    if(!catalog_owner.allocate()) {
+        ntos_puts("EXE catalog P1 allocation failed");
+        LCD_Refresh();
+        return safe_host_exit(-1);
+    }
+    auto &names=catalog_owner.catalog->names;
+    auto &sizes=catalog_owner.catalog->sizes;
     // HH3's physical key enum layout is part of our bitfield contract.
     static_assert(KEY_3==0x00000008u && KEY_6==0x00000010u &&
                   KEY_9==0x00000020u && KEY_BACKSPACE==0x00000080u &&
@@ -3681,7 +3704,7 @@ int main(int argc, char **argv, char **envp) {
 
     // Build the pickable list (everything except COREDLL.*) and find the
     // coredll module for the loader.
-    int pick[kMaxFiles] = {};
+    auto &pick=catalog_owner.catalog->pick;
     int coredll_idx = -1;
     int xamlui_idx = -1;
     {
@@ -3726,9 +3749,8 @@ int main(int argc, char **argv, char **envp) {
         return safe_host_exit(0);
     }
 
-    // The 320x528 display cannot show all 64 file entries at once.
-    // Present a 29-row viewport and an always-visible "> " selection
-    // marker (including when the user types a two-digit index).
+    // The LCD displays 29 rows of a 256-entry heap-backed catalog.
+    // UP/DOWN scroll across every entry, with 1..256 numeric jump.
     auto draw_picker=[&](const ntos_picker::Picker &ui) {
         Debug_Printf(0,2,true,0,"Selected %u/%u   Jump:%s%u%s       ",
             ui.selected+1u,ui.count,
