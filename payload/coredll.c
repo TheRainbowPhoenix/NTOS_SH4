@@ -282,10 +282,17 @@ typedef struct {
 
 #include "wince/ntgwes_model.h"
 #include "wince/nt_touchkb.h"
+#include "wince/nt_gwes_dialog.h"
 static NT_WINDOW g_window;
 static NT_GWES g_nt_gwes;
 static unsigned g_nt_gwes_initialized;
 static NT_TOUCHKB g_nt_keyboard;
+static NT_DIALOGS g_nt_dialogs;
+static unsigned g_nt_dialogs_initialized;
+static int nt_dialog_active(void);
+static int nt_dialog_capture(const NT_MSG *);
+static void nt_dialog_paint(void);
+int UpdateWindow(void *hwnd);
 static u32 nt_sip_flags = 2u; /* docked, on = bit zero */
 static void nt_sip_paint(void);
 int SipShowIM(u32 flags);
@@ -476,6 +483,7 @@ int DispatchMessageW(const NT_MSG *msg)
 {
     if (!msg)
         return 0;
+    if(nt_dialog_capture(msg))return 1; /* modal owns focus over every HWND */
     if(is_edit_hwnd(msg->hwnd)) {
         if(msg->message==0x0102u) {
             int changed=nt_kb_edit_char(&g_edit.value,msg->wParam);
@@ -597,7 +605,7 @@ sip_next_event:
     } while (ev == 0);
     /* The SIP owns the bottom panel: don't forward its key touches to
        the underlying app. Deliver Basic Latin UTF-16 via WM_CHAR. */
-    if (ev!=2u && ev!=3u && (nt_sip_flags&1u) &&
+    if (ev==1u && (nt_sip_flags&1u) &&
         y>=NT_KB_TOP && y<NT_KB_BOTTOM) {
         unsigned ch=0u;
         if(direction!=2u && direction!=0x40u) {
@@ -623,10 +631,37 @@ sip_next_event:
         msg->message = 0x0100u; /* Physical Clear is Back, not WM_QUIT. */
         msg->wParam = 0x1Bu;
         static const u16 shell_class[] = {'S', 't', 'a', 'r', 't', 'H', 'o', 's', 't', 0};
-        if (!same_wstr(g_class_name, shell_class)) {
+        if (!nt_dialog_active() && !same_wstr(g_class_name, shell_class)) {
             msg->message = 0x12u;
             return 0;
         }
+        return 1;
+    }
+    if(ev==7u) { /* actual ClassPad action-bar ESC */
+        msg->message=0x0100u;
+        msg->wParam=0x1Bu;return 1;
+    }
+    if(ev==4u || ev==5u || ev==6u) {
+        /* Physical ClassPad bar: RESIZE toggles full/split, SWAP retains
+           pane state, ROTATE toggles stacked vs side-by-side halves.
+           This is layout orientation only, never LCD register rotation. */
+        if(nt_dialog_active())goto sip_next_event;
+        if(g_nt_gwes_initialized) {
+            if(ev==4u) {
+                nt_gwes_setmode(&g_nt_gwes,
+                    g_nt_gwes.mode==NT_GWES_FULL?
+                    NT_GWES_STACK:NT_GWES_FULL);
+            } else if(ev==5u) {
+                nt_gwes_swap(&g_nt_gwes);
+            } else {
+                nt_gwes_setmode(&g_nt_gwes,
+                    g_nt_gwes.mode==NT_GWES_COLUMNS?
+                    NT_GWES_STACK:NT_GWES_COLUMNS);
+            }
+        }
+        msg->message=0x0005u; /* WM_SIZE remeasure/repaint */
+        msg->wParam=g_nt_gwes_initialized?g_nt_gwes.mode:0u;
+        msg->lParam=(528u<<16u)|320u;
         return 1;
     }
     if (ev == 3) {
@@ -658,7 +693,7 @@ sip_next_event:
     msg->pt.x = (int)x;
     msg->pt.y = (int)y;
     msg->lParam = ((y & 0xFFFFu) << 16) | (x & 0xFFFFu);
-    legacy_nav_input(msg);
+    if(!nt_dialog_active())legacy_nav_input(msg);
     return 1;
 }
 
@@ -674,8 +709,10 @@ void *GetDC(void *hwnd)
 int ReleaseDC(void *hwnd, void *hdc)
 {
     (void)hwnd;
-    if (hdc)
+    if (hdc) {
+        nt_dialog_paint();
         coredll_refresh();
+    }
     return hdc ? 1 : 0;
 }
 
@@ -1071,16 +1108,17 @@ int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
 int UpdateWindow(void *hwnd)
 {
     if(is_edit_hwnd(hwnd)) {
-        nt_edit_paint();coredll_refresh();return 1;
+        nt_edit_paint();nt_dialog_paint();coredll_refresh();return 1;
     }
     if (is_hwnd(hwnd) && g_window.invalidated) {
         g_window.invalidated = 0;
         if (g_window.proc)
             g_window.proc(hwnd, 0x000Fu, 0, 0);
-        else
-            coredll_refresh();
     }
-    /* EndPaint already refreshes once; no second LCD_Refresh here. */
+    /* Always compose open modal surfaces AFTER the underlying WNDPROC. */
+    if(nt_dialog_active()) {
+        nt_dialog_paint();coredll_refresh();
+    }
     return 1;
 }
 
@@ -1577,6 +1615,7 @@ int SipSetInfo(const NT_SIP_INFO *info)
     return SipShowIM(info->flags & 1u);
 }
 #include "wince/nt_touchkb_render.inc"
+#include "wince/nt_gwes_dialog_api.inc"
 /* WinCE EDIT control: one bounded UTF-16 line, caller-visible HWND,
  * keyboard focus and WM_CHAR editing. The actual WinCE EDIT class has far
  * more behaviors (selection, undo, IME, multiline); none are implied.
