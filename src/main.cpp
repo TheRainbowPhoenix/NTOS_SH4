@@ -315,7 +315,19 @@ static bool kernel_path(char *out, const char *in) {
 static ntos_fs::Gate g_fs;
 // This is NOT a protected process address space: it is the owner of one
 // foreground application graph, its NT handles, events and Ex allocations.
+#ifndef NTOS_PROCESS_HEAP_RESIDENT
+#define NTOS_PROCESS_HEAP_RESIDENT 0
+#endif
+#if NTOS_PROCESS_HEAP_RESIDENT
+// The foreground Process is much larger than the 64-KiB HH3 stage0.
+// Construct it ONCE in external P1 memory before the first guest and
+// preserve its exact address across launches (handles/events hold pointers).
+// NEVER allocate or free this object while the NTOS VBR/MMU is installed.
+static nt::Process *g_nt_process_storage=nullptr;
+#define g_nt_process (*g_nt_process_storage)
+#else
 static nt::Process g_nt_process{};
+#endif
 #if NTOS_ENABLE_PE_PAIR
 struct PePairState {
     uint32_t entry=0u,base=0u,progress=0u;
@@ -469,7 +481,14 @@ extern "C" void ntos_ke_coop_swap(nt::CoopSaved *,const nt::CoopSaved *);
 #endif
 static void *nt_host_alloc(void *,size_t n) {return Mem_Malloc(n);}
 static void nt_host_free(void *,void *p) {Mem_Free(p);}
-static void nt_process_configure() {
+static bool nt_process_configure() {
+#if NTOS_PROCESS_HEAP_RESIDENT
+    if(!g_nt_process_storage) {
+        void *raw=Mem_Malloc(sizeof(nt::Process));
+        if(!raw)return false;
+        g_nt_process_storage=::new(raw) nt::Process{};
+    }
+#endif
     g_nt_process.pool.configure(nullptr,&nt_host_alloc,&nt_host_free);
 #if NTOS_ENABLE_GUEST_IO
     (void)g_nt_io.reset();
@@ -478,6 +497,7 @@ static void nt_process_configure() {
     // Only called before the next mapped guest. Never reset live stacks.
     g_ke_coop.reset();
 #endif
+    return true;
 }
 struct FatalSnapshot {
     uint32_t tea=0,expevt=0,spc=0,ssr=0,mmucr=0,reason=0;
@@ -2487,7 +2507,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
     if((host_state.mmucr&1u)!=0u) {
         *err="host MMU is already active";return -1;
     }
-    nt_process_configure();
+    if(!nt_process_configure()) {
+        *err="cannot allocate P1 Ps-owned foreground Process";return -1;
+    }
 #if NTOS_ENABLE_PE_PAIR
     g_pe_pair=PePairState{};
 #endif
@@ -3512,7 +3534,18 @@ static void wait_error_key_release(void) {
 // Exit to Hollyhock only after attempting to release the last NTOS-owned
 // descriptor, including the no-files and user-CLEAR picker paths.
 static int safe_host_exit(int status) {
-    return fs_recover() ? status : -1;
+    const bool recovered=fs_recover();
+#if NTOS_PROCESS_HEAP_RESIDENT
+    // The caller must have exited every P0 image and restored HH3
+    // VBR/MMU before releasing the heap-backed Process.
+    if(g_nt_process_storage &&
+       !mmu::at_enabled() && !g_nt_process.active) {
+        g_nt_process_storage->~Process();
+        Mem_Free(g_nt_process_storage);
+        g_nt_process_storage=nullptr;
+    }
+#endif
+    return recovered ? status : -1;
 }
 int main(int argc, char **argv, char **envp) {
     (void)argc;
@@ -3811,8 +3844,7 @@ int main(int argc, char **argv, char **envp) {
         using entry_fn = int (*)(const NtosApi *, char **, char **);
         entry_fn entry = reinterpret_cast<entry_fn>(
             reinterpret_cast<uint32_t>(image) + hdr.oh.entry_rva);
-        nt_process_configure();
-        if(!g_nt_process.begin()) {
+        if(!nt_process_configure() || !g_nt_process.begin()) {
             app_load_error("NT process resources still held");
             Mem_Free(image);
             if(file)Mem_Free(file);

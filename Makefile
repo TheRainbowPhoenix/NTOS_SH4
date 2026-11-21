@@ -152,15 +152,6 @@ $(BUILDDIR)/.ntos-build-flags: ntos-config-force
 ifeq ($(KE_COOP_SMALL),1)
 $(BUILDDIR)/src/main.o: CXX_FLAGS += -Os
 endif
-# CPDoom uses section-level dead-code removal and LTO, both already present
-# in NTOS.  Its -Ofast and custom segment-address layout are NOT safe
-# substitutes for a checked PT_LOAD end.  This independent profile extends
-# -Os to other kernel C++ modules (LTO included), disables unused C++ runtime
-# features, and must pass the exact same SH7305 firmware/PE regression tests.
-ifeq ($(NTOS_KERNEL_SIZE),1)
-$(OBJECTS): CXX_FLAGS += -Os -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit
-LD_FLAGS += -Os -fno-exceptions -fno-rtti
-endif
 
 $(BUILDDIR)/src/cooperative_switch.o: src/cooperative_switch.S
 	@mkdir -p $(dir $@)
@@ -761,26 +752,6 @@ $(NT_PROBE_DIST)/KTRAPREG.EXE: $(NT_PROBE_BUILD)/ktrapreg.elf tools/elf2ntx.py
 	@mkdir -p $(NT_PROBE_DIST)
 	$(PYTHON) tools/elf2ntx.py $< -o $@
 
-$(NT_PROBE_BUILD)/psuser_probe.o: payload/psuser.S
-	@mkdir -p $(NT_PROBE_BUILD)
-	$(AS) -c $< -o $@ $(AS_FLAGS)
-
-$(NT_PROBE_BUILD)/psuser.elf: $(NT_PROBE_BUILD)/psuser.o $(NT_PROBE_BUILD)/psuser_probe.o payload/payload.ld
-	@mkdir -p $(NT_PROBE_BUILD)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(NT_PROBE_BUILD)/psuser.o $(NT_PROBE_BUILD)/psuser_probe.o
-
-$(NT_PROBE_DIST)/PSUSER.EXE: $(NT_PROBE_BUILD)/psuser.elf tools/elf2ntx.py
-	@mkdir -p $(NT_PROBE_DIST)
-	$(PYTHON) tools/elf2ntx.py $< -o $@
-
-$(NT_PROBE_DIST)/PSKILL.EXE: $(NT_PROBE_BUILD)/pskill.elf tools/elf2ntx.py
-	@mkdir -p $(NT_PROBE_DIST)
-	$(PYTHON) tools/elf2ntx.py $< -o $@
-
-$(NT_PROBE_DIST)/KILLCHILD.EXE: $(NT_PROBE_BUILD)/killchild.elf tools/elf2ntx.py
-	@mkdir -p $(NT_PROBE_DIST)
-	$(PYTHON) tools/elf2ntx.py $< -o $@
-
 $(NT_PROBE_DIST)/DEVDISP.EXE: $(NT_PROBE_BUILD)/devdisp.elf tools/elf2ntx.py
 	@mkdir -p $(NT_PROBE_DIST)
 	$(PYTHON) tools/elf2ntx.py $< -o $@
@@ -829,7 +800,7 @@ $(NT_PROBE_DIST)/INITFAIL.EXE: $(NT_PROBE_BUILD)/initfail_test.elf $(NT_PROBE_DI
 	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module INITFAIL.DLL
 
 .PHONY: nt-vm-dll-probes
-nt-vm-dll-probes: $(NT_PROBE_DIST)/KTHREAD.EXE $(NT_PROBE_DIST)/KEXCEPT.EXE $(NT_PROBE_DIST)/ASOWN.EXE $(NT_PROBE_DIST)/PSPARENT.EXE $(NT_PROBE_DIST)/PSCHILD.EXE $(NT_PROBE_DIST)/MMREUSE.EXE $(NT_PROBE_DIST)/MMSTRESS.EXE $(NT_PROBE_DIST)/MMRACE.EXE $(NT_PROBE_DIST)/KCOOP.EXE $(NT_PROBE_DIST)/K2THREAD.EXE $(NT_PROBE_DIST)/DEVNULL.EXE $(NT_PROBE_DIST)/DEVLOOP.EXE $(NT_PROBE_DIST)/PEPAIR.EXE $(NT_PROBE_DIST)/PEPEER.EXE $(NT_PROBE_DIST)/PSROOT.EXE $(NT_PROBE_DIST)/PSTWIN.EXE $(NT_PROBE_DIST)/TWINCHILD.EXE $(NT_PROBE_DIST)/KREGCTX.EXE $(NT_PROBE_DIST)/DEVREPL.EXE $(NT_PROBE_DIST)/PSCODE.EXE $(NT_PROBE_DIST)/CODEA.EXE $(NT_PROBE_DIST)/CODEB.EXE $(NT_PROBE_DIST)/KTRAPREG.EXE $(NT_PROBE_DIST)/PSUSER.EXE $(NT_PROBE_DIST)/PSKILL.EXE $(NT_PROBE_DIST)/KILLCHILD.EXE $(NT_PROBE_DIST)/DEVDISP.EXE $(NT_PROBE_DIST)/PROTSTATE.EXE $(NT_PROBE_DIST)/NATIVEVM.EXE $(NT_PROBE_DIST)/VMTEST.EXE $(NT_PROBE_DIST)/MMGUARD.EXE $(NT_PROBE_DIST)/MMREAD.EXE $(NT_PROBE_DIST)/MMRDINIT.EXE $(NT_PROBE_DIST)/INITGOOD.DLL $(NT_PROBE_DIST)/INITFAIL.DLL $(NT_PROBE_DIST)/INITPASS.EXE $(NT_PROBE_DIST)/INITFAIL.EXE
+nt-vm-dll-probes: $(NT_PROBE_DIST)/KTHREAD.EXE $(NT_PROBE_DIST)/KEXCEPT.EXE $(NT_PROBE_DIST)/ASOWN.EXE $(NT_PROBE_DIST)/PSPARENT.EXE $(NT_PROBE_DIST)/PSCHILD.EXE $(NT_PROBE_DIST)/MMREUSE.EXE $(NT_PROBE_DIST)/MMSTRESS.EXE $(NT_PROBE_DIST)/MMRACE.EXE $(NT_PROBE_DIST)/KCOOP.EXE $(NT_PROBE_DIST)/K2THREAD.EXE $(NT_PROBE_DIST)/DEVNULL.EXE $(NT_PROBE_DIST)/DEVLOOP.EXE $(NT_PROBE_DIST)/PEPAIR.EXE $(NT_PROBE_DIST)/PEPEER.EXE $(NT_PROBE_DIST)/PSROOT.EXE $(NT_PROBE_DIST)/PSTWIN.EXE $(NT_PROBE_DIST)/TWINCHILD.EXE $(NT_PROBE_DIST)/KREGCTX.EXE $(NT_PROBE_DIST)/DEVREPL.EXE $(NT_PROBE_DIST)/PSCODE.EXE $(NT_PROBE_DIST)/CODEA.EXE $(NT_PROBE_DIST)/CODEB.EXE $(NT_PROBE_DIST)/KTRAPREG.EXE $(NT_PROBE_DIST)/DEVDISP.EXE $(NT_PROBE_DIST)/PROTSTATE.EXE $(NT_PROBE_DIST)/NATIVEVM.EXE $(NT_PROBE_DIST)/VMTEST.EXE $(NT_PROBE_DIST)/MMGUARD.EXE $(NT_PROBE_DIST)/MMREAD.EXE $(NT_PROBE_DIST)/MMRDINIT.EXE $(NT_PROBE_DIST)/INITGOOD.DLL $(NT_PROBE_DIST)/INITFAIL.DLL $(NT_PROBE_DIST)/INITPASS.EXE $(NT_PROBE_DIST)/INITFAIL.EXE
 	@echo "NTOS private VM, DLL init and emulator-only protected-write probes"
 
 # Deliberately unresolved DLL import: exercises failure before guest entry.
