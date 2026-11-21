@@ -914,7 +914,7 @@ void *SelectObject(void *hdc, void *object)
        (((v & 0xFF000000u)==GDI_BITMAP_TAG) ||
         object==GDI_STOCK_BITMAP))
         return gdi_select_bitmap(hdc,object);
-    if (!gdi_device_dc(hdc) || (v & 0xFF000000u) != NTOS_FONT_HANDLE)
+    if (!gdi_valid_dc(hdc) || (v & 0xFF000000u) != NTOS_FONT_HANDLE)
         return 0;
     int h = (int)(v & 0xffu);
     if (h < 9 || h > 32)
@@ -980,7 +980,9 @@ static int nt_glyph(void *hdc, int x, int y, u16 ch)
     u32 fg = rgb565(g_text_color), bg = rgb565(g_bk_color);
     int h = g_font_height;
     int w = (int)nt_glyph_div((unsigned)(8 * h + 7), 14u);
-    if (!hdc || !api || !api[7])
+    GDI_BITMAP *bitmap=gdi_selected(hdc);
+    if (!hdc || (!bitmap &&
+         (!gdi_device_dc(hdc) || !api || !api[7])))
         return 0;
     if (ch < 32 || ch >= 127)
         ch = '?';
@@ -993,8 +995,14 @@ static int nt_glyph(void *hdc, int x, int y, u16 ch)
             int active = (bits >> src) & 1; /* LSB at the LEFT */
             if (active || g_bk_mode != 1) {
                 int px = x + xx, py = y + yy;
-                if (px >= 0 && px < 320 && py >= 0 && py < 528)
-                    ((void (*)(u32, u32, u32))api[7])((u32)px, (u32)py, active ? fg : bg);
+                if(bitmap) {
+                    if(px>=0 && px<bitmap->w &&
+                       py>=0 && py<bitmap->h)
+                        bitmap->pixels[(u32)py*(u32)bitmap->w+
+                                       (u32)px]=(u16)(active?fg:bg);
+                } else if (px>=0 && px<320 && py>=0 && py<528)
+                    ((void (*)(u32, u32, u32))api[7])
+                        ((u32)px,(u32)py,active?fg:bg);
             }
             rx += 14;
             while (rx >= h) {

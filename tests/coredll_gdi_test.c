@@ -150,6 +150,39 @@ int main(void) {
     void *fresh=CreateCompatibleBitmap(GDI_SCREEN_DC,8,8);
     assert(fresh && fresh!=leaked_bmp && fresh!=leaked_extra);
     assert(DeleteObject(fresh) && allocated==freed);
-    puts("PASS COREDLL GDI: WinCE memory DC RGB565, SRCCOPY clipping/overlap, monotonic typed handles and forced DllMain detach cleanup");
+    /* Rasterized real COREDLL UGUI glyph must render onto a selected
+     * memory bitmap, not leak pixels to the hardware display surface.
+     * SH4/no-FPU nearest-neighbour and LSB-left atlas must be exact.
+     */
+    void *font_dc=CreateCompatibleDC(GDI_SCREEN_DC);
+    void *font_bitmap=CreateCompatibleBitmap(GDI_SCREEN_DC,20,20);
+    NT_LOGFONTW lf={0};
+    lf.lfHeight=-14;
+    void *font=CreateFontIndirectW(&lf);
+    assert(font_dc && font_bitmap && font);
+    assert(SelectObject(font_dc,font_bitmap)==GDI_STOCK_BITMAP);
+    void *old_font=SelectObject(font_dc,font);
+    assert(old_font);
+    SetTextColor(font_dc,0x000000FFu);
+    SetBkColor(font_dc,0x00FFFFFFu);
+    SetBkMode(font_dc,2); /* OPAQUE */
+    u16 letter[2]={'A',0};
+    unsigned before=sent;
+    assert(TextOutW(font_dc,0,0,letter,1));
+    assert(sent==before); /* a true offscreen surface */
+    unsigned dark=0u,light=0u;
+    for(int yy=0;yy<14;++yy)
+        for(int xx=0;xx<8;++xx) {
+            u32 value=GetPixel(font_dc,xx,yy);
+            if(value==0x000000FFu)++dark;
+            if(value==0x00FFFFFFu)++light;
+        }
+    assert(dark>8u && light>8u);
+    assert(SelectObject(font_dc,old_font)==font);
+    assert(SelectObject(font_dc,GDI_STOCK_BITMAP)==font_bitmap);
+    assert(DeleteObject(font));
+    assert(DeleteObject(font_bitmap) && DeleteDC(font_dc));
+    assert(allocated==freed);
+    puts("PASS COREDLL GDI: WinCE memory DC RGB565, pixel-exact no-AA StretchBlt, offscreen TextOutW, safe handles and DllMain cleanup");
     return 0;
 }
