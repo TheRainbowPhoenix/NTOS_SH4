@@ -35,6 +35,9 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install Python/PE dependencies (same as NTOS.hh3 CI)
+        shell: bash
+        run: apt-get update -qq && apt-get install -y -qq python3 python3-pefile
       - name: Build NTOS.hh3, EXEs, DLLs and phone applications
         shell: bash
         run: |
