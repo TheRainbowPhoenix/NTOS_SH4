@@ -250,9 +250,19 @@ int ntos_exword_find_sysroot(unsigned volume,char out[NTOS_EXWORD_PATH_MAX])
         if((volume==1u && with_casio==0u) ||
            (volume==0u && with_casio==1u))
             if(ntos_child(path,"CASIO"))continue;
-        if(ntos_child(path,"NTOSH") ||
-           ntos_child(path,"_CONTENT") ||
-           ntos_child(path,"SYSROOT"))continue;
+        if(ntos_child(path,"NTOSH"))continue;
+        /* Transfer tools may place auxiliary files beside the installed
+         * _CONTENT directory instead of inside it. Accept both layouts. */
+        char app[NTOS_EXWORD_PATH_MAX];
+        i=0u;
+        while(path[i]){app[i]=path[i];++i;}
+        app[i]=0;
+        if(ntos_child(path,"_CONTENT") || ntos_child(path,"SYSROOT")) {
+            i=0u;
+            while(app[i]){path[i]=app[i];++i;}
+            path[i]=0;
+            if(ntos_child(path,"SYSROOT"))continue;
+        }
         i=0u;
         while(path[i] && i+1u<NTOS_EXWORD_PATH_MAX) {
             out[i]=path[i];++i;
