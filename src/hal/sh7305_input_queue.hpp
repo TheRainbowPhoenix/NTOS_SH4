@@ -4,7 +4,7 @@
 // This does not claim a native SH7305 input interrupt implementation.
 #pragma once
 #include <stdint.h>
-#include "../nt/io_manager.hpp"
+#include "sh7305_adapter.hpp"
 namespace ntos_hal {
 enum class InputKind : uint32_t {keyboard=1u,touch=2u};
 struct InputEvent {
