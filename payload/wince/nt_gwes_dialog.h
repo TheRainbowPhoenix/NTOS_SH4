@@ -45,7 +45,7 @@ typedef struct {
     NT_GW_RECT bounds;
     uint16_t title[NT_DIALOG_TITLE];
     NT_DLG_ITEM items[NT_DIALOG_ELEMENTS];
-    unsigned count;
+    unsigned count,rendered; /* screen was actually presented */
     NT_KB_EDIT edit;
 } NT_DIALOG;
 typedef struct {
