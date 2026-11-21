@@ -1158,3 +1158,21 @@ unified: all
 
 # Native WinCE-first phone launcher.
 include payload/phone/phone.mk
+
+# --- separate EX-word native D01 target (SH7305, 528x320, 128 KiB) --------
+# Does not change the HH3 compiler, link script or the normal "all" target.
+# Use fxSDK's EXWORD.cmake and a separately installed gint-exword prefix.
+EXWORD_TOOLCHAIN ?=
+EXWORD_GINT_PREFIX ?=
+EXWORD_METADATA_SOURCE ?=
+.PHONY: exword
+exword:
+	@test -n "$(EXWORD_TOOLCHAIN)" && test -n "$(EXWORD_GINT_PREFIX)" || { \
+		echo "Usage: make exword EXWORD_TOOLCHAIN=/path/EXWORD.cmake EXWORD_GINT_PREFIX=/path/gint-exword"; exit 2; }
+	cmake -S exword -B build-exword \
+	  -DCMAKE_TOOLCHAIN_FILE="$(EXWORD_TOOLCHAIN)" \
+	  -DCMAKE_PREFIX_PATH="$(EXWORD_GINT_PREFIX)" \
+	  '-DCMAKE_MODULE_PATH=$(EXWORD_GINT_PREFIX)/lib/cmake/fxsdk;$(dir $(EXWORD_TOOLCHAIN))' \
+	  $(if $(EXWORD_METADATA_SOURCE),-DEXWORD_METADATA_SOURCE="$(EXWORD_METADATA_SOURCE)",)
+	cmake --build build-exword --parallel 2
+	$(PYTHON) tools/check_exword_d01.py build-exword
