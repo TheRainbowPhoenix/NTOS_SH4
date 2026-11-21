@@ -2610,7 +2610,9 @@ static int run_mapped(uint8_t *file, uint32_t fsize, const pe::Image &hdr,
 #endif
     bool root_requested=source_path &&
         (ntos_launch_policy::ascii_equal_ci(source_path,
-                                            "\\fls0\\PSROOT.EXE")
+                                            "\\fls0\\PSROOT.EXE") ||
+         ntos_launch_policy::ascii_equal_ci(source_path,
+                                            "\\fls0\\PSSTACK.EXE")
 #if NTOS_ENABLE_PE_PAIR
          || twin_requested || kill_requested
 #endif
