@@ -21,11 +21,14 @@ int main(const void *const *api,char **argv,char **envp) {
     query_fn tick=(query_fn)api[77],yield_=(query_fn)api[68];
     query_fn live=(query_fn)api[88];
     hint_fn hint=(hint_fn)api[23];
+    int32_t (*make_event)(u32,u32)=(int32_t (*)(u32,u32))api[28];
+    query_fn ob_handles=(query_fn)api[37];
     u32 (*open_)(const char *,u32 *)=(u32 (*)(const char *,u32 *))api[71];
     u32 (*write_)(u32,const void *,u32,u32 *)=
         (u32 (*)(u32,const void *,u32,u32 *))api[73];
     if(!pid || !ppid || !childpid || !root || !tick ||
-       !yield_ || !live || !hint || !open_ || !write_)
+       !yield_ || !live || !hint || !open_ || !write_ ||
+       !make_event || !ob_handles)
         return (int)0xBADF5302u;
     if(pid()==parent || pid()!=childpid() ||
        ppid()!=parent || root()!=1u || live()!=1u)
@@ -42,9 +45,14 @@ int main(const void *const *api,char **argv,char **envp) {
     if(write_(child_handle,(const void *)(uintptr_t)tx,4u,
               (u32 *)(uintptr_t)&bytes)!=0u || bytes!=4u)
         return (int)0xBADF5306u;
+    // Deliberately leak an Ob event handle too: Ke's Ps child teardown
+    // must release its handle table, without touching parent's table.
+    const int32_t event=make_event(1u,0u);
+    if(event<=0 || ob_handles()!=1u)
+        return (int)0xBADF5309u;
     for(u32 i=0u;i<500u;++i) {
         if(root()!=1u || pid()!=childpid() ||
-           live()!=2u || child_count!=i)
+           live()!=2u || ob_handles()!=1u || child_count!=i)
             return (int)0xBADF5307u;
         ++child_count;
         if(tick()!=i+1u || yield_()!=0u)

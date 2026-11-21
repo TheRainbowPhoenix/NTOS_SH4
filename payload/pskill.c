@@ -16,7 +16,7 @@ static volatile u32 child_result,parent_pid,parent_tid,child_tid,parent_handle;
 static const char parent_device[]="\\Device\\Loopback";
 static const void *const *saved_api;
 static query_fn child_exit,peer_yield,live,root_current,child_pid,progress;
-static query_fn current_pid,current_tid,parent_of,space_id;
+static query_fn current_pid,current_tid,parent_of,space_id,ob_handles;
 static void child_entry(void) {
     entry_fn child=(entry_fn)(uintptr_t)((query_fn)saved_api[76])();
     child_result=(u32)child(saved_api,(char **)(uintptr_t)parent_pid,
@@ -43,17 +43,18 @@ int main(const void *const *api,char **argv,char **envp) {
     current_tid=(query_fn)api[56];
     parent_of=(query_fn)api[66];
     space_id=(query_fn)api[64];
+    ob_handles=(query_fn)api[37];
     u32 (*open_)(const char *,u32 *)=(u32 (*)(const char *,u32 *))api[71];
     u32 (*close_)(u32)=(u32 (*)(u32))api[74];
     if(!create || !hint || !peer_entry || !child_exit ||
        !peer_yield || !root_current || !child_pid || !progress ||
        !live || !current_pid || !current_tid || !parent_of ||
-       !space_id || !open_ || !close_)
+       !space_id || !ob_handles || !open_ || !close_)
         return (int)0xBADF5202u;
     parent_pid=current_pid();parent_tid=current_tid();
     if(!parent_pid || !parent_tid || child_pid()!=0u ||
        root_current()!=0u || !peer_entry() ||
-       live()!=0u)
+       live()!=0u || ob_handles()!=0u)
         return (int)0xBADF5203u;
     if(hint((u32)(uintptr_t)peer_stack)!=0 ||
        hint((u32)(uintptr_t)&peer_stack[4095])!=0 ||
@@ -81,7 +82,8 @@ int main(const void *const *api,char **argv,char **envp) {
     }
     if(peer_yield()!=0u)return (int)0xBADF5209u;
     if(child_result!=0x4B4C4331u || child_pid()!=0u ||
-       root_current()!=0u || live()!=1u)
+       root_current()!=0u || live()!=1u ||
+       ob_handles()!=0u)
         return (int)0xBADF520Au;
     // Child exit must NOT have closed its parent's handle.
     if(close_(parent_handle)!=0u || live()!=0u)
