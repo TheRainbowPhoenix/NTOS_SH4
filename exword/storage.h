@@ -24,6 +24,12 @@ int ntos_exword_scan(unsigned volume, struct ntos_exword_listing *out);
 int ntos_exword_scan_path(const char *pattern, struct ntos_exword_listing *out);
 int ntos_exword_file_size(const char *path, uint32_t *size);
 int ntos_exword_read_at(const char *path, uint32_t offset, void *out, uint32_t count);
+/* Read-only WinCE file primitives via OS-world transitions. */
+int ntos_exword_open_read(const char *path);
+int ntos_exword_read_fd(int fd, void *out, uint32_t count);
+int ntos_exword_seek_fd(int fd, int offset, uint32_t method);
+int ntos_exword_size_fd(int fd);
+int ntos_exword_close_fd(int fd);
 #ifdef __cplusplus
 }
 #endif

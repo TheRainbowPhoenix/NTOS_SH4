@@ -121,3 +121,56 @@ int ntos_exword_read_at(const char *path, uint32_t offset, void *out, uint32_t c
     struct ntos_file q={path,offset,count,(uint8_t *)out};
     return gint_world_switch(GINT_CALL(ntos_read_native,(void *)&q));
 }
+
+/* Keep native descriptors within the firmware world. Calling any of these
+ * EX-word syscall wrappers without gint_world_switch breaks the MMU/VBR
+ * ownership contract when NTOS's PE image is resident in P1. */
+struct ntos_stream_req {
+    const char *path;
+    int fd,offset,method;
+    void *buffer;
+    uint32_t count;
+};
+static int ntos_stream_open(struct ntos_stream_req *q)
+{ return exword_sys_open(q->path,1); }
+static int ntos_stream_read(struct ntos_stream_req *q)
+{ return exword_sys_read(q->fd,q->buffer,(int)q->count); }
+static int ntos_stream_seek(struct ntos_stream_req *q)
+{ return exword_sys_seek(q->fd,q->offset,q->method); }
+static int ntos_stream_size(struct ntos_stream_req *q)
+{ return exword_sys_get_filesize(q->fd); }
+static int ntos_stream_close(struct ntos_stream_req *q)
+{ return exword_sys_close(q->fd); }
+int ntos_exword_open_read(const char *path)
+{
+    if(!ntos_path_ok(path))return -1;
+    struct ntos_stream_req q={0};
+    q.path=path;
+    return gint_world_switch(GINT_CALL(ntos_stream_open,(void *)&q));
+}
+int ntos_exword_read_fd(int fd,void *out,uint32_t count)
+{
+    if(fd<0 || (!out && count) || count>4096u)return -1;
+    struct ntos_stream_req q={0};
+    q.fd=fd;q.buffer=out;q.count=count;
+    return gint_world_switch(GINT_CALL(ntos_stream_read,(void *)&q));
+}
+int ntos_exword_seek_fd(int fd,int off,uint32_t method)
+{
+    if(fd<0 || method>2u)return -1;
+    struct ntos_stream_req q={0};
+    q.fd=fd;q.offset=off;q.method=(int)method;
+    return gint_world_switch(GINT_CALL(ntos_stream_seek,(void *)&q));
+}
+int ntos_exword_size_fd(int fd)
+{
+    if(fd<0)return -1;
+    struct ntos_stream_req q={0};q.fd=fd;
+    return gint_world_switch(GINT_CALL(ntos_stream_size,(void *)&q));
+}
+int ntos_exword_close_fd(int fd)
+{
+    if(fd<0)return -1;
+    struct ntos_stream_req q={0};q.fd=fd;
+    return gint_world_switch(GINT_CALL(ntos_stream_close,(void *)&q));
+}
