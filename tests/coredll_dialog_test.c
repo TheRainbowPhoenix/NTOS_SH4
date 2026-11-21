@@ -123,7 +123,12 @@ int main(void) {
     assert(DispatchMessageW(&msg));
     assert(SipShowIM(1u));
     msg=(NT_MSG){0};msg.message=0x0102u;msg.wParam='H';
+    unsigned before_edit_rects=rects;
+    unsigned before_edit_refresh=refreshes;
     assert(DispatchMessageW(&msg));
+    /* Only the Edit border/background repaints; no dialog-wide work. */
+    assert(rects==before_edit_rects+2u);
+    assert(refreshes==before_edit_refresh+1u);
     msg.wParam='i';assert(DispatchMessageW(&msg));
     msg.wParam=8u;assert(DispatchMessageW(&msg));
     u16 out[16]={0};
