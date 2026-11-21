@@ -82,19 +82,22 @@ static bool in_dir(const char *dir,const char *filename,
     } while(more && skip<=4096u);
     return false;
 }
+/* Windows loader policy: shared DLLs are found beside the process EXE
+ * first, then in the installed SYSROOT\\Windows\\System32 directory.
+ * Resolve against modules[0], not the importing DLL's own directory: all
+ * imports in the process must follow one deterministic search path. */
 static bool resolve_dll(const char *filename,const char *requester,
                         char out[NTOS_EXWORD_PATH_MAX]) {
+    (void)requester;
     char dir[NTOS_EXWORD_PATH_MAX];
-    if(dirname(requester,dir) && in_dir(dir,filename,out))return true;
-    if(g_guest_root[0]) {
-        if(joined(g_guest_root,"DLL",dir) &&
-           in_dir(dir,filename,out))return true;
-        if(in_dir(g_guest_root,filename,out))return true;
+    if(count && dirname(modules[0].path,dir) &&
+       in_dir(dir,filename,out))return true;
+    if(g_guest_root[0] &&
+       ntos_exword_find_child_dir(g_guest_root,"Windows",dir)==0) {
+        char system32[NTOS_EXWORD_PATH_MAX];
+        if(ntos_exword_find_child_dir(dir,"System32",system32)==0)
+            return in_dir(system32,filename,out);
     }
-    /* Falling back to the root EXE's folder works even when a dependency
-     * of a DLL imports a sibling library. */
-    if(count && dirname(modules[0].path,dir))
-        return in_dir(dir,filename,out);
     return false;
 }
 static int find_module(const char *name) {

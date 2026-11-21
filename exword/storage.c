@@ -240,6 +240,18 @@ static int ntos_child(char path[NTOS_EXWORD_PATH_MAX],const char *name)
     } while(more && skip<=4096u);
     return -1;
 }
+int ntos_exword_find_child_dir(const char *parent,const char *name,
+                              char out[NTOS_EXWORD_PATH_MAX])
+{
+    if(!parent || !name || !out || !ntos_path_ok(parent))return -1;
+    unsigned i=0u;
+    while(parent[i] && i+1u<NTOS_EXWORD_PATH_MAX) {
+        out[i]=parent[i];++i;
+    }
+    if(parent[i])return -1;
+    out[i]=0;
+    return ntos_child(out,name);
+}
 int ntos_exword_find_sysroot(unsigned volume,char out[NTOS_EXWORD_PATH_MAX])
 {
     if(!out || volume>1u)return -1;
