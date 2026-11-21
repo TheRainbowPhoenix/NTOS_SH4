@@ -506,7 +506,9 @@ int DispatchMessageW(const NT_MSG *msg)
             int changed=nt_kb_edit_char(&g_edit.value,msg->wParam);
             if(changed==1) {
                 nt_edit_paint();
-                nt_sip_paint(); /* SIP remains above the Edit text. */
+                /* A normal top-half Edit does not touch SIP pixels. */
+                if((nt_sip_flags&1u) &&
+                   g_edit.bounds.bottom>NT_GWES_SIP_TOP)nt_sip_paint();
                 coredll_refresh();
             }
             if(changed && g_window.proc)
@@ -520,7 +522,8 @@ int DispatchMessageW(const NT_MSG *msg)
         int changed=nt_kb_edit_char(&g_edit.value,msg->wParam);
         if(changed==1) {
             nt_edit_paint();
-            nt_sip_paint();
+            if((nt_sip_flags&1u) &&
+               g_edit.bounds.bottom>NT_GWES_SIP_TOP)nt_sip_paint();
             coredll_refresh();
         }
         if(changed && g_window.proc)
