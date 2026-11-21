@@ -26,7 +26,7 @@ int main(void){
     for(unsigned i=0;i<4u;++i) {
         assert(nt_dlg_theme_set(&s,themes[i]));
         NT_DLG_STYLE color=nt_dlg_theme(s.theme);
-        assert(color.body!=0u && color.button!=0u && color.ink!=0u);
+        assert(color.body!=0u && color.button!=0u && color.title!=0u); /* Win98 black COLORREF = 0 is valid */
     }
     assert(!nt_dlg_theme_set(&s,4u));
     NT_DLG_CONFIG c={sizeof(c),p,55u,NT_DLG_ALIGN_CENTER,
