@@ -268,12 +268,17 @@ int ntos_exword_run_pe(const char *path,uint32_t *exit_code)
     uint8_t *image=(uint8_t *)(uintptr_t)area.image_start;
     clear_area(image,image_size);
     set_error("PE image read failed");
-    if(!copy_sections(source,hdr,image,image_size))return -6;
+    if(!copy_sections(source,hdr,image,image_size)) {
+        ntos_exword_arena_release(area);return -6;
+    }
     const char *reloc_error=nullptr;
     if(!ntos_rebase::apply(hdr,image,image_size,area.image_start,&reloc_error)){
-        set_error(reloc_error?reloc_error:"PE rebase failed");return -7;
+        set_error(reloc_error?reloc_error:"PE rebase failed");
+        ntos_exword_arena_release(area);return -7;
     }
-    if(!snap_imports(hdr,image,image_size))return -8;
+    if(!snap_imports(hdr,image,image_size)) {
+        ntos_exword_arena_release(area);return -8;
+    }
     const uint32_t entry=area.image_start+hdr.oh.entry_rva;
     bool is_executable=false;
     for(unsigned i=0u;i<hdr.section_count;++i){
@@ -285,7 +290,8 @@ int ntos_exword_run_pe(const char *path,uint32_t *exit_code)
     }
     if(!is_executable || (entry&1u) || entry<area.image_start ||
        entry>=area.image_start+image_size) {
-        set_error("invalid executable entrypoint");return -9;
+        set_error("invalid executable entrypoint");
+        ntos_exword_arena_release(area);return -9;
     }
     for(Allocation &a:g_alloc)a={};
     g_heap_base=(area.image_start+image_size+7u)&~7u;

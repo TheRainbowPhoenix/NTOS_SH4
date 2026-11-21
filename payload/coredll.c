@@ -1204,6 +1204,18 @@ int UpdateWindow(void *hwnd)
     return 1;
 }
 
+/* EX-word's P0 0x08100000 is not the ClassPad API window. */
+#ifdef NTOS_EXWORD
+static int ntos_core_has_slot(u32 slot) {
+    const void **api=ntapi();
+    return slot<28u && api && api[slot];
+}
+#else
+static int ntos_core_has_slot(u32 slot) {
+    return ntos_api_has_slot((const volatile uint32_t *)0x08100000u,slot);
+}
+#endif
+
 /* WinCE file-handle bridge. Handles are tagged SDK file descriptors.
  * Strings from apps are UTF-16; Hollyhock File_Open takes an ANSI path.
  * Only the existing WinCE function names are exposed to PE clients. */
@@ -1577,7 +1589,7 @@ void *FindFirstFileW(const u16 *pattern, NT_FIND_DATA *out)
     char path[96];
     NT_FIND_NATIVE found;
     int fd = -1;
-    if (!ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 24u)) {
+    if (!ntos_core_has_slot(24u)) {
         g_last_error = 50;
         return NT_INVALID_FILE;
     }
@@ -1611,7 +1623,7 @@ int FindNextFileW(void *search, NT_FIND_DATA *out)
     const int slot = find_slot(search);
     const void **a = ntapi();
     NT_FIND_NATIVE found;
-    if (!ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 25u)) {
+    if (!ntos_core_has_slot(25u)) {
         g_last_error = 50;
         return 0;
     }
@@ -1631,7 +1643,7 @@ int FindClose(void *search)
 {
     const int slot = find_slot(search);
     const void **a = ntapi();
-    if (!ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 26u)) {
+    if (!ntos_core_has_slot(26u)) {
         g_last_error = 50;
         return 0;
     }
