@@ -126,7 +126,7 @@ int main(void) {
     assert(DeleteDC(source_dc) && DeleteDC(scale_dc));
     assert(DeleteDC(dc));
     assert(!DeleteDC(dc));
-    assert(allocated==freed && allocated==2u);
+    assert(allocated==freed && allocated==4u); /* two GDI and two scale bitmaps */
     /* Slot reuse cannot resurrect an earlier opaque handle. */
     void *again=CreateCompatibleBitmap(GDI_SCREEN_DC,4,4);
     assert(again && again!=bmp);
