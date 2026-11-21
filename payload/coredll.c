@@ -298,6 +298,7 @@ static int nt_dialog_capture(const NT_MSG *);
 static void nt_dialog_paint(void);
 int UpdateWindow(void *hwnd);
 static u32 nt_sip_flags = 2u; /* docked, on = bit zero */
+static unsigned g_nt_sip_silent; /* modal transition, presenter handles paint */
 static void nt_sip_paint(void);
 static void nt_present_overlays(void) {
     /* Final z-order: foreground app, dialogs, keyboard. */
@@ -1635,13 +1636,13 @@ int SipShowIM(u32 flags)
     nt_sip_flags = 2u | flags;
     if(g_nt_gwes_initialized)
         nt_gwes_sip(&g_nt_gwes,flags);
-    if (g_window.magic) {
+    if(g_window.magic && !g_nt_sip_silent) {
         g_window.invalidated=1;
-        enqueue((void *)&g_window, 0x001Au, 0, 0); /* WM_SETTINGCHANGE */
+        enqueue((void *)&g_window,0x001Au,0,0); /* WM_SETTINGCHANGE */
     }
     /* HWNDs redraw after WM_SETTINGCHANGE. Painting the SIP first
      * wastes an LCD refresh and lets the parent erase it afterwards. */
-    if(flags && !g_window.magic) {
+    if(flags && !g_window.magic && !g_nt_sip_silent) {
         nt_sip_paint();
         coredll_refresh();
     }
