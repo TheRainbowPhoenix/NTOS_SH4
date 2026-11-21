@@ -272,7 +272,8 @@ int MessageBoxW(void *hwnd,const u16 *message,const u16 *title,u32 type) {
     };
     u32 dlg=NtosDialogOpen(&config);
     if(!dlg)return 0;
-    NT_DLG_ITEM item={0};
+    NT_DLG_ITEM item;
+    nt_dlg_zero(&item,sizeof(item));
     item.size=sizeof(item);
     item.type=NT_DLG_LABEL;item.id=1u;
     item.bounds=(NT_GW_RECT){14,12,260,54};
@@ -290,7 +291,8 @@ int MessageBoxW(void *hwnd,const u16 *message,const u16 *title,u32 type) {
         NtosDialogRelease(dlg);return 0;
     }
     if((type&0xFu)==1u) {
-        NT_DLG_ITEM cancel={0};
+        NT_DLG_ITEM cancel;
+        nt_dlg_zero(&cancel,sizeof(cancel));
         cancel.size=sizeof(cancel);cancel.type=NT_DLG_BUTTON;
         cancel.id=NT_DIALOG_CANCEL;
         cancel.bounds=(NT_GW_RECT){178,70,266,102};
@@ -302,7 +304,8 @@ int MessageBoxW(void *hwnd,const u16 *message,const u16 *title,u32 type) {
         }
     }
     for(unsigned turns=0u;!NtosDialogResult(dlg) && turns<4096u;++turns) {
-        NT_MSG msg={0};
+        NT_MSG msg;
+        nt_dlg_zero(&msg,sizeof(msg));
         int code=GetMessageW(&msg,hwnd,0u,0u);
         if(code<=0) {
             NtosDialogEnd(dlg,NT_DIALOG_CANCEL);break;

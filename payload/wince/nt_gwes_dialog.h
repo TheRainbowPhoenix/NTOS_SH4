@@ -53,9 +53,21 @@ typedef struct {
     uint32_t next_id,serial;
     unsigned theme;
 } NT_DIALOGS;
+/* SH4BE -nostdlib: never let GCC lower large aggregate assignment into
+   _memset, _memcpy or ___movmem_i4_odd. Volatile byte accesses are
+   explicit little bounded loops, safe for unaligned user struct data. */
+static inline void nt_dlg_zero(void *ptr,unsigned n) {
+    volatile uint8_t *dst=(volatile uint8_t *)ptr;
+    for(unsigned i=0u;i<n;++i)dst[i]=0u;
+}
+static inline void nt_dlg_bytes(void *to,const void *from,unsigned n) {
+    volatile uint8_t *dst=(volatile uint8_t *)to;
+    const volatile uint8_t *src=(const volatile uint8_t *)from;
+    for(unsigned i=0u;i<n;++i)dst[i]=src[i];
+}
 static inline void nt_dlg_init(NT_DIALOGS *s) {
     if(!s)return;
-    *s=(NT_DIALOGS){0};
+    nt_dlg_zero(s,sizeof(*s));
     s->next_id=1u;s->serial=1u;
 }
 static inline void nt_dlg_copy(uint16_t *to,unsigned cap,const uint16_t *from) {
@@ -162,7 +174,7 @@ static inline uint32_t nt_dlg_open(NT_DIALOGS *s,const NT_GWES *g,
     for(unsigned i=0;i<NT_DIALOG_MAX;++i)
         if(!s->slots[i].state) {
             NT_DIALOG *d=&s->slots[i];
-            *d=(NT_DIALOG){0};
+            nt_dlg_zero(d,sizeof(*d));
             d->token=0x444C0000u|s->next_id++;
             d->serial=s->serial++;
             d->parent=cfg->parent;d->height=cfg->height;
@@ -197,7 +209,7 @@ static inline int nt_dlg_add(NT_DIALOGS *s,uint32_t token,
     if((item->type==NT_DLG_BUTTON || item->type==NT_DLG_EDIT) &&
        (item->bounds.right-item->bounds.left<32 ||
         item->bounds.bottom-item->bounds.top<18))return 0;
-    d->items[d->count]=*item;
+    nt_dlg_bytes(&d->items[d->count],item,sizeof(*item));
     nt_dlg_copy(d->items[d->count].text,48u,item->text);
     ++d->count;return 1;
 }
