@@ -403,16 +403,16 @@ extern "C" int ntos_general_exception_callback(
                         c.user_loop_calls>=128u)) ||
            (is_exit && (guest_service!=0x10FFu ||
                         c.user_loop_calls!=128u))) {
-            ++c.user_loop_rejected;
+            c.user_loop_rejected=c.user_loop_rejected+1u;
             return 0; // Reject untrusted trap; never spoof an NT service
         }
         uint32_t output=nt::SUCCESS;
         if(is_loop) {
             if(c.ke->dispatch(spc,ssr,sgr,tra,guest_service,
                               guest_arg,&output)!=nt::SUCCESS) {
-                ++c.user_loop_rejected;return 0;
+                c.user_loop_rejected=c.user_loop_rejected+1u;return 0;
             }
-            ++c.user_loop_calls;
+            c.user_loop_calls=c.user_loop_calls+1u;
         } else {
             c.user_loop_armed=false;
             // The trusted exit stub restores its original P1 SP
@@ -593,7 +593,8 @@ inline ntos_irq::Hooks hooks(const host_world::Snapshot &host) {
     ctx.user_loop_pc=ctx.user_loop_exit_pc=0u;
     ctx.user_stack_lo=ctx.user_stack_hi=0u;
     ctx.user_loop_supervisor_sr=0u;
-    ctx.user_loop_calls=ctx.user_loop_rejected=0u;
+    ctx.user_loop_calls=0u;
+    ctx.user_loop_rejected=0u;
 #endif
     ctx.user_probe_session=false;
     ctx.user_probe_trapa_next=0u;
