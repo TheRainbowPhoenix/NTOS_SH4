@@ -1,0 +1,90 @@
+name: NTOSH EX-word native D01
+on:
+  push:
+    branches: [feat/exword-d01-ntosh-20261121]
+  pull_request:
+    paths:
+      - "exword/**"
+      - "src/nt/**"
+      - "tools/check_exword_d01.py"
+      - ".github/workflows/exword-d01.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ntosh-exword-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/therainbowphoenix/gint-docker:main
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test portable NTOS Ke/Ps/Ob/Ex code used in D01
+        shell: bash
+        run: |
+          set -euo pipefail
+          c++ -std=c++17 -Os -Wall -Wextra -Werror tests/exword_port_test.cpp -o /tmp/ntosh-exword-port-test
+          /tmp/ntosh-exword-port-test
+      - name: Install EX-word fxSDK and D01 converter
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth=1 --branch exword https://github.com/TheRainbowPhoenix/fxsdk-exword.git /tmp/fxsdk-src
+          cmake -S /tmp/fxsdk-src -B /tmp/fxsdk-build \
+            -DCMAKE_INSTALL_PREFIX=/tmp/fxsdk-exword \
+            -DFXLINK_DISABLE_SDL2=ON -DFXLINK_DISABLE_UDISKS2=ON
+          cmake --build /tmp/fxsdk-build --parallel 2
+          cmake --install /tmp/fxsdk-build
+          git clone --depth=1 https://github.com/brijohn/elf2d01.git /tmp/elf2d01
+          cc -O2 /tmp/elf2d01/elf2d01.c -o /tmp/fxsdk-exword/bin/elf2d01
+          echo /tmp/fxsdk-exword/bin >> "$GITHUB_PATH"
+      - name: Install EX-word gint runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth=1 --branch exword https://github.com/TheRainbowPhoenix/gint-exword.git /tmp/gint-src
+          cmake -S /tmp/gint-src -B /tmp/gint-build \
+            -DCMAKE_TOOLCHAIN_FILE=/tmp/fxsdk-exword/lib/cmake/fxsdk/EXWORD.cmake \
+            -DCMAKE_INSTALL_PREFIX=/tmp/gint-exword \
+            -DCMAKE_MODULE_PATH=/tmp/fxsdk-exword/lib/cmake/fxsdk
+          cmake --build /tmp/gint-build --parallel 2
+          cmake --install /tmp/gint-build
+      - name: Cross-build direct native D01 and JP/CN install packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth=1 https://github.com/TheRainbowPhoenix/exword-xd-a8500-TEST.git /tmp/exword-metadata
+          cmake -S exword -B build-exword \
+            -DCMAKE_TOOLCHAIN_FILE=/tmp/fxsdk-exword/lib/cmake/fxsdk/EXWORD.cmake \
+            -DCMAKE_PREFIX_PATH=/tmp/gint-exword \
+            '-DCMAKE_MODULE_PATH=/tmp/gint-exword/lib/cmake/fxsdk;/tmp/fxsdk-exword/lib/cmake/fxsdk' \
+            -DEXWORD_METADATA_SOURCE=/tmp/exword-metadata
+          cmake --build build-exword --parallel 2
+          python3 tools/check_exword_d01.py build-exword
+          sh-elf-readelf -h build-exword/ntos_sh
+          sh-elf-nm build-exword/ntos_sh | grep -E '_exword_entry|_mmu_exword_prepare|_main'
+          (cd build-exword && sha256sum ntos_sh.d01 NTOS.d01 > BUILD-SHA256.txt)
+          git rev-parse HEAD > build-exword/BUILD-ID.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NTOSH-EXWORD-JA
+          path: build-exword/packages/ja/NTOSH/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NTOSH-EXWORD-CN
+          path: build-exword/packages/cn/NTOSH/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NTOSH-D01-debug
+          path: |
+            build-exword/ntos_sh.d01
+            build-exword/NTOS.d01
+            build-exword/ntos_sh
+            build-exword/ntos_sh.map
+            build-exword/BUILD-SHA256.txt
+            build-exword/BUILD-ID.txt
+          if-no-files-found: error
