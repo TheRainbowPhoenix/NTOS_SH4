@@ -6,6 +6,11 @@ on:
     paths:
       - "exword/**"
       - "src/nt/**"
+      - "src/pe.hpp"
+      - "src/pe_stream.hpp"
+      - "src/pe_rebase.hpp"
+      - "payload/coredll.c"
+      - "payload/wince/**"
       - "tools/check_exword_d01.py"
       - ".github/workflows/exword-d01.yml"
   workflow_dispatch:
@@ -27,6 +32,10 @@ jobs:
           set -euo pipefail
           c++ -std=c++17 -Os -Wall -Wextra -Werror tests/exword_port_test.cpp -o /tmp/ntosh-exword-port-test
           /tmp/ntosh-exword-port-test
+          for test in pe_stream_test pe_fixup_types_test pe_forwarder_test; do
+            c++ -std=c++20 -Os -Wall -Wextra -Werror "tests/${test}.cpp" -o "/tmp/${test}"
+            "/tmp/${test}"
+          done
       - name: Install EX-word fxSDK and D01 converter
         shell: bash
         run: |
