@@ -44,6 +44,6 @@ int ntos_exword_scan(unsigned volume, struct ntos_exword_listing *out)
     out->count=0u;out->result=0;
     struct ntos_scan query={pattern,out};
     /* EX-word firmware owns the file handles and its own MMU/VBR world. */
-    out->result=gint_world_switch(GINT_CALL(ntos_scan_native,&query));
+    out->result=gint_world_switch(GINT_CALL(ntos_scan_native,(void *)&query));
     return out->result;
 }
