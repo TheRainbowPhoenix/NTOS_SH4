@@ -21,6 +21,7 @@ extern "C" {
     uint32_t ntos_exword_lookup_coredll(const char *);
     int ntos_exword_dll_main(void *,uint32_t,void *);
     int ntos_exword_invoke(uint32_t,const void *const *,uint32_t);
+    int ntos_exword_invoke_dll(uint32_t,uint32_t,uint32_t,uint32_t);
     /* coredll.c (NTOS_CORE_HOST_TEST) uses the same first 28 NtosApi
      * gates as the original Hollyhock loader. */
     const void *ntos_host_table[28]={};
@@ -153,6 +154,7 @@ static void *host_malloc(uint32_t n){return heap_alloc(n);}
  * paths can name \drv0 and \crd0 explicitly. Native disk writes are OFF.
  */
 static unsigned g_guest_disk;
+static char g_guest_root[NTOS_EXWORD_PATH_MAX];
 static NtosExwordArena g_guest_area;
 struct GuestFile {int os_fd;bool live;};
 static GuestFile g_guest_files[8];
@@ -168,7 +170,8 @@ static bool guest_path(const char *input,char out[NTOS_EXWORD_PATH_MAX])
     if(y>='A'&&y<='Z')y=(char)(y-'A'+'a');
     if(z>='A'&&z<='Z')z=(char)(z-'A'+'a');
     if(x=='f'&&y=='l'&&z=='s'&&name[3]=='0'&&name[4]=='\\') {
-        root=g_guest_disk?"\\\\crd0":"\\\\drv0";tail=name+4;
+        root=g_guest_root[0]?g_guest_root:
+             (g_guest_disk?"\\\\crd0":"\\\\drv0");tail=name+4;
     } else if(x=='d'&&y=='r'&&z=='v'&&name[3]=='0'&&name[4]=='\\') {
         root="\\\\drv0";tail=name+4;
     } else if(x=='c'&&y=='r'&&z=='d'&&name[3]=='0'&&name[4]=='\\') {
@@ -341,80 +344,76 @@ static void sync_exec(uint32_t start,uint32_t size)
     }
     __asm__ volatile("synco":::"memory");
 }
-int ntos_exword_run_pe(const char *path,uint32_t *exit_code)
+#include "modules.inc"
+
+int ntos_exword_run_pe(const char *path,const char *sysroot,uint32_t *exit_code)
 {
     if(exit_code)*exit_code=0u;
     set_error("invalid EXE path");
     if(!path || !exit_code)return -1;
     NtosExwordArena area{};
-    set_error("unsupported ROM or unsafe P1 arena");
+    set_error("no verified executable P1 RAM on this ROM");
     if(!ntos_exword_arena_check(&area))return -2;
-    uint32_t fsize=0u;
-    if(ntos_exword_file_size(path,&fsize)<0 || fsize<64u ||
-       fsize>8u*1024u*1024u) {
-        set_error("file unreadable or too large");return -3;
-    }
-    Source source={path};
-    pe::Image hdr{};
-    set_error("not a valid SH4BE PE32");
-    if(pe_stream::parse(file_read,&source,fsize,&hdr)!=0 ||
-       (hdr.fh.characteristics&pe::F_DLL) ||
-       !(hdr.fh.characteristics&pe::F_EXECUTABLE_IMAGE))
-        return -4;
-    uint32_t image_size=hdr.oh.size_of_image;
-    if(image_size==0u || image_size>area.image_end-area.image_start ||
-       image_size>0x100000u || image_size>area.image_end-area.image_start-4096u) {
-        set_error("PE image exceeds P1 arena");return -5;
-    }
-    /* P1 byte address avoids all P0 EX-word add-in/firmware TLB windows.
-     * No OS scratch API allocation, no VBR or MMUCR takeover. */
-    uint8_t *image=(uint8_t *)(uintptr_t)area.image_start;
-    clear_area(image,image_size);
-    set_error("PE image read failed");
-    if(!copy_sections(source,hdr,image,image_size)) {
-        ntos_exword_arena_release(area);return -6;
-    }
-    const char *reloc_error=nullptr;
-    if(!ntos_rebase::apply(hdr,image,image_size,area.image_start,&reloc_error)){
-        set_error(reloc_error?reloc_error:"PE rebase failed");
-        ntos_exword_arena_release(area);return -7;
-    }
-    if(!snap_imports(hdr,image,image_size)) {
-        ntos_exword_arena_release(area);return -8;
-    }
-    const uint32_t entry=area.image_start+hdr.oh.entry_rva;
-    bool is_executable=false;
-    for(unsigned i=0u;i<hdr.section_count;++i){
-        const pe::SectionHeader &sh=hdr.sections[i];
-        const uint32_t span=sh.vsize>sh.raw_size?sh.vsize:sh.raw_size;
-        if((sh.characteristics&pe::SCN_MEM_EXECUTE) &&
-           hdr.oh.entry_rva>=sh.rva && hdr.oh.entry_rva-sh.rva<span)
-            is_executable=true;
-    }
-    if(!is_executable || (entry&1u) || entry<area.image_start ||
-       entry>=area.image_start+image_size) {
-        set_error("invalid executable entrypoint");
-        ntos_exword_arena_release(area);return -9;
-    }
-    g_guest_disk=path[2]=='c'?1u:0u;
+
+    /* A single process and its complete dependency graph live in the
+     * same P1 arena. No firmware TLB edit or unsafe OS scratch reuse. */
     g_guest_area=area;
+    g_guest_disk=path[2]=='c'?1u:0u;
+    unsigned n=0u;
+    while(sysroot && sysroot[n] && n+1u<sizeof g_guest_root) {
+        g_guest_root[n]=sysroot[n];++n;
+    }
+    g_guest_root[n]=0;
     for(GuestFile &f:g_guest_files)f={};
     for(Allocation &a:g_alloc)a={};
-    g_heap_base=(area.image_start+image_size+7u)&~7u;
+    using namespace ntos_exword_modules;
+    for(Module &m:modules)m={};
+    count=attach_count=0u;
+    cursor=area.image_start;
+    limit=area.image_end;
+
+    unsigned exe=0u;
+    if(!load(path,"@EXE",false,0u,&exe)) {
+        ntos_exword_arena_release(area);
+        return -3;
+    }
+    if(exe!=0u) {
+        set_error("incorrect EXE image slot");
+        ntos_exword_arena_release(area);
+        return -3;
+    }
+    for(unsigned i=0u;i<count;++i)
+        if(!bind_imports(modules[i])) {
+            ntos_exword_arena_release(area);
+            return -4;
+        }
+    uint32_t image_bytes=cursor-area.image_start;
+    g_heap_base=(cursor+7u)&~7u;
     g_heap_end=area.image_end;
-    g_heap_ptr=(uint8_t *)(uintptr_t)g_heap_base;
-    (void)g_heap_ptr;
+    if(g_heap_base>g_heap_end) {
+        set_error("no heap after dependency DLLs");
+        ntos_exword_arena_release(area);
+        return -5;
+    }
     g_print_line=0u;
     init_host_api();
-    sync_exec(area.image_start,image_size);
+    sync_exec(area.image_start,image_bytes);
+    if(!init_one(exe,0u)) {
+        unload();
+        ntos_exword_dll_main(nullptr,0u,nullptr);
+        guest_close_all();
+        ntos_exword_arena_release(area);
+        return -6;
+    }
+
     dclear(C_WHITE);
-    dtext(7,7,C_BLACK,"NTOSH  |  PE running");
-    dtext(7,266,C_BLACK,"Guest execution is experimental (no VBR guard)");
+    dtext(7,7,C_BLACK,"NTOSH  |  Running SH4BE EXE");
     dupdate();
-    /* The guest never owns the gint driver state. Invoke with isolated
-     * stack + saved registers, and return normally into host P1. */
-    const int rc=ntos_exword_invoke(entry,ntos_host_table,area.stack_end-16u);
-    /* Release GDI surfaces while the PE heap is still valid. */
+    int rc=ntos_exword_invoke(
+        modules[exe].base+modules[exe].pe.oh.entry_rva,
+        ntos_host_table,area.stack_end-16u);
+    unload();
+    /* DLL and COREDLL teardown happens BEFORE releasing guest heap. */
     ntos_exword_dll_main(nullptr,0u,nullptr);
     guest_close_all();
     *exit_code=(uint32_t)rc;

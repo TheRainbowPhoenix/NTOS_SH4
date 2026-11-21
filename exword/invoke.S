@@ -43,3 +43,48 @@ _ntos_exword_invoke:
     lds.l @r15+,pr
     rts
     nop
+
+
+/* WinCE DLL_PROCESS_ATTACH/DETACH:
+ * r4=entry, r5=HINSTANCE, r6=reason, r7=guest stack top.
+ * Call DLL entry with r4=HINSTANCE, r5=reason, r6=reserved(0).
+ * Save all host SH control/callee state just like EXE invocation. */
+.global _ntos_exword_invoke_dll
+_ntos_exword_invoke_dll:
+    sts.l pr,@-r15
+    stc.l gbr,@-r15
+    stc.l sr,@-r15
+    stc.l vbr,@-r15
+    sts.l mach,@-r15
+    sts.l macl,@-r15
+    mov.l r8,@-r15
+    mov.l r9,@-r15
+    mov.l r10,@-r15
+    mov.l r11,@-r15
+    mov.l r12,@-r15
+    mov.l r13,@-r15
+    mov.l r14,@-r15
+    mov r15,r8
+    mov r4,r0
+    mov r5,r4
+    mov r6,r5
+    mov r7,r15
+    mov #0,r6
+    jsr @r0
+    nop
+    mov r8,r15
+    mov.l @r15+,r14
+    mov.l @r15+,r13
+    mov.l @r15+,r12
+    mov.l @r15+,r11
+    mov.l @r15+,r10
+    mov.l @r15+,r9
+    mov.l @r15+,r8
+    lds.l @r15+,macl
+    lds.l @r15+,mach
+    ldc.l @r15+,vbr
+    ldc.l @r15+,sr
+    ldc.l @r15+,gbr
+    lds.l @r15+,pr
+    rts
+    nop
