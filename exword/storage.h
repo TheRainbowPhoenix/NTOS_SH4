@@ -21,6 +21,9 @@ static inline const char *ntos_exword_pattern(unsigned volume)
 extern "C" {
 #endif
 int ntos_exword_scan(unsigned volume, struct ntos_exword_listing *out);
+/* Resolve installed app's SYSROOT with case-accurate directory entries.
+ * Returns 0 only when SYSROOT is actually visible on the given volume. */
+int ntos_exword_find_sysroot(unsigned volume, char out[NTOS_EXWORD_PATH_MAX]);
 int ntos_exword_scan_path(const char *pattern, struct ntos_exword_listing *out);
 int ntos_exword_scan_page(const char *pattern,unsigned skip,
                          struct ntos_exword_listing *out,unsigned *more);

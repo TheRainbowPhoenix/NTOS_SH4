@@ -191,3 +191,75 @@ int ntos_exword_close_fd(int fd)
     struct ntos_stream_req q={0};q.fd=fd;
     return gint_world_switch(GINT_CALL(ntos_stream_close,(void *)&q));
 }
+
+/* Installer layouts vary by locale and disk: follow the *actual* names
+ * returned by native directory enumeration, including case-sensitive cards.
+ * No writing/guessing physical disk paths. */
+static struct ntos_exword_listing g_sysroot_scan;
+static int ntos_caseeq(const char *a,const char *b)
+{
+    while(*a && *b) {
+        char x=*a++,y=*b++;
+        if(x>='A'&&x<='Z')x=(char)(x+32);
+        if(y>='A'&&y<='Z')y=(char)(y+32);
+        if(x!=y)return 0;
+    }
+    return *a==*b;
+}
+static int ntos_append(char *out,const char *name)
+{
+    unsigned n=0u,i=0u;
+    while(out[n])++n;
+    if(n+1u>=NTOS_EXWORD_PATH_MAX)return -1;
+    out[n++]='\\';
+    while(name[i] && n+1u<NTOS_EXWORD_PATH_MAX)
+        out[n++]=name[i++];
+    out[n]=0;
+    return !name[i]?0:-1;
+}
+static int ntos_child(char path[NTOS_EXWORD_PATH_MAX],const char *name)
+{
+    char pattern[NTOS_EXWORD_PATH_MAX];
+    unsigned i=0u;
+    while(path[i] && i+1u<sizeof pattern) {
+        pattern[i]=path[i];++i;
+    }
+    pattern[i]=0;
+    if(ntos_append(pattern,"*"))return -1;
+    unsigned skip=0u,more=0u;
+    do {
+        if(ntos_exword_scan_page(pattern,skip,&g_sysroot_scan,&more)<0)return -1;
+        for(unsigned n=0u;n<g_sysroot_scan.count;++n)
+            if(g_sysroot_scan.kinds[n]==5u &&
+               ntos_caseeq(g_sysroot_scan.names[n],name))
+                return ntos_append(path,g_sysroot_scan.names[n]);
+        if(!g_sysroot_scan.count)break;
+        skip+=g_sysroot_scan.count;
+    } while(more && skip<=4096u);
+    return -1;
+}
+int ntos_exword_find_sysroot(unsigned volume,char out[NTOS_EXWORD_PATH_MAX])
+{
+    if(!out || volume>1u)return -1;
+    const char *root=volume?"\\\\crd0":"\\\\drv0";
+    for(unsigned with_casio=0u;with_casio<2u;++with_casio) {
+        char path[NTOS_EXWORD_PATH_MAX];
+        unsigned i=0u;
+        while(root[i]) {path[i]=root[i];++i;}
+        path[i]=0;
+        if((volume==1u && with_casio==0u) ||
+           (volume==0u && with_casio==1u))
+            if(ntos_child(path,"CASIO"))continue;
+        if(ntos_child(path,"NTOSH") ||
+           ntos_child(path,"_CONTENT") ||
+           ntos_child(path,"SYSROOT"))continue;
+        i=0u;
+        while(path[i] && i+1u<NTOS_EXWORD_PATH_MAX) {
+            out[i]=path[i];++i;
+        }
+        out[i]=0;
+        return 0;
+    }
+    out[0]=0;
+    return -1;
+}
