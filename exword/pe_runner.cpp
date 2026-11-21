@@ -367,10 +367,23 @@ int ntos_exword_run_pe(const char *path,const char *sysroot,uint32_t *exit_code)
     for(GuestFile &f:g_guest_files)f={};
     for(Allocation &a:g_alloc)a={};
     using namespace ntos_exword_modules;
-    for(Module &m:modules)m={};
+    /* Place the metadata at the end of the P1 image range. The aligned
+     * gap beneath it is unavailable to both DLL images and guest heap. */
+    const uint32_t module_bytes=sizeof(Module)*MAX_MODULES;
+    if(area.image_end<=area.image_start+0x10000u ||
+       module_bytes>area.image_end-area.image_start-0x10000u) {
+        set_error("P1 arena has no module table space");return -2;
+    }
+    const uint32_t metadata=(area.image_end-module_bytes)&~7u;
+    limit=metadata&~4095u;
+    if(limit<=area.image_start+4096u) {
+        set_error("P1 metadata overlaps code");return -2;
+    }
+    modules=(Module *)(uintptr_t)metadata;
+    for(unsigned i=0u;i<MAX_MODULES;++i)modules[i]={};
     count=attach_count=0u;
     cursor=area.image_start;
-    limit=area.image_end;
+    g_guest_area.image_end=limit;
 
     unsigned exe=0u;
     if(!load(path,"@EXE",false,0u,&exe)) {
@@ -389,7 +402,7 @@ int ntos_exword_run_pe(const char *path,const char *sysroot,uint32_t *exit_code)
         }
     uint32_t image_bytes=cursor-area.image_start;
     g_heap_base=(cursor+7u)&~7u;
-    g_heap_end=area.image_end;
+    g_heap_end=limit;
     if(g_heap_base>g_heap_end) {
         set_error("no heap after dependency DLLs");
         ntos_exword_arena_release(area);

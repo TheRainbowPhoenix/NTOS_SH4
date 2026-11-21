@@ -14,7 +14,11 @@ struct Module {
     bool dll;
     unsigned init_state;
 };
-static Module modules[MAX_MODULES];
+/* Keep large PE image descriptors in the already-verified guest P1 arena:
+ * the EX-word gint resident 32 KiB is reserved for stack/driver/OS switching.
+ * modules is set before any PE load; its entire region is kept outside
+ * both the module image pages and the guest allocation heap. */
+static Module *modules;
 static unsigned count;
 static uint32_t cursor,limit;
 static unsigned attach_order[MAX_MODULES],attach_count;
