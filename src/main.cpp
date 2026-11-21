@@ -76,6 +76,9 @@
 #ifndef NTOS_ENABLE_DLL_INIT_TRACE
 #define NTOS_ENABLE_DLL_INIT_TRACE 0
 #endif
+#ifndef NTOS_PE_STREAM_LOG
+#define NTOS_PE_STREAM_LOG 1
+#endif
 
 // Streaming is enabled on this development branch. Set 0 to compare the
 // previous eager full-file staging path during emulator/hardware testing.
@@ -3268,7 +3271,7 @@ done:
         *p=0;ntos_puts(msg);
     }
 #endif
-#if NTOS_STREAMED_IMAGE_LOADING
+#if NTOS_STREAMED_IMAGE_LOADING && NTOS_PE_STREAM_LOG
     if(source_path) {
         char msg[72], *p=msg;
         log_text(p,"Skipped PE source buffers: ");
