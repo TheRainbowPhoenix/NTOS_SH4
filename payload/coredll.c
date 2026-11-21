@@ -494,9 +494,28 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
         g_window.invalidated = 0;
         return 1;
     }
+sip_next_event:
     do {
         ev = ((u32(*)(u32 *, u32 *, u32 *))a[15])(&x, &y, &direction);
     } while (ev == 0);
+    /* The SIP owns the bottom panel: don't forward its key touches to
+       the underlying app. Deliver Basic Latin UTF-16 via WM_CHAR. */
+    if (ev!=2u && ev!=3u && (nt_sip_flags&1u) &&
+        y>=NT_KB_TOP && y<NT_KB_BOTTOM) {
+        unsigned ch=0u;
+        if(direction!=2u && direction!=0x40u) {
+            ch=nt_kb_press(&g_nt_keyboard,(int)x,(int)y);
+            nt_sip_paint();
+            coredll_refresh();
+        }
+        if(!ch)goto sip_next_event;
+        msg->hwnd=is_hwnd(hwnd)?hwnd:
+                  (g_window.magic?(void *)&g_window:0);
+        msg->message=0x0102u; /* WM_CHAR */
+        msg->wParam=ch;msg->lParam=1u;msg->time=0u;
+        msg->pt.x=msg->pt.y=0;
+        return 1;
+    }
     msg->hwnd = is_hwnd(hwnd) ? hwnd : (g_window.magic ? (void *)&g_window : 0);
     msg->wParam = 0;
     msg->time = 0;
@@ -525,8 +544,12 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
             x = 0x27u; /* VK_RIGHT */
         else if (x == 0x0094u)
             x = 0x0Du; /* VK_RETURN */
-        if (x == 0x00B3u)
-            x = 0x71u; /* Physical Keyboard -> VK_F2 (SIP toggle). */
+        if (x == 0x00B3u) {
+            /* Hardware keyboard button toggles WinCE SIP and still
+               reaches the client as VK_F2 for compatibility. */
+            SipShowIM((nt_sip_flags&1u)?0u:1u);
+            x = 0x71u;
+        }
         else if (x == 0x0080u)
             x = 0x1Bu; /* Raw Clear -> VK_ESCAPE/Back. */
         msg->wParam = x;
@@ -602,6 +625,7 @@ int EndPaint(void *hwnd, const NT_PAINT *paint)
         g_window.invalidated = 0;
     ntos_paint_titlebar();
     legacy_nav_paint();
+    nt_sip_paint();
     coredll_refresh();
     return 1;
 }
@@ -1399,8 +1423,16 @@ int SipShowIM(u32 flags)
         return 0;
     }
     nt_sip_flags = 2u | flags;
-    if (g_window.magic)
+    if(g_nt_gwes_initialized)
+        nt_gwes_sip(&g_nt_gwes,flags);
+    if (g_window.magic) {
+        g_window.invalidated=1;
         enqueue((void *)&g_window, 0x001Au, 0, 0); /* WM_SETTINGCHANGE */
+    }
+    if(flags) {
+        nt_sip_paint();
+        coredll_refresh();
+    }
     return 1;
 }
 int SipGetInfo(NT_SIP_INFO *info)
@@ -1429,6 +1461,7 @@ int SipSetInfo(const NT_SIP_INFO *info)
     }
     return SipShowIM(info->flags & 1u);
 }
+#include "wince/nt_touchkb_render.inc"
 
 /* Private serial launcher; unavailable on old firmware, never calls beyond its table. */
 int coredll_launch(const char *path)
