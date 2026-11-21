@@ -245,3 +245,5 @@ from proprietary WinCE or NT5 trees is copied.
   verified independently. Full screen display can be split by user choice;
   screen "rotation" means splitting the panes by width, **not** changing
   LCD orientation or coordinates.
+
+- **Offscreen type:** the same LSB-left 8×14 GDI `TextOutW`/nearest-neighbour font code can now target a selected bitmap in a memory DC without touching the LCD until the application explicitly blits it. Text remains pixel-exact, with global text style rather than true per-DC font state. Host tests require both foreground and opaque background bitmap pixels and **zero** screen device-pixel calls during offscreen rasterization.

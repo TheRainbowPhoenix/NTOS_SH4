@@ -10,7 +10,7 @@ GWES = {
     "NtosGwesReset",
 }
 GDI = {
-    "StretchBlt", "SetPixel", "GetPixel", "FillRect", "GetDC",
+    "StretchBlt", "BitBlt", "TextOutW", "DrawTextW", "SetPixel", "GetPixel", "FillRect", "GetDC",
     "ReleaseDC", "CreateCompatibleDC", "CreateCompatibleBitmap",
     "SelectObject", "DeleteObject", "DeleteDC", "CreateSolidBrush",
 }

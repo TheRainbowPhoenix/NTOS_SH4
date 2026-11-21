@@ -83,6 +83,7 @@ jobs:
           cp dist/*.EXE dist/*.DLL ntos_cp400_all/
           cp dist_ntprobe/*.EXE dist_ntprobe/*.DLL ntos_cp400_all/
           cp docs/NTOS_KERNEL_NEXT_TESTS_20261120.md ntos_cp400_all/README.md
+          cp docs/COREDLL_COMPAT.md ntos_cp400_all/COREDLL_GWES.md
           test -s ntos_cp400_all/NTOS.hh3
           test -s ntos_cp400_all/KTHREAD.EXE
           test -s ntos_cp400_all/KEXCEPT.EXE
