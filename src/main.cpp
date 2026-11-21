@@ -3526,13 +3526,17 @@ constexpr int kMaxName=static_cast<int>(ntos_picker::MAX_NAME);
 struct PickerCatalogOwner {
     ntos_picker::Catalog *catalog=nullptr;
     bool allocate() {
-        catalog=static_cast<ntos_picker::Catalog *>(
-            Mem_Malloc(sizeof(ntos_picker::Catalog)));
-        if(!catalog)return false;
-        Mem_Memset(catalog,0,sizeof(*catalog));
+        void *raw=Mem_Malloc(sizeof(ntos_picker::Catalog));
+        if(!raw)return false;
+        catalog=::new(raw) ntos_picker::Catalog{};
         return true;
     }
-    ~PickerCatalogOwner() {if(catalog)Mem_Free(catalog);}
+    ~PickerCatalogOwner() {
+        if(catalog) {
+            catalog->~Catalog();
+            Mem_Free(catalog);
+        }
+    }
     PickerCatalogOwner(const PickerCatalogOwner &)=delete;
     PickerCatalogOwner &operator=(const PickerCatalogOwner &)=delete;
     PickerCatalogOwner()=default;
