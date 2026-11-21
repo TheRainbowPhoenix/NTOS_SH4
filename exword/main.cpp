@@ -11,7 +11,7 @@
 
 static nt::Process g_kernel;
 static ntos_exword_listing g_listing;
-static unsigned g_volume,g_selected,g_top;
+static unsigned g_volume,g_selected,g_top,g_skip,g_more;
 static char g_dir[NTOS_EXWORD_PATH_MAX];
 static char g_note[72];
 static bool g_ready;
@@ -85,21 +85,21 @@ static void sort_list() {
 }
 static void root() {
     copy(g_dir,sizeof g_dir,g_volume==0u?"\\\\drv0":"\\\\crd0");
-    g_selected=g_top=0u;
+    g_selected=g_top=g_skip=0u;g_more=0u;
 }
 static void parent() {
     unsigned n=length(g_dir);
     while(n>2u && g_dir[n-1u]!='\\')--n;
     if(n>2u && g_dir[n-1u]=='\\')g_dir[n-1u]=0;
     if(length(g_dir)<7u)root();
-    g_selected=g_top=0u;
+    g_selected=g_top=g_skip=0u;g_more=0u;
 }
 static bool enter(const char *name) {
     unsigned len=length(g_dir);
     if(len<6u || len+length(name)+2u>=sizeof g_dir)return false;
     if(!append(g_dir,sizeof g_dir,"\\") ||
        !append(g_dir,sizeof g_dir,name))return false;
-    g_selected=g_top=0u;
+    g_selected=g_top=g_skip=0u;g_more=0u;
     return true;
 }
 static bool is_exe(const char *s) {
@@ -112,7 +112,7 @@ static void scan() {
     if(!append(mask,sizeof mask,"\\*")) {
         copy(g_note,sizeof g_note,"path too long");g_listing.count=0u;return;
     }
-    int rc=ntos_exword_scan_path(mask,&g_listing);
+    int rc=ntos_exword_scan_page(mask,g_skip,&g_listing,&g_more);
     if(rc<0) {
         char hex[9];hex8(hex,(uint32_t)rc);
         copy(g_note,sizeof g_note,"FS error 0x");
@@ -209,8 +209,18 @@ int main(void)
             g_volume^=1u;root();scan();
         } else if(e.key==KEY_UP) {
             if(g_selected>0u)--g_selected;
+            else if(g_skip>=NTOS_EXWORD_LIST_MAX) {
+                g_skip-=NTOS_EXWORD_LIST_MAX;
+                scan();
+                if(g_listing.count)g_selected=g_listing.count-1u;
+            }
         } else if(e.key==KEY_DOWN) {
             if(g_selected+1u<g_listing.count)++g_selected;
+            else if(g_more && g_listing.count) {
+                g_skip+=g_listing.count;
+                scan();
+                g_selected=0u;
+            }
         } else if(e.key==KEY_EXE) {
             run_selected();
         } else continue;

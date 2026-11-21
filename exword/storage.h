@@ -22,6 +22,8 @@ extern "C" {
 #endif
 int ntos_exword_scan(unsigned volume, struct ntos_exword_listing *out);
 int ntos_exword_scan_path(const char *pattern, struct ntos_exword_listing *out);
+int ntos_exword_scan_page(const char *pattern,unsigned skip,
+                         struct ntos_exword_listing *out,unsigned *more);
 int ntos_exword_file_size(const char *path, uint32_t *size);
 int ntos_exword_read_at(const char *path, uint32_t offset, void *out, uint32_t count);
 /* Read-only WinCE file primitives via OS-world transitions. */

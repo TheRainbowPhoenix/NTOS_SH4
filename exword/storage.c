@@ -25,6 +25,7 @@ static int ntos_path_ok(const char *path)
 struct ntos_scan {
     const char *pattern;
     struct ntos_exword_listing *listing;
+    unsigned skip,more;
 };
 static int ntos_scan_native(struct ntos_scan *scan)
 {
@@ -34,8 +35,18 @@ static int ntos_scan_native(struct ntos_scan *scan)
     int rc=exword_sys_findfirst(scan->pattern,&handle,found,&kind);
     if(rc<0)return rc;
     struct ntos_exword_listing *out=scan->listing;
+    unsigned seen=0u;
     for(;;) {
-        if(out->count>=NTOS_EXWORD_LIST_MAX)break;
+        if(seen++<scan->skip) {
+            found[0]=0;kind=0;
+            rc=exword_sys_findnext(handle,found,&kind);
+            if(rc<0)break;
+            continue;
+        }
+        if(out->count>=NTOS_EXWORD_LIST_MAX) {
+            scan->more=1u;
+            break;
+        }
         char *dst=out->names[out->count];
         unsigned n=0;
         for(;n+1u<NTOS_EXWORD_NAME_MAX && found[n];++n) {
@@ -53,14 +64,20 @@ static int ntos_scan_native(struct ntos_scan *scan)
     int close=exword_sys_findclose(handle);
     return close<0?close:0;
 }
+int ntos_exword_scan_page(const char *pattern,unsigned skip,
+                         struct ntos_exword_listing *out,unsigned *more)
+{
+    if(!out || !more || !ntos_path_ok(pattern) || skip>4096u)return -1;
+    out->count=0u;out->result=0;*more=0u;
+    struct ntos_scan q={pattern,out,skip,0u};
+    out->result=gint_world_switch(GINT_CALL(ntos_scan_native,(void *)&q));
+    if(out->result>=0)*more=q.more;
+    return out->result;
+}
 int ntos_exword_scan_path(const char *pattern, struct ntos_exword_listing *out)
 {
-    if(!out || !ntos_path_ok(pattern))return -1;
-    out->count=0u;
-    out->result=0;
-    struct ntos_scan q={pattern,out};
-    out->result=gint_world_switch(GINT_CALL(ntos_scan_native,(void *)&q));
-    return out->result;
+    unsigned more=0u;
+    return ntos_exword_scan_page(pattern,0u,out,&more);
 }
 int ntos_exword_scan(unsigned volume, struct ntos_exword_listing *out)
 {
