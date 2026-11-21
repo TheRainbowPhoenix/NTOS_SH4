@@ -16,12 +16,14 @@
 #undef main
 const void *ntos_host_table[28];
 static unsigned pixels,rects,events,commands,refreshes;
+static u32 last_rect_top;
 static void refresh(void) {++refreshes;}
 static void pixel(u32 x,u32 y,u32 color) {
     assert(x<320u && y<528u && color<=65535u);++pixels;
 }
 static void fill(u32 l,u32 t,u32 r,u32 b,u32 color) {
-    assert(l<=r && r<=320u && t<=b && b<=528u && color<=65535u);++rects;
+    assert(l<=r && r<=320u && t<=b && b<=528u && color<=65535u);
+    ++rects;last_rect_top=t;
 }
 static u32 fake_touch(u32 *x,u32 *y,u32 *dir) {
     assert(events++<8u);
@@ -31,6 +33,13 @@ static u32 fake_touch(u32 *x,u32 *y,u32 *dir) {
 static int proc(void *h,u32 msg,u32 wp,u32 lp) {
     (void)h;(void)wp;(void)lp;
     if(msg==0x0111u)++commands;
+    if(msg==0x000Fu) {
+        /* A real fullscreen app clears the display and may request
+         * multiple refreshes before finishing its WM_PAINT. */
+        ntos_fillrect(0u,0u,320u,528u,0x00FFFFFFu);
+        coredll_refresh();
+        coredll_refresh();
+    }
     return 1;
 }
 int main(void) {
@@ -82,6 +91,7 @@ int main(void) {
     assert(!CreateWindowExW(0,editname,0,0,12,64,100,32,win,0,0,0));
     assert(ShowWindow(edit,1)==0);
     assert(GetClientRect(edit,&rect) && rect.right==295 && rect.bottom==32);
+    refreshes=0u; /* earlier standalone NtosGwesKeyboard made a frame */
     NT_MSG tap={0};
     tap.hwnd=win;tap.message=0x0201u;tap.pt.x=20;tap.pt.y=72;
     assert(DispatchMessageW(&tap));
@@ -89,6 +99,12 @@ int main(void) {
     assert(refreshes==0u); /* keyboard is deferred until parent WM_PAINT */
     assert(UpdateWindow(win));
     assert(refreshes==1u); /* parent+SIP one frame */
+    assert(last_rect_top>=NT_GWES_SIP_TOP); /* SIP drawn AFTER white fullscreen */
+    NT_MSG repaint={0};
+    repaint.hwnd=win;repaint.message=0x000Fu;
+    assert(DispatchMessageW(&repaint));
+    assert(refreshes==2u); /* queued WM_PAINT also batches two refresh calls */
+    assert(last_rect_top>=NT_GWES_SIP_TOP);
     /* Ignore the WinCE WM_SETTINGCHANGE queued by SipShowIM: test the
        next real hardware-style touch -> COREDLL WM_CHAR conversion. */
     g_qhead=g_qtail;g_window.invalidated=0;
