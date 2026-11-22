@@ -5,7 +5,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #define NTOS_EXWORD_P1_VM 1
+#define main nt_exword_pager_dll_entry
 #include "../payload/pagerstress.c"
+#undef main
 static unsigned touched;
 static int page_hint(uint32_t addr)
 {
