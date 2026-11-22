@@ -1159,6 +1159,18 @@ unified: all
 # Native WinCE-first phone launcher.
 include payload/phone/phone.mk
 
+# Exword-specific VMTEST uses exactly the NTOS VM probe source but avoids
+# the CP400-only 0x08100000 P0 API window (a fatal EX-word TLB miss).
+$(NT_PROBE_BUILD)/vmtest_exword.o: payload/vmtest.c payload/ntapi_caps.h
+	@mkdir -p $(dir $@)
+	$(CC) -DNTOS_EXWORD_VMTEST=1 -c $< -o $@ $(PAYLOAD_CFLAGS)
+$(NT_PROBE_BUILD)/vmtest_exword.elf: $(NT_PROBE_BUILD)/vmtest_exword.o payload/payload.ld
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+$(OUTDIR)/VMTEST.EXE: $(NT_PROBE_BUILD)/vmtest_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+.PHONY: exword-vmtest
+exword-vmtest: $(OUTDIR)/VMTEST.EXE
 # --- separate EX-word native D01 target (SH7305, 528x320, 128 KiB) --------
 # Does not change the HH3 compiler, link script or the normal "all" target.
 # Use fxSDK's EXWORD.cmake and a separately installed gint-exword prefix.
@@ -1168,7 +1180,7 @@ EXWORD_METADATA_SOURCE ?=
 EXWORD_PAYLOAD_DIR ?= $(abspath $(OUTDIR))
 .PHONY: exword
 # Build the same NTOS WinCE SH4BE modules used by the HH3 device first.
-exword: ntx
+exword: ntx exword-vmtest
 	@test -n "$(EXWORD_TOOLCHAIN)" && test -n "$(EXWORD_GINT_PREFIX)" || { \
 		echo "Usage: make exword EXWORD_TOOLCHAIN=/path/EXWORD.cmake EXWORD_GINT_PREFIX=/path/gint-exword"; exit 2; }
 	cmake -S exword -B build-exword \
