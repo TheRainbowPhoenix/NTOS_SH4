@@ -1,63 +1,61 @@
 #!/usr/bin/env python3
-"""Host checks for NTOS PE -> EX-word System32/Apps package integration."""
-from pathlib import Path
+"""Verify flat Exword add-in transfer layout and 8.3 import renaming."""
 import struct
+from pathlib import Path
 import sys
 import tempfile
+sys.path.insert(0,str(Path(__file__).resolve().parents[1] / "tools"))
+from package_exword_flat import shortname,products,package,check
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from package_exword_sysroot import check, package, products, sh4_pe
+def fake_pe():
+    b=bytearray(256);b[0:2]=b"MZ"
+    struct.pack_into("<I",b,0x3c,0x80)
+    b[0x80:0x86]=b"PE\0\0\xa8\x01"
+    return bytes(b)
 
-
-def fake_pe() -> bytes:
-    image = bytearray(256)
-    image[0:2] = b"MZ"
-    struct.pack_into("<I", image, 0x3C, 0x80)
-    image[0x80:0x86] = b"PE\0\0\xa8\x01"
-    return bytes(image)
-
-
-def main() -> None:
+def main():
+    assert shortname("HELLO.EXE")=="HELLO.EXE"
+    assert shortname("COREDLL.DLL")=="COREDLL.DLL"
+    assert shortname("HELLOCORE.EXE").startswith("HELL")
+    assert len(shortname("HELLOCORE.EXE"))==12
+    assert shortname("HELLOCORE.EXE")==shortname("hellocore.exe")
+    for s in ("abc/def.exe","test:name.dll","invalid.txt","file..dll"):
+        try:shortname(s)
+        except ValueError:pass
+        else:raise AssertionError(s)
     with tempfile.TemporaryDirectory() as temp:
-        root = Path(temp)
-        dist = root / "dist"
-        dist.mkdir()
-        for name in ("HELLO.EXE", "HELLOCORE.EXE", "COREDLL.DLL",
-                     "XAMLUI.DLL", "CHAIN.DLL", "CHAINTEST.EXE"):
-            (dist / name).write_bytes(fake_pe())
-        apps = dist / "Apps" / "calc"
-        apps.mkdir(parents=True)
-        (apps / "calc.exe").write_bytes(fake_pe())
-        (dist / "calc.uxaml").write_text("native asset")
-        win = dist / "Windows"
-        win.mkdir()
-        (win / "demo.cpl").write_bytes(fake_pe())
-        for locale in ("ja", "cn"):
-            folder = root / locale / "NTOSH"
-            assert package(dist, folder) == 9
-            check(dist, folder)
-            sysroot = folder / "SYSROOT"
-            assert (sysroot / "HELLO.EXE").read_bytes() == fake_pe()
-            assert (sysroot / "Apps" / "calc" / "calc.exe").is_file()
-            assert (sysroot / "Windows" / "System32" / "XAMLUI.DLL").is_file()
-            assert (sysroot / "Windows" / "System32" / "COREDLL.DLL").is_file()
-            assert (sysroot / "Windows" / "demo.cpl").is_file()
-            assert not (sysroot / "XAMLUI.DLL").exists()
-            assert not (sysroot / "DLL").exists()
-            (dist / "CHAIN.DLL").unlink()
-            assert package(dist, folder) == 8
-            assert not (sysroot / "Windows" / "System32" / "CHAIN.DLL").exists()
-            check(dist, folder)
-            (dist / "CHAIN.DLL").write_bytes(fake_pe())
-        (dist / "HELLO.EXE").write_bytes(b"not a PE")
-        try:
-            products(dist)
-        except ValueError as err:
-            assert "DOS header" in str(err)
-        else:
-            raise AssertionError("non-PE .EXE was accepted")
-    print("PASS staged EXEs, phone Apps, SH4BE DLL System32, stale cleanup")
-
-
-if __name__ == "__main__":
-    main()
+        base=Path(temp);dist=base/"dist";dist.mkdir()
+        for name in ("HELLO.EXE","HELLOCORE.EXE","COREDLL.DLL","XAMLUI.DLL",
+                     "UIXMOBILE.DLL","CHAIN.DLL","CHAINTEST.EXE","VMTEST.EXE"):
+            (dist/name).write_bytes(fake_pe())
+        (dist/"Apps"/"calc").mkdir(parents=True)
+        (dist/"Apps"/"calc"/"calc.exe").write_bytes(fake_pe())
+        (dist/"Apps"/"edge").mkdir()
+        (dist/"Apps"/"edge"/"edge.exe").write_bytes(fake_pe())
+        mapping=products(dist)
+        assert len(mapping)==10
+        for locale in ("ja","cn"):
+            folder=base/locale/"NTOSH"
+            folder.mkdir(parents=True)
+            (folder/"ntos_sh.d01").write_bytes(b"native-D01")
+            (folder/"fileinfo.cji").write_bytes(b"")
+            (folder/"SYSROOT").mkdir()
+            assert package(dist,folder)==10
+            check(dist,folder)
+            assert not (folder/"SYSROOT").exists()
+            assert (folder/shortname("HELLOCORE.EXE")).is_file()
+            assert (folder/shortname("UIXMOBILE.DLL")).is_file()
+            assert (folder/"COREDLL.DLL").is_file()
+            assert not (folder/"Windows").exists()
+            assert all(len(p.name)<=12 for p in folder.glob("*.EXE"))
+            (dist/"CHAIN.DLL").unlink()
+            assert package(dist,folder)==9
+            check(dist,folder)
+            assert not (folder/"CHAIN.DLL").exists()
+            (dist/"CHAIN.DLL").write_bytes(fake_pe())
+        (dist/"HELLO.EXE").write_bytes(b"not a PE")
+        try:products(dist)
+        except ValueError:pass
+        else:raise AssertionError("not-PE accepted")
+    print("PASS EX-word flat _CONTENT/ with 8.3 EXE/DLL aliases and rebuild cleanup")
+if __name__=="__main__":main()
