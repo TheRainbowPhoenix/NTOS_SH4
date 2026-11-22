@@ -2,6 +2,7 @@
  * The fake NTOS HAL refuses every out-of-bounds coordinate: tests therefore
  * catch unsafe GDI calls before they reach an SH7305 framebuffer. */
 #include <assert.h>
+#include <limits.h>
 #include <stdint.h>
 #include <string.h>
 #define GetLastError nt_test_GetLastError
@@ -90,6 +91,28 @@ static void test_rectangles(void)
     assert(!Rectangle((void *)1, 500, 500, 520, 520));
     assert(DeleteObject(red));
 }
+static void test_lines(void)
+{
+    reset();
+    NT_POINT old = {0, 0};
+    assert(MoveToEx((void *)1, 10, 10, &old));
+    assert(LineTo((void *)1, 100, 100));
+    assert(line_calls == 1);
+    assert(MoveToEx((void *)1, -3, 30, &old));
+    assert(old.x == 100 && old.y == 100);
+    assert(LineTo((void *)1, 6, 30));
+    assert(count_color(0xffffu) == 7);
+    assert(pixels[30][0] == 0xffffu && pixels[30][6] == 0xffffu);
+    assert(LineTo((void *)1, INT_MAX, INT_MAX));
+    NT_POINT path[3] = {{5, 5}, {12, 5}, {12, 12}};
+    assert(MoveToEx((void *)1, 100, 100, 0));
+    assert(Polyline((void *)1, path, 3));
+    assert(MoveToEx((void *)1, 0, 0, &old));
+    assert(old.x == 100 && old.y == 100);
+    assert(line_calls == 3);
+    assert(!Polyline((void *)1, 0, 3));
+    assert(!Polyline((void *)1, path, 1));
+}
 static void test_ellipses(void)
 {
     reset();
@@ -108,6 +131,7 @@ static void test_ellipses(void)
     assert(!Ellipse((void *)1, 0, 0, 0, 50));
     assert(!Ellipse((void *)1, 0, 0, 5000, 1));
     assert(!Ellipse((void *)1, -50000, 0, 20, 200));
+    assert(!Ellipse((void *)1, INT_MIN, 0, INT_MAX, 200));
 }
 static void test_text(void)
 {
@@ -136,6 +160,7 @@ int main(void)
     ntos_host_table[9] = (const void *)fake_fill;
     test_pixel();
     test_rectangles();
+    test_lines();
     test_ellipses();
     test_text();
     return 0;
