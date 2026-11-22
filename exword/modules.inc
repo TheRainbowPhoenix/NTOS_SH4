@@ -165,20 +165,15 @@ static bool load(const char *path,const char *name,bool is_dll,
      * 0x08100000. That address has NO EX-word mapping: refuse the guest
      * before executing rather than causing a firmware TLB-miss crash.
      * The Exword VMTEST build uses the passed host NtosApi pointer. */
-    for(unsigned si=0u;si<header.section_count && !is_dll;++si) {
-        const pe::SectionHeader &s=header.sections[si];
-        if(!(s.characteristics&pe::SCN_MEM_EXECUTE) || s.rva>bytes)continue;
-        uint32_t span=s.vsize>s.raw_size?s.vsize:s.raw_size;
-        if(span>bytes-s.rva)span=bytes-s.rva;
-        for(uint32_t at=0u;at+4u<=span;++at) {
-            const uint8_t *p=m.image+s.rva+at;
+    if(!is_dll)
+        for(uint32_t at=0u;at+4u<=bytes;++at) {
+            const uint8_t *p=m.image+at;
             if(p[0]==0x08u && p[1]==0x10u &&
                p[2]==0u && p[3]==0u) {
                 set_error("CP400 P0 API window unsupported on Exword");
                 return false;
             }
         }
-    }
     const char *fix=nullptr;
     if(!ntos_rebase::apply(m.pe,m.image,m.size,m.base,&fix)) {
         set_error(fix?fix:"DLL relocation failure");return false;
