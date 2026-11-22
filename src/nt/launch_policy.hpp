@@ -17,6 +17,16 @@ inline bool ascii_equal_ci(const char *a,const char *b) {
     return true;
 }
 constexpr const char HOME[]="\\fls0\\STARTHOST.EXE";
+constexpr const char COMMAND[]="\\fls0\\CMD.EXE";
+
+template<class Exists>
+inline bool queue_optional_command(const char *last,Exists exists) {
+    // A CMD session survives foreground handoffs through serial remapping.
+    // If CMD itself exited, don't relaunch it (EXIT must reach the picker).
+    if(!last || ascii_equal_ci(last,COMMAND))return false;
+    return exists(COMMAND);
+}
+
 
 template<class Exists>
 inline bool queue_optional_home(const char *last,Exists exists) {

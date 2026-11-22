@@ -845,22 +845,36 @@ int DeleteObject(void *object)
     return 0;
 }
 
+static int nt_gdi_clip_rect(int *l, int *t, int *r, int *b)
+{
+    if (*r <= *l || *b <= *t)
+        return 0;
+    if (*l < 0)
+        *l = 0;
+    if (*t < 0)
+        *t = 0;
+    if (*r > 320)
+        *r = 320;
+    if (*b > 528)
+        *b = 528;
+    return *r > *l && *b > *t;
+}
+
 int FillRect(void *hdc, const NT_RECT *rect, void *brush)
 {
+    int l,t,r,b;
     if (!hdc || !rect || !brush ||
         (((u32)(uintptr_t)brush & 0xFF000000u)!=0x01000000u))
         return 0;
-    u32 c = (u32)(uintptr_t)brush & 0xFFFFu;
-    if(gdi_dc(hdc))return gdi_fill_bitmap(hdc,rect,c);
+    u32 color=(u32)(uintptr_t)brush & 0xFFFFu;
+    if(gdi_dc(hdc))return gdi_fill_bitmap(hdc,rect,color);
     if(!gdi_device_dc(hdc))return 0;
-    const void **a = ntapi();
-    if (a && a[9] && rect->left >= 0 && rect->top >= 0 && rect->right > rect->left &&
-        rect->bottom > rect->top) {
-        ((void (*)(u32, u32, u32, u32, u32))a[9])((u32)rect->left, (u32)rect->top, (u32)rect->right,
-                                                  (u32)rect->bottom, c);
-        return 1;
-    }
-    return 0;
+    const void **a=ntapi();
+    if(!a || !a[9])return 0;
+    l=rect->left;t=rect->top;r=rect->right;b=rect->bottom;
+    if(!nt_gdi_clip_rect(&l,&t,&r,&b))return 0;
+    ((void (*)(u32,u32,u32,u32,u32))a[9])((u32)l,(u32)t,(u32)r,(u32)b,color);
+    return 1;
 }
 
 /* DimRect: host-side scrims blend live framebuffer content toward black
@@ -897,25 +911,120 @@ int MoveToEx(void *hdc, int x, int y, NT_POINT *previous)
     return 1;
 }
 
+/* Fully visible lines retain the fast kernel line gate. Lines crossing
+ * the screen edge are rasterized with clipped pixels rather than passing
+ * a negative or out-of-range coordinate to the SH7305 framebuffer gate. */
 int LineTo(void *hdc, int x, int y)
 {
+    int x0 = pen_x, y0 = pen_y;
     if (!hdc)
         return 0;
-    if (pen_x >= 0 && pen_y >= 0 && x >= 0 && y >= 0)
-        ntos_line((u32)pen_x, (u32)pen_y, (u32)x, (u32)y, 0x00FFFFFFu);
     pen_x = x;
     pen_y = y;
+    if (gdi_device_dc(hdc) && x0 >= 0 && y0 >= 0 && x >= 0 && y >= 0 &&
+        x0 < 320 && y0 < 528 && x < 320 && y < 528) {
+        ntos_line((u32)x0, (u32)y0, (u32)x, (u32)y, 0x00FFFFFFu);
+    } else if (x0 >= -2048 && x0 <= 2368 && x >= -2048 && x <= 2368 &&
+               y0 >= -2048 && y0 <= 2576 && y >= -2048 && y <= 2576) {
+        int dx = x0 < x ? x - x0 : x0 - x;
+        int dy = y0 < y ? y - y0 : y0 - y;
+        int sx = x0 < x ? 1 : -1;
+        int sy = y0 < y ? 1 : -1;
+        int err = dx - dy;
+        for (;;) {
+            SetPixel(hdc, x0, y0, 0x00FFFFFFu);
+            if (x0 == x && y0 == y)
+                break;
+            int e2 = err * 2;
+            if (e2 > -dy) {
+                err -= dy;
+                x0 += sx;
+            }
+            if (e2 < dx) {
+                err += dx;
+                y0 += sy;
+            }
+        }
+    }
     return 1;
 }
 
+/* WinCE Polyline leaves the pen's current position unchanged. */
+int Polyline(void *hdc, const NT_POINT *points, int count)
+{
+    NT_POINT saved;
+    if (!hdc || !points || count < 2 || count > 1024)
+        return 0;
+    MoveToEx(hdc, points[0].x, points[0].y, &saved);
+    for (int i = 1; i < count; ++i)
+        LineTo(hdc, points[i].x, points[i].y);
+    MoveToEx(hdc, saved.x, saved.y, 0);
+    return 1;
+}
+
+/* Outline primitive: clipped one-pixel strips, no temporary surface. */
 int Rectangle(void *hdc, int l, int t, int r, int b)
 {
-    if (!hdc || l < 0 || t < 0 || r <= l || b <= t)
+    if (!hdc || r <= l || b <= t)
         return 0;
-    ntos_line((u32)l, (u32)t, (u32)(r - 1), (u32)t, 0xFFFFFFu);
-    ntos_line((u32)(r - 1), (u32)t, (u32)(r - 1), (u32)(b - 1), 0xFFFFFFu);
-    ntos_line((u32)(r - 1), (u32)(b - 1), (u32)l, (u32)(b - 1), 0xFFFFFFu);
-    ntos_line((u32)l, (u32)(b - 1), (u32)l, (u32)t, 0xFFFFFFu);
+    NT_RECT edge = {l, t, r, t + 1};
+    void *white = CreateSolidBrush(0x00FFFFFFu);
+    int painted = FillRect(hdc, &edge, white);
+    edge.top = b - 1;
+    edge.bottom = b;
+    painted |= FillRect(hdc, &edge, white);
+    edge.left = l;
+    edge.top = t;
+    edge.right = l + 1;
+    edge.bottom = b;
+    painted |= FillRect(hdc, &edge, white);
+    edge.left = r - 1;
+    edge.right = r;
+    painted |= FillRect(hdc, &edge, white);
+    return painted != 0;
+}
+
+/* WinCE Ellipse outline, entirely integer-based. A symmetric binary search
+ * finds the first covered pixel on each scanline; O(height * log(width)),
+ * constant RAM, no antialiasing, and no floating point. Reject enormous
+ * geometries so malformed application coordinates cannot stall the LCD. */
+int Ellipse(void *hdc, int l, int t, int r, int b)
+{
+    if (!hdc || l >= r || t >= b || l < -2048 || t < -2048 ||
+        r > 2368 || b > 2576)
+        return 0;
+    if (r - l > 2048 || b - t > 2048)
+        return 0;
+    const int w = r - l, h = b - t;
+    const int cx2 = l + r - 1, cy2 = t + b - 1;
+    const unsigned long long w2 = (unsigned long long)w * (unsigned)w;
+    const unsigned long long h2 = (unsigned long long)h * (unsigned)h;
+    const unsigned long long limit = w2 * h2;
+    int y0 = t < 0 ? 0 : t;
+    int y1 = b > 528 ? 528 : b;
+    for (int y = y0; y < y1; ++y) {
+        long long dy = (long long)y * 2 - cy2;
+        unsigned long long vy = (unsigned long long)(dy * dy) * w2;
+        if (vy > limit)
+            continue;
+        int lo = l, hi = (l + r - 1) / 2;
+        if (hi < lo)
+            continue;
+        while (lo < hi) {
+            int mid = lo + (hi - lo) / 2;
+            long long dx = (long long)mid * 2 - cx2;
+            unsigned long long v = (unsigned long long)(dx * dx) * h2 + vy;
+            if (v <= limit)
+                hi = mid;
+            else
+                lo = mid + 1;
+        }
+        long long dx = (long long)lo * 2 - cx2;
+        if ((unsigned long long)(dx * dx) * h2 + vy <= limit) {
+            SetPixel(hdc, lo, y, 0x00FFFFFFu);
+            SetPixel(hdc, cx2 - lo, y, 0x00FFFFFFu);
+        }
+    }
     return 1;
 }
 

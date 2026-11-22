@@ -3794,22 +3794,50 @@ int main(int argc, char **argv, char **envp) {
     };
     ntos_picker::Picker picker{};
     picker.init(static_cast<unsigned>(count));
-    draw_picker(picker);
-    // Do not reuse the EXE press that dismissed a previous payload/error.
-    uint32_t key1=0u,key2=0u;
-    do{getKey(&key1,&key2);}while((key1|key2)!=0u);
-    bool quit=false;
-    while(!quit) {
-        key1=0u;key2=0u;
-        getKey(&key1,&key2);
-        const auto action=picker.key(key1,key2);
-        if(action==ntos_picker::launch)quit=true;
-        else if(action==ntos_picker::exit_host)
-            return safe_host_exit(0);
-        else if(action==ntos_picker::redraw)
-            draw_picker(picker);
+    // A present CMD.EXE is the boot session's native command processor.
+    // Autostart only once, not after every app exit: the normal picker
+    // remains reachable by typing EXIT (or pressing the caption X).
+    static bool first_boot_cmd=true;
+    int boot_cmd_index=-1;
+    if(first_boot_cmd) {
+        first_boot_cmd=false;
+        for(int i=0;i<count;++i) {
+            const char *n=names[pick[i]];
+            const char command[]="CMD.EXE";
+            unsigned j=0;
+            while(command[j] && n[j] &&
+                  (n[j]>='a' && n[j]<='z' ? n[j]-'a'+'A' : n[j])==command[j])
+                ++j;
+            if(!command[j] && !n[j]) {
+                boot_cmd_index=i;
+                break;
+            }
+        }
     }
-    const int selected=static_cast<int>(picker.selected);
+    if(boot_cmd_index<0) {
+        draw_picker(picker);
+        // Do not reuse the EXE press that dismissed a previous payload/error.
+        uint32_t key1=0u,key2=0u;
+        do{getKey(&key1,&key2);}while((key1|key2)!=0u);
+        bool quit=false;
+        while(!quit) {
+            key1=0u;key2=0u;
+            getKey(&key1,&key2);
+            const auto action=picker.key(key1,key2);
+            if(action==ntos_picker::launch)quit=true;
+            else if(action==ntos_picker::exit_host)
+                return safe_host_exit(0);
+            else if(action==ntos_picker::redraw)
+                draw_picker(picker);
+        }
+    } else {
+        ntos_puts("Booting CMD.EXE (EXIT returns to picker)");
+        LCD_Refresh();
+    }
+    const int selected=boot_cmd_index>=0 ? boot_cmd_index :
+        static_cast<int>(picker.selected);
+    const bool cmd_session=ntos_launch_policy::ascii_equal_ci(
+        names[pick[selected]],"CMD.EXE");
 
     // Open the selected PE. Streaming mode only reads its header here;
     // copy-load comparison mode retains the former full-file staging path.
@@ -4025,6 +4053,24 @@ int main(int argc, char **argv, char **envp) {
                 wait_error_key_release();
             }
             if(!pending_app[0]) {
+                if(cmd_session) {
+                    // The foreground EXE must be unloaded before CMD can
+                    // resume. This uses exactly the serial handoff and the
+                    // handle-free File_Stat gate already used by StartHost.
+                    const bool resume=ntos_launch_policy::queue_optional_command(
+                        next,[](const char *shell) {
+                            if(g_fs.busy() || g_fs.poisoned)return false;
+                            struct File_Stat st{};
+                            return File_Stat(shell,&st)==0;
+                        });
+                    if(!resume)break;
+                    const char *shell=ntos_launch_policy::COMMAND;
+                    unsigned j=0;
+                    for(;j+1<sizeof(pending_app) && shell[j];++j)
+                        pending_app[j]=shell[j];
+                    pending_app[j]=0;
+                    continue;
+                }
                 // A stub/Settings/Calculator exit returns to Start only
                 // if that optional phone shell EXE is installed. Completed
                 // PROCTEST chains must return cleanly to the picker instead
@@ -4044,6 +4090,9 @@ int main(int argc, char **argv, char **envp) {
             }
         }
     }
+    // CMD EXIT returns straight to the picker; do not display the old
+    // debug result/key prompt for a completed command shell session.
+    if(cmd_session)continue;
     char result_line[] = "Payload returned 0x00000000";
     const char *digits = "0123456789ABCDEF";
     for(unsigned i=0;i<8;++i)result_line[19+i]=digits[(static_cast<uint32_t>(ret)>>(28-4*i))&15];

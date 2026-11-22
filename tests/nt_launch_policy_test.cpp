@@ -31,5 +31,20 @@ int main() {
     assert(!queue_optional_home(nullptr,exists));
     assert(probes==2u); // no File_Stat needed when already at Start
     assert(!ascii_equal_ci("\\fls0\\STRESS.EXE",HOME));
+    unsigned cmd_probes=0;
+    auto cmd_exists=[&](const char *path) {
+        assert(ascii_equal_ci(path,COMMAND));
+        ++cmd_probes;return true;
+    };
+    auto cmd_missing=[&](const char *path) {
+        assert(ascii_equal_ci(path,COMMAND));
+        ++cmd_probes;return false;
+    };
+    assert(queue_optional_command("\\fls0\\CALC.EXE",cmd_exists));
+    assert(!queue_optional_command("\\fls0\\CALC.EXE",cmd_missing));
+    assert(!queue_optional_command("\\fls0\\CMD.EXE",cmd_exists));
+    assert(!queue_optional_command("\\FLS0\\cmd.exe",cmd_exists));
+    assert(!queue_optional_command(nullptr,cmd_exists));
+    assert(cmd_probes==2u);
     std::puts("PASS optional STARTHOST fallback: no missing-PE error or home loop after PROCTEST");
 }

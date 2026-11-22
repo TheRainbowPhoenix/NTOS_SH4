@@ -34,6 +34,27 @@ runtime DLLs are installed under `Windows/System32`. Swipe down from the
 status bar for notifications and quick settings; the system navigation bar
 provides Back, Home and Search.
 
+## Native command boot (experimental)
+
+When `CMD.EXE` is installed at the storage root, NTOS boots the **native
+command prompt** first. The original EXE picker remains available when CMD is
+absent, and typing `EXIT` returns to that picker. `RUN app.exe` or a bare EXE
+name launches a PE through NTOS's existing serial foreground handoff. When
+the child exits, a fresh CMD session starts (command history is not yet saved
+across launch).
+
+The command prompt uses real native COREDLL/GDI calls and provides `DIR`,
+`CLS`, `HELP`, `SPLIT`, `FULL`, `SWAP`, `ROTATE` and `KB`. Touching
+the prompt opens a small keyboard; the split layout supports half-height and
+half-width views with caption handles. The extra pane is currently internal
+to CMD, **not** a concurrent EXE or full GWES/DWM compositor.
+
+`GDILAB.EXE` offers six interactive raster/clip/font/window-layout test
+pages. The implementations avoid floating point, antialiasing, and large
+framebuffer allocations. See
+[Native CMD / tiling / GDI design notes](docs/NATIVE_CMD_TILING_GDI_20261122.md)
+for known limitations and CP400 hardware-test requirements.
+
 ## Windows Edge demo
 
 The same [Build workflow](https://github.com/TheRainbowPhoenix/NTOS_SH4/actions/workflows/c-cpp.yml)

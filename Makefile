@@ -83,6 +83,12 @@ WINLAB_EXE := $(OUTDIR)/WINLAB.EXE
 GUIWIN_OBJ := $(BUILDDIR)/payload/guiwin.o
 GUIWIN_ELF := $(BUILDDIR)/payload/guiwin.elf
 GUIWIN_EXE := $(OUTDIR)/GUIWIN.EXE
+CMD_OBJ := $(BUILDDIR)/payload/cmd.o
+CMD_ELF := $(BUILDDIR)/payload/cmd.elf
+CMD_EXE := $(OUTDIR)/CMD.EXE
+GDILAB_OBJ := $(BUILDDIR)/payload/gdilab.o
+GDILAB_ELF := $(BUILDDIR)/payload/gdilab.elf
+GDILAB_EXE := $(OUTDIR)/GDILAB.EXE
 GDIBLIT_OBJ := $(BUILDDIR)/payload/gdiblt.o
 GDIBLIT_ELF := $(BUILDDIR)/payload/gdiblt.elf
 GDIBLIT_EXE := $(OUTDIR)/GDIBLIT.EXE
@@ -189,7 +195,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(GDIBLIT_EXE) $(GWESCHK_EXE) $(GWESLAB_EXE) $(DLGCHK_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(CMD_EXE) $(GDILAB_EXE) $(GDIBLIT_EXE) $(GWESCHK_EXE) $(GWESLAB_EXE) $(DLGCHK_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -369,6 +375,32 @@ $(GDIBLIT_ELF): $(GDIBLIT_OBJ) $(PAYLOAD_DIR)/payload.ld
 	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(GDIBLIT_OBJ)
 
 $(GDIBLIT_EXE): $(GDIBLIT_ELF) $(COREDLL_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+# Native shell runs as a real COREDLL/GWES client. No new ABI profile.
+$(CMD_OBJ): $(PAYLOAD_DIR)/cmd.c $(PAYLOAD_DIR)/nt_cmd_model.h $(PAYLOAD_DIR)/nt_tiling.h $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(CMD_ELF): $(CMD_OBJ) $(CONTROL_MEM_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(CMD_OBJ) $(CONTROL_MEM_OBJ)
+
+$(CMD_EXE): $(CMD_ELF) $(COREDLL_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+# Native WinCE GDI raster exercise; COREDLL is the sole dependency.
+$(GDILAB_OBJ): $(PAYLOAD_DIR)/gdilab.c $(PAYLOAD_DIR)/nt_tiling.h $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(GDILAB_ELF): $(GDILAB_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $<
+
+$(GDILAB_EXE): $(GDILAB_ELF) $(COREDLL_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
 
