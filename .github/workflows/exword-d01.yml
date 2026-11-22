@@ -49,9 +49,21 @@ jobs:
           set -euo pipefail
           make -j4
           make exword-probes
-          for probe in VMTEST OBTEST EVTEST POOLTEST IOTEST PROCTEST PROCNEXT PROCFINAL MMTEST MMROTEST NATIVEVM MMREUSE MMSTRESS ROMDIAG; do
+          for probe in VMTEST OBTEST EVTEST POOLTEST IOTEST PROCTEST PROCNEXT PROCFINAL MMTEST MMROTEST NATIVEVM MMREUSE MMSTRESS ROMDIAG DLGCHK GWESCHK PAGERTEST; do
             test -s "dist/${probe}.EXE"
           done
+          test -s dist/PAGERSTRESS.DLL
+          # An Exword pager DLL must never contain the CP400-only P0
+          # 0x08100000 NtosApi literal that previously triggered a
+          # fatal translation fault.
+          python3 - <<'PY'
+          from pathlib import Path
+          pager = Path("dist/PAGERSTRESS.DLL").read_bytes()
+          assert b"\\x08\\x10\\x00\\x00" not in pager, (
+              "Exword P1 pager still embeds CP400 P0 API window"
+          )
+          print("PASS Exword 80-page pager DLL uses passed host table, no CP400 P0 API")
+          PY
           test -s dist/HELLO.EXE
           test -s dist/HELLOCORE.EXE
           test -s dist/COREDLL.DLL
