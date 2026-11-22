@@ -2118,7 +2118,7 @@ static void nt_controls_paint(void)
             ntos_fillrect((u32)(l+1),(u32)(t+1),
                           (u32)(r-1),(u32)(b-1),0x00FFFFFFu);
         }
-        if(c->role==NT_CTL_CHECKBOX) {
+        if(c->role==NT_CTL_CHECKBOX && r-l>=24 && b-t>=22) {
             ntos_fillrect((u32)(l+4),(u32)(t+5),
                           (u32)(l+18),(u32)(t+19),0x00E0D3BEu);
             ntos_fillrect((u32)(l+5),(u32)(t+6),
