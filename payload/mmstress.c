@@ -22,7 +22,8 @@ int main(const void *const *api,char **argv,char **envp) {
 #else
     const volatile u32 *w=(const volatile u32 *)0x08100000u;
     if(!api || !ntos_api_has_slot(w,53u))
-#endifreturn (int)0xBADAA001u;
+#endif
+        return (int)0xBADAA001u;
     alloc_fn alloc=(alloc_fn)api[51];
     free_fn free_=(free_fn)api[53];
     hint_fn hint=(hint_fn)api[23];
