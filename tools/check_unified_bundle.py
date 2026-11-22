@@ -8,7 +8,7 @@ import pefile
 
 def check(root):
     required = (
-        "NTOS.hh3", "COREDLL.DLL", "STARTHOST.EXE", "CMD.EXE", "CALC.EXE",
+        "NTOS.hh3", "COREDLL.DLL", "STARTHOST.EXE", "CMD.EXE", "GDILAB.EXE", "CALC.EXE",
         "METROWIN.EXE", "CONTROL.EXE", "DEMO.CPL",
     )
     system32 = root / "Windows" / "System32"
@@ -23,7 +23,7 @@ def check(root):
     assert not (root / "phone-device").exists(), "obsolete phone-device tree"
     apps = sorted((root / "Apps").glob("*/*.exe"))
     assert len(apps) == 24, f"expected 24 phone apps; found {len(apps)}"
-    for name in ("STARTHOST.EXE", "CMD.EXE", "CALC.EXE", "METROWIN.EXE", "CONTROL.EXE",
+    for name in ("STARTHOST.EXE", "CMD.EXE", "GDILAB.EXE", "CALC.EXE", "METROWIN.EXE", "CONTROL.EXE",
                  "Apps/calc/calc.exe", "Apps/edge/edge.exe", "Apps/files/files.exe", "Apps/cortana/cortana.exe"):
         pe = pefile.PE(str(root / name))
         assert pe.FILE_HEADER.Machine == 0x01A8
