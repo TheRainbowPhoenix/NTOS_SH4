@@ -2052,6 +2052,80 @@ static void nt_edit_paint(void)
 }
 
 
+/* Native common controls share the existing flat white theme.
+ * Every operation is integer-only, paints directly to the final framebuffer
+ * and is repainted before modal dialogs and the system SIP are composed. */
+static void nt_controls_paint(void)
+{
+    if(!g_window.magic || !g_window.visible)return;
+    const int old_height=g_font_height;
+    const u32 old_color=SetTextColor((void *)(uintptr_t)1u,0x002E281Fu);
+    const int old_bk=SetBkMode((void *)(uintptr_t)1u,1);
+    g_font_height=14;
+    for(unsigned i=0;i<NT_CTL_MAX;++i) {
+        NT_COMMON_CTL *c=&g_common_controls[i];
+        if(!c->handle || !c->visible || c->parent!=(void *)&g_window)continue;
+        int l=c->bounds.left,t=c->bounds.top;
+        int r=c->bounds.right,b=c->bounds.bottom;
+        if(r-l<5 || b-t<5)continue;
+        if(c->role==NT_CTL_STATIC) {
+            ntos_fillrect((u32)l,(u32)t,(u32)r,(u32)b,0x00FFFFFFu);
+        } else {
+            ntos_fillrect((u32)l,(u32)t,(u32)r,(u32)b,0x00B7B0A5u);
+            ntos_fillrect((u32)(l+1),(u32)(t+1),(u32)(r-1),(u32)(b-1),
+                           c->enabled?0x00F7F8FAu:0x00E1E1E1u);
+        }
+        if(c->role==NT_CTL_PROGRESS) {
+            int w=r-l-4;
+            u32 span=c->maximum-c->minimum;
+            u32 range=c->value-c->minimum;
+            int filled=span ? (int)(range*(u32)w/span) : 0;
+            if(filled>0)
+                ntos_fillrect((u32)(l+2),(u32)(t+2),
+                              (u32)(l+2+filled),(u32)(b-2),0x00C77735u);
+            continue;
+        }
+        if(c->role==NT_CTL_CHECKBOX) {
+            ntos_fillrect((u32)(l+4),(u32)(t+5),
+                          (u32)(l+18),(u32)(t+19),0x00E0D3BEu);
+            ntos_fillrect((u32)(l+5),(u32)(t+6),
+                          (u32)(l+17),(u32)(t+18),0x00FFFFFFu);
+            if(c->checked) {
+                ntos_line((u32)(l+7),(u32)(t+12),
+                          (u32)(l+10),(u32)(t+15),0x00519E32u);
+                ntos_line((u32)(l+10),(u32)(t+15),
+                          (u32)(l+15),(u32)(t+7),0x00519E32u);
+            }
+            l+=23;
+        }
+        if(c->role==NT_CTL_LISTBOX || c->role==NT_CTL_COMBOBOX) {
+            const unsigned rows=c->role==NT_CTL_COMBOBOX?1u:c->line_count;
+            for(unsigned row=0;row<rows;++row) {
+                unsigned index=c->role==NT_CTL_COMBOBOX?
+                    (c->selected==0xffffffffu?0u:c->selected):row;
+                if(index>=c->line_count)break;
+                int y=t+3+(int)row*20;
+                if(y+18>b-2)break;
+                if(index==c->selected)
+                    ntos_fillrect((u32)(l+2),(u32)y,
+                                  (u32)(r-2),(u32)(y+18),0x00EEE0CEu);
+                unsigned n=0u,cap=(unsigned)(r-l-10)/8u;
+                if(cap>NT_CTL_LIST_TEXT-1u)cap=NT_CTL_LIST_TEXT-1u;
+                while(n<cap && c->lines[index][n])++n;
+                if(n)TextOutW((void *)(uintptr_t)1u,l+5,y+2,c->lines[index],(int)n);
+            }
+            continue;
+        }
+        unsigned n=0u,cap=(unsigned)(r-l-10)/8u;
+        if(cap>=NT_CTL_TEXT_MAX)cap=NT_CTL_TEXT_MAX-1u;
+        while(n<cap && c->title[n])++n;
+        if(n)TextOutW((void *)(uintptr_t)1u,l+5,t+(b-t-14)/2,c->title,(int)n);
+    }
+    g_font_height=old_height;
+    SetTextColor((void *)(uintptr_t)1u,old_color);
+    SetBkMode((void *)(uintptr_t)1u,old_bk);
+}
+
 /* Private serial launcher; unavailable on old firmware, never calls beyond its table. */
 int coredll_launch(const char *path)
 {
