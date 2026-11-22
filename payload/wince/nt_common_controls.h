@@ -18,6 +18,7 @@
 #define NT_CTL_PROGRESS 4u
 #define NT_CTL_LISTBOX 5u
 #define NT_CTL_COMBOBOX 6u
+#define NT_CTL_EDIT 7u
 
 typedef struct {
     u32 handle, id, role, style;
@@ -51,6 +52,8 @@ static unsigned nt_ctl_name(const u16 *name, const char *literal)
 }
 static unsigned nt_ctl_kind(const u16 *name, u32 style)
 {
+    if (nt_ctl_name(name, "EDIT"))
+        return NT_CTL_EDIT;
     if (nt_ctl_name(name, "STATIC"))
         return NT_CTL_STATIC;
     if (nt_ctl_name(name, "BUTTON"))
@@ -161,6 +164,21 @@ static int nt_ctl_command(NT_COMMON_CTL *c)
     if (c->role == NT_CTL_CHECKBOX)
         c->checked ^= 1u;
     return c->role == NT_CTL_BUTTON || c->role == NT_CTL_CHECKBOX;
+}
+static int nt_ctl_edit_char(NT_COMMON_CTL *c,u32 ch)
+{
+    if(!c || c->role!=NT_CTL_EDIT || !c->enabled)return 0;
+    unsigned count=0;
+    while(count+1u<NT_CTL_TEXT_MAX && c->title[count])++count;
+    if(ch==8u) {
+        if(count)c->title[count-1u]=0;
+        return 1;
+    }
+    if(ch==13u)return 2;
+    if(ch<32u || ch>126u || count+1u>=NT_CTL_TEXT_MAX)return 0;
+    c->title[count]=(u16)ch;
+    c->title[count+1u]=0;
+    return 1;
 }
 static void nt_ctl_focus(NT_COMMON_CTL *focused)
 {
