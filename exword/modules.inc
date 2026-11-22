@@ -164,12 +164,11 @@ static bool load(const char *path,const char *name,bool is_dll,
     if(!copy_sections(source,header,m.image,bytes)) {
         set_error("DLL section read failed");return false;
     }
-    /* Old CP400 NT probes dereference a hardcoded P0 NtosApi window at
-     * 0x08100000. That address has NO EX-word mapping: refuse the guest
-     * before executing rather than causing a firmware TLB-miss crash.
-     * The Exword VMTEST build uses the passed host NtosApi pointer. */
-    if(!is_dll)
-        for(uint32_t at=0u;at+4u<=bytes;++at) {
+    /* CP400's P0 0x08100000 NtosApi window is absent on Exword.
+     * This gate MUST also scan dependency DLLs, not only the EXE:
+     * PAGERSTRESS.DLL was reaching the CP400 literal from its export
+     * even though PAGERTEST.EXE contained no such pointer. */
+    for(uint32_t at=0u;at+4u<=bytes;++at) {
             const uint8_t *p=m.image+at;
             if(p[0]==0x08u && p[1]==0x10u &&
                p[2]==0u && p[3]==0u) {
