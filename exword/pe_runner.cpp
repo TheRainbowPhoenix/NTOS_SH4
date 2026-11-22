@@ -9,6 +9,7 @@
 #include "pe_runner.hpp"
 #include "storage.h"
 #include "shortname.h"
+#include "p1_vm.hpp"
 #include "profile.hpp"
 #include "../src/pe.hpp"
 #include "../src/pe_rebase.hpp"
@@ -23,9 +24,9 @@ extern "C" {
     int ntos_exword_dll_main(void *,uint32_t,void *);
     int ntos_exword_invoke(uint32_t,const void *const *,uint32_t);
     int ntos_exword_invoke_dll(uint32_t,uint32_t,uint32_t,uint32_t);
-    /* coredll.c (NTOS_CORE_HOST_TEST) uses the same first 28 NtosApi
-     * gates as the original Hollyhock loader. */
-    const void *ntos_host_table[28]={};
+    /* Provide all tested NtosApi indices without touching the CP400-only
+     * 0x08100000 P0 TLB API window. */
+    const void *ntos_host_table[64]={};
 }
 
 static const char *g_error="not started";
@@ -34,6 +35,40 @@ static uint32_t g_heap_base,g_heap_end;
 static unsigned g_print_line;
 struct Allocation {uint32_t addr,bytes;bool live;};
 static Allocation g_alloc[32];
+static void *heap_alloc(uint32_t size);
+static void heap_free(void *p);
+static NtosP1Vm g_vm;
+static uint32_t vm_allocate(uint32_t n,void *) {
+    return (uint32_t)(uintptr_t)heap_alloc(n);
+}
+static void vm_deallocate(uint32_t raw,void *) {
+    heap_free((void *)(uintptr_t)raw);
+}
+static void vm_zero(uint32_t address,uint32_t n,void *) {
+    uint8_t *p=(uint8_t *)(uintptr_t)address;
+    for(uint32_t i=0u;i<n;++i)p[i]=0u;
+}
+static uint32_t vm_reserve(uint32_t at,uint32_t pages) {
+    return g_vm.reserve(at,pages);
+}
+static uint32_t vm_commit(uint32_t at,uint32_t pages,uint32_t protection) {
+    return g_vm.change(at,pages,protection,true);
+}
+static uint32_t vm_protect(uint32_t at,uint32_t pages,uint32_t protection) {
+    return g_vm.change(at,pages,protection,false);
+}
+static uint32_t vm_query(uint32_t at) {
+    return g_vm.query(at);
+}
+static uint32_t vm_release(uint32_t at) {
+    return g_vm.release(at);
+}
+static uint32_t vm_committed(void) {
+    return g_vm.committed();
+}
+static int32_t vm_hint(uint32_t at) {
+    return g_vm.hint(at);
+}
 
 static void set_error(const char *s) {g_error=s;}
 const char *ntos_exword_pe_error(void) {return g_error;}
@@ -183,7 +218,28 @@ static bool guest_path(const char *input,char out[NTOS_EXWORD_PATH_MAX])
     i=0u;
     while(tail[i] && n+1u<NTOS_EXWORD_PATH_MAX)out[n++]=tail[i++];
     out[n]=0;
-    return !tail[i] && n>=7u;
+    if(tail[i] || n<7u)return false;
+    /* File APIs also see the flat 8.3 names used by the native loader.
+     * Only rewrite a single EXE/DLL/CPL leaf; never synthesize folders. */
+    if(g_guest_root[0] && root==g_guest_root) {
+        unsigned k=0u;
+        while(tail[k]=='\\')++k;
+        unsigned leaf=k;
+        for(;tail[k];++k)if(tail[k]=='\\')return true;
+        char short_file[13];
+        if(ntos_exword_shortname(tail+leaf,short_file)) {
+            unsigned at=0u;
+            while(root[at] && at+1u<NTOS_EXWORD_PATH_MAX) {
+                out[at]=root[at];++at;
+            }
+            if(at+1u+12u>=NTOS_EXWORD_PATH_MAX)return false;
+            out[at++]='\\';
+            unsigned j=0u;
+            while(short_file[j])out[at++]=short_file[j++];
+            out[at]=0;
+        }
+    }
+    return true;
 }
 static int guest_open(const char *path,uint32_t flags)
 {
@@ -251,7 +307,7 @@ static void guest_close_all()
 
 static void init_host_api()
 {
-    for(unsigned i=0;i<28u;++i)ntos_host_table[i]=nullptr;
+    for(unsigned i=0;i<64u;++i)ntos_host_table[i]=nullptr;
     ntos_host_table[0]=(const void *)&host_puts;
     ntos_host_table[2]=(const void *)&host_refresh;
     ntos_host_table[3]=(const void *)&host_malloc;
@@ -269,6 +325,13 @@ static void init_host_api()
     ntos_host_table[17]=(const void *)&guest_size;
     ntos_host_table[18]=(const void *)&guest_seek;
     ntos_host_table[22]=(const void *)&guest_stat;
+    ntos_host_table[23]=(const void *)&vm_hint;
+    ntos_host_table[41]=(const void *)&vm_reserve;
+    ntos_host_table[42]=(const void *)&vm_commit;
+    ntos_host_table[43]=(const void *)&vm_protect;
+    ntos_host_table[44]=(const void *)&vm_query;
+    ntos_host_table[45]=(const void *)&vm_release;
+    ntos_host_table[46]=(const void *)&vm_committed;
 }
 struct Source {const char *path;};
 static bool file_read(void *context,uint32_t off,uint8_t *to,uint32_t n)
@@ -410,6 +473,7 @@ int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_c
         return -5;
     }
     g_print_line=0u;
+    g_vm.begin(vm_allocate,vm_deallocate,vm_zero,nullptr);
     init_host_api();
     sync_exec(area.image_start,image_bytes);
     if(!init_one(exe,0u)) {
