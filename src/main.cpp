@@ -3827,6 +3827,8 @@ int main(int argc, char **argv, char **envp) {
     }
     const int selected=boot_cmd_index>=0 ? boot_cmd_index :
         static_cast<int>(picker.selected);
+    const bool cmd_session=ntos_launch_policy::ascii_equal_ci(
+        names[pick[selected]],"CMD.EXE");
 
     // Open the selected PE. Streaming mode only reads its header here;
     // copy-load comparison mode retains the former full-file staging path.
@@ -4042,6 +4044,24 @@ int main(int argc, char **argv, char **envp) {
                 wait_error_key_release();
             }
             if(!pending_app[0]) {
+                if(cmd_session) {
+                    // The foreground EXE must be unloaded before CMD can
+                    // resume. This uses exactly the serial handoff and the
+                    // handle-free File_Stat gate already used by StartHost.
+                    const bool resume=ntos_launch_policy::queue_optional_command(
+                        next,[](const char *shell) {
+                            if(g_fs.busy() || g_fs.poisoned)return false;
+                            struct File_Stat st{};
+                            return File_Stat(shell,&st)==0;
+                        });
+                    if(!resume)break;
+                    const char *shell=ntos_launch_policy::COMMAND;
+                    unsigned j=0;
+                    for(;j+1<sizeof(pending_app) && shell[j];++j)
+                        pending_app[j]=shell[j];
+                    pending_app[j]=0;
+                    continue;
+                }
                 // A stub/Settings/Calculator exit returns to Start only
                 // if that optional phone shell EXE is installed. Completed
                 // PROCTEST chains must return cleanly to the picker instead
@@ -4061,6 +4081,9 @@ int main(int argc, char **argv, char **envp) {
             }
         }
     }
+    // CMD EXIT returns straight to the picker; do not display the old
+    // debug result/key prompt for a completed command shell session.
+    if(cmd_session)continue;
     char result_line[] = "Payload returned 0x00000000";
     const char *digits = "0123456789ABCDEF";
     for(unsigned i=0;i<8;++i)result_line[19+i]=digits[(static_cast<uint32_t>(ret)>>(28-4*i))&15];
