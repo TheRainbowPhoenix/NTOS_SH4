@@ -293,7 +293,6 @@ static void *host_malloc(uint32_t n){return heap_alloc(n);}
  */
 static unsigned g_guest_disk;
 static char g_guest_root[NTOS_EXWORD_PATH_MAX];
-static NtosExwordArena g_guest_area;
 /* Serial foreground execution only. Each child starts AFTER parent Ob/Ex
  * teardown and native OS descriptor close; no shared P0 address space. */
 static char g_next_program[NTOS_EXWORD_PATH_MAX];
