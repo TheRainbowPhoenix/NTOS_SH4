@@ -26,7 +26,6 @@ static const DWORD palette[12] = {
     RGB(184, 208, 234), RGB(233, 240, 246), RGB(98, 74, 44)
 };
 static int page, split, sideways, swapped;
-static void *window;
 
 static void label(void *dc, int x, int y, const char *s, DWORD ink)
 {
