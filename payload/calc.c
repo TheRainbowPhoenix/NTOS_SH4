@@ -125,6 +125,50 @@ static void press(char key)
         new_number = 1;
     }
 }
+/* Only the Exword-specific CALC.EXE build gets a real 528x320 layout.
+ * The normal ClassPad HH3 CALC.EXE is built unchanged. */
+#ifdef NTOS_EXWORD
+static void draw(void *dc)
+{
+    char result[16];
+    const DWORD bg=RGB(235,238,243),ink=RGB(30,37,53);
+    ui_fill(dc,0,0,528,320,bg);
+    ui_fill(dc,0,24,528,56,RGB(222,234,244));
+    ui_text(dc,9,34,"File",ink,0);
+    ui_text(dc,72,34,"Edit",ink,0);
+    ui_text(dc,134,34,"View",ink,0);
+    ui_text(dc,378,34,popup_mode?"Pop-Up":"Standard",ink,0);
+    ui_fill(dc,13,64,515,115,RGB(255,255,255));
+    ui_fill(dc,13,112,515,116,RGB(191,197,206));
+    if(error)
+        ui_text(dc,30,80,error==2?"DIVIDE BY ZERO":"OVERFLOW",
+                RGB(190,35,49),1);
+    else {
+        as_text(current,result);
+        int n=0;while(result[n])++n;
+        ui_text(dc,503-n*16,79,result,ink,1);
+    }
+    for(int i=0;i<16;++i) {
+        const int col=i%4,row=i/4;
+        const int x=8+col*130,y=122+row*46;
+        DWORD color=i==14?RGB(12,116,194):
+                    i==12?RGB(215,221,229):
+                    col==3?RGB(195,211,228):RGB(255,255,255);
+        ui_fill(dc,x,y,x+124,y+42,RGB(160,169,181));
+        ui_button(dc,x+1,y+1,x+123,y+40,labels[i],color,
+                  i==14?RGB(255,255,255):ink);
+    }
+    if(menu_open) {
+        int left=menu_open==1?4:menu_open==2?65:129;
+        ui_fill(dc,left,56,left+152,113,RGB(96,96,96));
+        ui_fill(dc,left+1,57,left+151,112,RGB(235,235,235));
+        ui_text(dc,left+10,62,menu_open==1?"Exit":
+                menu_open==2?"Clear":"Standard",ink,0);
+        ui_text(dc,left+10,87,menu_open==1?"Return to Start":
+                menu_open==2?"Reset calculator":"Pop-Up",ink,0);
+    }
+}
+#else
 static void draw(void *dc)
 {
     char result[16];
@@ -177,6 +221,8 @@ static void draw(void *dc)
                 RGB(0, 0, 0), 0);
     }
 }
+
+#endif
 static int wndproc(void *hwnd, DWORD msg, DWORD wp, DWORD lp)
 {
     char key = 0;
@@ -208,11 +254,19 @@ static int wndproc(void *hwnd, DWORD msg, DWORD wp, DWORD lp)
             NT_CALL(InvalidateRect, (hwnd, 0, 1));
             return 0;
         }
+#ifdef NTOS_EXWORD
+        if (x >= 496 && y < 24) {
+#else
         if (x >= 288 && y < 24) {
+#endif
             NT_CALL(PostQuitMessage, (0));
             return 0;
         }
+#ifdef NTOS_EXWORD
+        if (y >= 24 && y < 56) {
+#else
         if (y >= 24 && y < 53) {
+#endif
             menu_open = x < 65 ? 1 : x < 129 ? 2 : x < 200 ? 3 : 0;
             NT_CALL(InvalidateRect, (hwnd, 0, 1));
             return 0;
@@ -225,11 +279,18 @@ static int wndproc(void *hwnd, DWORD msg, DWORD wp, DWORD lp)
             NT_CALL(InvalidateRect, (hwnd, 0, 1));
             return 0;
         }
+#ifdef NTOS_EXWORD
+        if(x>=8 && x<528 && y>=122 && y<306) {
+            int col=(x-8)/130,row=(y-122)/46;
+            if(col<4 && row<4)key=labels[row*4+col][0];
+        }
+#else
         if (x >= 14 && x < 314 && y >= 159 && y < 451) {
             int col = (x - 14) / 75, row = (y - 159) / 73;
             if (col < 4 && row < 4)
                 key = labels[row * 4 + col][0];
         }
+#endif
     } else if (msg == WM_KEYDOWN) {
         if (wp >= 0x30u && wp <= 0x39u)
             key = (char)wp;
