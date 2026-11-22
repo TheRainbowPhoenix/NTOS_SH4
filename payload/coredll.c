@@ -595,9 +595,11 @@ int EndPaint(void *hwnd, const NT_PAINT *paint)
     return 1;
 }
 
+/* Always clip in the USER/GDI boundary. The hardware pixel/line gates are
+ * intentionally not required to tolerate out-of-range coordinates. */
 u32 SetPixel(void *hdc, int x, int y, u32 colorref)
 {
-    if (hdc && x >= 0 && y >= 0)
+    if (hdc && x >= 0 && y >= 0 && x < 320 && y < 528)
         ntos_pixel((u32)x, (u32)y, colorref);
     return colorref;
 }
@@ -613,19 +615,36 @@ int DeleteObject(void *object)
     return object != 0; /* synthetic brush/font handles: no heap ownership */
 }
 
+static int nt_gdi_clip_rect(int *l, int *t, int *r, int *b)
+{
+    if (*r <= *l || *b <= *t)
+        return 0;
+    if (*l < 0)
+        *l = 0;
+    if (*t < 0)
+        *t = 0;
+    if (*r > 320)
+        *r = 320;
+    if (*b > 528)
+        *b = 528;
+    return *r > *l && *b > *t;
+}
+
 int FillRect(void *hdc, const NT_RECT *rect, void *brush)
 {
-    if (!hdc || !rect || !brush)
-        return 0;
-    u32 c = (u32)brush & 0xFFFFu;
+    int l, t, r, b;
     const void **a = ntapi();
-    if (a && a[9] && rect->left >= 0 && rect->top >= 0 && rect->right > rect->left &&
-        rect->bottom > rect->top) {
-        ((void (*)(u32, u32, u32, u32, u32))a[9])((u32)rect->left, (u32)rect->top, (u32)rect->right,
-                                                  (u32)rect->bottom, c);
-        return 1;
-    }
-    return 0;
+    if (!hdc || !rect || !brush || !a || !a[9])
+        return 0;
+    l = rect->left;
+    t = rect->top;
+    r = rect->right;
+    b = rect->bottom;
+    if (!nt_gdi_clip_rect(&l, &t, &r, &b))
+        return 0;
+    ((void (*)(u32, u32, u32, u32, u32))a[9])(
+        (u32)l, (u32)t, (u32)r, (u32)b, (u32)brush & 0xFFFFu);
+    return 1;
 }
 
 /* DimRect: host-side scrims blend live framebuffer content toward black
@@ -673,14 +692,67 @@ int LineTo(void *hdc, int x, int y)
     return 1;
 }
 
+/* Outline primitive: clipped one-pixel strips, no temporary surface. */
 int Rectangle(void *hdc, int l, int t, int r, int b)
 {
-    if (!hdc || l < 0 || t < 0 || r <= l || b <= t)
+    if (!hdc || r <= l || b <= t)
         return 0;
-    ntos_line((u32)l, (u32)t, (u32)(r - 1), (u32)t, 0xFFFFFFu);
-    ntos_line((u32)(r - 1), (u32)t, (u32)(r - 1), (u32)(b - 1), 0xFFFFFFu);
-    ntos_line((u32)(r - 1), (u32)(b - 1), (u32)l, (u32)(b - 1), 0xFFFFFFu);
-    ntos_line((u32)l, (u32)(b - 1), (u32)l, (u32)t, 0xFFFFFFu);
+    NT_RECT edge = {l, t, r, t + 1};
+    void *white = CreateSolidBrush(0x00FFFFFFu);
+    int painted = FillRect(hdc, &edge, white);
+    edge.top = b - 1;
+    edge.bottom = b;
+    painted |= FillRect(hdc, &edge, white);
+    edge.left = l;
+    edge.top = t;
+    edge.right = l + 1;
+    edge.bottom = b;
+    painted |= FillRect(hdc, &edge, white);
+    edge.left = r - 1;
+    edge.right = r;
+    painted |= FillRect(hdc, &edge, white);
+    return painted != 0;
+}
+
+/* WinCE Ellipse outline, entirely integer-based. A symmetric binary search
+ * finds the first covered pixel on each scanline; O(height * log(width)),
+ * constant RAM, no antialiasing, and no floating point. Reject enormous
+ * geometries so malformed application coordinates cannot stall the LCD. */
+int Ellipse(void *hdc, int l, int t, int r, int b)
+{
+    if (!hdc || l >= r || t >= b || r - l > 2048 || b - t > 2048 ||
+        l < -2048 || t < -2048 || r > 2368 || b > 2576)
+        return 0;
+    const int w = r - l, h = b - t;
+    const int cx2 = l + r - 1, cy2 = t + b - 1;
+    const unsigned long long w2 = (unsigned long long)w * (unsigned)w;
+    const unsigned long long h2 = (unsigned long long)h * (unsigned)h;
+    const unsigned long long limit = w2 * h2;
+    int y0 = t < 0 ? 0 : t;
+    int y1 = b > 528 ? 528 : b;
+    for (int y = y0; y < y1; ++y) {
+        long long dy = (long long)y * 2 - cy2;
+        unsigned long long vy = (unsigned long long)(dy * dy) * w2;
+        if (vy > limit)
+            continue;
+        int lo = l, hi = (l + r - 1) / 2;
+        if (hi < lo)
+            continue;
+        while (lo < hi) {
+            int mid = lo + (hi - lo) / 2;
+            long long dx = (long long)mid * 2 - cx2;
+            unsigned long long v = (unsigned long long)(dx * dx) * h2 + vy;
+            if (v <= limit)
+                hi = mid;
+            else
+                lo = mid + 1;
+        }
+        long long dx = (long long)lo * 2 - cx2;
+        if ((unsigned long long)(dx * dx) * h2 + vy <= limit) {
+            SetPixel(hdc, lo, y, 0x00FFFFFFu);
+            SetPixel(hdc, cx2 - lo, y, 0x00FFFFFFu);
+        }
+    }
     return 1;
 }
 
