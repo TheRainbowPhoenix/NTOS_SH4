@@ -60,6 +60,13 @@ def main():
             check(dist,folder)
             assert not (folder/"CHAIN.DLL").exists()
             (dist/"CHAIN.DLL").write_bytes(fake_pe())
+        # Readable truncation must never silently overwrite a long-name
+        # collision; the installer rejects it before hardware transfer.
+        (dist/"HELLOCORN.EXE").write_bytes(fake_pe())
+        try:products(dist)
+        except ValueError as exc: assert "collision" in str(exc)
+        else:raise AssertionError("truncated 8.3 collision accepted")
+        (dist/"HELLOCORN.EXE").unlink()
         (dist/"HELLO.EXE").write_bytes(b"not a PE")
         try:products(dist)
         except ValueError:pass
