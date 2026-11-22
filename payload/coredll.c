@@ -584,15 +584,10 @@ int TranslateMessage(const NT_MSG *msg)
 #ifndef NTOS_EXWORD
     return msg != 0 && msg->message == 0x0100u;
 #else
-    if(!msg || msg->message!=0x0100u)return 0;
-    /* Physical Exword keyboard keys now generate WinCE WM_CHAR. */
-    if(msg->wParam>=32u && msg->wParam<=126u) {
-        u32 ch=msg->wParam;
-        if(ch>='A'&&ch<='Z')ch=ch-'A'+'a';
-        (void)enqueue(msg->hwnd,0x0102u,ch,1u);
-    } else if(msg->wParam==8u || msg->wParam==13u)
-        (void)enqueue(msg->hwnd,0x0102u,msg->wParam,1u);
-    return 1;
+    /* The Exword physical bridge emits text as WM_CHAR directly below.
+     * Do not enqueue a SECOND character for a single hardware key:
+     * several CE applications consume both WM_KEYDOWN and WM_CHAR. */
+    return msg && msg->message==0x0100u;
 #endif
 }
 int DestroyWindow(void *hwnd)
@@ -759,6 +754,14 @@ sip_next_event:
         }
         else if (x == 0x0080u)
             x = 0x1Bu; /* Raw Clear -> VK_ESCAPE/Back. */
+#ifdef NTOS_EXWORD
+        /* One text action per key press. Text, digits and Backspace
+         * enter via WM_CHAR only; arrows, Escape and Enter retain the
+         * WM_KEYDOWN navigation contract. Virtual controls also receive
+         * the physical Shift state already encoded by the host. */
+        if((x>=32u && x<=126u) || x==8u)
+            msg->message=0x0102u; /* WM_CHAR */
+#endif
         msg->wParam = x;
         return 1;
     }

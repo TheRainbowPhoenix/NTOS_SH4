@@ -291,7 +291,11 @@ static int wndproc(void *hwnd, DWORD msg, DWORD wp, DWORD lp)
                 key = labels[row * 4 + col][0];
         }
 #endif
+#ifdef NTOS_EXWORD
+    } else if (msg == WM_KEYDOWN || msg == WM_CHAR) {
+#else
     } else if (msg == WM_KEYDOWN) {
+#endif
         if (wp >= 0x30u && wp <= 0x39u)
             key = (char)wp;
         else if (wp == VK_RETURN)

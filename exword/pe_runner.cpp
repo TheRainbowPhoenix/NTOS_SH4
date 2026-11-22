@@ -337,6 +337,11 @@ static uint32_t host_event(uint32_t *x,uint32_t *y,uint32_t *direction)
         if(e.type==KEYEV_DOWN || e.type==KEYEV_HOLD) {
             uint32_t vk=exword_vk((uint32_t)e.key);
             if(!vk)continue;
+            /* Exword QWERTY scan codes map to upper-case VK values for
+             * navigation, but printable text defaults to lower-case.
+             * Preserve hardware Shift instead of generating both cases. */
+            if(vk>='A' && vk<='Z' && !keydown(KEY_SHIFT))
+                vk=vk-'A'+'a';
             *x=vk;*y=0u;*direction=0u;
             return 3u;
         }
