@@ -21,7 +21,8 @@ NT_DEFINE(FindNextFileW)
 NT_DEFINE(FindClose)
 
 static const WCHAR16 shell_class[] = {'N', 'T', 'O', 'S', 'C', 'm', 'd', 0};
-static const WCHAR16 shell_title[] = {'N', 'T', 'O', 'S', ' ', 'C', 'o', 'm', 'm', 'a', 'n', 'd', 0};
+static const WCHAR16 shell_title[] = {'N', 'T', 'O', 'S', ' ', 'C', 'o',
+                                      'm', 'm', 'a', 'n', 'd', 0};
 static const WCHAR16 files_pattern[] = {'\\', 'f', 'l', 's', '0', '\\', '*', '.', 'E', 'X', 'E', 0};
 static NT_TILE_STATE layout;
 static char entry[80];
@@ -107,54 +108,54 @@ static void command_execute(const char *line)
     NT_CMD_ACTION a;
     nt_cmd_parse(line, &a);
     switch (a.kind) {
-    case NT_CMD_EMPTY:
-        break;
-    case NT_CMD_HELP:
-        line_history("HELP CLS DIR RUN EXIT");
-        line_history("SPLIT FULL SWAP ROTATE KB");
-        line_history("RUN app.exe or Apps\\name\\app.exe");
-        break;
-    case NT_CMD_CLS:
-        history_count = 0;
-        break;
-    case NT_CMD_DIR:
-        command_dir();
-        break;
-    case NT_CMD_SPLIT:
-        nt_tile_split(&layout);
-        break;
-    case NT_CMD_FULL:
-        nt_tile_maximize(&layout, 0);
-        break;
-    case NT_CMD_SWAP:
-        nt_tile_swap(&layout);
-        if (!layout.split)
-            layout.split = 1;
-        break;
-    case NT_CMD_ROTATE:
-        nt_tile_rotate(&layout);
-        break;
-    case NT_CMD_KB:
-        keyboard_open = !keyboard_open;
-        break;
-    case NT_CMD_RUN:
-        line_history("Launching EXE (serial handoff)");
-        /* API returns 1 only if the file can be opened by the kernel.
-         * The current process must exit to let the loader start it. */
-        if (NT_CALL(coredll_launch, (a.path)))
+        case NT_CMD_EMPTY:
+            break;
+        case NT_CMD_HELP:
+            line_history("HELP CLS DIR RUN EXIT");
+            line_history("SPLIT FULL SWAP ROTATE KB");
+            line_history("RUN app.exe or Apps\\name\\app.exe");
+            break;
+        case NT_CMD_CLS:
+            history_count = 0;
+            break;
+        case NT_CMD_DIR:
+            command_dir();
+            break;
+        case NT_CMD_SPLIT:
+            nt_tile_split(&layout);
+            break;
+        case NT_CMD_FULL:
+            nt_tile_maximize(&layout, 0);
+            break;
+        case NT_CMD_SWAP:
+            nt_tile_swap(&layout);
+            if (!layout.split)
+                layout.split = 1;
+            break;
+        case NT_CMD_ROTATE:
+            nt_tile_rotate(&layout);
+            break;
+        case NT_CMD_KB:
+            keyboard_open = !keyboard_open;
+            break;
+        case NT_CMD_RUN:
+            line_history("Launching EXE (serial handoff)");
+            /* API returns 1 only if the file can be opened by the kernel.
+             * The current process must exit to let the loader start it. */
+            if (NT_CALL(coredll_launch, (a.path)))
+                NT_CALL(PostQuitMessage, (0));
+            else
+                line_history("Cannot open EXE");
+            break;
+        case NT_CMD_EXIT:
             NT_CALL(PostQuitMessage, (0));
-        else
-            line_history("Cannot open EXE");
-        break;
-    case NT_CMD_EXIT:
-        NT_CALL(PostQuitMessage, (0));
-        break;
-    case NT_CMD_BAD_PATH:
-        line_history("Unsafe or missing EXE path");
-        break;
-    default:
-        line_history("Unknown command; try HELP");
-        break;
+            break;
+        case NT_CMD_BAD_PATH:
+            line_history("Unsafe or missing EXE path");
+            break;
+        default:
+            line_history("Unknown command; try HELP");
+            break;
     }
 }
 static void enter_input(void)
@@ -197,8 +198,8 @@ static void pane_paint(void *dc, unsigned pane)
     ui_fill(dc, r.left, r.top, r.right, r.top + 22, BAR);
     ui_fill(dc, r.left, r.bottom - 1, r.right, r.bottom, EDGE);
     ui_fill(dc, r.right - 1, r.top, r.right, r.bottom, EDGE);
-    text_clipped(dc, r.left + 6, r.top + 3,
-                 pane ? "Tools / second pane" : "Command Prompt", r.right - r.left - 27, INK);
+    text_clipped(dc, r.left + 6, r.top + 3, pane ? "Tools / second pane" : "Command Prompt",
+                 r.right - r.left - 27, INK);
     ui_fill(dc, r.right - 22, r.top + 2, r.right - 2, r.top + 20, BLUE);
     ui_text(dc, r.right - 19, r.top + 3, layout.split ? "^" : "v", WHITE, 0);
     if (pane == 0) {
@@ -239,17 +240,14 @@ static void key_button(void *dc, int l, int t, int r, int b, const char *s)
  * COREDLL SIP. This small fallback makes the real command line usable. */
 static void keyboard_paint(void *dc)
 {
-    const char *rows[3] = {
-        "qwertyuiop", "asdfghjkl", "zxcvbnm.\\/"
-    };
+    const char *rows[3] = {"qwertyuiop", "asdfghjkl", "zxcvbnm.\\/"};
     ui_fill(dc, 0, 328, 320, 528, BAR);
     for (int row = 0; row < 3; ++row) {
         int x0 = row == 1 ? 18 : 3;
         int count = row == 1 ? 9 : 10;
         int y = 331 + row * 45;
         for (int col = 0; col < count; ++col) {
-            char label[2] = {keyboard_numeric && row == 0 ? "1234567890"[col]
-                            : rows[row][col], 0};
+            char label[2] = {keyboard_numeric && row == 0 ? "1234567890"[col] : rows[row][col], 0};
             int x = x0 + col * 31;
             key_button(dc, x, y, x + 29, y + 41, label);
         }
@@ -312,8 +310,7 @@ static void touch(int x, int y)
     if (pane < 0)
         return;
     NT_TILE_RECT r, c;
-    if (!nt_tile_rect(&layout, (unsigned)pane, &r) ||
-        !nt_tile_client(&layout, (unsigned)pane, &c))
+    if (!nt_tile_rect(&layout, (unsigned)pane, &r) || !nt_tile_client(&layout, (unsigned)pane, &c))
         return;
     if (y < r.top + 22 && x >= r.right - 26) {
         if (layout.split)
@@ -372,8 +369,8 @@ int main(void)
     wc.class_name = shell_class;
     if (!NT_CALL(RegisterClassW, (&wc)))
         return 1;
-    shell_window = NT_CALL(CreateWindowExW,
-                          (0, shell_class, shell_title, 0, 0, 0, 320, 528, 0, 0, 0, 0));
+    shell_window =
+        NT_CALL(CreateWindowExW, (0, shell_class, shell_title, 0, 0, 0, 320, 528, 0, 0, 0, 0));
     if (!shell_window)
         return 2;
     NT_CALL(ShowWindow, (shell_window, 1));

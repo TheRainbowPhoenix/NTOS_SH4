@@ -83,8 +83,7 @@ static inline int nt_tile_hit(const NT_TILE_STATE *s, int x, int y)
     if (x < 0 || y < 0 || x >= s->width || y >= s->bottom)
         return -1;
     for (unsigned i = 0; i != 2; ++i)
-        if (nt_tile_rect(s, i, &r) && x >= r.left && x < r.right && y >= r.top &&
-            y < r.bottom)
+        if (nt_tile_rect(s, i, &r) && x >= r.left && x < r.right && y >= r.top && y < r.bottom)
             return (int)i;
     return -1;
 }

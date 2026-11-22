@@ -19,12 +19,10 @@ NT_DEFINE(LineTo)
 
 static const WCHAR16 cls[] = {'N', 'T', 'G', 'D', 'I', 'L', 'A', 'B', 0};
 static const WCHAR16 title[] = {'N', 'T', 'O', 'S', ' ', 'G', 'D', 'I', ' ', 'L', 'a', 'b', 0};
-static const DWORD palette[12] = {
-    RGB(0, 0, 0),       RGB(255, 255, 255), RGB(255, 0, 0),
-    RGB(0, 255, 0),     RGB(0, 0, 255),     RGB(255, 255, 0),
-    RGB(255, 0, 255),   RGB(0, 255, 255),   RGB(31, 55, 86),
-    RGB(184, 208, 234), RGB(233, 240, 246), RGB(98, 74, 44)
-};
+static const DWORD palette[12] = {RGB(0, 0, 0),       RGB(255, 255, 255), RGB(255, 0, 0),
+                                  RGB(0, 255, 0),     RGB(0, 0, 255),     RGB(255, 255, 0),
+                                  RGB(255, 0, 255),   RGB(0, 255, 255),   RGB(31, 55, 86),
+                                  RGB(184, 208, 234), RGB(233, 240, 246), RGB(98, 74, 44)};
 static int page, split, sideways, swapped;
 
 static void label(void *dc, int x, int y, const char *s, DWORD ink)
@@ -89,10 +87,8 @@ static void page_ellipses(void *dc)
 static void page_fonts(void *dc)
 {
     static const int sizes[8] = {9, 11, 12, 14, 16, 20, 24, 32};
-    static const char *strings[8] = {
-        "09 abcdef", "11 ABCDEF", "12 012345", "14 & <> ?!",
-        "16 Aa Gg", "20 Wm M", "24 NTOS", "32 GDI"
-    };
+    static const char *strings[8] = {"09 abcdef", "11 ABCDEF", "12 012345", "14 & <> ?!",
+                                     "16 Aa Gg",  "20 Wm M",   "24 NTOS",   "32 GDI"};
     label(dc, 12, 65, "Bitmap GDI: 9..32 px, no antialiasing", RGB(34, 49, 70));
     for (int i = 0; i < 8; ++i) {
         static LOGFONTW lf;
@@ -135,7 +131,7 @@ static void page_panes(void *dc)
 }
 static void draw(void *dc)
 {
-    const char *names[6] = {"01 PALETTE", "02 CLIPPING", "03 LINES",
+    const char *names[6] = {"01 PALETTE",  "02 CLIPPING",    "03 LINES",
                             "04 ELLIPSES", "05 FONT RASTER", "06 TILING"};
     ui_fill(dc, 0, 24, 320, 528, RGB(255, 255, 255));
     ui_fill(dc, 0, 24, 320, 46, RGB(231, 238, 247));

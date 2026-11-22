@@ -5,9 +5,19 @@
 #define NTOS_CMD_MODEL_H
 
 typedef enum {
-    NT_CMD_EMPTY, NT_CMD_HELP, NT_CMD_CLS, NT_CMD_DIR, NT_CMD_RUN,
-    NT_CMD_SPLIT, NT_CMD_FULL, NT_CMD_SWAP, NT_CMD_ROTATE,
-    NT_CMD_KB, NT_CMD_EXIT, NT_CMD_BAD, NT_CMD_BAD_PATH
+    NT_CMD_EMPTY,
+    NT_CMD_HELP,
+    NT_CMD_CLS,
+    NT_CMD_DIR,
+    NT_CMD_RUN,
+    NT_CMD_SPLIT,
+    NT_CMD_FULL,
+    NT_CMD_SWAP,
+    NT_CMD_ROTATE,
+    NT_CMD_KB,
+    NT_CMD_EXIT,
+    NT_CMD_BAD,
+    NT_CMD_BAD_PATH
 } NT_CMD_KIND;
 
 typedef struct {
@@ -43,9 +53,8 @@ static inline int nt_cmd_path(const char *src, unsigned count, char out[96])
     unsigned at = 0, i = 0, begin = 0;
     if (!count || count >= 84)
         return 0;
-    if (count >= 6 && (src[0] == '\\' || src[0] == '/') &&
-        nt_cmd_lower(src[1]) == 'f' && nt_cmd_lower(src[2]) == 'l' &&
-        nt_cmd_lower(src[3]) == 's' && src[4] == '0' &&
+    if (count >= 6 && (src[0] == '\\' || src[0] == '/') && nt_cmd_lower(src[1]) == 'f' &&
+        nt_cmd_lower(src[2]) == 'l' && nt_cmd_lower(src[3]) == 's' && src[4] == '0' &&
         (src[5] == '\\' || src[5] == '/')) {
         begin = 6;
     } else if (src[0] == '\\' || src[0] == '/') {
@@ -57,8 +66,8 @@ static inline int nt_cmd_path(const char *src, unsigned count, char out[96])
         return 0;
     for (i = begin; i < count; ++i) {
         unsigned char c = (unsigned char)src[i];
-        if (c < 33 || c > 126 || c == ':' || c == '*' || c == '?' || c == '"' ||
-            c == '<' || c == '>' || c == '|')
+        if (c < 33 || c > 126 || c == ':' || c == '*' || c == '?' || c == '"' || c == '<' ||
+            c == '>' || c == '|')
             return 0;
         if (c == '/' || c == '\\') {
             if (i == begin || i + 1 == count || src[i - 1] == '/' || src[i - 1] == '\\')
