@@ -57,8 +57,12 @@ u32 coredll_getkey(void)
     return 0;
 }
 
+/* The pixel and rectangle gates write immediately, but an HWND paint
+ * transaction presents the completed frame only once. */
+static unsigned g_nt_paint_depth, g_nt_paint_pending;
 void coredll_refresh(void)
 {
+    if(g_nt_paint_depth) {g_nt_paint_pending=1u;return;}
     const void **api = ntapi();
     if (api != 0 && api[2] != 0)
         ((void (*)(void))api[2])();
@@ -280,11 +284,66 @@ typedef struct {
     u16 title[48];
 } NT_WINDOW;
 
+#include "wince/ntgwes_model.h"
+#include "wince/nt_touchkb.h"
+#include "wince/nt_gwes_dialog.h"
 static NT_WINDOW g_window;
+static NT_GWES g_nt_gwes;
+static unsigned g_nt_gwes_initialized;
+static NT_TOUCHKB g_nt_keyboard;
+static NT_DIALOGS g_nt_dialogs;
+static unsigned g_nt_dialogs_initialized;
+static int nt_dialog_active(void);
+static int nt_dialog_capture(const NT_MSG *);
+static void nt_dialog_paint(void);
+int UpdateWindow(void *hwnd);
+static u32 nt_sip_flags = 2u; /* docked, on = bit zero */
+static unsigned g_nt_sip_silent; /* modal transition, presenter handles paint */
+static void nt_sip_paint(void);
+static void nt_present_overlays(void) {
+    /* Final z-order: foreground app, dialogs, keyboard. */
+    nt_dialog_paint();
+    nt_sip_paint();
+}
+static void nt_finish_paint(void) {
+    if(!g_nt_paint_depth)return;
+    --g_nt_paint_depth;
+    if(g_nt_paint_depth || !g_nt_paint_pending)return;
+    g_nt_paint_pending=0u;
+    nt_present_overlays();
+    coredll_refresh();
+}
+int SipShowIM(u32 flags);
 static NT_WNDPROC g_class_proc;
 static u16 g_class_name[48];
 static NT_MSG g_messages[16];
 static u32 g_qhead, g_qtail;
+/* CE's built-in EDIT class: bounded child text field. One foreground
+ * process, one native Edit control until the general HWND manager exists. */
+typedef struct {
+    u32 magic;
+    NT_WINDOW *parent;
+    NT_RECT bounds;
+    NT_KB_EDIT value;
+    int visible,focused;
+} NT_EDITCTRL;
+static NT_EDITCTRL g_edit;
+static void nt_edit_paint(void);
+static int is_edit_hwnd(void *h) {
+    return h==(void *)&g_edit && g_edit.magic==0x45444954u;
+}
+static int nt_edit_class(const u16 *name) {
+    if(!name)return 0;
+    const char *s="Edit";
+    for(unsigned i=0;i<4u;++i) {
+        unsigned a=name[i],c=(unsigned char)s[i];
+        if(a>='A' && a<='Z')a+=32u;
+        if(c>='A' && c<='Z')c+=32u;
+        if(a!=c)return 0;
+    }
+    return name[4]==0u;
+}
+
 
 static int same_wstr(const u16 *a, const u16 *b)
 {
@@ -357,6 +416,22 @@ void *CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 
     (void)parent;
     (void)menu;
     (void)instance;
+    if(nt_edit_class(class_name)) {
+        if(!is_hwnd(parent) || g_edit.magic ||
+           w<=0 || h<=0 || x<0 || y<0 || x>=320 || y>=528)
+            return 0;
+        if(w>320-x)w=320-x;
+        if(h>528-y)h=528-y;
+        g_edit.magic=0x45444954u;
+        g_edit.parent=&g_window;
+        g_edit.bounds=(NT_RECT){x,y,x+w,y+h};
+        nt_kb_edit_init(&g_edit.value);
+        g_edit.visible=0;g_edit.focused=0;
+        if(title)
+            for(unsigned i=0u;i<NT_KB_TEXT_MAX-1u && title[i];++i)
+                if(!nt_kb_edit_char(&g_edit.value,title[i]))break;
+        return (void *)&g_edit;
+    }
     if (!g_class_proc || !same_wstr(class_name, g_class_name) || g_window.magic)
         return 0;
     /* This environment has one pen-oriented LCD window. WinCE
@@ -392,6 +467,11 @@ void *CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 
 int ShowWindow(void *hwnd, int cmd)
 {
     int was;
+    if(is_edit_hwnd(hwnd)) {
+        was=g_edit.visible;g_edit.visible=(cmd!=0);
+        if(g_edit.visible)nt_edit_paint();
+        return was;
+    }
     if (!is_hwnd(hwnd))
         return 0;
     was = g_window.visible;
@@ -400,7 +480,7 @@ int ShowWindow(void *hwnd, int cmd)
 }
 int PostMessageW(void *hwnd, u32 msg, u32 wp, u32 lp)
 {
-    if (hwnd && !is_hwnd(hwnd))
+    if (hwnd && !is_hwnd(hwnd) && !is_edit_hwnd(hwnd))
         return 0;
     return enqueue(hwnd, msg, wp, lp);
 }
@@ -421,14 +501,67 @@ int DispatchMessageW(const NT_MSG *msg)
 {
     if (!msg)
         return 0;
+    if(nt_dialog_capture(msg))return 1; /* modal owns focus over every HWND */
+    if(is_edit_hwnd(msg->hwnd)) {
+        if(msg->message==0x0102u) {
+            int changed=nt_kb_edit_char(&g_edit.value,msg->wParam);
+            if(changed==1) {
+                nt_edit_paint();
+                /* A normal top-half Edit does not touch SIP pixels. */
+                if((nt_sip_flags&1u) &&
+                   g_edit.bounds.bottom>NT_GWES_SIP_TOP)nt_sip_paint();
+                coredll_refresh();
+            }
+            if(changed && g_window.proc)
+                g_window.proc((void *)&g_window,0x0111u,0u,0u);
+            return changed!=0;
+        }
+        if(msg->message==0x000Fu) {nt_edit_paint();return 1;}
+    }
+    if(g_edit.magic && g_edit.visible &&
+       msg->message==0x0102u && g_edit.focused) {
+        int changed=nt_kb_edit_char(&g_edit.value,msg->wParam);
+        if(changed==1) {
+            nt_edit_paint();
+            if((nt_sip_flags&1u) &&
+               g_edit.bounds.bottom>NT_GWES_SIP_TOP)nt_sip_paint();
+            coredll_refresh();
+        }
+        if(changed && g_window.proc)
+            g_window.proc((void *)&g_window,0x0111u,0u,0u);
+        return changed!=0;
+    }
+    if(g_edit.magic && g_edit.visible &&
+       msg->message==0x0201u &&
+       msg->pt.x>=g_edit.bounds.left &&
+       msg->pt.x<g_edit.bounds.right &&
+       msg->pt.y>=g_edit.bounds.top &&
+       msg->pt.y<g_edit.bounds.bottom) {
+        g_edit.focused=1;
+        SipShowIM(1u);
+        nt_edit_paint();
+        return 1;
+    }
     /* Close belongs to shared chrome, not to individual app WNDPROCs. */
     if (is_hwnd(msg->hwnd) && !is_phone_shell() && !is_hosted_phone() && msg->message == 0x0202u && msg->pt.x >= 288 &&
         msg->pt.y < 24 && msg->pt.y >= 0) {
         PostQuitMessage(0);
         return 0;
     }
-    if (is_hwnd(msg->hwnd) && g_window.proc)
-        return g_window.proc(msg->hwnd, msg->message, msg->wParam, msg->lParam);
+    if(is_hwnd(msg->hwnd) && g_window.proc) {
+        if(msg->message==0x000Fu) {
+            /* Normal GetMessageW -> DispatchMessageW paints must batch too.
+             * Otherwise GWESLAB's child Edit and parent ReleaseDC each
+             * refresh the complete hardware LCD separately. */
+            ++g_nt_paint_depth;
+            int result=g_window.proc(msg->hwnd,msg->message,
+                                     msg->wParam,msg->lParam);
+            g_nt_paint_pending=1u;
+            nt_finish_paint();
+            return result;
+        }
+        return g_window.proc(msg->hwnd,msg->message,msg->wParam,msg->lParam);
+    }
     return DefWindowProcW(msg->hwnd, msg->message, msg->wParam, msg->lParam);
 }
 int TranslateMessage(const NT_MSG *msg)
@@ -438,16 +571,30 @@ int TranslateMessage(const NT_MSG *msg)
 }
 int DestroyWindow(void *hwnd)
 {
+    if(is_edit_hwnd(hwnd)) {
+        g_edit.magic=0u;g_edit.visible=g_edit.focused=0;
+        nt_kb_edit_init(&g_edit.value);
+        return 1;
+    }
     if (!is_hwnd(hwnd))
         return 0;
     if (g_window.proc)
         g_window.proc(hwnd, 0x0002u, 0, 0); /* WM_DESTROY */
+    if(g_edit.magic)DestroyWindow((void *)&g_edit);
     g_window.magic = 0;
     g_window.proc = 0;
     return 1;
 }
 int SetWindowTextW(void *hwnd, const u16 *text)
 {
+    if(is_edit_hwnd(hwnd)) {
+        nt_kb_edit_init(&g_edit.value);
+        if(text)
+            for(unsigned i=0u;i<NT_KB_TEXT_MAX-1u && text[i];++i)
+                if(!nt_kb_edit_char(&g_edit.value,text[i]))break;
+        if(g_edit.visible)nt_edit_paint();
+        return 1;
+    }
     if (!is_hwnd(hwnd))
         return 0;
     copy_wstr(g_window.title, text, 48);
@@ -456,6 +603,13 @@ int SetWindowTextW(void *hwnd, const u16 *text)
 int GetWindowTextW(void *hwnd, u16 *buffer, int capacity)
 {
     int n = 0;
+    if(is_edit_hwnd(hwnd)) {
+        if(!buffer || capacity<=0)return 0;
+        while(n+1<capacity && n<(int)g_edit.value.length) {
+            buffer[n]=g_edit.value.text[n];++n;
+        }
+        buffer[n]=0u;return n;
+    }
     if (!is_hwnd(hwnd) || !buffer || capacity <= 0)
         return 0;
     while (n + 1 < capacity && g_window.title[n]) {
@@ -486,9 +640,36 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
         g_window.invalidated = 0;
         return 1;
     }
+sip_next_event:
     do {
         ev = ((u32(*)(u32 *, u32 *, u32 *))a[15])(&x, &y, &direction);
     } while (ev == 0);
+    /* The SIP owns the bottom panel: don't forward its key touches to
+       the underlying app. Deliver Basic Latin UTF-16 via WM_CHAR. */
+    if (ev==1u && (nt_sip_flags&1u) &&
+        y>=NT_KB_TOP && y<NT_KB_BOTTOM) {
+        unsigned ch=0u;
+        if(direction!=2u && direction!=0x40u) {
+            const unsigned shift=g_nt_keyboard.shift;
+            const unsigned caps=g_nt_keyboard.caps;
+            const unsigned numbers=g_nt_keyboard.numbers;
+            ch=nt_kb_press(&g_nt_keyboard,(int)x,(int)y);
+            /* Most key taps do not alter the key labels. Avoid redrawing
+             * all 40 keys after each typed character. */
+            if(shift!=g_nt_keyboard.shift || caps!=g_nt_keyboard.caps ||
+               numbers!=g_nt_keyboard.numbers) {
+                nt_sip_paint();
+                coredll_refresh();
+            }
+        }
+        if(!ch)goto sip_next_event;
+        msg->hwnd=is_hwnd(hwnd)?hwnd:
+                  (g_window.magic?(void *)&g_window:0);
+        msg->message=0x0102u; /* WM_CHAR */
+        msg->wParam=ch;msg->lParam=1u;msg->time=0u;
+        msg->pt.x=msg->pt.y=0;
+        return 1;
+    }
     msg->hwnd = is_hwnd(hwnd) ? hwnd : (g_window.magic ? (void *)&g_window : 0);
     msg->wParam = 0;
     msg->time = 0;
@@ -499,10 +680,37 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
         msg->message = 0x0100u; /* Physical Clear is Back, not WM_QUIT. */
         msg->wParam = 0x1Bu;
         static const u16 shell_class[] = {'S', 't', 'a', 'r', 't', 'H', 'o', 's', 't', 0};
-        if (!same_wstr(g_class_name, shell_class)) {
+        if (!nt_dialog_active() && !same_wstr(g_class_name, shell_class)) {
             msg->message = 0x12u;
             return 0;
         }
+        return 1;
+    }
+    if(ev==7u) { /* actual ClassPad action-bar ESC */
+        msg->message=0x0100u;
+        msg->wParam=0x1Bu;return 1;
+    }
+    if(ev==4u || ev==5u || ev==6u) {
+        /* Physical ClassPad bar: RESIZE toggles full/split, SWAP retains
+           pane state, ROTATE toggles stacked vs side-by-side halves.
+           This is layout orientation only, never LCD register rotation. */
+        if(nt_dialog_active())goto sip_next_event;
+        if(g_nt_gwes_initialized) {
+            if(ev==4u) {
+                nt_gwes_setmode(&g_nt_gwes,
+                    g_nt_gwes.mode==NT_GWES_FULL?
+                    NT_GWES_STACK:NT_GWES_FULL);
+            } else if(ev==5u) {
+                nt_gwes_swap(&g_nt_gwes);
+            } else {
+                nt_gwes_setmode(&g_nt_gwes,
+                    g_nt_gwes.mode==NT_GWES_COLUMNS?
+                    NT_GWES_STACK:NT_GWES_COLUMNS);
+            }
+        }
+        msg->message=0x0005u; /* WM_SIZE remeasure/repaint */
+        msg->wParam=g_nt_gwes_initialized?g_nt_gwes.mode:0u;
+        msg->lParam=(528u<<16u)|320u;
         return 1;
     }
     if (ev == 3) {
@@ -517,8 +725,12 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
             x = 0x27u; /* VK_RIGHT */
         else if (x == 0x0094u)
             x = 0x0Du; /* VK_RETURN */
-        if (x == 0x00B3u)
-            x = 0x71u; /* Physical Keyboard -> VK_F2 (SIP toggle). */
+        if (x == 0x00B3u) {
+            /* Hardware keyboard button toggles WinCE SIP and still
+               reaches the client as VK_F2 for compatibility. */
+            SipShowIM((nt_sip_flags&1u)?0u:1u);
+            x = 0x71u;
+        }
         else if (x == 0x0080u)
             x = 0x1Bu; /* Raw Clear -> VK_ESCAPE/Back. */
         msg->wParam = x;
@@ -530,9 +742,12 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
     msg->pt.x = (int)x;
     msg->pt.y = (int)y;
     msg->lParam = ((y & 0xFFFFu) << 16) | (x & 0xFFFFu);
-    legacy_nav_input(msg);
+    if(!nt_dialog_active())legacy_nav_input(msg);
     return 1;
 }
+
+#include "wince/gdi_memory.inc"
+#include "wince/ntgwes_api.inc"
 
 void *GetDC(void *hwnd)
 {
@@ -543,8 +758,10 @@ void *GetDC(void *hwnd)
 int ReleaseDC(void *hwnd, void *hdc)
 {
     (void)hwnd;
-    if (hdc)
+    if(hdc) {
+        if(!g_nt_paint_depth)nt_present_overlays();
         coredll_refresh();
+    }
     return hdc ? 1 : 0;
 }
 
@@ -591,17 +808,26 @@ int EndPaint(void *hwnd, const NT_PAINT *paint)
         g_window.invalidated = 0;
     ntos_paint_titlebar();
     legacy_nav_paint();
+    nt_edit_paint();
+    if(!g_nt_paint_depth)nt_present_overlays();
     coredll_refresh();
     return 1;
 }
 
-/* Always clip in the USER/GDI boundary. The hardware pixel/line gates are
- * intentionally not required to tolerate out-of-range coordinates. */
 u32 SetPixel(void *hdc, int x, int y, u32 colorref)
 {
-    if (hdc && x >= 0 && y >= 0 && x < 320 && y < 528)
-        ntos_pixel((u32)x, (u32)y, colorref);
-    return colorref;
+    GDI_BITMAP *b=gdi_selected(hdc);
+    if(b) {
+        if(x<0 || y<0 || x>=b->w || y>=b->h)
+            return GDI_INVALID_COLOR;
+        b->pixels[(u32)y*(u32)b->w+(u32)x]=(u16)rgb565(colorref);
+        return colorref;
+    }
+    if(gdi_device_dc(hdc) && x>=0 && y>=0 && x<320 && y<528) {
+        ntos_pixel((u32)x,(u32)y,colorref);
+        return colorref;
+    }
+    return GDI_INVALID_COLOR;
 }
 
 void *CreateSolidBrush(u32 colorref)
@@ -612,7 +838,11 @@ void *CreateSolidBrush(u32 colorref)
 
 int DeleteObject(void *object)
 {
-    return object != 0; /* synthetic brush/font handles: no heap ownership */
+    u32 tag=(u32)(uintptr_t)object & 0xFF000000u;
+    if(tag==GDI_BITMAP_TAG)return gdi_delete_bitmap(object);
+    /* Synthetic font/brush handles have no heap ownership. */
+    if(tag==0x01000000u || tag==0x02000000u)return 1;
+    return 0;
 }
 
 static int nt_gdi_clip_rect(int *l, int *t, int *r, int *b)
@@ -632,18 +862,18 @@ static int nt_gdi_clip_rect(int *l, int *t, int *r, int *b)
 
 int FillRect(void *hdc, const NT_RECT *rect, void *brush)
 {
-    int l, t, r, b;
-    const void **a = ntapi();
-    if (!hdc || !rect || !brush || !a || !a[9])
+    int l,t,r,b;
+    if (!hdc || !rect || !brush ||
+        (((u32)(uintptr_t)brush & 0xFF000000u)!=0x01000000u))
         return 0;
-    l = rect->left;
-    t = rect->top;
-    r = rect->right;
-    b = rect->bottom;
-    if (!nt_gdi_clip_rect(&l, &t, &r, &b))
-        return 0;
-    ((void (*)(u32, u32, u32, u32, u32))a[9])(
-        (u32)l, (u32)t, (u32)r, (u32)b, (u32)brush & 0xFFFFu);
+    u32 color=(u32)(uintptr_t)brush & 0xFFFFu;
+    if(gdi_dc(hdc))return gdi_fill_bitmap(hdc,rect,color);
+    if(!gdi_device_dc(hdc))return 0;
+    const void **a=ntapi();
+    if(!a || !a[9])return 0;
+    l=rect->left;t=rect->top;r=rect->right;b=rect->bottom;
+    if(!nt_gdi_clip_rect(&l,&t,&r,&b))return 0;
+    ((void (*)(u32,u32,u32,u32,u32))a[9])((u32)l,(u32)t,(u32)r,(u32)b,color);
     return 1;
 }
 
@@ -691,8 +921,8 @@ int LineTo(void *hdc, int x, int y)
         return 0;
     pen_x = x;
     pen_y = y;
-    if (x0 >= 0 && y0 >= 0 && x >= 0 && y >= 0 && x0 < 320 && y0 < 528 &&
-        x < 320 && y < 528) {
+    if (gdi_device_dc(hdc) && x0 >= 0 && y0 >= 0 && x >= 0 && y >= 0 &&
+        x0 < 320 && y0 < 528 && x < 320 && y < 528) {
         ntos_line((u32)x0, (u32)y0, (u32)x, (u32)y, 0x00FFFFFFu);
     } else if (x0 >= -2048 && x0 <= 2368 && x >= -2048 && x <= 2368 &&
                y0 >= -2048 && y0 <= 2576 && y >= -2048 && y <= 2576) {
@@ -817,6 +1047,12 @@ int GetClientRect(void *hwnd, NT_RECT *rect)
 {
     if (!rect)
         return 0;
+    if(is_edit_hwnd(hwnd)) {
+        rect->left=rect->top=0;
+        rect->right=g_edit.bounds.right-g_edit.bounds.left;
+        rect->bottom=g_edit.bounds.bottom-g_edit.bounds.top;
+        return 1;
+    }
     rect->left = 0;
     rect->top = 0;
     if (is_hwnd(hwnd)) {
@@ -868,8 +1104,12 @@ void *CreateFontIndirectW(const NT_LOGFONTW *font)
 }
 void *SelectObject(void *hdc, void *object)
 {
-    u32 v = (u32)object;
-    if (!hdc || (v & 0xFF000000u) != NTOS_FONT_HANDLE)
+    u32 v = (u32)(uintptr_t)object;
+    if(gdi_dc(hdc) &&
+       (((v & 0xFF000000u)==GDI_BITMAP_TAG) ||
+        object==GDI_STOCK_BITMAP))
+        return gdi_select_bitmap(hdc,object);
+    if (!gdi_valid_dc(hdc) || (v & 0xFF000000u) != NTOS_FONT_HANDLE)
         return 0;
     int h = (int)(v & 0xffu);
     if (h < 9 || h > 32)
@@ -927,6 +1167,7 @@ static unsigned nt_glyph_div(unsigned numerator, unsigned denominator)
 static int nt_fontwidth(u16 ch)
 {
     int raw = (ch >= 32 && ch < 127) ? nt_font_advance[ch - 32] : 8;
+    if(g_font_height==14)return raw; /* native atlas needs no divide */
     return (int)nt_glyph_div((unsigned)(raw * g_font_height + 7), 14u);
 }
 static int nt_glyph(void *hdc, int x, int y, u16 ch)
@@ -934,11 +1175,37 @@ static int nt_glyph(void *hdc, int x, int y, u16 ch)
     const void **api = ntapi();
     u32 fg = rgb565(g_text_color), bg = rgb565(g_bk_color);
     int h = g_font_height;
-    int w = (int)nt_glyph_div((unsigned)(8 * h + 7), 14u);
-    if (!hdc || !api || !api[7])
+    GDI_BITMAP *bitmap=gdi_selected(hdc);
+    if (!hdc || (!bitmap &&
+         (!gdi_device_dc(hdc) || !api || !api[7])))
         return 0;
     if (ch < 32 || ch >= 127)
         ch = '?';
+    if(h==14) {
+        /* The stock TouchKB/dialog font is exactly 8x14. The generic
+         * scaler ran a 32-bit software divider per glyph plus hundreds
+         * of shift/threshold operations even at native size. */
+        for(int yy=0;yy<14;++yy) {
+            const unsigned bits=nt_font_rows[ch-32][yy];
+            for(int xx=0;xx<8;++xx) {
+                const int active=(bits>>xx)&1;
+                if(active || g_bk_mode!=1) {
+                    const int px=x+xx,py=y+yy;
+                    if(bitmap) {
+                        if(px>=0 && px<bitmap->w &&
+                           py>=0 && py<bitmap->h)
+                            bitmap->pixels[(u32)py*(u32)bitmap->w+
+                                           (u32)px]=(u16)(active?fg:bg);
+                    } else if(px>=0 && px<320 && py>=0 && py<528) {
+                        ((void (*)(u32,u32,u32))api[7])
+                            ((u32)px,(u32)py,active?fg:bg);
+                    }
+                }
+            }
+        }
+        return 1;
+    }
+    const int w=(int)nt_glyph_div((unsigned)(8*h+7),14u);
     int sr = 0, ry = 0;
     for (int yy = 0; yy < h; ++yy) {
         unsigned bits = nt_font_rows[ch - 32][sr];
@@ -948,8 +1215,14 @@ static int nt_glyph(void *hdc, int x, int y, u16 ch)
             int active = (bits >> src) & 1; /* LSB at the LEFT */
             if (active || g_bk_mode != 1) {
                 int px = x + xx, py = y + yy;
-                if (px >= 0 && px < 320 && py >= 0 && py < 528)
-                    ((void (*)(u32, u32, u32))api[7])((u32)px, (u32)py, active ? fg : bg);
+                if(bitmap) {
+                    if(px>=0 && px<bitmap->w &&
+                       py>=0 && py<bitmap->h)
+                        bitmap->pixels[(u32)py*(u32)bitmap->w+
+                                       (u32)px]=(u16)(active?fg:bg);
+                } else if (px>=0 && px<320 && py>=0 && py<528)
+                    ((void (*)(u32, u32, u32))api[7])
+                        ((u32)px,(u32)py,active?fg:bg);
             }
             rx += 14;
             while (rx >= h) {
@@ -1017,14 +1290,26 @@ int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
 }
 int UpdateWindow(void *hwnd)
 {
-    if (is_hwnd(hwnd) && g_window.invalidated) {
-        g_window.invalidated = 0;
-        if (g_window.proc)
-            g_window.proc(hwnd, 0x000Fu, 0, 0);
-        else
-            coredll_refresh();
+    if(is_edit_hwnd(hwnd)) {
+        nt_edit_paint();
+        if(!g_nt_paint_depth)nt_present_overlays();
+        coredll_refresh();
+        return 1;
     }
-    /* EndPaint already refreshes once; no second LCD_Refresh here. */
+    if(is_hwnd(hwnd) && g_window.invalidated) {
+        g_window.invalidated=0;
+        ++g_nt_paint_depth;
+        if(g_window.proc)g_window.proc(hwnd,0x000Fu,0,0);
+        /* Nested UpdateWindow(Edit), ReleaseDC and EndPaint must not
+         * upload incomplete frames to the slow physical LCD. */
+        g_nt_paint_pending=1u;
+        nt_finish_paint();
+        return 1;
+    }
+    if(nt_dialog_active()) {
+        nt_present_overlays();
+        coredll_refresh();
+    }
     return 1;
 }
 
@@ -1350,10 +1635,13 @@ int coredll_stub(void)
     return 0;
 }
 
-/* PE DLL_PROCESS_ATTACH/DETACH: no OS-side initialization yet. */
-int main(void)
+/* WinCE DllMain(HINSTANCE,reason,reserved): detach releases any GDI
+ * surfaces still live when an EXE exits without calling DeleteObject. */
+int main(void *module,u32 reason,void *reserved)
 {
-    return 1; /* BOOL TRUE, WinCE DLL initialization contract */
+    (void)module;(void)reserved;
+    if(reason==0u)gdi_release_all(); /* DLL_PROCESS_DETACH */
+    return 1;
 }
 
 /* NTOS_PHONE_SIP_FINDER: WinCE public APIs over bounded native services. */
@@ -1472,16 +1760,26 @@ typedef struct {
     u32 data_size;
     void *data;
 } NT_SIP_INFO;
-static u32 nt_sip_flags = 2u; /* SIPF_DOCKED; SIPF_ON is bit zero. */
 int SipShowIM(u32 flags)
 {
     if (flags > 1u) {
         g_last_error = 87;
         return 0;
     }
+    if((nt_sip_flags&1u)==flags)return 1;
     nt_sip_flags = 2u | flags;
-    if (g_window.magic)
-        enqueue((void *)&g_window, 0x001Au, 0, 0); /* WM_SETTINGCHANGE */
+    if(g_nt_gwes_initialized)
+        nt_gwes_sip(&g_nt_gwes,flags);
+    if(g_window.magic && !g_nt_sip_silent) {
+        g_window.invalidated=1;
+        enqueue((void *)&g_window,0x001Au,0,0); /* WM_SETTINGCHANGE */
+    }
+    /* HWNDs redraw after WM_SETTINGCHANGE. Painting the SIP first
+     * wastes an LCD refresh and lets the parent erase it afterwards. */
+    if(flags && !g_window.magic && !g_nt_sip_silent) {
+        nt_sip_paint();
+        coredll_refresh();
+    }
     return 1;
 }
 int SipGetInfo(NT_SIP_INFO *info)
@@ -1510,6 +1808,39 @@ int SipSetInfo(const NT_SIP_INFO *info)
     }
     return SipShowIM(info->flags & 1u);
 }
+#include "wince/nt_touchkb_render.inc"
+#include "wince/nt_gwes_dialog_api.inc"
+/* WinCE EDIT control: one bounded UTF-16 line, caller-visible HWND,
+ * keyboard focus and WM_CHAR editing. The actual WinCE EDIT class has far
+ * more behaviors (selection, undo, IME, multiline); none are implied.
+ */
+static void nt_edit_paint(void)
+{
+    if(!g_edit.magic || !g_edit.visible)return;
+    const NT_RECT *r=&g_edit.bounds;
+    if(r->right<=r->left+4 || r->bottom<=r->top+4)return;
+    ntos_fillrect((u32)r->left,(u32)r->top,(u32)r->right,
+                  (u32)r->bottom,0x00A0A0A0u);
+    ntos_fillrect((u32)(r->left+1),(u32)(r->top+1),
+                  (u32)(r->right-1),(u32)(r->bottom-1),
+                  0x00FFFFFFu);
+    const void **api=ntapi();
+    if(!api || !api[7])return;
+    const int old_h=g_font_height;
+    g_font_height=14;
+    const u32 old=SetTextColor((void *)1,0x00101010u);
+    const int opaque=SetBkMode((void *)1,1);
+    unsigned available=(unsigned)((r->right-r->left-8)/8);
+    unsigned len=g_edit.value.length;
+    unsigned skip=len>available?len-available:0u;
+    if(available>0u)
+        TextOutW((void *)1,r->left+4,r->top+5,
+                 g_edit.value.text+skip,(int)(len-skip));
+    g_font_height=old_h;
+    SetTextColor((void *)1,old);
+    SetBkMode((void *)1,opaque);
+}
+
 
 /* Private serial launcher; unavailable on old firmware, never calls beyond its table. */
 int coredll_launch(const char *path)

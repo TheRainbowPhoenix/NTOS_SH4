@@ -16,6 +16,37 @@ struct Catalog {
     int pick[MAX_FILES];
 };
 static_assert(sizeof(Catalog)<12288u);
+
+// Sort only the existing catalog indices; keep sizes/filenames paired and
+// avoid an additional large allocation on the 4 KiB HH3 host stack.
+// ASCII-only comparison is intentional: storage filenames are narrow and
+// the picker must not depend on a locale or C runtime.
+inline bool filename_less(const char *a,const char *b) {
+    for(unsigned i=0u;i<=MAX_NAME;++i) {
+        unsigned x=static_cast<unsigned char>(a[i]);
+        unsigned y=static_cast<unsigned char>(b[i]);
+        if(x>='A' && x<='Z')x+=unsigned('a'-'A');
+        if(y>='A' && y<='Z')y+=unsigned('a'-'A');
+        if(x!=y)return x<y;
+        if(x==0u)return false;
+    }
+    return false;
+}
+inline void sort_by_name(Catalog &catalog,unsigned count) {
+    if(count>MAX_FILES)count=MAX_FILES;
+    // Stable insertion sort. Up to 256 files, no recursion, no heap,
+    // and no movement of the backing filenames or size records.
+    for(unsigned i=1u;i<count;++i) {
+        const int item=catalog.pick[i];
+        unsigned j=i;
+        while(j>0u && filename_less(catalog.names[item],
+                                    catalog.names[catalog.pick[j-1u]])) {
+            catalog.pick[j]=catalog.pick[j-1u];
+            --j;
+        }
+        catalog.pick[j]=item;
+    }
+}
 enum Action : uint8_t { none=0, redraw=1, launch=2, exit_host=3 };
 // 40-column padded row; actual physical glyph selection is explicit.
 // Three fixed-width decimal digits render 1..256 without overflowing the

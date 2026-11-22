@@ -60,7 +60,7 @@ static void test_pixel(void)
     assert(SetPixel((void *)1, 0, 0, 0x000000ffu) == 0x000000ffu);
     assert(SetPixel((void *)1, 319, 527, 0x0000ff00u) == 0x0000ff00u);
     assert(pixels[0][0] == 0xf800u && pixels[527][319] == 0x07e0u);
-    assert(SetPixel((void *)1, -1, 0, 0) == 0);
+    assert(SetPixel((void *)1, -1, 0, 0) == GDI_INVALID_COLOR);
     SetPixel((void *)1, 320, 0, 0);
     SetPixel((void *)1, 0, 528, 0);
     SetPixel((void *)1, 0, -1, 0);
