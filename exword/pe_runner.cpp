@@ -267,6 +267,11 @@ static void *host_malloc(uint32_t n){return heap_alloc(n);}
 static unsigned g_guest_disk;
 static char g_guest_root[NTOS_EXWORD_PATH_MAX];
 static NtosExwordArena g_guest_area;
+/* Serial foreground execution only. Each child starts AFTER parent Ob/Ex
+ * teardown and native OS descriptor close; no shared P0 address space. */
+static char g_next_program[NTOS_EXWORD_PATH_MAX];
+static unsigned g_handoff_depth;
+static uint32_t g_guest_cookie_seed=1u;
 /* NTOS Ob issues stale-proof typed file handles; no raw fd escapes. */
 static bool guest_path(const char *input,char out[NTOS_EXWORD_PATH_MAX])
 {
@@ -315,6 +320,34 @@ static bool guest_path(const char *input,char out[NTOS_EXWORD_PATH_MAX])
     }
     return true;
 }
+static int guest_launch(const char *path)
+{
+    if(!g_guest_process || !g_guest_root[0] ||
+       g_handoff_depth>=2u || g_next_program[0])return 0;
+    char candidate[NTOS_EXWORD_PATH_MAX];
+    if(!guest_path(path,candidate))return 0;
+    unsigned i=0u;
+    while(g_guest_root[i] && candidate[i]==g_guest_root[i])++i;
+    if(g_guest_root[i] || candidate[i]!='\\')return 0;
+    const char *leaf=candidate+i+1u;
+    if(!*leaf)return 0;
+    unsigned len=0u;
+    while(leaf[len]) {
+        if(leaf[len]=='\\' || leaf[len]=='/')return 0;
+        ++len;
+    }
+    if(len<5u || !same_case(leaf+len-4u,".EXE"))return 0;
+    uint32_t size=0u;
+    if(ntos_exword_file_size(candidate,&size)<0 ||
+       size<64u || size>8u*1024u*1024u)return 0;
+    unsigned j=0u;
+    while(candidate[j] && j+1u<sizeof g_next_program) {
+        g_next_program[j]=candidate[j];++j;
+    }
+    g_next_program[j]=0;
+    return candidate[j]==0?1:0;
+}
+
 static int guest_open(const char *path,uint32_t flags)
 {
     if(!g_guest_process || flags!=1u)return -5;
@@ -405,6 +438,7 @@ static void init_host_api()
     ntos_host_table[18]=(const void *)&guest_seek;
     ntos_host_table[22]=(const void *)&guest_stat;
     ntos_host_table[23]=(const void *)&vm_hint;
+    ntos_host_table[27]=(const void *)&guest_launch;
     ntos_host_table[28]=(const void *)&event_create;
     ntos_host_table[29]=(const void *)&event_set;
     ntos_host_table[30]=(const void *)&event_reset;
@@ -519,6 +553,7 @@ int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_c
     g_guest_root[n]=0;
     g_guest_process=nullptr;
     g_alloc=nullptr;
+    g_next_program[0]=0;
     using namespace ntos_exword_modules;
     /* Place the metadata at the end of the P1 image range. The aligned
      * gap beneath it is unavailable to both DLL images and guest heap. */
@@ -573,6 +608,9 @@ int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_c
         ntos_exword_arena_release(area);
         return -5;
     }
+    /* Keep Ob handles unique across serial child launches. */
+    if(g_guest_cookie_seed>0x3fffff00u)g_guest_cookie_seed=1u;
+    g_guest_process->handles.next_cookie=g_guest_cookie_seed;
     g_guest_process->pool.configure(nullptr,pool_allocate,pool_deallocate);
     g_vm.begin(vm_allocate,vm_deallocate,vm_zero,nullptr);
     init_host_api();
@@ -596,9 +634,24 @@ int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_c
     /* DLL and COREDLL teardown happens BEFORE releasing guest heap. */
     ntos_exword_dll_main(nullptr,0u,nullptr);
     guest_close_all();
+    g_guest_cookie_seed=g_guest_process->handles.next_cookie;
     g_guest_process->finish();
     *exit_code=(uint32_t)rc;
     set_error("ok");
+    /* Copy the queued child before reinitializing the guest's metadata. */
+    char child[NTOS_EXWORD_PATH_MAX];
+    unsigned at=0u;
+    while(g_next_program[at] && at+1u<sizeof child) {
+        child[at]=g_next_program[at];++at;
+    }
+    child[at]=0;
+    g_next_program[0]=0;
     ntos_exword_arena_release(area);
+    if(child[0]) {
+        ++g_handoff_depth;
+        int status=ntos_exword_run_pe(child,content_dir,exit_code);
+        --g_handoff_depth;
+        return status;
+    }
     return 0;
 }
