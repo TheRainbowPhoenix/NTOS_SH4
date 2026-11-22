@@ -4,10 +4,13 @@
 #include "wince_ui.h"
 NT_IMPORT(int, SendMessageW, (void *, DWORD, DWORD, DWORD))
 NT_IMPORT(int, SetWindowTextW, (void *, const WCHAR16 *))
+typedef struct {DWORD size, classes;} ICC;
+NT_IMPORT(int, InitCommonControlsEx, (const ICC *))
 NT_IMPORT(int, SipShowIM, (DWORD))
 NT_DEFINE(SendMessageW)
 NT_DEFINE(SetWindowTextW)
 NT_DEFINE(SipShowIM)
+NT_DEFINE(InitCommonControlsEx)
 static const WCHAR16 classname[]={'N','t','C','o','n','t','r','o','l','s',0};
 static const WCHAR16 title[]={'N','T','O','S',' ','C','o','n','t','r','o','l','s',0};
 static const WCHAR16 editname[]={'E','D','I','T',0};
@@ -91,6 +94,8 @@ static int wndproc(void *hwnd,DWORD msg,DWORD wp,DWORD lp)
 }
 int main(void)
 {
+    ICC classes={sizeof(ICC),0x4020u}; /* STANDARD + PROGRESS */
+    if(!NT_CALL(InitCommonControlsEx,(&classes)))return 3;
     ui_init();
     return ui_run(classname,title,wndproc);
 }
