@@ -681,14 +681,54 @@ int MoveToEx(void *hdc, int x, int y, NT_POINT *previous)
     return 1;
 }
 
+/* Fully visible lines retain the fast kernel line gate. Lines crossing
+ * the screen edge are rasterized with clipped pixels rather than passing
+ * a negative or out-of-range coordinate to the SH7305 framebuffer gate. */
 int LineTo(void *hdc, int x, int y)
 {
+    int x0 = pen_x, y0 = pen_y;
     if (!hdc)
         return 0;
-    if (pen_x >= 0 && pen_y >= 0 && x >= 0 && y >= 0)
-        ntos_line((u32)pen_x, (u32)pen_y, (u32)x, (u32)y, 0x00FFFFFFu);
     pen_x = x;
     pen_y = y;
+    if (x0 >= 0 && y0 >= 0 && x >= 0 && y >= 0 && x0 < 320 && y0 < 528 &&
+        x < 320 && y < 528) {
+        ntos_line((u32)x0, (u32)y0, (u32)x, (u32)y, 0x00FFFFFFu);
+    } else if (x0 >= -2048 && x0 <= 2368 && x >= -2048 && x <= 2368 &&
+               y0 >= -2048 && y0 <= 2576 && y >= -2048 && y <= 2576) {
+        int dx = x0 < x ? x - x0 : x0 - x;
+        int dy = y0 < y ? y - y0 : y0 - y;
+        int sx = x0 < x ? 1 : -1;
+        int sy = y0 < y ? 1 : -1;
+        int err = dx - dy;
+        for (;;) {
+            SetPixel(hdc, x0, y0, 0x00FFFFFFu);
+            if (x0 == x && y0 == y)
+                break;
+            int e2 = err * 2;
+            if (e2 > -dy) {
+                err -= dy;
+                x0 += sx;
+            }
+            if (e2 < dx) {
+                err += dx;
+                y0 += sy;
+            }
+        }
+    }
+    return 1;
+}
+
+/* WinCE Polyline leaves the pen's current position unchanged. */
+int Polyline(void *hdc, const NT_POINT *points, int count)
+{
+    NT_POINT saved;
+    if (!hdc || !points || count < 2 || count > 1024)
+        return 0;
+    MoveToEx(hdc, points[0].x, points[0].y, &saved);
+    for (int i = 1; i < count; ++i)
+        LineTo(hdc, points[i].x, points[i].y);
+    MoveToEx(hdc, saved.x, saved.y, 0);
     return 1;
 }
 
@@ -720,8 +760,10 @@ int Rectangle(void *hdc, int l, int t, int r, int b)
  * geometries so malformed application coordinates cannot stall the LCD. */
 int Ellipse(void *hdc, int l, int t, int r, int b)
 {
-    if (!hdc || l >= r || t >= b || r - l > 2048 || b - t > 2048 ||
-        l < -2048 || t < -2048 || r > 2368 || b > 2576)
+    if (!hdc || l >= r || t >= b || l < -2048 || t < -2048 ||
+        r > 2368 || b > 2576)
+        return 0;
+    if (r - l > 2048 || b - t > 2048)
         return 0;
     const int w = r - l, h = b - t;
     const int cx2 = l + r - 1, cy2 = t + b - 1;
