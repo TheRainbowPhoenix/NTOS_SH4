@@ -12,6 +12,7 @@ on:
       - "tests/exword_packaging_test.py"
       - "tests/exword_names_test.c"
       - "tests/exword_vm_test.cpp"
+      - "tests/exword_ob_ex_test.cpp"
       - "src/nt/**"
       - "src/pe.hpp"
       - "src/pe_stream.hpp"
@@ -45,8 +46,10 @@ jobs:
         run: |
           set -euo pipefail
           make -j4
-          make exword-vmtest
-          test -s dist/VMTEST.EXE
+          make exword-probes
+          for probe in VMTEST OBTEST EVTEST POOLTEST IOTEST; do
+            test -s "dist/${probe}.EXE"
+          done
           test -s dist/HELLO.EXE
           test -s dist/HELLOCORE.EXE
           test -s dist/COREDLL.DLL
@@ -79,6 +82,8 @@ jobs:
           /tmp/ntosh-exword-name-test
           c++ -std=c++17 -Os -Wall -Wextra -Werror tests/exword_vm_test.cpp -o /tmp/ntosh-exword-vm-test
           /tmp/ntosh-exword-vm-test
+          c++ -std=c++17 -Os -Wall -Wextra -Werror tests/exword_ob_ex_test.cpp -o /tmp/ntosh-exword-ob-ex-test
+          /tmp/ntosh-exword-ob-ex-test
           for test in pe_stream_test pe_fixup_types_test pe_forwarder_test; do
             c++ -std=c++20 -Os -Wall -Wextra -Werror "tests/${test}.cpp" -o "/tmp/${test}"
             "/tmp/${test}"

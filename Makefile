@@ -1171,6 +1171,13 @@ $(OUTDIR)/VMTEST.EXE: $(NT_PROBE_BUILD)/vmtest_exword.elf tools/elf2ntx.py
 	$(PYTHON) tools/elf2ntx.py $< -o $@
 .PHONY: exword-vmtest
 exword-vmtest: $(OUTDIR)/VMTEST.EXE
+.PHONY: exword-probes
+# Cross-compile the safe NTOS exec/Ob/Ex/IO fixtures from the SAME sources
+# as Hollyhock. Only proven non-faulting probes enter physical Exword builds.
+exword-probes: exword-vmtest $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE
+	@mkdir -p $(OUTDIR)
+	cp $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(OUTDIR)/
+
 # --- separate EX-word native D01 target (SH7305, 528x320, 128 KiB) --------
 # Does not change the HH3 compiler, link script or the normal "all" target.
 # Use fxSDK's EXWORD.cmake and a separately installed gint-exword prefix.
@@ -1180,7 +1187,7 @@ EXWORD_METADATA_SOURCE ?=
 EXWORD_PAYLOAD_DIR ?= $(abspath $(OUTDIR))
 .PHONY: exword
 # Build the same NTOS WinCE SH4BE modules used by the HH3 device first.
-exword: ntx exword-vmtest
+exword: ntx exword-probes
 	@test -n "$(EXWORD_TOOLCHAIN)" && test -n "$(EXWORD_GINT_PREFIX)" || { \
 		echo "Usage: make exword EXWORD_TOOLCHAIN=/path/EXWORD.cmake EXWORD_GINT_PREFIX=/path/gint-exword"; exit 2; }
 	cmake -S exword -B build-exword \
