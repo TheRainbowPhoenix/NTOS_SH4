@@ -53,8 +53,11 @@ It does not reuse or copy PEG implementation code.
 
 ## Native GDI
 
-The native `COREDLL.DLL` now clips `SetPixel`, `FillRect` and the
-`Rectangle` outline to the 320x528 display. `Ellipse` draws a thin,
+The native `COREDLL.DLL` now clips `SetPixel`, `FillRect`, the
+`Rectangle` outline, and out-of-bounds `LineTo` segments to the 320x528
+display. Fully visible lines retain the fast kernel drawing gate; bounded
+out-of-bounds lines use a clipped pixel raster. `Polyline` is implemented
+with WinCE-compatible pen position preservation. `Ellipse` draws a thin,
 symmetric pixel outline through a bounded integer scanline search, with
 no FPU, multisampling, antialiasing, frame buffer copy or dynamic memory.
 `GDILAB.EXE` adds six interactive pages: RGB565 fills, off-screen
@@ -76,7 +79,7 @@ exports still fall through to an unsupported stub, and the original WinCE
   split/full/side-by-side rectangle coverage, swaps, and precise hit boundaries.
 - `tests/native_gdi_raster_test.c` includes the **shipping COREDLL.c**
   and checks RGB565, clipping and pixel bounds using a strict fake HAL,
-  ellipse outlines, bitmap text raster and synthetic brush lifetimes.
+  line/polyline behavior, ellipse outlines, bitmap text raster and synthetic brush lifetimes.
 - `GDILAB.EXE` is a manual emulator/device test for visible artifacts and
   repaint performance, not a screenshot oracle.
 - Device installer copies `CMD.EXE` and `GDILAB.EXE` with the rest of the
