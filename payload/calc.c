@@ -292,7 +292,7 @@ static int wndproc(void *hwnd, DWORD msg, DWORD wp, DWORD lp)
         }
 #endif
 #ifdef NTOS_EXWORD
-    } else if (msg == WM_KEYDOWN || msg == WM_CHAR) {
+    } else if (msg == WM_KEYDOWN || msg == 0x0102u) { /* WM_CHAR */
 #else
     } else if (msg == WM_KEYDOWN) {
 #endif
