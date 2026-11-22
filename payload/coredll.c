@@ -735,6 +735,13 @@ sip_next_event:
         return 1;
     }
     if (ev == 3) {
+#ifdef NTOS_EXWORD
+        /* Classify the native hardware event BEFORE converting to WinCE
+         * VK codes. VK_LEFT=0x25 etc. overlap printable ASCII punctuation
+         * and must not be mistaken for WM_CHAR. */
+        const int navigation =
+            (x>=0x90u && x<=0x94u) || x==0x80u || x==0xB3u;
+#endif
         msg->message = 0x0100u; /* WM_KEYDOWN */
         if (x == 0x0090u)
             x = 0x26u; /* VK_UP */
@@ -759,7 +766,7 @@ sip_next_event:
          * enter via WM_CHAR only; arrows, Escape and Enter retain the
          * WM_KEYDOWN navigation contract. Virtual controls also receive
          * the physical Shift state already encoded by the host. */
-        if((x>=32u && x<=126u) || x==8u)
+        if(!navigation && ((x>=32u && x<=126u) || x==8u))
             msg->message=0x0102u; /* WM_CHAR */
 #endif
         msg->wParam = x;
