@@ -1174,7 +1174,7 @@ exword-vmtest: $(OUTDIR)/VMTEST.EXE
 .PHONY: exword-probes
 # Cross-compile the safe NTOS exec/Ob/Ex/IO fixtures from the SAME sources
 # as Hollyhock. Only proven non-faulting probes enter physical Exword builds.
-exword-probes: exword-vmtest $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(NT_PROBE_DIST)/MMTEST.EXE $(NT_PROBE_DIST)/MMROTEST.EXE $(OUTDIR)/NATIVEVM.EXE $(OUTDIR)/MMREUSE.EXE $(OUTDIR)/MMSTRESS.EXE
+exword-probes: exword-vmtest $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(NT_PROBE_DIST)/MMTEST.EXE $(NT_PROBE_DIST)/MMROTEST.EXE $(OUTDIR)/NATIVEVM.EXE $(OUTDIR)/MMREUSE.EXE $(OUTDIR)/MMSTRESS.EXE $(OUTDIR)/ROMDIAG.EXE
 	@mkdir -p $(OUTDIR)
 	cp $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(NT_PROBE_DIST)/MMTEST.EXE $(NT_PROBE_DIST)/MMROTEST.EXE $(OUTDIR)/
 
@@ -1194,6 +1194,11 @@ $(OUTDIR)/MMREUSE.EXE: $(NT_PROBE_BUILD)/mmreuse_exword.elf tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $< -o $@
 $(OUTDIR)/MMSTRESS.EXE: $(NT_PROBE_BUILD)/mmstress_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+# Read-only firmware MMU snapshot; no P4 writes or exception hooks.
+$(OUTDIR)/ROMDIAG.EXE: $(NT_PROBE_BUILD)/romdiag.elf tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $< -o $@
 

@@ -214,6 +214,21 @@ static void host_puts(const char *str)
     ++g_print_line;
     dupdate();
 }
+/* The read-only SH7305 registers are safe to inspect from P1. No
+ * MMU/UTLB/VBR changes are made by this diagnostic. */
+static uint32_t host_rom_mmucr(void) {
+    return *(volatile const uint32_t *)(uintptr_t)0xFF000010u;
+}
+static uint32_t host_rom_vbr(void) {
+    uint32_t v=0u;
+    __asm__ volatile("stc vbr,%0" : "=r"(v));
+    return v;
+}
+static uint32_t host_rom_sr(void) {
+    uint32_t v=0u;
+    __asm__ volatile("stc sr,%0" : "=r"(v));
+    return v;
+}
 static void host_refresh(void) {dupdate();}
 static void host_clear(uint32_t c) {dclear((int)(c&0xffffu));}
 static void host_pixel(uint32_t x,uint32_t y,uint32_t c) {
@@ -469,6 +484,9 @@ static void init_host_api()
     ntos_host_table[18]=(const void *)&guest_seek;
     ntos_host_table[22]=(const void *)&guest_stat;
     ntos_host_table[23]=(const void *)&vm_hint;
+    ntos_host_table[24]=(const void *)&host_rom_mmucr;
+    ntos_host_table[25]=(const void *)&host_rom_vbr;
+    ntos_host_table[26]=(const void *)&host_rom_sr;
     ntos_host_table[27]=(const void *)&guest_launch;
     ntos_host_table[28]=(const void *)&event_create;
     ntos_host_table[29]=(const void *)&event_set;

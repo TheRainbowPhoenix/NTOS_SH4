@@ -30,21 +30,21 @@ def main():
                      "OBTEST.EXE","EVTEST.EXE","POOLTEST.EXE","IOTEST.EXE",
                      "PROCTEST.EXE","PROCNEXT.EXE","PROCFINAL.EXE",
                      "MMTEST.EXE","MMROTEST.EXE","NATIVEVM.EXE",
-                     "MMREUSE.EXE","MMSTRESS.EXE"):
+                     "MMREUSE.EXE","MMSTRESS.EXE","ROMDIAG.EXE"):
             (dist/name).write_bytes(fake_pe())
         (dist/"Apps"/"calc").mkdir(parents=True)
         (dist/"Apps"/"calc"/"calc.exe").write_bytes(fake_pe())
         (dist/"Apps"/"edge").mkdir()
         (dist/"Apps"/"edge"/"edge.exe").write_bytes(fake_pe())
         mapping=products(dist)
-        assert len(mapping)==22
+        assert len(mapping)==23
         for locale in ("ja","cn"):
             folder=base/locale/"NTOSH"
             folder.mkdir(parents=True)
             (folder/"ntos_sh.d01").write_bytes(b"native-D01")
             (folder/"fileinfo.cji").write_bytes(b"")
             (folder/"SYSROOT").mkdir()
-            assert package(dist,folder)==22
+            assert package(dist,folder)==23
             check(dist,folder)
             assert not (folder/"SYSROOT").exists()
             assert (folder/shortname("HELLOCORE.EXE")).is_file()
@@ -53,7 +53,7 @@ def main():
             assert not (folder/"Windows").exists()
             assert all(len(p.name)<=12 for p in folder.glob("*.EXE"))
             (dist/"CHAIN.DLL").unlink()
-            assert package(dist,folder)==21
+            assert package(dist,folder)==22
             check(dist,folder)
             assert not (folder/"CHAIN.DLL").exists()
             (dist/"CHAIN.DLL").write_bytes(fake_pe())
