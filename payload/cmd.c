@@ -41,17 +41,14 @@ static void *shell_window;
 
 static void line_history(const char *s)
 {
-    unsigned i = history_count < 16 ? history_count++ : 15;
     if (history_count == 16) {
-        for (unsigned n = 1; n < 16; ++n)
-            if (n > i)
-                break;
-        if (i == 15) {
-            for (unsigned n = 0; n < 15; ++n)
-                for (unsigned j = 0; j < 48; ++j)
-                    history[n][j] = history[n + 1][j];
-        }
+        for (unsigned n = 0; n < 15; ++n)
+            for (unsigned j = 0; j < 48; ++j)
+                history[n][j] = history[n + 1][j];
+    } else {
+        ++history_count;
     }
+    unsigned i = history_count - 1;
     for (unsigned j = 0; j < 47; ++j) {
         history[i][j] = s[j];
         if (!s[j])
@@ -296,10 +293,6 @@ static void paint(void *dc)
     pane_paint(dc, 1);
     if (keyboard_open)
         keyboard_paint(dc);
-    else {
-        ui_fill(dc, 0, 506, 320, 528, BAR);
-        ui_text(dc, 7, 510, "Tap prompt for keys | F2 keyboard", DIM, 0);
-    }
 }
 static void choose_tool(int index)
 {
@@ -370,6 +363,7 @@ int main(void)
     history_count = 0;
     line_history("NTOS/SH4 Command Processor");
     line_history("Type HELP, RUN name.exe or DIR");
+    line_history("Tap > to type / F2 keyboard");
     WNDCLASSW wc = {0};
     MSG msg = {0};
     wc.wndproc = shell_proc;
