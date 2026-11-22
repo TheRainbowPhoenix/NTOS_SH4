@@ -16,6 +16,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  native-ui:
+    name: Native CMD and GDI host tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bounded command grammar and tiled window layouts
+        run: |
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -pedantic tests/native_cmd_tiling_test.c -o /tmp/ntos-native-cmd-tiles
+          /tmp/ntos-native-cmd-tiles
+      - name: Shipping COREDLL RGB565 raster and clipping
+        run: |
+          gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/native_gdi_raster_test.c -o /tmp/ntos-gdi-raster
+          /tmp/ntos-gdi-raster
   validation:
     name: Validation
     runs-on: ubuntu-latest
