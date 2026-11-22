@@ -86,7 +86,7 @@ static void show_wide_name(const WCHAR16 *name)
 }
 static void command_dir(void)
 {
-    NT_FIND_DATA found = {0};
+    NT_FIND_DATA found;
     void *find = NT_CALL(FindFirstFileW, (files_pattern, &found));
     if (find == (void *)-1 || !find) {
         line_history("No EXE files or flash unavailable");
@@ -104,7 +104,8 @@ static void command_dir(void)
 }
 static void command_execute(const char *line)
 {
-    NT_CMD_ACTION a = nt_cmd_parse(line);
+    NT_CMD_ACTION a;
+    nt_cmd_parse(line, &a);
     switch (a.kind) {
     case NT_CMD_EMPTY:
         break;
@@ -311,8 +312,9 @@ static void touch(int x, int y)
     if (pane < 0)
         return;
     NT_TILE_RECT r, c;
-    nt_tile_rect(&layout, (unsigned)pane, &r);
-    nt_tile_client(&layout, (unsigned)pane, &c);
+    if (!nt_tile_rect(&layout, (unsigned)pane, &r) ||
+        !nt_tile_client(&layout, (unsigned)pane, &c))
+        return;
     if (y < r.top + 22 && x >= r.right - 26) {
         if (layout.split)
             nt_tile_maximize(&layout, (unsigned)pane);
