@@ -753,8 +753,10 @@ int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_c
     set_error("invalid EXE path");
     if(!path || !exit_code)return -1;
     NtosExwordArena area{};
-    set_error("no verified executable P1 RAM on this ROM");
-    if(!ntos_exword_arena_check(&area))return -2;
+    if(!ntos_exword_arena_check(&area)) {
+        set_error(ntos_exword_arena_error());
+        return -2;
+    }
 
     /* A single process and its complete dependency graph live in the
      * same P1 arena. No firmware TLB edit or unsafe OS scratch reuse. */

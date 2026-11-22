@@ -31,4 +31,6 @@ inline const NtosRomProfile *ntos_rom_match(NtosRomRead read,void *ctx)
     return nullptr;
 }
 bool ntos_exword_arena_check(NtosExwordArena *out);
+/* Distinguish ROM-identity failures from unavailable/aliased P1 memory. */
+const char *ntos_exword_arena_error(void);
 void ntos_exword_arena_release(const NtosExwordArena &area);
