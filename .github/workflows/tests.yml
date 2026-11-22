@@ -30,6 +30,11 @@ jobs:
           gcc -std=c11 -O2 -no-pie -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast \
             tests/coredll_common_controls_test.c -o /tmp/ntos-controls-core
           /tmp/ntos-controls-core
+      - name: Existing GWES dual Edit/SIP host integration
+        run: |
+          gcc -std=c11 -O2 -no-pie -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast \
+            tests/coredll_gwes_test.c -o /tmp/ntos-gwes-dual-edit
+          /tmp/ntos-gwes-dual-edit
   native-ui:
     name: Native CMD and GDI host tests
     runs-on: ubuntu-latest
