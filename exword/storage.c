@@ -1,6 +1,7 @@
 /* Native EX-word FS calls require gint_world_switch(), including close.
  * Borrow the syscall ABI/semantics used by the Edelweiss EX-word host. */
 #include "storage.h"
+#include "shortname.h"
 #include <gint/exword.h>
 #include <gint/gint.h>
 #include <stdint.h>
@@ -274,6 +275,45 @@ int ntos_exword_find_child_dir(const char *parent,const char *name,
     out[i]=0;
     return ntos_child(out,name);
 }
+/* Resolve a flat on-device PE filename by actual native directory entry.
+ * Some EX-word installer filesystem variants are case-sensitive even when
+ * their UI displays uppercase 8.3 aliases. This lookup never opens a DLL
+ * as an EXE, and never depends on a nested SYSROOT. */
+int ntos_exword_find_child_file(const char *parent,const char *name,
+                               char out[NTOS_EXWORD_PATH_MAX])
+{
+    if(!parent || !name || !out || !ntos_path_ok(parent))return -1;
+    char short_name[13];
+    if(!ntos_exword_shortname(name,short_name))return -1;
+    char mask[NTOS_EXWORD_PATH_MAX];
+    unsigned j=0u;
+    while(parent[j] && j+1u<sizeof mask) {
+        mask[j]=parent[j];++j;
+    }
+    if(parent[j])return -1;
+    mask[j]=0;
+    if(ntos_append(mask,"*"))return -1;
+    unsigned skip=0u,more=0u;
+    do {
+        if(ntos_exword_scan_page(mask,skip,&g_sysroot_scan,&more)<0)return -1;
+        for(unsigned i=0u;i<g_sysroot_scan.count;++i)
+            if(g_sysroot_scan.kinds[i]!=5u &&
+               (ntos_caseeq(g_sysroot_scan.names[i],name) ||
+                ntos_caseeq(g_sysroot_scan.names[i],short_name))) {
+                j=0u;
+                while(parent[j] && j+1u<NTOS_EXWORD_PATH_MAX) {
+                    out[j]=parent[j];++j;
+                }
+                if(parent[j])return -1;
+                out[j]=0;
+                return ntos_append(out,g_sysroot_scan.names[i]);
+            }
+        if(!g_sysroot_scan.count)break;
+        skip+=g_sysroot_scan.count;
+    } while(more && skip<=4096u);
+    return -1;
+}
+
 int ntos_exword_find_content_dir(unsigned volume,char out[NTOS_EXWORD_PATH_MAX])
 {
     if(!out || volume>1u)return -1;
