@@ -199,9 +199,11 @@ static void pane_paint(void *dc, unsigned pane)
     ui_fill(dc, r.left, r.bottom - 1, r.right, r.bottom, EDGE);
     ui_fill(dc, r.right - 1, r.top, r.right, r.bottom, EDGE);
     text_clipped(dc, r.left + 6, r.top + 3, pane ? "Tools / second pane" : "Command Prompt",
-                 r.right - r.left - 27, INK);
-    ui_fill(dc, r.right - 22, r.top + 2, r.right - 2, r.top + 20, BLUE);
-    ui_text(dc, r.right - 19, r.top + 3, layout.split ? "^" : "v", WHITE, 0);
+                 r.right - r.left - 54, INK);
+    ui_fill(dc, r.right - 46, r.top + 2, r.right - 24, r.top + 20, BLUE);
+    ui_text(dc, r.right - 42, r.top + 3, layout.split ? "^" : "v", WHITE, 0);
+    ui_fill(dc, r.right - 22, r.top + 2, r.right - 2, r.top + 20, EDGE);
+    ui_text(dc, r.right - 18, r.top + 3, "X", INK, 0);
     if (pane == 0) {
         int baseline = c.bottom - 25;
         ui_fill(dc, c.left + 3, baseline - 3, c.right - 3, baseline + 19, FACE);
@@ -312,7 +314,12 @@ static void touch(int x, int y)
     NT_TILE_RECT r, c;
     if (!nt_tile_rect(&layout, (unsigned)pane, &r) || !nt_tile_client(&layout, (unsigned)pane, &c))
         return;
-    if (y < r.top + 22 && x >= r.right - 26) {
+    if (y < r.top + 22 && x >= r.right - 24) {
+        if (pane == 0)
+            NT_CALL(PostQuitMessage, (0));
+        else
+            nt_tile_maximize(&layout, 0);
+    } else if (y < r.top + 22 && x >= r.right - 48) {
         if (layout.split)
             nt_tile_maximize(&layout, (unsigned)pane);
         else
