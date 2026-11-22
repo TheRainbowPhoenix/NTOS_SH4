@@ -2,8 +2,8 @@
 """Build an EX-word-installable flat _CONTENT payload directory.
 
 Every shipped PE file is uppercase DOS 8.3, directly beside ntos_sh.d01.
-Stable FNV-1a suffixes shorten long DLL names without rewriting PE imports;
-the Exword resolver applies the same name conversion on import lookup.
+Long filenames are truncated to readable 8.3 names without touching PE imports;
+the Exword resolver applies the same deterministic shortening on lookup.
 """
 from __future__ import annotations
 
@@ -17,10 +17,6 @@ REQUIRED = ("HELLO.EXE", "HELLOCORE.EXE", "COREDLL.DLL", "XAMLUI.DLL",
             "PROCFINAL.EXE", "MMTEST.EXE", "MMROTEST.EXE", "NATIVEVM.EXE",
             "MMREUSE.EXE", "MMSTRESS.EXE", "ROMDIAG.EXE")
 EXTENSIONS = {".EXE", ".DLL", ".CPL"}
-FNV_OFFSET = 2166136261
-FNV_PRIME = 16777619
-
-
 def shortname(name: str) -> str:
     """Match exword/shortname.h exactly. Fail rather than truncating paths."""
     if "/" in name or "\\" in name or name.count(".") != 1:
@@ -32,24 +28,22 @@ def shortname(name: str) -> str:
         raise ValueError(f"invalid PE filename: {name!r}")
     if not all(c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_" for c in stem):
         raise ValueError(f"unsupported PE filename: {name!r}")
-    if len(stem) > 8:
-        h = FNV_OFFSET
-        for c in stem.encode("ascii"):
-            h = ((h ^ c) * FNV_PRIME) & 0xFFFFFFFF
-        stem = stem[:4] + f"{h & 0xFFFF:04X}"
+    stem = stem[:8]
     return f"{stem}.{ext}"
 
 
 def appname(relative: Path) -> str:
-    """Different filename from a top-level exe, even for Apps/calc/calc.exe."""
-    name = relative.stem.upper()
-    text = relative.as_posix().upper().encode("ascii")
-    h = FNV_OFFSET
-    for c in text:
-        h = ((h ^ c) * FNV_PRIME) & 0xFFFFFFFF
-    prefix = "".join(c if c.isalnum() else "_" for c in name)[:3].ljust(3, "_")
-    return f"A{prefix}{h & 0xFFFF:04X}.EXE"
+    """Reserve an A-prefix for Apps so CALC and Apps/calc do not collide.
 
+    Apps/calc/calc.exe -> ACALC.EXE; Apps/powerpoint/powerpoint.exe
+    -> APOWERPO.EXE. Reject collisions rather than silently hashing names.
+    """
+    if relative.suffix.upper() != ".EXE":
+        raise ValueError(f"not an app executable: {relative}")
+    stem = relative.stem.upper()
+    if not stem or any(c not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_" for c in stem):
+        raise ValueError(f"invalid app name: {relative}")
+    return "A" + stem[:7] + ".EXE"
 
 def sh4_pe(path: Path) -> None:
     with path.open("rb") as f:

@@ -25,22 +25,16 @@ static inline int ntos_exword_shortname(const char *name,char out[13])
     if(!((ext[0]=='E'&&ext[1]=='X'&&ext[2]=='E') ||
          (ext[0]=='D'&&ext[1]=='L'&&ext[2]=='L') ||
          (ext[0]=='C'&&ext[1]=='P'&&ext[2]=='L')))return 0;
-    unsigned short_hash=2166136261u;
     for(unsigned i=0u;i<dot;++i) {
         char x=name[i];
         if(x>='a'&&x<='z')x=(char)(x-'a'+'A');
         if(!((x>='A'&&x<='Z')||(x>='0'&&x<='9')||x=='_'))
             return 0;
-        short_hash=(short_hash^(unsigned char)x)*16777619u;
         if(i<8u)out[i]=x;
     }
-    unsigned n=dot;
-    if(dot>8u) {
-        const char hexdigits[]="0123456789ABCDEF";
-        n=4u;
-        for(unsigned i=0u;i<4u;++i)
-            out[n++]=hexdigits[(short_hash>>(12u-4u*i))&15u];
-    }
+    /* Prefer recognizable 8.3 names: HELLOCORE -> HELLOCOR.
+     * The package builder rejects any ambiguity/collision. */
+    unsigned n=dot<8u?dot:8u;
     out[n++]='.';
     for(unsigned i=0u;i<3u;++i)out[n++]=ext[i];
     out[n]=0;

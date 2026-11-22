@@ -16,7 +16,7 @@ def fake_pe():
 def main():
     assert shortname("HELLO.EXE")=="HELLO.EXE"
     assert shortname("COREDLL.DLL")=="COREDLL.DLL"
-    assert shortname("HELLOCORE.EXE").startswith("HELL")
+    assert shortname("HELLOCORE.EXE")=="HELLOCOR.EXE"
     assert len(shortname("HELLOCORE.EXE"))==12
     assert shortname("HELLOCORE.EXE")==shortname("hellocore.exe")
     for s in ("abc/def.exe","test:name.dll","invalid.txt","file..dll"):
@@ -38,6 +38,9 @@ def main():
         (dist/"Apps"/"edge"/"edge.exe").write_bytes(fake_pe())
         mapping=products(dist)
         assert len(mapping)==23
+        assert "ACALC.EXE" in mapping and "AEDGE.EXE" in mapping
+        assert "HELLOCOR.EXE" in mapping
+        assert "UIXMOBIL.DLL" in mapping
         for locale in ("ja","cn"):
             folder=base/locale/"NTOSH"
             folder.mkdir(parents=True)
