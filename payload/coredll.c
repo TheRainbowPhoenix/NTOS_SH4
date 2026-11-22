@@ -2103,7 +2103,12 @@ static void nt_controls_paint(void)
             int w=r-l-4;
             u32 span=c->maximum-c->minimum;
             u32 range=c->value-c->minimum;
-            int filled=span ? (int)(range*(u32)w/span) : 0;
+            /* Avoid SH4 freestanding ___udivsi3_i4i: at most 320
+             * integer comparisons per paint, no software division. */
+            int filled=0;
+            u32 target=range*(u32)w;
+            while(filled<w && (u32)(filled+1)*span<=target)
+                ++filled;
             if(filled>0)
                 ntos_fillrect((u32)(l+2),(u32)(t+2),
                               (u32)(l+2+filled),(u32)(b-2),0x00C77735u);
