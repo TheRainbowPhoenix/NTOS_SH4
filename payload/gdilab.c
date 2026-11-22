@@ -11,11 +11,13 @@ NT_IMPORT(int, Rectangle, (void *, int, int, int, int))
 NT_IMPORT(int, Ellipse, (void *, int, int, int, int))
 NT_IMPORT(int, MoveToEx, (void *, int, int, POINT *))
 NT_IMPORT(int, LineTo, (void *, int, int))
+NT_IMPORT(int, Polyline, (void *, const POINT *, int))
 NT_DEFINE(SetPixel)
 NT_DEFINE(Rectangle)
 NT_DEFINE(Ellipse)
 NT_DEFINE(MoveToEx)
 NT_DEFINE(LineTo)
+NT_DEFINE(Polyline)
 
 static const WCHAR16 cls[] = {'N', 'T', 'G', 'D', 'I', 'L', 'A', 'B', 0};
 static const WCHAR16 title[] = {'N', 'T', 'O', 'S', ' ', 'G', 'D', 'I', ' ', 'L', 'a', 'b', 0};
@@ -64,6 +66,16 @@ static void page_lines(void *dc)
         int x = 16 + i * 16;
         NT_CALL(MoveToEx, (dc, x, 105, 0));
         NT_CALL(LineTo, (dc, 304 - i * 16, 414));
+    }
+    static POINT path[3];
+    for (int i = 0; i < 8; ++i) {
+        path[0].x = 16 + i * 34;
+        path[0].y = 125;
+        path[1].x = 33 + i * 34;
+        path[1].y = 158;
+        path[2].x = 50 + i * 34;
+        path[2].y = 125;
+        NT_CALL(Polyline, (dc, path, 3));
     }
     for (int i = 0; i < 12; ++i) {
         int y = 430 + i * 5;
