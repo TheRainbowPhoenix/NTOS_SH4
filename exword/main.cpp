@@ -226,6 +226,14 @@ static void run_selected() {
     if(!is_exe(name)) {
         copy(g_note,sizeof g_note,"Not an EXE");return;
     }
+    /* XD-A8500 device report: the phone Alarm sample triggered a hard
+     * reset without an exception screen. No guest fault trap is installed
+     * in this D01, so do not rerun a known rebooting binary by accident.
+     * Investigate the UIX application separately from the ROM/P1 fix. */
+    if(compare(name,"AALARM.EXE")==0) {
+        copy(g_note,sizeof g_note,"AALARM disabled: device reboot observed");
+        return;
+    }
     char path[NTOS_EXWORD_PATH_MAX];
     copy(path,sizeof path,g_dir);
     if(!append(path,sizeof path,"\\") ||
