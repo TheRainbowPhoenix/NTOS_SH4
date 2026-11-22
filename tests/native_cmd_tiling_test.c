@@ -3,47 +3,53 @@
 #include <assert.h>
 #include <string.h>
 
+static NT_CMD_ACTION parsed(const char *line)
+{
+    NT_CMD_ACTION a;
+    nt_cmd_parse(line, &a);
+    return a;
+}
 static void parser(void)
 {
     NT_CMD_ACTION a;
-    a = nt_cmd_parse("   HeLp   ");
+    a = parsed("   HeLp   ");
     assert(a.kind == NT_CMD_HELP);
-    assert(nt_cmd_parse("cls").kind == NT_CMD_CLS);
-    assert(nt_cmd_parse("DIR").kind == NT_CMD_DIR);
-    assert(nt_cmd_parse("split").kind == NT_CMD_SPLIT);
-    assert(nt_cmd_parse("FULL").kind == NT_CMD_FULL);
-    assert(nt_cmd_parse("swap").kind == NT_CMD_SWAP);
-    assert(nt_cmd_parse("rotate").kind == NT_CMD_ROTATE);
-    assert(nt_cmd_parse("kb").kind == NT_CMD_KB);
-    assert(nt_cmd_parse("exit").kind == NT_CMD_EXIT);
-    assert(nt_cmd_parse("   ").kind == NT_CMD_EMPTY);
-    a = nt_cmd_parse("run HELLO.EXE");
+    assert(parsed("cls").kind == NT_CMD_CLS);
+    assert(parsed("DIR").kind == NT_CMD_DIR);
+    assert(parsed("split").kind == NT_CMD_SPLIT);
+    assert(parsed("FULL").kind == NT_CMD_FULL);
+    assert(parsed("swap").kind == NT_CMD_SWAP);
+    assert(parsed("rotate").kind == NT_CMD_ROTATE);
+    assert(parsed("kb").kind == NT_CMD_KB);
+    assert(parsed("exit").kind == NT_CMD_EXIT);
+    assert(parsed("   ").kind == NT_CMD_EMPTY);
+    a = parsed("run HELLO.EXE");
     assert(a.kind == NT_CMD_RUN);
     assert(!strcmp(a.path, "\\fls0\\HELLO.EXE"));
-    a = nt_cmd_parse("guiwin");
+    a = parsed("guiwin");
     assert(a.kind == NT_CMD_RUN);
     assert(!strcmp(a.path, "\\fls0\\guiwin.EXE"));
-    a = nt_cmd_parse("RUN Apps/Calc/Calc.exe");
+    a = parsed("RUN Apps/Calc/Calc.exe");
     assert(a.kind == NT_CMD_RUN);
     assert(!strcmp(a.path, "\\fls0\\Apps\\Calc\\Calc.exe"));
-    a = nt_cmd_parse("run \\fls0\\CONTROL.EXE");
+    a = parsed("run \\fls0\\CONTROL.EXE");
     assert(a.kind == NT_CMD_RUN);
     assert(!strcmp(a.path, "\\fls0\\CONTROL.EXE"));
-    assert(nt_cmd_parse("run").kind == NT_CMD_BAD_PATH);
-    assert(nt_cmd_parse("run ../evil").kind == NT_CMD_BAD_PATH);
-    assert(nt_cmd_parse("run Apps/../evil").kind == NT_CMD_BAD_PATH);
-    assert(nt_cmd_parse("run \\other\\evil.exe").kind == NT_CMD_BAD_PATH);
-    assert(nt_cmd_parse("run C:/evil.exe").kind == NT_CMD_BAD_PATH);
-    assert(nt_cmd_parse("run //server/share").kind == NT_CMD_BAD_PATH);
-    assert(nt_cmd_parse("run hello.exe | exit").kind == NT_CMD_BAD);
-    assert(nt_cmd_parse("dir && run test.exe").kind == NT_CMD_BAD);
-    assert(nt_cmd_parse("run hello.exe extra").kind == NT_CMD_BAD);
-    assert(nt_cmd_parse("run hello?.exe").kind == NT_CMD_BAD_PATH);
-    assert(nt_cmd_parse("run hello\\\\test").kind == NT_CMD_BAD_PATH);
+    assert(parsed("run").kind == NT_CMD_BAD_PATH);
+    assert(parsed("run ../evil").kind == NT_CMD_BAD_PATH);
+    assert(parsed("run Apps/../evil").kind == NT_CMD_BAD_PATH);
+    assert(parsed("run \\other\\evil.exe").kind == NT_CMD_BAD_PATH);
+    assert(parsed("run C:/evil.exe").kind == NT_CMD_BAD_PATH);
+    assert(parsed("run //server/share").kind == NT_CMD_BAD_PATH);
+    assert(parsed("run hello.exe | exit").kind == NT_CMD_BAD);
+    assert(parsed("dir && run test.exe").kind == NT_CMD_BAD);
+    assert(parsed("run hello.exe extra").kind == NT_CMD_BAD);
+    assert(parsed("run hello?.exe").kind == NT_CMD_BAD_PATH);
+    assert(parsed("run hello\\\\test").kind == NT_CMD_BAD_PATH);
     char large[161];
     memset(large, 'a', 160);
     large[160] = 0;
-    assert(nt_cmd_parse(large).kind == NT_CMD_BAD);
+    assert(parsed(large).kind == NT_CMD_BAD);
 }
 static void geometry(void)
 {
