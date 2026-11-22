@@ -16,6 +16,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  native-controls:
+    name: Native common controls + SIP host tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bounded common-control HWND/token model
+        run: |
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -pedantic tests/nt_common_controls_test.c -o /tmp/ntos-control-model
+          /tmp/ntos-control-model
+      - name: Ps-owned GWES two-surface composition model
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Werror -pedantic tests/gwes_compositor_test.cpp -o /tmp/ntos-gwes-compositor
+          /tmp/ntos-gwes-compositor
+      - name: Native COMMCTRL supported-class bootstrap
+        run: |
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -pedantic tests/commctrl_native_test.c -o /tmp/ntos-commctrl-native
+          /tmp/ntos-commctrl-native
+      - name: Actual COREDLL control message and keyboard integration
+        run: |
+          gcc -std=c11 -O2 -no-pie -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast \
+            tests/coredll_common_controls_test.c -o /tmp/ntos-controls-core
+          /tmp/ntos-controls-core
+      - name: Existing GWES dual Edit/SIP host integration
+        run: |
+          gcc -std=c11 -O2 -no-pie -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast \
+            tests/coredll_gwes_test.c -o /tmp/ntos-gwes-dual-edit
+          /tmp/ntos-gwes-dual-edit
   native-ui:
     name: Native CMD and GDI host tests
     runs-on: ubuntu-latest

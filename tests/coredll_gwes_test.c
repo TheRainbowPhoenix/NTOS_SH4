@@ -88,7 +88,9 @@ int main(void) {
     void *edit=CreateWindowExW(0,editname,0,0,12,64,295,32,
                                win,0,0,0);
     assert(edit && edit!=win);
-    assert(!CreateWindowExW(0,editname,0,0,12,64,100,32,win,0,0,0));
+    void *edit2=CreateWindowExW(0,editname,0,0,12,112,100,32,win,0,0,0);
+    assert(edit2 && edit2!=edit && edit2!=win);
+    assert(ShowWindow(edit2,1)==0);
     assert(ShowWindow(edit,1)==0);
     assert(GetClientRect(edit,&rect) && rect.right==295 && rect.bottom==32);
     refreshes=0u; /* earlier standalone NtosGwesKeyboard made a frame */
@@ -125,6 +127,15 @@ int main(void) {
     assert(GetWindowTextW(edit,out,12)==5 && out[0]=='H' && out[4]=='o');
     assert(UpdateWindow(edit));
     assert(rects>0u && pixels>0u);
+    NT_MSG tap2={0};
+    tap2.hwnd=win;tap2.message=0x0201u;tap2.pt.x=20;tap2.pt.y=120;
+    assert(DispatchMessageW(&tap2));
+    msg.message=0x0102u;msg.wParam='2';
+    assert(DispatchMessageW(&msg));
+    assert(GetWindowTextW(edit2,out,12)==1 && out[0]=='2');
+    assert(GetWindowTextW(edit,out,12)==5 && out[0]=='H');
+    assert(DestroyWindow(edit2));
+    assert(!GetWindowTextW(edit2,out,12));
     assert(DestroyWindow(edit));
     assert(!GetWindowTextW(edit,out,12));
     assert(DestroyWindow(win));

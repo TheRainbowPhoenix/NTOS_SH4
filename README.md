@@ -55,6 +55,21 @@ framebuffer allocations. See
 [Native CMD / tiling / GDI design notes](docs/NATIVE_CMD_TILING_GDI_20261122.md)
 for known limitations and CP400 hardware-test requirements.
 
+## Native common controls and TouchKB integration
+
+The native SH4BE GUI now has bounded child HWNDs for `BUTTON`, `STATIC`,
+`EDIT`, `LISTBOX`, `COMBOBOX`, checkboxes and `msctls_progress32`.
+They accept a subset of standard WinCE `SendMessageW` control messages
+and send `WM_COMMAND` notifications. Additional `EDIT` windows receive
+system TouchKB `WM_CHAR` input according to focus. A real native
+`COMMCTRL.DLL` implements supported `InitCommonControls(Ex)` imports,
+and the `CTRLDEMO.EXE` test app is included in the device package.
+
+The new PID-owned RGB565 two-pane compositor *model* is host-tested but is
+**not yet wired to a running second guest process**; NTOS still uses serial
+EXE foreground handoff. See
+[native controls and compositor limitations](docs/NATIVE_GWES_CONTROLS_PROCESS_COMPOSITION.md).
+
 ## Windows Edge demo
 
 The same [Build workflow](https://github.com/TheRainbowPhoenix/NTOS_SH4/actions/workflows/c-cpp.yml)

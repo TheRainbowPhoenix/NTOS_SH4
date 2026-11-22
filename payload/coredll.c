@@ -287,6 +287,7 @@ typedef struct {
 #include "wince/ntgwes_model.h"
 #include "wince/nt_touchkb.h"
 #include "wince/nt_gwes_dialog.h"
+#include "wince/nt_common_controls.h"
 static NT_WINDOW g_window;
 static NT_GWES g_nt_gwes;
 static unsigned g_nt_gwes_initialized;
@@ -296,12 +297,14 @@ static unsigned g_nt_dialogs_initialized;
 static int nt_dialog_active(void);
 static int nt_dialog_capture(const NT_MSG *);
 static void nt_dialog_paint(void);
+static void nt_controls_paint(void);
 int UpdateWindow(void *hwnd);
 static u32 nt_sip_flags = 2u; /* docked, on = bit zero */
 static unsigned g_nt_sip_silent; /* modal transition, presenter handles paint */
 static void nt_sip_paint(void);
 static void nt_present_overlays(void) {
-    /* Final z-order: foreground app, dialogs, keyboard. */
+    /* Final z-order: app, native controls, dialogs, SIP. */
+    nt_controls_paint();
     nt_dialog_paint();
     nt_sip_paint();
 }
@@ -328,6 +331,7 @@ typedef struct {
     int visible,focused;
 } NT_EDITCTRL;
 static NT_EDITCTRL g_edit;
+static u32 g_control_pressed;
 static void nt_edit_paint(void);
 static int is_edit_hwnd(void *h) {
     return h==(void *)&g_edit && g_edit.magic==0x45444954u;
@@ -416,6 +420,14 @@ void *CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 
     (void)parent;
     (void)menu;
     (void)instance;
+    unsigned control_kind=nt_ctl_kind(class_name,style);
+    if(control_kind && !(control_kind==NT_CTL_EDIT && !g_edit.magic)) {
+        NT_COMMON_CTL *control;
+        if(!is_hwnd(parent))return 0;
+        control=nt_ctl_create(control_kind,parent,(u32)(uintptr_t)menu,
+                              style,x,y,w,h,title);
+        return control?(void *)(uintptr_t)control->handle:0;
+    }
     if(nt_edit_class(class_name)) {
         if(!is_hwnd(parent) || g_edit.magic ||
            w<=0 || h<=0 || x<0 || y<0 || x>=320 || y>=528)
@@ -467,6 +479,13 @@ void *CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 
 int ShowWindow(void *hwnd, int cmd)
 {
     int was;
+    NT_COMMON_CTL *control=nt_ctl_find(hwnd);
+    if(control) {
+        was=(int)control->visible;
+        control->visible=(cmd!=0);
+        if(is_hwnd(control->parent))g_window.invalidated=1;
+        return was;
+    }
     if(is_edit_hwnd(hwnd)) {
         was=g_edit.visible;g_edit.visible=(cmd!=0);
         if(g_edit.visible)nt_edit_paint();
@@ -480,7 +499,7 @@ int ShowWindow(void *hwnd, int cmd)
 }
 int PostMessageW(void *hwnd, u32 msg, u32 wp, u32 lp)
 {
-    if (hwnd && !is_hwnd(hwnd) && !is_edit_hwnd(hwnd))
+    if (hwnd && !is_hwnd(hwnd) && !is_edit_hwnd(hwnd) && !nt_ctl_find(hwnd))
         return 0;
     return enqueue(hwnd, msg, wp, lp);
 }
@@ -497,11 +516,122 @@ int DefWindowProcW(void *hwnd, u32 msg, u32 wp, u32 lp)
         coredll_refresh(); /* WM_PAINT */
     return 0;
 }
+/* Native WinCE common-control message contract. Handle values are
+ * generation-tagged IDs, never pointers to app-owned or kernel memory. */
+int SendMessageW(void *hwnd,u32 message,u32 wp,u32 lp)
+{
+    NT_COMMON_CTL *c=nt_ctl_find(hwnd);
+    if(c) {
+        switch(message) {
+        case 0x000Cu: /* WM_SETTEXT */
+            nt_ctl_copy(c->title,NT_CTL_TEXT_MAX,(const u16 *)(uintptr_t)lp);
+            g_window.invalidated=1;
+            return 1;
+        case 0x000Du: { /* WM_GETTEXT */
+            u16 *buffer=(u16 *)(uintptr_t)lp;
+            if(!buffer || !wp)return 0;
+            unsigned n=0u;
+            while(n+1u<wp && c->title[n]) {
+                buffer[n]=c->title[n];++n;
+            }
+            buffer[n]=0;
+            return (int)n;
+        }
+        case 0x0102u: { /* WM_CHAR delivered to focused EDIT HWND */
+            int changed=nt_ctl_edit_char(c,wp);
+            if(changed) {
+                g_window.invalidated=1;
+                if(changed==1 && is_hwnd(c->parent) && g_window.proc)
+                    g_window.proc(c->parent,0x0111u,
+                                  (0x0300u<<16u)|(c->id&0xffffu),c->handle);
+            }
+            return changed!=0;
+        }
+        case 0x000Eu: { /* WM_GETTEXTLENGTH */
+            unsigned n=0;
+            while(c->title[n] && n<NT_CTL_TEXT_MAX)++n;
+            return (int)n;
+        }
+        case 0x000Au: /* WM_ENABLE */
+            c->enabled=wp!=0u;
+            g_window.invalidated=1;
+            return 0;
+        case 0x00F0u: /* BM_GETCHECK */
+            return c->role==NT_CTL_CHECKBOX?(int)c->checked:0;
+        case 0x00F1u: /* BM_SETCHECK */
+            if(c->role!=NT_CTL_CHECKBOX)return 0;
+            c->checked=wp?1u:0u;
+            g_window.invalidated=1;
+            return 0;
+        case 0x00F5u: /* BM_CLICK */
+            if(nt_ctl_command(c) && is_hwnd(c->parent) && g_window.proc) {
+                g_window.invalidated=1;
+                g_window.proc(c->parent,0x0111u,c->id&0xffffu,(u32)(uintptr_t)hwnd);
+            }
+            return 0;
+        case 0x0401u: { /* PBM_SETRANGE */
+            if(c->role!=NT_CTL_PROGRESS)return 0;
+            unsigned low=lp&0xffffu,high=(lp>>16)&0xffffu;
+            if(high<=low)return 0;
+            c->minimum=low;c->maximum=high;
+            if(c->value<low)c->value=low;
+            if(c->value>high)c->value=high;
+            g_window.invalidated=1;
+            return 1;
+        }
+        case 0x0402u: { /* PBM_SETPOS */
+            if(c->role!=NT_CTL_PROGRESS)return 0;
+            int old=(int)c->value;
+            c->value=wp<c->minimum?c->minimum:
+                     wp>c->maximum?c->maximum:wp;
+            g_window.invalidated=1;
+            return old;
+        }
+        case 0x0180u: /* LB_ADDSTRING */
+        case 0x0143u: /* CB_ADDSTRING */
+            if(c->role!=NT_CTL_LISTBOX && c->role!=NT_CTL_COMBOBOX)return -1;
+            return nt_ctl_add_string(c,(const u16 *)(uintptr_t)lp);
+        case 0x0184u: /* LB_RESETCONTENT */
+        case 0x014Bu: /* CB_RESETCONTENT */
+            c->line_count=0;c->selected=0xffffffffu;
+            g_window.invalidated=1;return 0;
+        case 0x018Bu: /* LB_GETCOUNT */
+        case 0x0146u: /* CB_GETCOUNT */
+            return nt_ctl_count(c);
+        case 0x0188u: /* LB_GETCURSEL */
+        case 0x0147u: /* CB_GETCURSEL */
+            return c->selected==0xffffffffu?-1:(int)c->selected;
+        case 0x0186u: /* LB_SETCURSEL */
+        case 0x014Eu: /* CB_SETCURSEL */
+            return nt_ctl_select(c,(int)wp);
+        case 0x0189u: /* LB_GETTEXT */
+        case 0x0148u: { /* CB_GETLBTEXT */
+            if((c->role!=NT_CTL_LISTBOX && c->role!=NT_CTL_COMBOBOX) ||
+               wp>=c->line_count || !lp)return -1;
+            u16 *dst=(u16 *)(uintptr_t)lp;
+            unsigned n=0;
+            while(c->lines[wp][n] && n<NT_CTL_LIST_TEXT-1u) {
+                dst[n]=c->lines[wp][n];++n;
+            }
+            dst[n]=0;return (int)n;
+        }
+        default:
+            return 0;
+        }
+    }
+    if(is_hwnd(hwnd) && g_window.proc)
+        return g_window.proc(hwnd,message,wp,lp);
+    return 0;
+}
 int DispatchMessageW(const NT_MSG *msg)
 {
     if (!msg)
         return 0;
     if(nt_dialog_capture(msg))return 1; /* modal owns focus over every HWND */
+    if(nt_ctl_find(msg->hwnd)) {
+        if(msg->message==0x000Fu) {nt_controls_paint();return 1;}
+        return SendMessageW(msg->hwnd,msg->message,msg->wParam,msg->lParam);
+    }
     if(is_edit_hwnd(msg->hwnd)) {
         if(msg->message==0x0102u) {
             int changed=nt_kb_edit_char(&g_edit.value,msg->wParam);
@@ -531,6 +661,15 @@ int DispatchMessageW(const NT_MSG *msg)
             g_window.proc((void *)&g_window,0x0111u,0u,0u);
         return changed!=0;
     }
+    if(msg->message==0x0102u) {
+        for(unsigned i=0;i<NT_CTL_MAX;++i) {
+            NT_COMMON_CTL *c=&g_common_controls[i];
+            if(c->handle && c->role==NT_CTL_EDIT && c->focus &&
+               c->visible && c->enabled)
+                return SendMessageW((void *)(uintptr_t)c->handle,0x0102u,
+                                    msg->wParam,msg->lParam);
+        }
+    }
     if(g_edit.magic && g_edit.visible &&
        msg->message==0x0201u &&
        msg->pt.x>=g_edit.bounds.left &&
@@ -541,6 +680,59 @@ int DispatchMessageW(const NT_MSG *msg)
         SipShowIM(1u);
         nt_edit_paint();
         return 1;
+    }
+    /* Real child HWND hit testing precedes the parent's WNDPROC.
+     * HWND focus, BN_CLICKED and LBN_SELCHANGE use standard WM_COMMAND. */
+    if(is_hwnd(msg->hwnd) &&
+       (msg->message==0x0201u || msg->message==0x0202u)) {
+        NT_COMMON_CTL *hit=nt_ctl_hit(msg->hwnd,msg->pt.x,msg->pt.y);
+        if(msg->message==0x0201u) {
+            g_control_pressed=hit?hit->handle:0u;
+            if(hit) {
+                nt_ctl_focus(hit);g_edit.focused=0;
+                if(hit->role==NT_CTL_EDIT) {
+                    SipShowIM(1u);
+                    g_window.invalidated=1;
+                    return 1;
+                }
+                if(hit->role==NT_CTL_LISTBOX || hit->role==NT_CTL_COMBOBOX) {
+                    int row=(msg->pt.y-hit->bounds.top-3)/20;
+                    if(row>=0 && (unsigned)row<hit->line_count) {
+                        nt_ctl_select(hit,row);
+                        g_window.invalidated=1;
+                        if(g_window.proc)
+                            g_window.proc(msg->hwnd,0x0111u,
+                                (hit->id&0xffffu)|(1u<<16u),hit->handle);
+                    }
+                }
+                return 1;
+            }
+        } else {
+            if(g_control_pressed) {
+                NT_COMMON_CTL *pressed=nt_ctl_find((void *)(uintptr_t)g_control_pressed);
+                g_control_pressed=0u;
+                if(pressed && pressed==hit && nt_ctl_command(pressed)) {
+                    g_window.invalidated=1;
+                    if(g_window.proc)
+                        g_window.proc(msg->hwnd,0x0111u,
+                                      pressed->id&0xffffu,pressed->handle);
+                }
+                return 1;
+            }
+        }
+    }
+    if(is_hwnd(msg->hwnd) && msg->message==0x0100u &&
+       (msg->wParam==13u || msg->wParam==32u)) {
+        for(unsigned i=0;i<NT_CTL_MAX;++i) {
+            NT_COMMON_CTL *c=&g_common_controls[i];
+            if(c->handle && c->visible && c->focus &&
+               nt_ctl_command(c)) {
+                g_window.invalidated=1;
+                if(g_window.proc)
+                    g_window.proc(msg->hwnd,0x0111u,c->id&0xffffu,c->handle);
+                return 1;
+            }
+        }
     }
     /* Close belongs to shared chrome, not to individual app WNDPROCs. */
     if (is_hwnd(msg->hwnd) && !is_phone_shell() && !is_hosted_phone() && msg->message == 0x0202u && msg->pt.x >= 288 &&
@@ -571,6 +763,13 @@ int TranslateMessage(const NT_MSG *msg)
 }
 int DestroyWindow(void *hwnd)
 {
+    if(nt_ctl_find(hwnd)) {
+        int ok=nt_ctl_destroy(hwnd);
+        if(ok && g_control_pressed==(u32)(uintptr_t)hwnd)
+            g_control_pressed=0u;
+        g_window.invalidated=1;
+        return ok;
+    }
     if(is_edit_hwnd(hwnd)) {
         g_edit.magic=0u;g_edit.visible=g_edit.focused=0;
         nt_kb_edit_init(&g_edit.value);
@@ -581,12 +780,20 @@ int DestroyWindow(void *hwnd)
     if (g_window.proc)
         g_window.proc(hwnd, 0x0002u, 0, 0); /* WM_DESTROY */
     if(g_edit.magic)DestroyWindow((void *)&g_edit);
+    nt_ctl_destroy_parent(hwnd);
+    g_control_pressed=0;
     g_window.magic = 0;
     g_window.proc = 0;
     return 1;
 }
 int SetWindowTextW(void *hwnd, const u16 *text)
 {
+    NT_COMMON_CTL *control=nt_ctl_find(hwnd);
+    if(control) {
+        nt_ctl_copy(control->title,NT_CTL_TEXT_MAX,text);
+        g_window.invalidated=1;
+        return 1;
+    }
     if(is_edit_hwnd(hwnd)) {
         nt_kb_edit_init(&g_edit.value);
         if(text)
@@ -603,6 +810,16 @@ int SetWindowTextW(void *hwnd, const u16 *text)
 int GetWindowTextW(void *hwnd, u16 *buffer, int capacity)
 {
     int n = 0;
+    NT_COMMON_CTL *control=nt_ctl_find(hwnd);
+    if(control) {
+        if(!buffer || capacity<=0)return 0;
+        while(n+1<capacity && control->title[n]) {
+            buffer[n]=control->title[n];
+            ++n;
+        }
+        buffer[n]=0;
+        return n;
+    }
     if(is_edit_hwnd(hwnd)) {
         if(!buffer || capacity<=0)return 0;
         while(n+1<capacity && n<(int)g_edit.value.length) {
@@ -1047,6 +1264,13 @@ int GetClientRect(void *hwnd, NT_RECT *rect)
 {
     if (!rect)
         return 0;
+    NT_COMMON_CTL *control=nt_ctl_find(hwnd);
+    if(control) {
+        rect->left=rect->top=0;
+        rect->right=control->bounds.right-control->bounds.left;
+        rect->bottom=control->bounds.bottom-control->bounds.top;
+        return 1;
+    }
     if(is_edit_hwnd(hwnd)) {
         rect->left=rect->top=0;
         rect->right=g_edit.bounds.right-g_edit.bounds.left;
@@ -1280,6 +1504,10 @@ int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
 {
     (void)rect;
     (void)erase;
+    if(nt_ctl_find(hwnd)) {
+        g_window.invalidated=1;
+        return 1;
+    }
     if (is_hwnd(hwnd)) {
         /* Paint requests are coalesced, not queued. A queued WM_PAINT plus
          * UpdateWindow previously redrew the whole LCD twice. */
@@ -1290,6 +1518,12 @@ int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
 }
 int UpdateWindow(void *hwnd)
 {
+    if(nt_ctl_find(hwnd)) {
+        nt_controls_paint();
+        if(!g_nt_paint_depth)nt_present_overlays();
+        coredll_refresh();
+        return 1;
+    }
     if(is_edit_hwnd(hwnd)) {
         nt_edit_paint();
         if(!g_nt_paint_depth)nt_present_overlays();
@@ -1841,6 +2075,89 @@ static void nt_edit_paint(void)
     SetBkMode((void *)1,opaque);
 }
 
+
+/* Native common controls share the existing flat white theme.
+ * Every operation is integer-only, paints directly to the final framebuffer
+ * and is repainted before modal dialogs and the system SIP are composed. */
+static void nt_controls_paint(void)
+{
+    if(!g_window.magic || !g_window.visible)return;
+    const int old_height=g_font_height;
+    const u32 old_color=SetTextColor((void *)(uintptr_t)1u,0x002E281Fu);
+    const int old_bk=SetBkMode((void *)(uintptr_t)1u,1);
+    g_font_height=14;
+    for(unsigned i=0;i<NT_CTL_MAX;++i) {
+        NT_COMMON_CTL *c=&g_common_controls[i];
+        if(!c->handle || !c->visible || c->parent!=(void *)&g_window)continue;
+        int l=c->bounds.left,t=c->bounds.top;
+        int r=c->bounds.right,b=c->bounds.bottom;
+        if(r-l<5 || b-t<5)continue;
+        if(c->role==NT_CTL_STATIC) {
+            ntos_fillrect((u32)l,(u32)t,(u32)r,(u32)b,0x00FFFFFFu);
+        } else {
+            ntos_fillrect((u32)l,(u32)t,(u32)r,(u32)b,0x00B7B0A5u);
+            ntos_fillrect((u32)(l+1),(u32)(t+1),(u32)(r-1),(u32)(b-1),
+                           c->enabled?0x00F7F8FAu:0x00E1E1E1u);
+        }
+        if(c->role==NT_CTL_PROGRESS) {
+            int w=r-l-4;
+            u32 span=c->maximum-c->minimum;
+            u32 range=c->value-c->minimum;
+            /* Avoid SH4 freestanding ___udivsi3_i4i: at most 320
+             * integer comparisons per paint, no software division. */
+            int filled=0;
+            u32 target=range*(u32)w;
+            while(filled<w && (u32)(filled+1)*span<=target)
+                ++filled;
+            if(filled>0)
+                ntos_fillrect((u32)(l+2),(u32)(t+2),
+                              (u32)(l+2+filled),(u32)(b-2),0x00C77735u);
+            continue;
+        }
+        if(c->role==NT_CTL_EDIT) {
+            ntos_fillrect((u32)(l+1),(u32)(t+1),
+                          (u32)(r-1),(u32)(b-1),0x00FFFFFFu);
+        }
+        if(c->role==NT_CTL_CHECKBOX && r-l>=24 && b-t>=22) {
+            ntos_fillrect((u32)(l+4),(u32)(t+5),
+                          (u32)(l+18),(u32)(t+19),0x00E0D3BEu);
+            ntos_fillrect((u32)(l+5),(u32)(t+6),
+                          (u32)(l+17),(u32)(t+18),0x00FFFFFFu);
+            if(c->checked) {
+                ntos_line((u32)(l+7),(u32)(t+12),
+                          (u32)(l+10),(u32)(t+15),0x00519E32u);
+                ntos_line((u32)(l+10),(u32)(t+15),
+                          (u32)(l+15),(u32)(t+7),0x00519E32u);
+            }
+            l+=23;
+        }
+        if(c->role==NT_CTL_LISTBOX || c->role==NT_CTL_COMBOBOX) {
+            const unsigned rows=c->role==NT_CTL_COMBOBOX?1u:c->line_count;
+            for(unsigned row=0;row<rows;++row) {
+                unsigned index=c->role==NT_CTL_COMBOBOX?
+                    (c->selected==0xffffffffu?0u:c->selected):row;
+                if(index>=c->line_count)break;
+                int y=t+3+(int)row*20;
+                if(y+18>b-2)break;
+                if(index==c->selected)
+                    ntos_fillrect((u32)(l+2),(u32)y,
+                                  (u32)(r-2),(u32)(y+18),0x00EEE0CEu);
+                unsigned n=0u,cap=(unsigned)(r-l-10)/8u;
+                if(cap>NT_CTL_LIST_TEXT-1u)cap=NT_CTL_LIST_TEXT-1u;
+                while(n<cap && c->lines[index][n])++n;
+                if(n)TextOutW((void *)(uintptr_t)1u,l+5,y+2,c->lines[index],(int)n);
+            }
+            continue;
+        }
+        unsigned n=0u,cap=(unsigned)(r-l-10)/8u;
+        if(cap>=NT_CTL_TEXT_MAX)cap=NT_CTL_TEXT_MAX-1u;
+        while(n<cap && c->title[n])++n;
+        if(n)TextOutW((void *)(uintptr_t)1u,l+5,t+(b-t-14)/2,c->title,(int)n);
+    }
+    g_font_height=old_height;
+    SetTextColor((void *)(uintptr_t)1u,old_color);
+    SetBkMode((void *)(uintptr_t)1u,old_bk);
+}
 
 /* Private serial launcher; unavailable on old firmware, never calls beyond its table. */
 int coredll_launch(const char *path)
