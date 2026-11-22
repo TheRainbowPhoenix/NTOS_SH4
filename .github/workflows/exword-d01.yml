@@ -8,7 +8,7 @@ on:
       - "Makefile"
       - "payload/**"
       - "tools/elf2ntx.py"
-      - "tools/package_exword_sysroot.py"
+      - "tools/package_exword_flat.py"
       - "tests/exword_packaging_test.py"
       - "src/nt/**"
       - "src/pe.hpp"

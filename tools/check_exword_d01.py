@@ -2,7 +2,7 @@
 """Validate a real EX-word gint D01 and its optional JP/CN installation."""
 import pathlib
 import sys
-from package_exword_sysroot import check as check_payloads
+from package_exword_flat import check as check_payloads
 
 build = pathlib.Path(sys.argv[1])
 pe_dist = pathlib.Path(sys.argv[2]) if len(sys.argv) >= 3 else None
@@ -16,8 +16,8 @@ for locale in ("ja", "cn"):
         continue
     assert (dest / "ntos_sh.d01").read_bytes() == native
     assert (dest / "fileinfo.cji").is_file()
-    assert (dest / "SYSROOT" / "README.TXT").is_file()
-    assert (dest / "SYSROOT" / "Windows" / "System32" / "README.TXT").is_file()
+    assert not (dest / "SYSROOT").exists()
+    assert not (dest / "Windows").exists()
     if pe_dist is not None:
         check_payloads(pe_dist, dest)
     assert any(dest.glob("*.htm")), "missing EX-word installer metadata"

@@ -45,35 +45,22 @@ if(EXWORD_METADATA_SOURCE)
     OUTPUT_DIR "${CMAKE_BINARY_DIR}/packages" LOCALES ja cn)
 endif()
 
-# SYSROOT is an on-disk PE tree, NOT part of the 128 KiB D01 image.
-# The same dist/ binaries created for NTOS.hh3 are staged into both EX-word
-# packages, so SH4BE EXE/DLL changes cannot silently go stale.
+# Transfer tools upload only flat 8.3 .EXE/.DLL files beside ntos_sh.d01.
+# Stage original NTOS PE outputs in the same NTOSH install directory.
 if(EXWORD_PAYLOAD_DIR)
   get_filename_component(EXWORD_PAYLOAD_DIR "${EXWORD_PAYLOAD_DIR}" ABSOLUTE)
   if(NOT EXISTS "${EXWORD_PAYLOAD_DIR}/HELLO.EXE")
-    message(FATAL_ERROR "EXWORD_PAYLOAD_DIR must contain built NTOS dist/ PE files")
+    message(FATAL_ERROR "EXWORD_PAYLOAD_DIR requires built NTOS dist files")
   endif()
 endif()
 foreach(NTOSH_LOCALE IN ITEMS ja cn)
-  if(EXWORD_METADATA_SOURCE)
-    add_custom_target("ntos_sh_sysroot_${NTOSH_LOCALE}" ALL
-      COMMAND "${CMAKE_COMMAND}" -E make_directory
-        "${CMAKE_BINARY_DIR}/packages/${NTOSH_LOCALE}/NTOSH/SYSROOT/Windows/System32"
-      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/SYSROOT/README.TXT"
-        "${CMAKE_BINARY_DIR}/packages/${NTOSH_LOCALE}/NTOSH/SYSROOT/README.TXT"
-      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/SYSROOT/Windows/System32/README.TXT"
-        "${CMAKE_BINARY_DIR}/packages/${NTOSH_LOCALE}/NTOSH/SYSROOT/Windows/System32/README.TXT"
-      DEPENDS "ntos_sh_package_${NTOSH_LOCALE}" VERBATIM)
-    if(EXWORD_PAYLOAD_DIR)
-      add_custom_target("ntos_sh_payloads_${NTOSH_LOCALE}" ALL
-        COMMAND "${Python3_EXECUTABLE}"
-          "${CMAKE_CURRENT_SOURCE_DIR}/../tools/package_exword_sysroot.py"
-          --from-dist "${EXWORD_PAYLOAD_DIR}"
-          --package "${CMAKE_BINARY_DIR}/packages/${NTOSH_LOCALE}/NTOSH"
-        DEPENDS "ntos_sh_sysroot_${NTOSH_LOCALE}"
-        VERBATIM COMMENT "Copy NTOS EXE/DLL binaries to NTOSH ${NTOSH_LOCALE} SYSROOT")
-    endif()
+  if(EXWORD_METADATA_SOURCE AND EXWORD_PAYLOAD_DIR)
+    add_custom_target("ntos_sh_payloads_${NTOSH_LOCALE}" ALL
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../tools/package_exword_flat.py"
+        --from-dist "${EXWORD_PAYLOAD_DIR}"
+        --package "${CMAKE_BINARY_DIR}/packages/${NTOSH_LOCALE}/NTOSH"
+      DEPENDS "ntos_sh_package_${NTOSH_LOCALE}"
+      VERBATIM COMMENT "Stage flat 8.3 PEs beside NTOSH D01 ${NTOSH_LOCALE}")
   endif()
 endforeach()
