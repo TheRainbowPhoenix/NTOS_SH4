@@ -128,7 +128,18 @@ static int32_t vm_hint(uint32_t at) {
         g_guest_area.stack_start,g_guest_area.stack_end);
 }
 
+static char g_error_detail[88];
 static void set_error(const char *s) {g_error=s;}
+static void set_error_detail(const char *prefix,const char *name)
+{
+    unsigned n=0u;
+    for(unsigned i=0;prefix && prefix[i] && n+1u<sizeof g_error_detail;++i)
+        g_error_detail[n++]=prefix[i];
+    for(unsigned i=0;name && name[i] && n+1u<sizeof g_error_detail;++i)
+        g_error_detail[n++]=name[i];
+    g_error_detail[n]=0;
+    g_error=g_error_detail;
+}
 const char *ntos_exword_pe_error(void) {return g_error;}
 static bool same_case(const char *a,const char *b) {
     if(!a || !b)return false;
