@@ -3,5 +3,5 @@
  */
 #pragma once
 #include <stdint.h>
-int ntos_exword_run_pe(const char *path,const char *sysroot,uint32_t *exit_code);
+int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_code);
 const char *ntos_exword_pe_error(void);

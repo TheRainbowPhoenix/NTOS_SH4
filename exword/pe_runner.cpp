@@ -8,6 +8,7 @@
  */
 #include "pe_runner.hpp"
 #include "storage.h"
+#include "shortname.h"
 #include "profile.hpp"
 #include "../src/pe.hpp"
 #include "../src/pe_rebase.hpp"
@@ -346,7 +347,7 @@ static void sync_exec(uint32_t start,uint32_t size)
 }
 #include "modules.inc"
 
-int ntos_exword_run_pe(const char *path,const char *sysroot,uint32_t *exit_code)
+int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_code)
 {
     if(exit_code)*exit_code=0u;
     set_error("invalid EXE path");
@@ -360,8 +361,8 @@ int ntos_exword_run_pe(const char *path,const char *sysroot,uint32_t *exit_code)
     g_guest_area=area;
     g_guest_disk=path[2]=='c'?1u:0u;
     unsigned n=0u;
-    while(sysroot && sysroot[n] && n+1u<sizeof g_guest_root) {
-        g_guest_root[n]=sysroot[n];++n;
+    while(content_dir && content_dir[n] && n+1u<sizeof g_guest_root) {
+        g_guest_root[n]=content_dir[n];++n;
     }
     g_guest_root[n]=0;
     for(GuestFile &f:g_guest_files)f={};
