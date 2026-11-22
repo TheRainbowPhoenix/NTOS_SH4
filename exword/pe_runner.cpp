@@ -268,6 +268,69 @@ static uint32_t host_getkey(void)
         if(e.type==KEYEV_DOWN)return (uint32_t)e.key;
     }
 }
+/* WinCE GetMessageW consumes NtosApi[15] as a blocking native event
+ * source. Without it every GUI EXE immediately exits from GetMessageW
+ * with -1. Touch coordinates already arrive in native 528x320 pixels. */
+static bool guest_buffer(void *p,uint32_t n);
+static uint32_t exword_vk(uint32_t key)
+{
+    switch(key) {
+        case KEY_UP: return 0x90u;
+        case KEY_DOWN: return 0x91u;
+        case KEY_LEFT: return 0x92u;
+        case KEY_RIGHT: return 0x93u;
+        case KEY_EXE: return 0x94u;
+        case KEY_EXIT: case KEY_ACON: return 0x80u;
+        case KEY_DEL: return 0x08u;
+        case KEY_SHIFT: return 0x10u;
+        case KEY_0: return '0';
+        case KEY_1: return '1';
+        case KEY_2: return '2';
+        case KEY_3: return '3';
+        case KEY_4: return '4';
+        case KEY_5: return '5';
+        case KEY_6: return '6';
+        case KEY_7: return '7';
+        case KEY_8: return '8';
+        case KEY_9: return '9';
+        case KEY_DOT: return '.';
+        case KEY_ADD: return '+';
+        case KEY_SUB: return '-';
+        case KEY_MUL: return '*';
+        case KEY_DIV: return '/';
+        default:break;
+    }
+    if(key>=KEY_EX_Q && key<=KEY_EX_M) {
+        static const char alphabet[]="QWERTYUIOPASDFGHJKLZXCVBNM";
+        unsigned i=key-KEY_EX_Q;
+        if(i<26u)return (uint32_t)alphabet[i];
+    }
+    return 0u;
+}
+static uint32_t host_event(uint32_t *x,uint32_t *y,uint32_t *direction)
+{
+    if(!guest_buffer(x,4u) || !guest_buffer(y,4u) ||
+       !guest_buffer(direction,4u))return 0u;
+    for(;;) {
+        /* waitevent() retains pen DOWN/DRAG/UP, unlike GetKey-style
+         * key-only queues. No host world switch or firmware syscall. */
+        key_event_t e=waitevent(nullptr);
+        if(e.type==KEYEV_TOUCH_DOWN || e.type==KEYEV_TOUCH_DRAG ||
+           e.type==KEYEV_TOUCH_UP) {
+            *x=(uint32_t)e.x;
+            *y=(uint32_t)e.y;
+            *direction=e.type==KEYEV_TOUCH_UP?0x40u:
+                       e.type==KEYEV_TOUCH_DRAG?2u:1u;
+            return 1u;
+        }
+        if(e.type==KEYEV_DOWN || e.type==KEYEV_HOLD) {
+            uint32_t vk=exword_vk((uint32_t)e.key);
+            if(!vk)continue;
+            *x=vk;*y=0u;*direction=0u;
+            return 3u;
+        }
+    }
+}
 static uint32_t host_input(uint32_t *x,uint32_t *y)
 {
     for(;;) {
@@ -478,6 +541,7 @@ static void init_host_api()
     ntos_host_table[11]=(const void *)&guest_open;
     ntos_host_table[12]=(const void *)&guest_read;
     ntos_host_table[14]=(const void *)&guest_close;
+    ntos_host_table[15]=(const void *)&host_event;
     ntos_host_table[16]=(const void *)&host_draw_text;
     ntos_host_table[17]=(const void *)&guest_size;
     ntos_host_table[18]=(const void *)&guest_seek;
