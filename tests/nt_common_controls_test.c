@@ -25,7 +25,7 @@ int main(void) {
     void *old=(void *)(uintptr_t)b->handle;
     assert(nt_ctl_find(old)==b);
     assert(nt_ctl_count(b)==-1);
-    assert(!nt_ctl_add_string(b,content));
+    assert(nt_ctl_add_string(b,content)==-1);
     assert(!nt_ctl_hit(&parent,12,12));
     b->visible=1;check->visible=1;
     assert(nt_ctl_hit(&parent,12,12)==b);
