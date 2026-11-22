@@ -92,6 +92,9 @@ GDILAB_EXE := $(OUTDIR)/GDILAB.EXE
 CTRLDEMO_OBJ := $(BUILDDIR)/payload/ctrldemo.o
 CTRLDEMO_ELF := $(BUILDDIR)/payload/ctrldemo.elf
 CTRLDEMO_EXE := $(OUTDIR)/CTRLDEMO.EXE
+COMMCTRL_NATIVE_OBJ := $(BUILDDIR)/payload/commctrl_native.o
+COMMCTRL_NATIVE_ELF := $(BUILDDIR)/payload/commctrl_native.elf
+COMMCTRL_NATIVE_DLL := $(OUTDIR)/COMMCTRL.DLL
 GDIBLIT_OBJ := $(BUILDDIR)/payload/gdiblt.o
 GDIBLIT_ELF := $(BUILDDIR)/payload/gdiblt.elf
 GDIBLIT_EXE := $(OUTDIR)/GDIBLIT.EXE
@@ -198,7 +201,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(CMD_EXE) $(GDILAB_EXE) $(CTRLDEMO_EXE) $(GDIBLIT_EXE) $(GWESCHK_EXE) $(GWESLAB_EXE) $(DLGCHK_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(CMD_EXE) $(GDILAB_EXE) $(COMMCTRL_NATIVE_DLL) $(CTRLDEMO_EXE) $(GDIBLIT_EXE) $(GWESCHK_EXE) $(GWESLAB_EXE) $(DLGCHK_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -408,6 +411,18 @@ $(GDILAB_EXE): $(GDILAB_ELF) $(COREDLL_DLL) tools/elf2ntx.py
 	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
 
 # Native WinCE child-HWND controls and SIP interaction demo.
+$(COMMCTRL_NATIVE_OBJ): $(PAYLOAD_DIR)/commctrl_native.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(COMMCTRL_NATIVE_ELF): $(COMMCTRL_NATIVE_OBJ) $(PAYLOAD_DIR)/coredll.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/coredll.ld -o $@ $(COMMCTRL_NATIVE_OBJ)
+
+$(COMMCTRL_NATIVE_DLL): $(COMMCTRL_NATIVE_ELF) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name COMMCTRL.DLL --exports InitCommonControls,InitCommonControlsEx
+
 $(CTRLDEMO_OBJ): $(PAYLOAD_DIR)/ctrldemo.c $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
 	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
@@ -416,9 +431,9 @@ $(CTRLDEMO_ELF): $(CTRLDEMO_OBJ) $(CONTROL_MEM_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
 	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(CTRLDEMO_OBJ) $(CONTROL_MEM_OBJ)
 
-$(CTRLDEMO_EXE): $(CTRLDEMO_ELF) $(COREDLL_DLL) tools/elf2ntx.py
+$(CTRLDEMO_EXE): $(CTRLDEMO_ELF) $(COREDLL_DLL) $(COMMCTRL_NATIVE_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
-	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL --extra-import-prefix InitCommonControlsEx:COMMCTRL.DLL
 
 $(METROWIN_OBJ): $(PAYLOAD_DIR)/metrowin.c $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
