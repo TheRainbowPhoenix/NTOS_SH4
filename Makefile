@@ -83,6 +83,9 @@ WINLAB_EXE := $(OUTDIR)/WINLAB.EXE
 GUIWIN_OBJ := $(BUILDDIR)/payload/guiwin.o
 GUIWIN_ELF := $(BUILDDIR)/payload/guiwin.elf
 GUIWIN_EXE := $(OUTDIR)/GUIWIN.EXE
+GDIBLIT_OBJ := $(BUILDDIR)/payload/gdiblt.o
+GDIBLIT_ELF := $(BUILDDIR)/payload/gdiblt.elf
+GDIBLIT_EXE := $(OUTDIR)/GDIBLIT.EXE
 METROWIN_OBJ := $(BUILDDIR)/payload/metrowin.o
 METROWIN_ELF := $(BUILDDIR)/payload/metrowin.elf
 METROWIN_EXE := $(OUTDIR)/METROWIN.EXE
@@ -177,7 +180,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(GDIBLIT_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -226,7 +229,7 @@ $(HELLO_EXE): $(HELLO_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(HELLO_ELF) -o $@
 
-$(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c $(PAYLOAD_DIR)/ugui_font.h $(PAYLOAD_DIR)/ntapi_caps.h
+$(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c $(PAYLOAD_DIR)/wince/gdi_memory.inc $(PAYLOAD_DIR)/ugui_font.h $(PAYLOAD_DIR)/ntapi_caps.h
 	@mkdir -p $(dir $@)
 	$(CC) -c $(PAYLOAD_DIR)/coredll.c -o $@ $(PAYLOAD_CFLAGS)
 
@@ -311,6 +314,18 @@ $(GUIWIN_EXE): $(GUIWIN_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(GUIWIN_ELF) -o $@ --import-module COREDLL.DLL
 
+
+$(GDIBLIT_OBJ): $(PAYLOAD_DIR)/gdiblt.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(GDIBLIT_ELF): $(GDIBLIT_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(GDIBLIT_OBJ)
+
+$(GDIBLIT_EXE): $(GDIBLIT_ELF) $(COREDLL_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
 
 $(METROWIN_OBJ): $(PAYLOAD_DIR)/metrowin.c $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)

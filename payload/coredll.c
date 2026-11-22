@@ -534,6 +534,8 @@ int GetMessageW(NT_MSG *msg, void *hwnd, u32 min_filter, u32 max_filter)
     return 1;
 }
 
+#include "wince/gdi_memory.inc"
+
 void *GetDC(void *hwnd)
 {
     (void)hwnd;
@@ -597,9 +599,18 @@ int EndPaint(void *hwnd, const NT_PAINT *paint)
 
 u32 SetPixel(void *hdc, int x, int y, u32 colorref)
 {
-    if (hdc && x >= 0 && y >= 0)
-        ntos_pixel((u32)x, (u32)y, colorref);
-    return colorref;
+    GDI_BITMAP *b=gdi_selected(hdc);
+    if(b) {
+        if(x<0 || y<0 || x>=b->w || y>=b->h)
+            return GDI_INVALID_COLOR;
+        b->pixels[(u32)y*(u32)b->w+(u32)x]=(u16)rgb565(colorref);
+        return colorref;
+    }
+    if(gdi_device_dc(hdc) && x>=0 && y>=0 && x<320 && y<528) {
+        ntos_pixel((u32)x,(u32)y,colorref);
+        return colorref;
+    }
+    return GDI_INVALID_COLOR;
 }
 
 void *CreateSolidBrush(u32 colorref)
@@ -610,14 +621,21 @@ void *CreateSolidBrush(u32 colorref)
 
 int DeleteObject(void *object)
 {
-    return object != 0; /* synthetic brush/font handles: no heap ownership */
+    u32 tag=(u32)(uintptr_t)object & 0xFF000000u;
+    if(tag==GDI_BITMAP_TAG)return gdi_delete_bitmap(object);
+    /* Synthetic font/brush handles have no heap ownership. */
+    if(tag==0x01000000u || tag==0x02000000u)return 1;
+    return 0;
 }
 
 int FillRect(void *hdc, const NT_RECT *rect, void *brush)
 {
-    if (!hdc || !rect || !brush)
+    if (!hdc || !rect || !brush ||
+        (((u32)(uintptr_t)brush & 0xFF000000u)!=0x01000000u))
         return 0;
-    u32 c = (u32)brush & 0xFFFFu;
+    u32 c = (u32)(uintptr_t)brush & 0xFFFFu;
+    if(gdi_dc(hdc))return gdi_fill_bitmap(hdc,rect,c);
+    if(!gdi_device_dc(hdc))return 0;
     const void **a = ntapi();
     if (a && a[9] && rect->left >= 0 && rect->top >= 0 && rect->right > rect->left &&
         rect->bottom > rect->top) {
@@ -754,8 +772,12 @@ void *CreateFontIndirectW(const NT_LOGFONTW *font)
 }
 void *SelectObject(void *hdc, void *object)
 {
-    u32 v = (u32)object;
-    if (!hdc || (v & 0xFF000000u) != NTOS_FONT_HANDLE)
+    u32 v = (u32)(uintptr_t)object;
+    if(gdi_dc(hdc) &&
+       (((v & 0xFF000000u)==GDI_BITMAP_TAG) ||
+        object==GDI_STOCK_BITMAP))
+        return gdi_select_bitmap(hdc,object);
+    if (!gdi_device_dc(hdc) || (v & 0xFF000000u) != NTOS_FONT_HANDLE)
         return 0;
     int h = (int)(v & 0xffu);
     if (h < 9 || h > 32)
@@ -1236,10 +1258,13 @@ int coredll_stub(void)
     return 0;
 }
 
-/* PE DLL_PROCESS_ATTACH/DETACH: no OS-side initialization yet. */
-int main(void)
+/* WinCE DllMain(HINSTANCE,reason,reserved): detach releases any GDI
+ * surfaces still live when an EXE exits without calling DeleteObject. */
+int main(void *module,u32 reason,void *reserved)
 {
-    return 1; /* BOOL TRUE, WinCE DLL initialization contract */
+    (void)module;(void)reserved;
+    if(reason==0u)gdi_release_all(); /* DLL_PROCESS_DETACH */
+    return 1;
 }
 
 /* NTOS_PHONE_SIP_FINDER: WinCE public APIs over bounded native services. */
