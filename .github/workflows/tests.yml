@@ -69,6 +69,11 @@ jobs:
           python3 tools/test_dependency_graph.py
           python3 tools/audit_wince_pe.py dist/COREDLL.DLL dist/XAMLUI.DLL dist/METROWIN.EXE
           make check-pe
+      - name: Native CMD and PEG-like tile geometry regressions
+        run: |
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -pedantic tests/native_cmd_tiling_test.c -o /tmp/ntos-native-cmd-tiles
+          /tmp/ntos-native-cmd-tiles
+          test -s dist/CMD.EXE
       - name: UI and host COREDLL regressions
         run: |
           python3 payload/phone/check_phone.py
