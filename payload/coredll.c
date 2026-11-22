@@ -441,6 +441,13 @@ void *CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 
     }
     if (!g_class_proc || !same_wstr(class_name, g_class_name) || g_window.magic)
         return 0;
+#ifdef NTOS_EXWORD
+    /* Existing WinCE apps request 320x528 portrait. Give them an actual
+     * 528x320 client region on native Exword without changing HH3. */
+    if(x==0 && y==0 && w==320 && h==528) {
+        w=NTOS_SCREEN_W;h=NTOS_SCREEN_H;
+    }
+#endif
     /* This environment has one pen-oriented LCD window. WinCE
      * CW_USEDEFAULT and unspecified dimensions mean a full-screen window;
      * explicit smaller dimensions are preserved in GetClientRect. */
@@ -574,6 +581,9 @@ int DispatchMessageW(const NT_MSG *msg)
 int TranslateMessage(const NT_MSG *msg)
 {
     /* No Unicode keyboard map yet; retain WM_KEYDOWN for the caller. */
+#ifndef NTOS_EXWORD
+    return msg != 0 && msg->message == 0x0100u;
+#else
     if(!msg || msg->message!=0x0100u)return 0;
     /* Physical Exword keyboard keys now generate WinCE WM_CHAR. */
     if(msg->wParam>=32u && msg->wParam<=126u) {
@@ -583,6 +593,7 @@ int TranslateMessage(const NT_MSG *msg)
     } else if(msg->wParam==8u || msg->wParam==13u)
         (void)enqueue(msg->hwnd,0x0102u,msg->wParam,1u);
     return 1;
+#endif
 }
 int DestroyWindow(void *hwnd)
 {

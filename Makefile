@@ -1174,9 +1174,10 @@ exword-vmtest: $(OUTDIR)/VMTEST.EXE
 .PHONY: exword-probes
 # Cross-compile the safe NTOS exec/Ob/Ex/IO fixtures from the SAME sources
 # as Hollyhock. Only proven non-faulting probes enter physical Exword builds.
-exword-probes: exword-vmtest $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(NT_PROBE_DIST)/MMTEST.EXE $(NT_PROBE_DIST)/MMROTEST.EXE $(OUTDIR)/NATIVEVM.EXE $(OUTDIR)/MMREUSE.EXE $(OUTDIR)/MMSTRESS.EXE $(OUTDIR)/ROMDIAG.EXE
+exword-probes: exword-vmtest $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(NT_PROBE_DIST)/MMTEST.EXE $(NT_PROBE_DIST)/MMROTEST.EXE $(OUTDIR)/NATIVEVM.EXE $(OUTDIR)/MMREUSE.EXE $(OUTDIR)/MMSTRESS.EXE $(OUTDIR)/ROMDIAG.EXE $(NT_PROBE_DIST)/CALC.EXE
 	@mkdir -p $(OUTDIR)
 	cp $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(NT_PROBE_DIST)/MMTEST.EXE $(NT_PROBE_DIST)/MMROTEST.EXE $(OUTDIR)/
+	cp $(NT_PROBE_DIST)/CALC.EXE $(OUTDIR)/
 
 # Build Exword-specific P1 versions of the CP400 native VM/decommit
 # tests. Only the API window probe differs; real P0 UTLB reuse is NOT tested.
@@ -1196,6 +1197,17 @@ $(OUTDIR)/MMREUSE.EXE: $(NT_PROBE_BUILD)/mmreuse_exword.elf tools/elf2ntx.py
 $(OUTDIR)/MMSTRESS.EXE: $(NT_PROBE_BUILD)/mmstress_exword.elf tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+# Exword-only landscape calculator. Rebuild from the same source into
+# a separate object; the ordinary HH3 CALC.EXE remains 320x528.
+$(NT_PROBE_BUILD)/calc_exword.o: payload/calc.c payload/wince_ui.h payload/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -DNTOS_EXWORD=1 -c $< -o $@ $(PAYLOAD_CFLAGS)
+$(NT_PROBE_BUILD)/calc_exword.elf: $(NT_PROBE_BUILD)/calc_exword.o payload/payload.ld
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+$(NT_PROBE_DIST)/CALC.EXE: $(NT_PROBE_BUILD)/calc_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
 
 # Read-only firmware MMU snapshot; no P4 writes or exception hooks.
 $(OUTDIR)/ROMDIAG.EXE: $(NT_PROBE_BUILD)/romdiag.elf tools/elf2ntx.py
