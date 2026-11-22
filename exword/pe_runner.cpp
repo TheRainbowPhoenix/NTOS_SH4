@@ -10,6 +10,7 @@
 #include "storage.h"
 #include "shortname.h"
 #include "p1_vm.hpp"
+#include "../src/nt/process.hpp"
 #include "profile.hpp"
 #include "../src/pe.hpp"
 #include "../src/pe_rebase.hpp"
@@ -34,9 +35,54 @@ static uint8_t *g_heap_ptr;
 static uint32_t g_heap_base,g_heap_end;
 static unsigned g_print_line;
 struct Allocation {uint32_t addr,bytes;bool live;};
-static Allocation g_alloc[32];
+static constexpr unsigned MAX_HEAP_BLOCKS=192u;
+struct GuestMetadata {
+    nt::Process process;
+    Allocation blocks[MAX_HEAP_BLOCKS];
+};
+static GuestMetadata *g_guest_metadata;
+static nt::Process *g_guest_process;
+static Allocation *g_alloc;
 static void *heap_alloc(uint32_t size);
 static void heap_free(void *p);
+static void *pool_allocate(void *,size_t n) {
+    return n && n<=0xffffffffu?heap_alloc((uint32_t)n):nullptr;
+}
+static void pool_deallocate(void *,void *p) {heap_free(p);}
+static int32_t event_create(uint32_t manual,uint32_t initial) {
+    if(!g_guest_process)return (int32_t)nt::DEVICE_BUSY;
+    uint32_t handle=0u;
+    nt::Status rc=g_guest_process->create_event(manual!=0u,initial!=0u,&handle);
+    return rc==nt::SUCCESS?(int32_t)handle:(int32_t)rc;
+}
+static uint32_t event_set(uint32_t handle) {
+    return g_guest_process?g_guest_process->event_set(handle):nt::DEVICE_BUSY;
+}
+static uint32_t event_reset(uint32_t handle) {
+    return g_guest_process?g_guest_process->event_reset(handle):nt::DEVICE_BUSY;
+}
+static uint32_t event_wait(uint32_t handle,uint32_t timeout) {
+    return g_guest_process?g_guest_process->event_poll(handle,timeout):nt::DEVICE_BUSY;
+}
+static uint32_t event_close(uint32_t handle) {
+    return g_guest_process?
+        g_guest_process->handles.close(handle,nt::Type::event):nt::DEVICE_BUSY;
+}
+static void *pool_tagged_alloc(uint32_t n,uint32_t tag) {
+    return g_guest_process?g_guest_process->pool.alloc(n,tag):nullptr;
+}
+static uint32_t pool_tagged_free(void *p,uint32_t tag) {
+    return g_guest_process?g_guest_process->pool.free(p,tag):nt::DEVICE_BUSY;
+}
+static uint32_t pool_peak(void) {
+    return g_guest_process?g_guest_process->pool.peak:0u;
+}
+static uint32_t pool_live(void) {
+    return g_guest_process?g_guest_process->pool.current:0u;
+}
+static uint32_t handle_count(void) {
+    return g_guest_process?g_guest_process->handles.used:0u;
+}
 static NtosP1Vm g_vm;
 static uint32_t vm_allocate(uint32_t n,void *) {
     return (uint32_t)(uintptr_t)heap_alloc(n);
@@ -82,32 +128,61 @@ static bool same_case(const char *a,const char *b) {
         if(!x)return true;
     }
 }
+/* Guest P1 allocator. Coalesce all freed blocks to support the 128-slot
+ * tagged NTOS pool and its 512 KiB stress phase without resident BSS.
+ * GuestImage/VM and DLL allocations share one verified P1 heap. */
 static void *heap_alloc(uint32_t size)
 {
-    if(!size || size>g_heap_end-g_heap_base)return nullptr;
+    if(!g_alloc || !size || size>0xfffffff8u)return nullptr;
     size=(size+7u)&~7u;
-    if(!size)return nullptr;
-    /* Reuse exact freed blocks; otherwise allocate monotonically.
-     * A process gets a fresh P1 arena on each launch. */
-    for(Allocation &a:g_alloc)
-        if(!a.live && a.addr && a.bytes>=size) {
-            a.live=true;
-            return (void *)(uintptr_t)a.addr;
+    unsigned best=MAX_HEAP_BLOCKS;
+    for(unsigned i=0u;i<MAX_HEAP_BLOCKS;++i) {
+        const Allocation &a=g_alloc[i];
+        if(!a.live && a.addr && a.bytes>=size &&
+           (best==MAX_HEAP_BLOCKS || a.bytes<g_alloc[best].bytes))
+            best=i;
+    }
+    if(best!=MAX_HEAP_BLOCKS) {
+        Allocation &a=g_alloc[best];
+        if(a.bytes>size && a.bytes-size>=8u) {
+            for(unsigned i=0u;i<MAX_HEAP_BLOCKS;++i)
+                if(!g_alloc[i].addr) {
+                    g_alloc[i]={a.addr+size,a.bytes-size,false};
+                    a.bytes=size;
+                    break;
+                }
         }
+        a.live=true;
+        return (void *)(uintptr_t)a.addr;
+    }
     if(g_heap_base>g_heap_end || size>g_heap_end-g_heap_base)return nullptr;
-    for(Allocation &a:g_alloc)if(!a.addr) {
-        a={g_heap_base,size,true};
-        uint32_t allocated=g_heap_base;
+    for(unsigned i=0u;i<MAX_HEAP_BLOCKS;++i)if(!g_alloc[i].addr) {
+        uint32_t at=g_heap_base;
+        g_alloc[i]={at,size,true};
         g_heap_base+=size;
-        return (void *)(uintptr_t)allocated;
+        return (void *)(uintptr_t)at;
     }
     return nullptr;
 }
 static void heap_free(void *p)
 {
     const uint32_t addr=(uint32_t)(uintptr_t)p;
-    for(Allocation &a:g_alloc)if(a.addr==addr && a.live) {
+    if(!g_alloc || !addr)return;
+    for(unsigned i=0u;i<MAX_HEAP_BLOCKS;++i) {
+        Allocation &a=g_alloc[i];
+        if(a.addr!=addr || !a.live)continue;
         a.live=false;
+        /* All regions are disjoint, so adjacency can be merged safely. */
+        for(unsigned j=0u;j<MAX_HEAP_BLOCKS;++j) {
+            if(i==j || !g_alloc[j].addr || g_alloc[j].live)continue;
+            Allocation &b=g_alloc[j];
+            if(a.addr+a.bytes==b.addr) {
+                a.bytes+=b.bytes;b={};j=0u;continue;
+            }
+            if(b.addr+b.bytes==a.addr) {
+                a.addr=b.addr;a.bytes+=b.bytes;b={};j=0u;
+            }
+        }
         return;
     }
 }
@@ -192,8 +267,7 @@ static void *host_malloc(uint32_t n){return heap_alloc(n);}
 static unsigned g_guest_disk;
 static char g_guest_root[NTOS_EXWORD_PATH_MAX];
 static NtosExwordArena g_guest_area;
-struct GuestFile {int os_fd;bool live;};
-static GuestFile g_guest_files[8];
+/* NTOS Ob issues stale-proof typed file handles; no raw fd escapes. */
 static bool guest_path(const char *input,char out[NTOS_EXWORD_PATH_MAX])
 {
     if(!input)return false;
@@ -243,20 +317,24 @@ static bool guest_path(const char *input,char out[NTOS_EXWORD_PATH_MAX])
 }
 static int guest_open(const char *path,uint32_t flags)
 {
-    if(flags!=1u)return -5; /* No write/create until hardware tested. */
+    if(!g_guest_process || flags!=1u)return -5;
+    /* A second File_Open must never reach the firmware SDK. */
+    if(g_guest_process->raw_file>=0)return -16;
     char native[NTOS_EXWORD_PATH_MAX];
     if(!guest_path(path,native))return -2;
-    unsigned i=0u;
-    while(i<8u && g_guest_files[i].live)++i;
-    if(i>=8u)return -4;
     int fd=ntos_exword_open_read(native);
     if(fd<0)return fd;
-    g_guest_files[i]={fd,true};
-    return (int)(i+1u);
+    uint32_t token=0u;
+    nt::Status status=g_guest_process->attach_file(fd,&token);
+    if(status!=nt::SUCCESS) {
+        (void)ntos_exword_close_fd(fd);
+        return -4;
+    }
+    return (int)token;
 }
-static GuestFile *guest_fd(int id) {
-    return id>0 && id<=8 && g_guest_files[id-1].live ?
-           &g_guest_files[id-1]:nullptr;
+static int guest_fd(int token) {
+    return g_guest_process?
+        g_guest_process->file_fd((uint32_t)token):-1;
 }
 static bool guest_buffer(void *p,uint32_t n)
 {
@@ -268,27 +346,28 @@ static bool guest_buffer(void *p,uint32_t n)
 }
 static int guest_read(int id,void *to,uint32_t bytes)
 {
-    GuestFile *f=guest_fd(id);
-    if(!f || !guest_buffer(to,bytes))return -2;
-    return ntos_exword_read_fd(f->os_fd,to,bytes);
+    int fd=guest_fd(id);
+    if(fd<0 || !guest_buffer(to,bytes))return -2;
+    return ntos_exword_read_fd(fd,to,bytes);
 }
 static int guest_close(int id)
 {
-    GuestFile *f=guest_fd(id);
-    if(!f)return -1;
-    int result=ntos_exword_close_fd(f->os_fd);
-    if(result>=0)*f={};
+    int fd=guest_fd(id);
+    if(fd<0)return -2;
+    int result=ntos_exword_close_fd(fd);
+    if(result>=0)
+        (void)g_guest_process->drop_file((uint32_t)id);
     return result;
 }
 static int guest_size(int id)
 {
-    GuestFile *f=guest_fd(id);
-    return f?ntos_exword_size_fd(f->os_fd):-1;
+    int fd=guest_fd(id);
+    return fd>=0?ntos_exword_size_fd(fd):-1;
 }
 static int guest_seek(int id,int offset,uint32_t method)
 {
-    GuestFile *f=guest_fd(id);
-    return f?ntos_exword_seek_fd(f->os_fd,offset,method):-1;
+    int fd=guest_fd(id);
+    return fd>=0?ntos_exword_seek_fd(fd,offset,method):-1;
 }
 static int guest_stat(const char *path)
 {
@@ -299,9 +378,9 @@ static int guest_stat(const char *path)
 }
 static void guest_close_all()
 {
-    for(GuestFile &f:g_guest_files)if(f.live) {
-        (void)ntos_exword_close_fd(f.os_fd);
-        f={};
+    if(g_guest_process && g_guest_process->raw_file>=0) {
+        (void)ntos_exword_close_fd(g_guest_process->raw_file);
+        g_guest_process->raw_file=-1;
     }
 }
 
@@ -326,6 +405,16 @@ static void init_host_api()
     ntos_host_table[18]=(const void *)&guest_seek;
     ntos_host_table[22]=(const void *)&guest_stat;
     ntos_host_table[23]=(const void *)&vm_hint;
+    ntos_host_table[28]=(const void *)&event_create;
+    ntos_host_table[29]=(const void *)&event_set;
+    ntos_host_table[30]=(const void *)&event_reset;
+    ntos_host_table[31]=(const void *)&event_wait;
+    ntos_host_table[32]=(const void *)&event_close;
+    ntos_host_table[33]=(const void *)&pool_tagged_alloc;
+    ntos_host_table[34]=(const void *)&pool_tagged_free;
+    ntos_host_table[35]=(const void *)&pool_peak;
+    ntos_host_table[36]=(const void *)&pool_live;
+    ntos_host_table[37]=(const void *)&handle_count;
     ntos_host_table[41]=(const void *)&vm_reserve;
     ntos_host_table[42]=(const void *)&vm_commit;
     ntos_host_table[43]=(const void *)&vm_protect;
@@ -428,22 +517,28 @@ int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_c
         g_guest_root[n]=content_dir[n];++n;
     }
     g_guest_root[n]=0;
-    for(GuestFile &f:g_guest_files)f={};
-    for(Allocation &a:g_alloc)a={};
+    g_guest_process=nullptr;
+    g_alloc=nullptr;
     using namespace ntos_exword_modules;
     /* Place the metadata at the end of the P1 image range. The aligned
      * gap beneath it is unavailable to both DLL images and guest heap. */
     const uint32_t module_bytes=sizeof(Module)*MAX_MODULES;
+    const uint32_t guest_bytes=sizeof(GuestMetadata);
     if(area.image_end<=area.image_start+0x10000u ||
-       module_bytes>area.image_end-area.image_start-0x10000u) {
-        set_error("P1 arena has no module table space");return -2;
+       module_bytes+guest_bytes>area.image_end-area.image_start-0x10000u) {
+        set_error("P1 arena has no guest NT kernel space");return -2;
     }
-    const uint32_t metadata=(area.image_end-module_bytes)&~7u;
+    const uint32_t module_at=(area.image_end-module_bytes)&~7u;
+    const uint32_t metadata=(module_at-guest_bytes)&~7u;
     limit=metadata&~4095u;
     if(limit<=area.image_start+4096u) {
         set_error("P1 metadata overlaps code");return -2;
     }
-    modules=(Module *)(uintptr_t)metadata;
+    modules=(Module *)(uintptr_t)module_at;
+    g_guest_metadata=(GuestMetadata *)(uintptr_t)metadata;
+    *g_guest_metadata={};
+    g_guest_process=&g_guest_metadata->process;
+    g_alloc=g_guest_metadata->blocks;
     for(unsigned i=0u;i<MAX_MODULES;++i)modules[i]={};
     count=attach_count=0u;
     cursor=area.image_start;
@@ -473,6 +568,12 @@ int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_c
         return -5;
     }
     g_print_line=0u;
+    if(!g_guest_process->begin()) {
+        set_error("NTOS guest process init failed");
+        ntos_exword_arena_release(area);
+        return -5;
+    }
+    g_guest_process->pool.configure(nullptr,pool_allocate,pool_deallocate);
     g_vm.begin(vm_allocate,vm_deallocate,vm_zero,nullptr);
     init_host_api();
     sync_exec(area.image_start,image_bytes);
@@ -480,6 +581,7 @@ int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_c
         unload();
         ntos_exword_dll_main(nullptr,0u,nullptr);
         guest_close_all();
+        g_guest_process->finish();
         ntos_exword_arena_release(area);
         return -6;
     }
@@ -494,6 +596,7 @@ int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_c
     /* DLL and COREDLL teardown happens BEFORE releasing guest heap. */
     ntos_exword_dll_main(nullptr,0u,nullptr);
     guest_close_all();
+    g_guest_process->finish();
     *exit_code=(uint32_t)rc;
     set_error("ok");
     ntos_exword_arena_release(area);
