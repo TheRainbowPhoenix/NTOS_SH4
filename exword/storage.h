@@ -26,6 +26,9 @@ int ntos_exword_find_content_dir(unsigned volume, char out[NTOS_EXWORD_PATH_MAX]
 /* Find an immediate child directory by native case-correct enumeration. */
 int ntos_exword_find_child_dir(const char *parent, const char *name,
                               char out[NTOS_EXWORD_PATH_MAX]);
+/* Case-correct lookup for flat EXE/DLL/CPL leaves, after 8.3 truncation. */
+int ntos_exword_find_child_file(const char *parent,const char *name,
+                               char out[NTOS_EXWORD_PATH_MAX]);
 /* One shared temporary enumeration page. Not reentrant; callers must
  * finish a scan before starting another. UI has its own separate page. */
 struct ntos_exword_listing *ntos_exword_scratch(void);
