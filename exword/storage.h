@@ -29,6 +29,10 @@ int ntos_exword_find_child_dir(const char *parent, const char *name,
 /* One shared temporary enumeration page. Not reentrant; callers must
  * finish a scan before starting another. UI has its own separate page. */
 struct ntos_exword_listing *ntos_exword_scratch(void);
+/* The UI enumerates only EXE files and directories across any number
+ * of 16-entry pages; internal DLL resolution still sees all file types. */
+int ntos_exword_scan_exes_page(const char *pattern,unsigned skip,
+                              struct ntos_exword_listing *out,unsigned *more);
 int ntos_exword_scan_path(const char *pattern, struct ntos_exword_listing *out);
 int ntos_exword_scan_page(const char *pattern,unsigned skip,
                          struct ntos_exword_listing *out,unsigned *more);
