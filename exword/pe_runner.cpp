@@ -11,6 +11,7 @@
 #include "shortname.h"
 #include "p1_vm.hpp"
 #include "rom32a_mmu.hpp"
+#include "native_vm.hpp"
 #include "../src/nt/process.hpp"
 #include "profile.hpp"
 #include "../src/pe.hpp"
@@ -85,6 +86,7 @@ static uint32_t handle_count(void) {
     return g_guest_process?g_guest_process->handles.used:0u;
 }
 static NtosP1Vm g_vm;
+static NtosExwordNativeVm g_native_vm;
 static NtosExwordArena g_guest_area;
 static uint32_t vm_allocate(uint32_t n,void *) {
     return (uint32_t)(uintptr_t)heap_alloc(n);
@@ -428,6 +430,24 @@ static void guest_close_all()
 }
 
 static uint32_t guest_rights(uint32_t at);
+static bool nt_read_word(void *,uint32_t,uint32_t *);
+static bool nt_write_word(void *,uint32_t,uint32_t);
+static uint32_t nt_alloc(uint32_t process,uint32_t *base,uint32_t zero,
+                         uint32_t *size,uint32_t flags,uint32_t protection) {
+    return g_native_vm.allocate(process,(uint32_t)(uintptr_t)base,zero,
+                                (uint32_t)(uintptr_t)size,flags,protection);
+}
+static uint32_t nt_protect(uint32_t process,uint32_t *base,uint32_t *size,
+                           uint32_t protection,uint32_t *old) {
+    return g_native_vm.protect(process,(uint32_t)(uintptr_t)base,
+                               (uint32_t)(uintptr_t)size,protection,
+                               (uint32_t)(uintptr_t)old);
+}
+static uint32_t nt_free(uint32_t process,uint32_t *base,uint32_t *size,
+                        uint32_t flags) {
+    return g_native_vm.free(process,(uint32_t)(uintptr_t)base,
+                            (uint32_t)(uintptr_t)size,flags);
+}
 static void init_host_api()
 {
     for(unsigned i=0;i<64u;++i)ntos_host_table[i]=nullptr;
@@ -467,6 +487,9 @@ static void init_host_api()
     ntos_host_table[44]=(const void *)&vm_query;
     ntos_host_table[45]=(const void *)&vm_release;
     ntos_host_table[46]=(const void *)&vm_committed;
+    ntos_host_table[51]=(const void *)&nt_alloc;
+    ntos_host_table[52]=(const void *)&nt_protect;
+    ntos_host_table[53]=(const void *)&nt_free;
 }
 struct Source {const char *path;};
 static bool file_read(void *context,uint32_t off,uint8_t *to,uint32_t n)
@@ -570,6 +593,29 @@ static uint32_t guest_rights(uint32_t at)
     return at>=g_guest_area.stack_start && at<g_guest_area.stack_end?2u:0u;
 }
 
+/* An NT Native pointer is a caller-supplied address into writable guest
+ * EXE/DLL PE data. Deliberately reject the EX-word OS stack, guest stack,
+ * ROM, all P0 add-in windows, and RO executable/constant sections. */
+static bool nt_validate_word(uint32_t at)
+{
+    if((at&3u) || !exword_rom32a::guest_owned(at,4u,
+        g_guest_area.image_start,g_guest_area.image_end,
+        0u,0u))return false;
+    return guest_rights(at)==2u && guest_rights(at+3u)==2u;
+}
+static bool nt_read_word(void *,uint32_t at,uint32_t *out)
+{
+    if(!out || !nt_validate_word(at))return false;
+    *out=*(volatile const uint32_t *)(uintptr_t)at;
+    return true;
+}
+static bool nt_write_word(void *,uint32_t at,uint32_t value)
+{
+    if(!nt_validate_word(at))return false;
+    *(volatile uint32_t *)(uintptr_t)at=value;
+    return true;
+}
+
 int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_code)
 {
     if(exit_code)*exit_code=0u;
@@ -650,6 +696,7 @@ int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_c
     g_guest_process->handles.next_cookie=g_guest_cookie_seed;
     g_guest_process->pool.configure(nullptr,pool_allocate,pool_deallocate);
     g_vm.begin(vm_allocate,vm_deallocate,vm_zero,nullptr);
+    g_native_vm.begin(&g_vm,nt_read_word,nt_write_word,nullptr);
     init_host_api();
     sync_exec(area.image_start,image_bytes);
     if(!init_one(exe,0u)) {
