@@ -2047,6 +2047,8 @@ static int legacy_nav_input(NT_MSG *msg)
     return 1;
 }
 
-#ifdef NTOS_EXWORD
+#if defined(NTOS_EXWORD) && !defined(NTOS_EXWORD_HOST_TEST)
+/* The SH4 static export table stores 32-bit SH function addresses.
+ * A 64-bit native host test exercises COREDLL logic without this table. */
 #include "../exword/ntos_exword_core_exports.inc"
 #endif

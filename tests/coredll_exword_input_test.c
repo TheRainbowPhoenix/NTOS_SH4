@@ -12,6 +12,7 @@
 #define LocalFree nt_exword_test_LocalFree
 #define NTOS_CORE_HOST_TEST 1
 #define NTOS_EXWORD 1
+#define NTOS_EXWORD_HOST_TEST 1
 #define main nt_exword_test_core_entry
 #include "../payload/coredll.c"
 #undef main
