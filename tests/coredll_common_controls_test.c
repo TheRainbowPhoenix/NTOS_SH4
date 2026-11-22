@@ -73,7 +73,7 @@ int main(void) {
     NT_RECT rc={0};
     assert(GetClientRect(btn,&rc) && rc.right==100 && rc.bottom==36);
     assert(SendMessageW(btn,0x000Eu,0,0)==3);
-    u16 name[16]={0};
+    static u16 name[16]={0};
     assert(SendMessageW(btn,0x000Du,16,(u32)(uintptr_t)name)==3);
     assert(name[0]=='T' && name[2]=='p' && name[3]==0);
     assert(SetWindowTextW(btn,item));
