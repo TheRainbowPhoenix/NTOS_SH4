@@ -168,7 +168,9 @@ static void draw() {
     dtext(DWIDTH-180,40,C_BLACK,page);
     dtext(9,275,C_BLACK,g_note);
     drect(0,298,DWIDTH-1,DHEIGHT-1,0x2945);
-    dtext(9,304,C_WHITE,"PgUp/PgDn: pages   EXE: run   EXIT: back   ACON: quit");
+    dtext(9,304,C_WHITE,"< PREV");
+    dtext(110,304,C_WHITE,"PgUp/PgDn  EXE: run  EXIT: back");
+    dtext(DWIDTH-86,304,C_WHITE,"NEXT >");
     dupdate();
 }
 static void show_result(const char *name,int rc,uint32_t result,
@@ -259,7 +261,21 @@ int main(void)
     else copy(g_note,sizeof g_note,"Ke/Ob/Ex failed");
     draw();
     for(;;) {
-        key_event_t e=getkey();
+        key_event_t e=waitevent(nullptr);
+        if(e.type==KEYEV_TOUCH_DOWN) {
+            if(e.y>=298u) {
+                if(e.x<100u)(void)previous_page();
+                else if(e.x>=DWIDTH-100u)(void)next_page();
+            } else if(e.y>=86u && e.y<259u) {
+                unsigned line=(unsigned)(e.y-86u)/19u;
+                unsigned target=g_top+line;
+                if(target<g_listing.count) {
+                    if(target==g_selected)run_selected();
+                    else g_selected=target;
+                }
+            }
+            draw();continue;
+        }
         if(e.type!=KEYEV_DOWN && e.type!=KEYEV_HOLD)continue;
         if(e.key==KEY_ACON || e.key==KEY_MENU)break;
         if(e.key==KEY_EXIT) {
