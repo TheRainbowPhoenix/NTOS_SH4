@@ -20,8 +20,11 @@ Enter `HELP`, `DIR`, `CLS`, `RUN hello.exe`, `hello.exe`,
 `RUN Apps/calc/calc.exe`, `SPLIT`, `FULL`, `SWAP`, `ROTATE`,
 `KB` or `EXIT`. `RUN` is **not a process spawn**: it calls the
 existing `coredll_launch` API, posts `WM_QUIT`, returns to the kernel,
-and the kernel releases the old PE before mapping the next PE. There is
-no parallel multi-EXE compositor in this revision. Paths are bounded and
+and the kernel releases the old PE before mapping the next PE. After the
+child returns, the loader reopens a fresh CMD session; exiting CMD itself
+returns directly to the old picker. Command history is not yet persisted
+across these serial handoffs. There is no parallel multi-EXE compositor
+in this revision. Paths are bounded and
 constrained to `\\fls0\\`; no shell pipelines, redirection,
 expansion, external commands, arbitrary drive paths or `..` traversal.
 
@@ -67,6 +70,8 @@ exports still fall through to an unsupported stub, and the original WinCE
 
 ## Verification and hardware gates
 
+- `tests/nt_launch_policy_test.cpp` checks serial return-to-CMD handling,
+  missing-shell fallback and the no-recursion rule on `EXIT`.
 - `tests/native_cmd_tiling_test.c` checks command parsing, unsafe paths,
   split/full/side-by-side rectangle coverage, swaps, and precise hit boundaries.
 - `tests/native_gdi_raster_test.c` includes the **shipping COREDLL.c**
