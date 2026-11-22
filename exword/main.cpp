@@ -120,7 +120,7 @@ static void scan() {
     if(!append(mask,sizeof mask,"\\*")) {
         copy(g_note,sizeof g_note,"path too long");g_listing.count=0u;return;
     }
-    int rc=ntos_exword_scan_page(mask,g_skip,&g_listing,&g_more);
+    int rc=ntos_exword_scan_exes_page(mask,g_skip,&g_listing,&g_more);
     if(rc<0) {
         char hex[9];hex8(hex,(uint32_t)rc);
         copy(g_note,sizeof g_note,"FS error 0x");
@@ -137,7 +137,7 @@ static void draw() {
     drect(0,0,DWIDTH-1,28,0x2945);
     dtext(8,8,C_WHITE,"NTOSH / SH4BE PE");
     dtext(9,40,C_BLACK,g_dir);
-    dtext(9,58,C_BLACK,g_ready?"UP/DOWN select  EXE open/run  LEFT/RIGHT disk" :
+    dtext(9,58,C_BLACK,g_ready?"UP/DOWN select  EXE run  PgUp/PgDn page  LEFT/RIGHT disk" :
                                        "Kernel initialization failed");
     drect(5,79,DWIDTH-6,260,0xef7d);
     if(!g_listing.count) {
@@ -153,10 +153,64 @@ static void draw() {
             dtext(14,y,id==g_selected?C_WHITE:C_BLACK,row);
         }
     }
+    /* The native scan is paginated; never imply that 16 is the total.
+     * Only EXEs/directories are shown, never DLL files. */
+    char page[52]="Files ";
+    char digits[9];
+    hex8(digits,g_skip+1u);
+    /* Display compact decimal item range using no runtime printf. */
+    unsigned total=g_skip+g_listing.count;
+    char first[9],last[9];hex8(first,g_listing.count?g_skip+1u:0u);hex8(last,total);
+    append(page,sizeof page,first+4u);
+    append(page,sizeof page,"-");
+    append(page,sizeof page,last+4u);
+    if(g_more)append(page,sizeof page,"  MORE >");
+    dtext(DWIDTH-180,40,C_BLACK,page);
     dtext(9,275,C_BLACK,g_note);
     drect(0,298,DWIDTH-1,DHEIGHT-1,0x2945);
-    dtext(9,304,C_WHITE,"ACON: exit app   |   EXIT: back / quit");
+    dtext(9,304,C_WHITE,"PgUp/PgDn: pages   EXE: run   EXIT: back   ACON: quit");
     dupdate();
+}
+static void show_result(const char *name,int rc,uint32_t result,
+                        const char *error)
+{
+    /* Preserve the EXE's last painted frame so immediate-return apps
+     * can be photographed/inspected. The return code never disappears
+     * behind a refreshed picker until the user presses a key. */
+    drect(0,266,DWIDTH-1,DHEIGHT-1,0x2945);
+    dtext(9,271,C_WHITE,name);
+    char message[90];
+    if(rc<0) {
+        copy(message,sizeof message,"LOAD ERROR: ");
+        append(message,sizeof message,error);
+    } else {
+        char value[9];hex8(value,result);
+        copy(message,sizeof message,"RETURN 0x");
+        append(message,sizeof message,value);
+    }
+    dtext(9,289,C_WHITE,message);
+    dtext(DWIDTH-187,304,C_WHITE,"EXE/EXIT: back to files");
+    dupdate();
+    for(;;) {
+        key_event_t e=getkey();
+        if(e.type==KEYEV_DOWN &&
+           (e.key==KEY_EXE || e.key==KEY_EXIT ||
+            e.key==KEY_ACON || e.key==KEY_MENU))
+            break;
+    }
+}
+static bool next_page(void) {
+    if(!g_more || !g_listing.count)return false;
+    g_skip+=g_listing.count;
+    scan();g_selected=g_top=0u;
+    return true;
+}
+static bool previous_page(void) {
+    if(!g_skip)return false;
+    g_skip=g_skip>=NTOS_EXWORD_LIST_MAX?
+           g_skip-NTOS_EXWORD_LIST_MAX:0u;
+    scan();g_selected=g_top=0u;
+    return true;
 }
 static void run_selected() {
     if(g_selected>=g_listing.count)return;
@@ -180,20 +234,20 @@ static void run_selected() {
     dtext(9,8,C_BLACK,"Loading SH4BE PE...");
     dtext(9,28,C_BLACK,name);
     dupdate();
-    uint32_t result=0;
+    uint32_t result=0u;
     int rc=ntos_exword_run_pe(path,g_content_root[g_volume],&result);
-    if(rc<0)copy(g_note,sizeof g_note,ntos_exword_pe_error());
-    else {
-        char value[9];hex8(value,result);
-        copy(g_note,sizeof g_note,"EXE returned 0x");
-        append(g_note,sizeof g_note,value);
-    }
+    char error[72];
+    copy(error,sizeof error,rc<0?ntos_exword_pe_error():"");
+    show_result(name,rc,result,error);
+    /* Enumeration may use a different native case and revisit the root
+     * after a process switch. The status survives the rescan. */
     scan();
-    /* Preserve the result (scan only reset its descriptive status). */
-    if(rc<0)copy(g_note,sizeof g_note,ntos_exword_pe_error());
-    else {
+    if(rc<0) {
+        copy(g_note,sizeof g_note,"LOAD ERROR: ");
+        append(g_note,sizeof g_note,error);
+    } else {
         char value[9];hex8(value,result);
-        copy(g_note,sizeof g_note,"EXE returned 0x");
+        copy(g_note,sizeof g_note,"Returned 0x");
         append(g_note,sizeof g_note,value);
     }
 }
@@ -215,23 +269,21 @@ int main(void)
             }
             break;
         }
-        if(e.type!=KEYEV_DOWN || !g_ready)continue;
+        if(e.type!=KEYEV_DOWN && e.type!=KEYEV_HOLD)continue;
+        if(!g_ready)continue;
         if(e.key==KEY_LEFT || e.key==KEY_RIGHT) {
             g_volume^=1u;root();scan();
+        } else if(e.key==KEY_PAGEUP || e.key==KEY_EX_HISTORY) {
+            (void)previous_page();
+        } else if(e.key==KEY_PAGEDOWN || e.key==KEY_EX_ZOOM) {
+            (void)next_page();
         } else if(e.key==KEY_UP) {
             if(g_selected>0u)--g_selected;
-            else if(g_skip>=NTOS_EXWORD_LIST_MAX) {
-                g_skip-=NTOS_EXWORD_LIST_MAX;
-                scan();
-                if(g_listing.count)g_selected=g_listing.count-1u;
-            }
+            else if(previous_page() && g_listing.count)
+                g_selected=g_listing.count-1u;
         } else if(e.key==KEY_DOWN) {
             if(g_selected+1u<g_listing.count)++g_selected;
-            else if(g_more && g_listing.count) {
-                g_skip+=g_listing.count;
-                scan();
-                g_selected=0u;
-            }
+            else (void)next_page();
         } else if(e.key==KEY_EXE) {
             run_selected();
         } else continue;
