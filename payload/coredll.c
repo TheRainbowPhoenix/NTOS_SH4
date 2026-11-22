@@ -421,7 +421,7 @@ void *CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 
     (void)menu;
     (void)instance;
     unsigned control_kind=nt_ctl_kind(class_name,style);
-    if(control_kind) {
+    if(control_kind && !(control_kind==NT_CTL_EDIT && !g_edit.magic)) {
         NT_COMMON_CTL *control;
         if(!is_hwnd(parent))return 0;
         control=nt_ctl_create(control_kind,parent,(u32)(uintptr_t)menu,
@@ -537,6 +537,16 @@ int SendMessageW(void *hwnd,u32 message,u32 wp,u32 lp)
             buffer[n]=0;
             return (int)n;
         }
+        case 0x0102u: { /* WM_CHAR delivered to focused EDIT HWND */
+            int changed=nt_ctl_edit_char(c,wp);
+            if(changed) {
+                g_window.invalidated=1;
+                if(changed==1 && is_hwnd(c->parent) && g_window.proc)
+                    g_window.proc(c->parent,0x0111u,
+                                  (0x0300u<<16u)|(c->id&0xffffu),c->handle);
+            }
+            return changed!=0;
+        }
         case 0x000Eu: { /* WM_GETTEXTLENGTH */
             unsigned n=0;
             while(c->title[n] && n<NT_CTL_TEXT_MAX)++n;
@@ -651,6 +661,15 @@ int DispatchMessageW(const NT_MSG *msg)
             g_window.proc((void *)&g_window,0x0111u,0u,0u);
         return changed!=0;
     }
+    if(msg->message==0x0102u) {
+        for(unsigned i=0;i<NT_CTL_MAX;++i) {
+            NT_COMMON_CTL *c=&g_common_controls[i];
+            if(c->handle && c->role==NT_CTL_EDIT && c->focus &&
+               c->visible && c->enabled)
+                return SendMessageW((void *)(uintptr_t)c->handle,0x0102u,
+                                    msg->wParam,msg->lParam);
+        }
+    }
     if(g_edit.magic && g_edit.visible &&
        msg->message==0x0201u &&
        msg->pt.x>=g_edit.bounds.left &&
@@ -671,6 +690,11 @@ int DispatchMessageW(const NT_MSG *msg)
             g_control_pressed=hit?hit->handle:0u;
             if(hit) {
                 nt_ctl_focus(hit);g_edit.focused=0;
+                if(hit->role==NT_CTL_EDIT) {
+                    SipShowIM(1u);
+                    g_window.invalidated=1;
+                    return 1;
+                }
                 if(hit->role==NT_CTL_LISTBOX || hit->role==NT_CTL_COMBOBOX) {
                     int row=(msg->pt.y-hit->bounds.top-3)/20;
                     if(row>=0 && (unsigned)row<hit->line_count) {
@@ -2084,6 +2108,10 @@ static void nt_controls_paint(void)
                 ntos_fillrect((u32)(l+2),(u32)(t+2),
                               (u32)(l+2+filled),(u32)(b-2),0x00C77735u);
             continue;
+        }
+        if(c->role==NT_CTL_EDIT) {
+            ntos_fillrect((u32)(l+1),(u32)(t+1),
+                          (u32)(r-1),(u32)(b-1),0x00FFFFFFu);
         }
         if(c->role==NT_CTL_CHECKBOX) {
             ntos_fillrect((u32)(l+4),(u32)(t+5),
