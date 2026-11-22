@@ -323,9 +323,9 @@ $(CMD_OBJ): $(PAYLOAD_DIR)/cmd.c $(PAYLOAD_DIR)/nt_cmd_model.h $(PAYLOAD_DIR)/nt
 	@mkdir -p $(dir $@)
 	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
 
-$(CMD_ELF): $(CMD_OBJ) $(PAYLOAD_DIR)/payload.ld
+$(CMD_ELF): $(CMD_OBJ) $(CONTROL_MEM_OBJ) $(PAYLOAD_DIR)/payload.ld
 	@mkdir -p $(dir $@)
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $<
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(CMD_OBJ) $(CONTROL_MEM_OBJ)
 
 $(CMD_EXE): $(CMD_ELF) $(COREDLL_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
