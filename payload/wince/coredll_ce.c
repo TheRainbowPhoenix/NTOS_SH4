@@ -468,6 +468,7 @@ int main(void *instance, u32 reason, void *reserved)
     (void)reserved;
     if (reason == 0) {
         CeCoreDetach();
+        gdi_release_all();
         return 1;
     }
     legacy_nav = 0;

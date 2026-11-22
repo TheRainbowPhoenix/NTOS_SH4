@@ -1,0 +1,73 @@
+name: CP400 · experimental 4 MiB execution probe
+on:
+  push:
+    branches:
+      - exp/cp400-4mib-runtime-probes
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cp400-4mib-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  experimental-pager-fixtures:
+    name: SH4BE build + host safety + all-page PE streaming parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.2
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install host test compiler
+        run: apt-get update -qq && apt-get install -y -qq g++ gcc python3
+      - name: Check unchanged Ob/Ex, flash safety and console glyphs
+        run: |
+          set -eu
+          for t in fs_guard_test nt_executive_test nt_flash_guard_test console_glyph_test console_host_test; do
+            g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 "tests/$t.cpp" -o "/tmp/$t"
+            "/tmp/$t"
+          done
+          gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/core-files
+          /tmp/core-files
+      - name: Build experimental VBR/TLB pager firmware
+        run: |
+          make -j4 BUILDDIR=obj_4m_hardware OUTDIR=dist_4m_hardware DEPDIR=.deps_4m_hardware DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1" hh3
+          test -s dist_4m_hardware/NTOS.hh3
+      - name: Build matching PE execution probes
+        run: |
+          make -j4 ntx
+          make nt-exec-probes
+          python3 tools/check_large4m_pe.py dist_ntprobe/LARGE4M.EXE
+          test -s dist/PAGERTEST.EXE
+          test -s dist/PAGERSTRESS.DLL
+          test -s dist/CHAINTEST.EXE
+          test -s dist/CHAIN.DLL
+          test -s dist/STRESSEXEC.EXE
+          test -s dist_ntprobe/OBTEST.EXE
+      - name: Verify all 4 MiB mapped pages match read-only streamed materialization
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/pe_stream_test.cpp -o /tmp/pe-stream
+          /tmp/pe-stream dist/COREDLL.DLL dist/CHAINTEST.EXE dist_ntprobe/LARGE4M.EXE
+      - name: Upload deliberately experimental, opt-in pager + runtime probe kit
+        uses: actions/upload-artifact@v7
+        with:
+          name: NTOS-CP400-UNVERIFIED-VBR-4MiB-EXPERIMENTAL
+          path: |
+            dist_4m_hardware/NTOS.hh3
+            dist_ntprobe/OBTEST.EXE
+            dist_ntprobe/LARGE4M.EXE
+            dist/HELLO.EXE
+            dist/HELLOCORE.EXE
+            dist/COREDLL.DLL
+            dist/PAGERTEST.EXE
+            dist/PAGERSTRESS.DLL
+            dist/CHAINTEST.EXE
+            dist/CHAIN.DLL
+            dist/STRESSEXEC.EXE
+            dist/ST*.DLL
+          if-no-files-found: error
+          retention-days: 30

@@ -13,6 +13,33 @@
 #ifndef NTOS_ENABLE_TLB_MISS_PAGER
 #define NTOS_ENABLE_TLB_MISS_PAGER 0
 #endif
+#ifndef NTOS_ENFORCE_PE_PAGE_PERMISSIONS
+#define NTOS_ENFORCE_PE_PAGE_PERMISSIONS 0
+#endif
+#ifndef NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE
+#define NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE 0
+#endif
+#ifndef NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+#define NTOS_ENABLE_GUEST_PROTECT_DISPATCH 0
+#endif
+#ifndef NTOS_ENABLE_KE_USER_SYSCALL
+#define NTOS_ENABLE_KE_USER_SYSCALL 0
+#endif
+#ifndef NTOS_ENABLE_PSUSER
+#define NTOS_ENABLE_PSUSER 0
+#endif
+#if NTOS_ENABLE_PSUSER && !NTOS_ENABLE_KE_USER_SYSCALL
+#error "PSUSER requires the proved VBR Ke trap dispatcher"
+#endif
+#if NTOS_ENABLE_KE_USER_SYSCALL && !NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+#error "Ke user trap requires proven +0x100 VBR protection dispatch"
+#endif
+#if NTOS_ENABLE_GUEST_PROTECT_DISPATCH && !NTOS_ENABLE_TLB_MISS_PAGER
+#error "Guarded protection-exception dispatch requires RAM-backed VBR paging"
+#endif
+#if NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE && !NTOS_ENABLE_TLB_MISS_PAGER
+#error "The VBR canary requires the experimental TLB pager"
+#endif
 #ifndef NTOS_ENABLE_IRQ_OWNERSHIP
 #define NTOS_ENABLE_IRQ_OWNERSHIP 0
 #endif
@@ -22,6 +49,8 @@
 
 #if NTOS_ENABLE_TLB_MISS_PAGER && NTOS_ENABLE_IRQ_OWNERSHIP
 #include "fault_pager.hpp"
+#include "nt/guest_exception.hpp"
+#include "nt/ke.hpp"
 #include "irq_handoff.hpp"
 
 extern "C" {
@@ -36,6 +65,33 @@ extern "C" {
 namespace ntos_hw {
 struct Context {
     ntos_fault::Pager table{};
+    nt::GuestException guest_guard{};
+    volatile uint32_t general_faults=0u;
+    nt::KernelContext *ke=nullptr;
+    bool service_armed=false;
+    uint32_t service_next_pc=0u;
+    uint32_t service_expected=0u;
+    uint32_t service_saved_sr=0u;
+    volatile uint32_t service_completed=0u;
+    volatile uint32_t service_rejected=0u;
+#if NTOS_ENABLE_PSUSER
+    // Dedicated P0 user-stack session. For THIS exact canary, Ke permits
+    // repeated user-mode instructions and returns to user SSR after each
+    // validated PID query. A final distinct trap returns privileged.
+    // No other P0 entry point or syscall number is authorized here.
+    bool user_loop_armed=false;
+    uint32_t user_loop_pc=0u,user_loop_exit_pc=0u;
+    uint32_t user_stack_lo=0u,user_stack_hi=0u;
+    uint32_t user_loop_supervisor_sr=0u;
+    volatile uint32_t user_loop_calls=0u,user_loop_rejected=0u;
+#endif
+    // A tiny, stackless P0 user-mode read probe returns to the original
+    // privileged guest C frame using exactly one audited TRAPA #0x7B.
+    // No OS/SDK code may run during the user-mode instruction window.
+    bool user_probe_session=false;
+    uint32_t user_probe_trapa_next=0u;
+    uint32_t user_probe_saved_sr=0u;
+    volatile uint32_t user_probe_returns=0u;
     host_world::Snapshot host{};
     uint8_t *vectors_raw=nullptr;
     uint8_t *vectors=nullptr;
@@ -45,6 +101,13 @@ struct Context {
     uint32_t failed_address=0u;
     volatile uint32_t hw_faults=0u;
     volatile uint32_t hint_calls=0u;
+    // One-shot expected unhinted fault canary. The canary EXE is
+    // separately opt-in, never present in physical CP400 bundles.
+    volatile uint32_t probe_page=0u;
+    volatile uint32_t probe_event=0u;
+    volatile uint32_t probe_seen=0u;
+    volatile uint32_t probe_unexpected=0u;
+    volatile bool probe_armed=false;
     // Only written inside the P1-resident exception callback. Read and
     // printed after VBR returns to Hollyhock, never via SDK in the ISR.
     volatile uint32_t last_tea=0u;
@@ -56,11 +119,15 @@ struct Context {
 static Context g_context{};
 
 static bool commit_translation(void *,uint32_t va,uint32_t pa,
-                               unsigned slot,unsigned way) {
-    if(slot>=mmu::SLOT_ROTATING_LAST+1u || way>3u)return false;
-    mmu::map_page_at_index(va,pa,slot,way);
+                               unsigned slot,unsigned read_only) {
+    if(slot>=mmu::SLOT_ROTATING_LAST+1u || read_only>2u)return false;
+    const uint32_t flags=read_only==2u ?
+        mmu::PTEL_PAGE_SUPERVISOR_ONLY :
+        read_only==1u ? mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE;
+    if(!mmu::map_page_at_index_flags(va,pa,slot,flags))
+        return false;
 #if NTOS_VERIFY_UTLB_SLOTS
-    return mmu::verify_slot(slot,va,pa);
+    return mmu::verify_slot(slot,va,pa,flags);
 #else
     return true;
 #endif
@@ -92,9 +159,349 @@ extern "C" int ntos_pager_exception_callback(uint32_t tea,uint32_t expevt) {
         ctx.failed_address=tea;
         return 0;
     }
+    if(ctx.probe_armed) {
+        if((tea&~0xFFFu)==ctx.probe_page &&
+           expevt==ctx.probe_event) {
+            ctx.probe_seen=ctx.probe_seen+1u;
+            ctx.probe_armed=false;
+        } else ctx.probe_unexpected=ctx.probe_unexpected+1u;
+    }
     return 1;
 }
 
+namespace ntos_hw {
+// This callback reads only prevalidated P1-owned PE image metadata and
+// cannot allocate, access an SDK file, or use the host LCD.
+[[maybe_unused]] static bool executable_page(void *opaque,uint32_t pc) {
+    if(pc&1u)return false;
+    const auto &table=*static_cast<const ntos_fault::Pager *>(opaque);
+    for(unsigned i=0u;i<table.modules_used;++i) {
+        const auto &mod=table.modules[i];
+        if(!mod.header || pc<mod.va ||
+           (pc-mod.va)/0x1000u>=mod.pages)continue;
+        return ntos_mm::pe_page_executable(
+            *mod.header,(pc-mod.va)/0x1000u);
+    }
+    return false; // VM pages and API windows are never recovery code
+}
+// Ke has no general user-mode PE scheduler yet. Arm exactly ONE short
+// TRAPA #0x7A entry at a verified executable PE instruction. The following
+// instruction must be RTS, so a successful RTE cannot run arbitrary user
+// code or use the host stack in user mode. Only current foreground KTHREAD.
+inline nt::Status arm_user_service(uint32_t trap_pc,uint32_t service) {
+#if NTOS_ENABLE_KE_USER_SYSCALL
+    Context &c=g_context;
+    if(!c.installed || !c.ke || !c.ke->running() ||
+       c.service_armed || c.user_probe_session ||
+       !mmu::at_enabled() ||
+       !nt::KernelContext::valid_service(service) ||
+       trap_pc>=0x7FFFFFFCu ||
+       !executable_page(&c.table,trap_pc) ||
+       !executable_page(&c.table,trap_pc+2u))
+        return nt::INVALID_PARAMETER;
+    const auto *instructions=
+        reinterpret_cast<volatile const uint16_t *>(trap_pc);
+    if(instructions[0]!=0xC37Au || instructions[1]!=0x000Bu)
+        return nt::INVALID_PARAMETER;
+    uint32_t sr=0u;
+    __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+    if((sr&0x70000000u)!=0x40000000u)return nt::INVALID_PARAMETER;
+    c.service_expected=service;
+    c.service_next_pc=trap_pc+2u;
+    c.service_saved_sr=sr;
+    c.service_armed=true;
+    return nt::SUCCESS;
+#else
+    (void)trap_pc;(void)service;return nt::NOT_SUPPORTED;
+#endif
+}
+#if NTOS_ENABLE_PSUSER
+// Unlike the earlier one-op syscall stub, PSUSER can execute an actual
+// bounded loop and PUSH/POP on its own P0 stack in SR.MD=0 between traps.
+// This is a transitional single-process test; NOT a general syscall ABI.
+inline nt::Status arm_user_loop(uint32_t pc,uint32_t exit_pc,
+                                uint32_t stack_lo,uint32_t stack_hi) {
+    Context &c=g_context;
+    if(!c.installed || !c.ke || !c.ke->running() ||
+       !mmu::at_enabled() || c.service_armed || c.user_probe_session ||
+       c.user_loop_armed || c.guest_guard.armed ||
+       !pc || !exit_pc || pc==exit_pc ||
+       (pc&1u) || (exit_pc&1u) ||
+       !stack_lo || (stack_lo&4095u) ||
+       stack_hi-stack_lo!=4096u ||
+       !executable_page(&c.table,pc) ||
+       !executable_page(&c.table,pc+2u) ||
+       !executable_page(&c.table,exit_pc) ||
+       !executable_page(&c.table,exit_pc+2u) ||
+       c.table.lookup(stack_lo)<0 ||
+       c.table.access(stack_lo)!=ntos_mm::Access::read_write)
+        return nt::INVALID_PARAMETER;
+    const auto *op=reinterpret_cast<volatile const uint16_t *>(pc);
+    const auto *end=reinterpret_cast<volatile const uint16_t *>(exit_pc);
+    if(*op!=0xC37Au || *end!=0xC37Au)
+        return nt::INVALID_PARAMETER;
+    uint32_t sr=0u;
+    __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+    if((sr&0x70000000u)!=0x40000000u)
+        return nt::DEVICE_BUSY;
+    c.user_loop_pc=pc;
+    c.user_loop_exit_pc=exit_pc;
+    c.user_stack_lo=stack_lo;
+    c.user_stack_hi=stack_hi;
+    c.user_loop_supervisor_sr=sr;
+    c.user_loop_calls=0u;
+    c.user_loop_rejected=0u;
+    c.user_loop_armed=true;
+    return nt::SUCCESS;
+}
+#endif
+// Exact one-instruction KTHREAD exception canary. Only live, resident,
+ // hardware-confirmed protected pages; NO generic user callback.
+inline uint32_t arm_thread_exception(uint32_t tea,uint32_t event,
+                                     uint32_t fault_pc,uint32_t resume_pc) {
+#if NTOS_ENABLE_KE_USER_SYSCALL && NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+    Context &c=g_context;
+    if(!c.installed || !mmu::at_enabled() || !c.ke ||
+       !c.ke->running() || c.service_armed || c.user_probe_session ||
+       c.guest_guard.armed || !tea || tea>=0x80000000u ||
+       fault_pc>=0x7FFFFFFCu || fault_pc+2u!=resume_pc ||
+       !executable_page(&c.table,fault_pc) ||
+       !executable_page(&c.table,resume_pc+2u))
+        return 0u;
+    const uint32_t page=tea&~0xFFFu;
+    const int slot=c.table.lookup(page);
+    if(slot<0)return 0u;
+    const ntos_mm::Access access=c.table.access(page);
+    if(event==nt::KE_PROTECTION_WRITE ?
+        access!=ntos_mm::Access::read_only :
+        event==nt::KE_PROTECTION_READ ?
+        access!=ntos_mm::Access::privileged_only : true)
+        return 0u;
+#if NTOS_VERIFY_UTLB_SLOTS
+    const uint32_t flags=event==nt::KE_PROTECTION_WRITE ?
+        mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE_SUPERVISOR_ONLY;
+    if(!mmu::verify_slot(static_cast<uint32_t>(slot),page,
+            c.table.entries[slot].pa,flags))
+        return 0u;
+#endif
+    const auto *op=reinterpret_cast<volatile const uint16_t *>(fault_pc);
+    if(op[0]!=(event==nt::KE_PROTECTION_WRITE?0x2400u:0x6040u) ||
+       op[1]!=0xC37Bu || op[2]!=0x000Bu)
+        return 0u;
+    uint32_t sr=0u;
+    __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+    if((sr&0x70000000u)!=0x40000000u)return 0u;
+    uint32_t token=0u;
+    if(c.ke->register_exception(tea,event,fault_pc,resume_pc,
+           &executable_page,&c.table,&token)!=nt::SUCCESS)
+        return 0u;
+    c.user_probe_saved_sr=sr;
+    c.user_probe_trapa_next=resume_pc+2u;
+    c.user_probe_session=true;
+    return token;
+#else
+    (void)tea;(void)event;(void)fault_pc;(void)resume_pc;
+    return 0u;
+#endif
+}
+inline nt::Status arm_guest_guard(uint32_t address,uint32_t event,
+                                 uint32_t resume_pc) {
+#if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+    auto &c=g_context;
+    if(!c.installed || !mmu::at_enabled())return nt::DEVICE_BUSY;
+    const uint32_t page=address&~0xFFFu;
+    if(c.table.lookup(page)<0)return nt::NOT_COMMITTED;
+    // Only a pre-resident page with the expected hardware PR encoding
+    // may be armed. Write: RO PTEL.PR=10. Read: DEBUG-ONLY supervisor
+    // PTEL.PR=01 (a user P0 load must deliver EXPEVT 0x0A0).
+    const ntos_mm::Access rights=c.table.access(page);
+    if(event==nt::SH4_PROTECTION_WRITE ?
+       rights!=ntos_mm::Access::read_only :
+       event==nt::SH4_PROTECTION_READ ?
+       rights!=ntos_mm::Access::privileged_only : true)
+        return nt::INVALID_PARAMETER;
+#if NTOS_VERIFY_UTLB_SLOTS
+    // In the separately gated emulator candidate, trust the *actual* P4
+    // UTLB data array rather than our software-page metadata. A failed
+    // hardware PR readback must reject the canary BEFORE the bad access.
+    const int slot=c.table.lookup(page);
+    if(slot<0 || !mmu::verify_slot(
+        static_cast<uint32_t>(slot),page,
+        c.table.entries[slot].pa,
+        rights==ntos_mm::Access::read_only ?
+            mmu::PTEL_PAGE_READ_ONLY : mmu::PTEL_PAGE_SUPERVISOR_ONLY))
+        return nt::DEVICE_BUSY;
+#endif
+    uint32_t sr=0u;
+    __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+    const bool privileged=(sr&0x40000000u)!=0u;
+    // The physically tested PR=01 read canaries only work because they
+    // execute exactly one user-mode memory instruction, then return via a
+    // specially authorized TRAPA #0x7B. Make the RO WRITE canary follow
+    // that SAME path; an unguarded privileged C-store was forwarded to OS.
+    // Fail CLOSED for an arbitrary C recovery label or other caller PC.
+    if(!privileged || (sr&0x30000000u)!=0u ||
+       c.user_probe_session || resume_pc>0xFFFFFFFDu ||
+       !executable_page(&c.table,resume_pc+2u))
+        return nt::INVALID_PARAMETER;
+    const uint16_t trap=*reinterpret_cast<volatile const uint16_t *>(
+        resume_pc);
+    const uint16_t ret=*reinterpret_cast<volatile const uint16_t *>(
+        resume_pc+2u);
+    if(trap!=0xC37Bu || ret!=0x000Bu)
+        return nt::INVALID_PARAMETER;
+    const nt::Status status=c.guest_guard.arm(
+        address,event,resume_pc,&executable_page,&c.table,false);
+    if(status==nt::SUCCESS) {
+        // The guarded store/load will run with SSR.MD=0 in the
+        // one-op assembly stub; return only at its exact TRAPA+2.
+        c.user_probe_saved_sr=sr;
+        c.user_probe_trapa_next=resume_pc+2u;
+        c.user_probe_session=true;
+    }
+    return status;
+#else
+    (void)address;(void)event;(void)resume_pc;
+    return nt::NOT_SUPPORTED;
+#endif
+}
+} // namespace ntos_hw
+
+// VBR+0x100 general exception entry, independent of the +0x400 miss path.
+// This callback can ONLY redirect a *pre-armed*, exact P0 protection fault
+// onto an executable PE recovery label. Nonmatching exceptions return 0
+// so the original host general vector receives them without RTE.
+extern "C" int ntos_general_exception_callback(
+    uint32_t tea,uint32_t event,uint32_t guest_service,uint32_t guest_arg) {
+#if NTOS_ENABLE_GUEST_PROTECT_DISPATCH
+    (void)guest_service;(void)guest_arg; // gated Ke trap consumes these
+    auto &c=ntos_hw::g_context;
+    uint32_t spc=0u,ssr=0u;
+    __asm__ volatile("stc spc,%0" : "=r"(spc) :: "memory");
+    __asm__ volatile("stc ssr,%0" : "=r"(ssr) :: "memory");
+    // First-party Ke syscall gate: true user-mode TRAPA #0x7A enters P1
+    // VBR+0x100 and reads the *interrupted bank-0* guest r4/r5, not the
+    // supervisor bank-1 r4/r5 (which now hold TEA/EXPEVT). The service
+    // is matched against an armed KTHREAD, returns into bank-0 r0, and
+    // restores privileged foreground SR with RTE. All Ke logic is P1-only.
+#if NTOS_ENABLE_PSUSER
+    if(event==nt::SH4A_SYSTEM_SERVICE_EVENT && c.user_loop_armed) {
+        const uint32_t tra=*reinterpret_cast<volatile uint32_t *>(
+            0xFF000020u);
+        uint32_t sgr=0u;
+        __asm__ volatile("stc sgr,%0" : "=r"(sgr) :: "memory");
+        const bool is_loop=spc==c.user_loop_pc+2u;
+        const bool is_exit=spc==c.user_loop_exit_pc+2u;
+        const bool valid=tra==nt::SH4A_SYSTEM_SERVICE_TRA &&
+            (ssr&0x70000000u)==0u && (ssr&0xF0u)==0xF0u &&
+            sgr>=c.user_stack_lo+16u && sgr<=c.user_stack_hi &&
+            (sgr&3u)==0u && (is_loop || is_exit) &&
+            c.ke && c.ke->running() &&
+            ntos_hw::executable_page(&c.table,spc);
+        if(!valid ||
+           (is_loop && (guest_service!=nt::SERVICE_QUERY_PROCESS_ID ||
+                        c.user_loop_calls>=128u)) ||
+           (is_exit && (guest_service!=0x10FFu ||
+                        c.user_loop_calls!=128u))) {
+            c.user_loop_rejected=c.user_loop_rejected+1u;
+            return 0; // Reject untrusted trap; never spoof an NT service
+        }
+        uint32_t output=nt::SUCCESS;
+        if(is_loop) {
+            if(c.ke->dispatch(spc,ssr,sgr,tra,guest_service,
+                              guest_arg,&output)!=nt::SUCCESS) {
+                c.user_loop_rejected=c.user_loop_rejected+1u;return 0;
+            }
+            c.user_loop_calls=c.user_loop_calls+1u;
+        } else {
+            c.user_loop_armed=false;
+            // The trusted exit stub restores its original P1 SP
+            // immediately after this RTE, before touching the C stack.
+        }
+        __asm__ volatile("ldc %0,r0_bank" :: "r"(output) : "memory");
+        const uint32_t resume=is_loop?ssr:c.user_loop_supervisor_sr;
+        __asm__ volatile("ldc %0,ssr" :: "r"(resume) : "memory");
+        return 1;
+    }
+#endif
+#if NTOS_ENABLE_KE_USER_SYSCALL
+    if(event==nt::SH4A_SYSTEM_SERVICE_EVENT && c.service_armed) {
+        const uint32_t tra=*reinterpret_cast<volatile uint32_t *>(
+            0xFF000020u);
+        if(!c.ke || !nt::user_service_trap_allowed(
+                *c.ke,c.service_armed,event,tra,spc,ssr,
+                c.service_next_pc,c.service_saved_sr,
+                c.service_expected,guest_service) ||
+           !ntos_hw::executable_page(&c.table,spc)) {
+            c.service_rejected=c.service_rejected+1u;
+            return 0; // always forward malformed/foreign traps to host
+        }
+        uint32_t sgr=0u;
+        __asm__ volatile("stc sgr,%0" : "=r"(sgr) :: "memory");
+        uint32_t output=nt::INVALID_PARAMETER;
+        const nt::Status result=c.ke->dispatch(
+            spc,ssr,sgr,tra,guest_service,guest_arg,&output);
+        if(result!=nt::SUCCESS) {
+            c.service_rejected=c.service_rejected+1u;
+            return 0;
+        }
+        c.service_armed=false;
+        c.service_completed=c.service_completed+1u;
+        // In exception SR.RB=1; r0_bank names the suspended user r0.
+        // Never patch bank-1 r0, which carries the trampoline result.
+        __asm__ volatile("ldc %0,r0_bank" :: "r"(output) : "memory");
+        const uint32_t restored=c.service_saved_sr;
+        __asm__ volatile("ldc %0,ssr" :: "r"(restored) : "memory");
+        return 1;
+    }
+#endif
+    // The narrow TRAPA return path is shared by read AND write probes.
+    // It is checked before generic protection dispatch, and can only
+    // resume from the exact two-byte TRAPA+2, in the expected guest image.
+    if(event==0x160u && c.user_probe_session) {
+        const uint32_t tra=*reinterpret_cast<volatile uint32_t *>(
+            0xFF000020u);
+        if(!nt::user_probe_return_allowed(
+               c.user_probe_session,event,tra,spc,ssr,
+               c.user_probe_trapa_next,c.user_probe_saved_sr) ||
+           !ntos_hw::executable_page(&c.table,spc))
+            return 0;
+        c.user_probe_session=false;
+        c.guest_guard.cancel();
+        c.user_probe_returns=c.user_probe_returns+1u;
+        // Restore the privileged guest's SR, including MD and IMASK.
+        // The entry stub made NO stack accesses in user mode, so SGR
+        // still contains the original (unchanged) privileged P1 SP.
+        const uint32_t restored=c.user_probe_saved_sr;
+        __asm__ volatile("ldc %0,ssr" :: "r"(restored) : "memory");
+        return 1;
+    }
+    if(event!=nt::SH4_PROTECTION_READ &&
+       event!=nt::SH4_PROTECTION_WRITE)return 0;
+    c.general_faults=c.general_faults+1u;
+    c.last_tea=tea;c.last_expevt=event;
+    c.last_spc=spc;c.last_ssr=ssr;c.last_mmucr=mmu::read_mmucr();
+    uint32_t landing=0u;
+#if NTOS_ENABLE_KE_USER_SYSCALL
+    // Registered KTHREAD exceptions take priority over the legacy one-shot
+    // guest guard. With an empty chain (the CP400 default) nothing changes.
+    if(c.ke && c.ke->thread.exceptions.depth &&
+       c.ke->dispatch_exception(tea,event,spc,ssr,
+           &ntos_hw::executable_page,&c.table,&landing)) {
+        __asm__ volatile("ldc %0,spc" :: "r"(landing) : "memory");
+        return 1;
+    }
+#endif
+    if(!c.guest_guard.decide(tea,event,spc,ssr,
+                             &ntos_hw::executable_page,&c.table,
+                             &landing))
+        return 0;
+    __asm__ volatile("ldc %0,spc" :: "r"(landing) : "memory");
+    return 1;
+#else
+    (void)tea;(void)event;(void)guest_service;(void)guest_arg;return 0;
+#endif
+}
 namespace ntos_hw {
 inline uint32_t read_sr() {
     uint32_t v;
@@ -172,6 +579,32 @@ inline ntos_irq::Hooks hooks(const host_world::Snapshot &host) {
     ctx.failed_address=0u;
     ctx.hw_faults=0u;
     ctx.hint_calls=0u;
+    ctx.guest_guard.reset();
+    ctx.general_faults=0u;
+    ctx.ke=nullptr;
+    ctx.service_armed=false;
+    ctx.service_next_pc=0u;
+    ctx.service_expected=0u;
+    ctx.service_saved_sr=0u;
+    ctx.service_completed=0u;
+    ctx.service_rejected=0u;
+#if NTOS_ENABLE_PSUSER
+    ctx.user_loop_armed=false;
+    ctx.user_loop_pc=ctx.user_loop_exit_pc=0u;
+    ctx.user_stack_lo=ctx.user_stack_hi=0u;
+    ctx.user_loop_supervisor_sr=0u;
+    ctx.user_loop_calls=0u;
+    ctx.user_loop_rejected=0u;
+#endif
+    ctx.user_probe_session=false;
+    ctx.user_probe_trapa_next=0u;
+    ctx.user_probe_saved_sr=0u;
+    ctx.user_probe_returns=0u;
+    ctx.probe_armed=false;
+    ctx.probe_page=0u;
+    ctx.probe_event=0u;
+    ctx.probe_seen=0u;
+    ctx.probe_unexpected=0u;
     ctx.last_tea=0u;
     ctx.last_expevt=0u;
     ctx.last_spc=0u;
@@ -180,8 +613,35 @@ inline ntos_irq::Hooks hooks(const host_world::Snapshot &host) {
     Mem_Memset(&ctx.table,0,sizeof(ctx.table));
     return {&ctx,&prepare,&install,&verify,&uninstall};
 }
-inline bool add_module(uint32_t va,const uint8_t *backing,uint32_t pages) {
-    return g_context.table.add(va,mmu::phys_addr(backing),pages);
+inline bool add_module(uint32_t va,const uint8_t *backing,uint32_t pages,
+                       const pe::Image *image=nullptr) {
+    return g_context.table.add(va,mmu::phys_addr(backing),pages,
+                               image,NTOS_ENFORCE_PE_PAGE_PERMISSIONS!=0);
+}
+inline uint32_t protection(uint32_t va) {
+    return static_cast<uint32_t>(g_context.table.access(va));
+}
+inline int arm_probe(uint32_t va,uint32_t event) {
+#if NTOS_ENABLE_CONTROLLED_VBR_FAULT_PROBE
+    Context &ctx=g_context;
+    if(!ctx.installed || !mmu::at_enabled() || ctx.probe_armed ||
+       (event!=0x40u && event!=0x60u))return -1;
+    const uint32_t page=va&~0xFFFu;
+    if(ctx.table.lookup(page)>=0 ||
+       ctx.table.access(page)!=ntos_mm::Access::read_write)
+        return -2;
+    uint32_t pa=0u;
+    if(!ctx.table.backing(page,&pa))return -3;
+    ctx.probe_page=page;
+    ctx.probe_event=event;
+    ctx.probe_seen=0u;
+    ctx.probe_unexpected=0u;
+    ctx.probe_armed=true;
+    return 0;
+#else
+    (void)va;(void)event;
+    return -1; // safe on physical device builds
+#endif
 }
 inline bool prime(uint32_t va,bool pin=true) {
     return g_context.table.fault(va,&commit_translation,nullptr,pin);

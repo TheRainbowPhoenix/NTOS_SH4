@@ -9,28 +9,6 @@ Ghidra's PE loader all parse the output directly). Basically a mini
 WinCE nk.exe: it finds `*.EXE`/`*.DLL` files on `\fls0\`
 
 
-## SH7305 diagnostic EXE
-
-The device build now includes `SH7305-PROBE.EXE` (built as
-`dist/sh7305-probe.exe`) from `payload/sh7305_probe.c` using the
-SH4AL-DSP big-endian toolchain, the freestanding `payload.ld` linker
-script, and `tools/elf2ntx.py` (PE machine `0x01A8`).
-
-Launch it in NTOS to read PVR, PRR, CVR, CPID, MMUCR, UTLB cursor and
-boundary values. An added NTOS API callback resolves P0 PE virtual addresses
-against the physical backing frames recorded by the loader, without risky
-P4 TLB-array reads or installing any new mappings. The code check compares
-its virtual instruction word to its physical P1 alias; this is **backing
-memory**, not proof of a currently resident UTLB entry.
-
-The device package now includes the separately generated 1.5 MiB
-`romprobe.bin` at the storage root (`\\fls0\\`).
-The EXE streams the entire file through a 4 KiB buffer, validates the
-three marker bytes and all zero-filled positions, then overwrites
-`\\fls0\\results.txt` with CPU, MMU, code, and ROM test results via NTOS's
-file syscalls. It reports failures when the payload is missing. **This is
-file-integrity verification, not a physically contiguous 1.5 MiB ROM map.**
-
 ## Install on fx-CP400 (one download)
 
 Open [GitHub Actions → Build · copy to calculator](https://github.com/TheRainbowPhoenix/NTOS_SH4/actions/workflows/c-cpp.yml)
@@ -55,6 +33,27 @@ an FPU. Their compiled markup is installed at the storage root and shared
 runtime DLLs are installed under `Windows/System32`. Swipe down from the
 status bar for notifications and quick settings; the system navigation bar
 provides Back, Home and Search.
+
+## Native command boot (experimental)
+
+When `CMD.EXE` is installed at the storage root, NTOS boots the **native
+command prompt** first. The original EXE picker remains available when CMD is
+absent, and typing `EXIT` returns to that picker. `RUN app.exe` or a bare EXE
+name launches a PE through NTOS's existing serial foreground handoff. When
+the child exits, a fresh CMD session starts (command history is not yet saved
+across launch).
+
+The command prompt uses real native COREDLL/GDI calls and provides `DIR`,
+`CLS`, `HELP`, `SPLIT`, `FULL`, `SWAP`, `ROTATE` and `KB`. Touching
+the prompt opens a small keyboard; the split layout supports half-height and
+half-width views with caption handles. The extra pane is currently internal
+to CMD, **not** a concurrent EXE or full GWES/DWM compositor.
+
+`GDILAB.EXE` offers six interactive raster/clip/font/window-layout test
+pages. The implementations avoid floating point, antialiasing, and large
+framebuffer allocations. See
+[Native CMD / tiling / GDI design notes](docs/NATIVE_CMD_TILING_GDI_20261122.md)
+for known limitations and CP400 hardware-test requirements.
 
 ## Windows Edge demo
 

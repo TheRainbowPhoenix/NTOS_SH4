@@ -60,8 +60,19 @@ constexpr uint32_t SLOT_API_FIRST     = 0x37u;
 constexpr uint32_t SLOT_API_LAST      = 0x3Au;
 constexpr uint32_t SLOT_NULL_GUARD    = 0x3Fu;
 
-// Page entry flags: 4 KiB, shared, user RW, cacheable, valid.
+// Hardware SH4A PTEL.PR encodes privilege-independent access rights:
+// PR=10b -> read-only user/supervisor; PR=11b -> read/write.
+// These are REAL hardware mapping rights, not metadata-only annotations.
+// SH7305 has no NX bit. Keep API window RW for ABI compatibility.
 constexpr uint32_t PTEL_PAGE = 0x0000017Cu;
+constexpr uint32_t PTEL_PAGE_READ_ONLY = 0x0000015Cu;
+// PTEL.PR=01: privileged RW, USER ACCESS DENIED. Only the separately
+// gated emulator test may request this; do not expose on physical kits.
+constexpr uint32_t PTEL_PAGE_SUPERVISOR_ONLY = 0x0000013Cu;
+constexpr uint32_t PTEL_PR_MASK = 0x00000060u;
+static_assert((PTEL_PAGE&PTEL_PR_MASK)==0x60u);
+static_assert((PTEL_PAGE_READ_ONLY&PTEL_PR_MASK)==0x40u);
+static_assert((PTEL_PAGE_SUPERVISOR_ONLY&PTEL_PR_MASK)==0x20u);
 
 // API window virtual address (OS330 C1A contract): first word of the window
 // points at the syscall table.
@@ -79,6 +90,8 @@ void tlb_install_entry(uint32_t va, uint32_t pa, uint32_t pte_flags,
 void tlb_set_urc(uint32_t slot);
 void cache_invalidate_all(void);
 void cache_flush_invalidate_block(void *addr, uint32_t size);
+// OCBP writes back dirty data BEFORE invalidating: safe on failed decommit.
+void cache_writeback_invalidate_block(void *addr,uint32_t size);
 }
 
 // --- C helpers --------------------------------------------------------------
@@ -119,16 +132,22 @@ inline void flush_tlb(void) {
     cache_invalidate_all();
 }
 
-// Install one 4 KiB page mapping at a fixed UTLB slot. `pa` is a
-// physical page base, generally derived from a P1 address using PA_MASK.
-// The legacy final parameter is ignored: SH7305 has no 4-way UTLB index.
+// Only the two validated PR encodings are accepted. A protected PE module
+// cannot accidentally pass reserved flags or rewrite the API window.
+inline bool map_page_at_index_flags(uint32_t va,uint32_t pa,uint32_t slot,
+                                    uint32_t pte_flags) {
+    if(slot>=UTLB_ENTRIES ||
+       (pte_flags!=PTEL_PAGE && pte_flags!=PTEL_PAGE_READ_ONLY &&
+        pte_flags!=PTEL_PAGE_SUPERVISOR_ONLY))
+        return false;
+    tlb_install_entry(va,pa&PA_MASK,pte_flags,slot);
+    return true;
+}
+
+// Backward-compatible OS330 RW map used by all existing unprotected builds.
 inline void map_page_at_index(uint32_t va, uint32_t pa, uint32_t slot,
                               uint32_t /*unused_way*/) {
-    // Protect the fixed API and rotating mappings from accidental slot
-    // overflow. The caller owns slot allocation, and this never infers
-    // a slot from VPN bits.
-    if(slot>=UTLB_ENTRIES) return;
-    tlb_install_entry(va, pa & PA_MASK, PTEL_PAGE, slot);
+    (void)map_page_at_index_flags(va,pa,slot,PTEL_PAGE);
 }
 
 // Opt-in diagnostic only. gint's SH7305 (NOT SH7705) arrays expose
@@ -138,7 +157,8 @@ inline void map_page_at_index(uint32_t va, uint32_t pa, uint32_t slot,
 #define NTOS_VERIFY_UTLB_SLOTS 0
 #endif
 #if NTOS_VERIFY_UTLB_SLOTS && defined(__sh__)
-inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa) {
+inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa,
+                        uint32_t expected_flags=PTEL_PAGE) {
     if(slot>=UTLB_ENTRIES)return false;
     const uint32_t addr=*reinterpret_cast<volatile const uint32_t *>(
         0xF6000000u+(slot<<8));
@@ -150,9 +170,56 @@ inline bool verify_slot(uint32_t slot,uint32_t va,uint32_t pa) {
            (addr&0x00000100u)!=0u &&
            (data&0x00000100u)!=0u &&
            (data&0x1FFFF000u)==(pa&0x1FFFF000u) &&
-           (data&PTEL_PAGE)==PTEL_PAGE;
+           (expected_flags==PTEL_PAGE ||
+            expected_flags==PTEL_PAGE_READ_ONLY ||
+            expected_flags==PTEL_PAGE_SUPERVISOR_ONLY) &&
+           (data&PTEL_PAGE)==expected_flags;
 }
 #endif
+
+// SH4AL-DSP: a P4 UTLB associative write with A=1 and V=0 also
+// invalidates matching ITLB translations (Renesas SH-4A §7.6.3).
+// Invoke ONLY from owned privileged P1 stage0 on this single-core CPU.
+// Read back EVERY UTLB/ITLB slot: no frame is reused on mismatch.
+// This is NOT an SMP shootdown and is unavailable without P4 readback.
+inline bool invalidate_va_verified(uint32_t va) {
+#if NTOS_VERIFY_UTLB_SLOTS && defined(__sh__)
+    if(!at_enabled() || (va&0xFFFu) || va>=0x80000000u)return false;
+    uint32_t sr=0u;
+    __asm__ volatile("stc sr,%0" : "=r"(sr) :: "memory");
+    if((sr&0x70000000u)!=0x40000000u)return false;
+    const uint32_t masked=sr|0xF0u;
+    __asm__ volatile("ldc %0,sr" :: "r"(masked) : "memory");
+    volatile uint32_t *const pteh=
+        reinterpret_cast<volatile uint32_t *>(REG_PTEH);
+    const uint32_t previous=*pteh;
+    *pteh=(previous&0xFFu)|(va&0xFFFFFC00u);
+    *reinterpret_cast<volatile uint32_t *>(0xF6000080u)=
+        va&0xFFFFFC00u; // A=1, D=0, V=0, ASID from PTEH
+    __asm__ volatile("synco" ::: "memory");
+    *pteh=previous;
+    // Non-associative P4 reads; any matching valid VPN fails CLOSED.
+    bool absent=true;
+    for(uint32_t slot=0u;slot<UTLB_ENTRIES;++slot) {
+        const uint32_t word=*reinterpret_cast<volatile const uint32_t *>(
+            0xF6000000u+(slot<<8));
+        if((word&0x100u) && (word&0xFFFFF000u)==va)
+            absent=false;
+    }
+    for(uint32_t slot=0u;slot<4u;++slot) {
+        const uint32_t word=*reinterpret_cast<volatile const uint32_t *>(
+            0xF2000000u+(slot<<8));
+        if((word&0x100u) && (word&0xFFFFF000u)==va)
+            absent=false;
+    }
+    // SH4A requires an instruction-fetch synchronization after TLB writes.
+    __asm__ volatile("icbi @%0\n\tsynco" :: "r"(&sr) : "memory");
+    __asm__ volatile("ldc %0,sr" :: "r"(sr) : "memory");
+    return absent;
+#else
+    (void)va;return false;
+#endif
+}
 
 // Physical address of a P1 (cached identity) pointer.
 inline uint32_t phys_addr(const void *p) {

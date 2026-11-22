@@ -1,0 +1,75 @@
+name: NT Executive SH4BE safety and 4 MiB probe
+
+on:
+  push:
+    branches: ['feat/nt-executive-ob-ex-4mb-probe']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nt-executive-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ob-ex-4mb:
+    name: SH4BE Ob Ex gate and large-image checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.2
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install host compiler and PE tooling
+        run: apt-get update -qq && apt-get install -y -qq g++ python3 python3-pefile
+      - name: Build regular calculator image and shipped PEs
+        run: make -j4
+      - name: Test exclusive SDK ownership and typed Ob Ex objects
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/fs_guard_test.cpp -o /tmp/fs-guard
+          /tmp/fs-guard
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/nt_executive_test.cpp -o /tmp/nt-exec
+          /tmp/nt-exec
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/nt_flash_guard_test.cpp -o /tmp/nt-flash-safe
+          /tmp/nt-flash-safe
+          gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/nt-core-files
+          /tmp/nt-core-files
+      - name: Build 4 MiB PE and compare streamed page materialization
+        run: |
+          make nt-exec-probes
+          python3 tools/check_large4m_pe.py dist_ntprobe/LARGE4M.EXE
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/pe_stream_test.cpp -o /tmp/pe-stream
+          /tmp/pe-stream dist/COREDLL.DLL dist/CHAINTEST.EXE dist_ntprobe/LARGE4M.EXE
+      - name: Compile conservative streaming and full-buffer rollback
+        run: |
+          make -j4 BUILDDIR=obj_nt_exe_conservative OUTDIR=dist_nt_exe_conservative DEPDIR=.deps_nt_exe_conservative DEFINES="-DNTOS_STREAMED_IMAGE_LOADING=1" hh3
+          make -j4 BUILDDIR=obj_nt_exe_rollback OUTDIR=dist_nt_exe_rollback DEPDIR=.deps_nt_exe_rollback DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=0" hh3
+          test -s dist_nt_exe_conservative/NTOS.hh3
+          test -s dist_nt_exe_rollback/NTOS.hh3
+      - name: Upload emulator-only experimental fixtures
+        uses: actions/upload-artifact@v7
+        with:
+          name: NTOS-Experimental-ObEx-Large4M-EMULATOR-ONLY
+          path: |
+            dist/NTOS.hh3
+            dist_ntprobe/OBTEST.EXE
+            dist_ntprobe/LARGE4M.EXE
+          if-no-files-found: error
+          retention-days: 20
+
+      - name: Upload conservative no-VBR hardware-candidate smoke-test bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: NTOS-ObEx-CONSERVATIVE-NO-VBR-SMOKE-TEST
+          path: |
+            dist_nt_exe_conservative/NTOS.hh3
+            dist_ntprobe/OBTEST.EXE
+            dist/HELLO.EXE
+            dist/HELLOCORE.EXE
+            dist/COREDLL.DLL
+          if-no-files-found: error
+          retention-days: 20

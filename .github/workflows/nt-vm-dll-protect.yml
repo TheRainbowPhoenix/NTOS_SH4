@@ -1,0 +1,141 @@
+name: Ke Ps SH4A user syscall and single CP400 bundle
+on:
+  push:
+    branches:
+      - feat/ke-ps-kthread-user-syscall-20261120
+      - feat/ke-thread-exception-dispatch-20261120
+      - feat/kexcept-aspace-prep-20261120
+      - feat/ke-sh4al-mm-reuse-20261120
+      - feat/nt-io-ke-two-thread-foundation-20261120
+      - feat/nt-guest-io-process-model-20261120
+      - feat/ps-dual-image-root-isolation-20261120
+      - feat/psroot-pstwin-ke-io-hardware-20261120
+      - feat/ps-exec-root-ke-trap-hal-display-20261121
+      - feat/ps-user-stack-dual-owner-irq-io-20261121
+      - feat/ps-p1-resident-hal-tmu-20261121
+      - feat/coredll-memory-gdi-userland-20261121
+      - feat/gwes-tiles-sip-edit-20261121
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nt-vm-dll-protect-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  sh4be-vm-dll:
+    name: Ke/Ps host regressions + one proven-compatible CP400 SH4BE profile
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: ghcr.io/classpaddev/hollyhock-3:v2.2.2
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install host compilers and PE parity prerequisites
+        run: apt-get update -qq && apt-get install -y -qq gcc g++ python3
+      - name: Run NT Ob/Ex, VM transactions, guarded exception, DLL rollback, FS, 55-slot and font host regressions
+        run: |
+          set -eu
+          for name in nt_ke_ps_test nt_thread_exceptions_test nt_address_space_test nt_parent_process_test nt_ps_dual_space_test nt_ps_dual_image_root_test nt_ps_exec_root_test nt_ps_child_lifecycle_test nt_two_exe_scheduler_test nt_two_kernel_threads_test nt_irq_scheduler_test nt_ke_coop_test nt_vm_two_threads_stress_test nt_io_manager_test nt_sh7305_adapter_test nt_sh7305_input_queue_test nt_sh7305_tmu_snapshot_test nt_sh7305_usb_power_test nt_native_decommit_test nt_scheduler_test nt_live_decommit_test nt_picker_test nt_native_vm_test nt_virtual_memory_test nt_guest_exception_test nt_dll_lifecycle_test nt_mm_permissions_test nt_launch_policy_test fault_pager_test nt_p0p2_host_test nt_io_injection_test nt_executive_test nt_flash_guard_test fs_guard_test console_glyph_test console_host_test; do
+            g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 "tests/$name.cpp" -o "/tmp/$name"
+            "/tmp/$name"
+          done
+          gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_files_test.c -o /tmp/coredll-files
+          /tmp/coredll-files
+          gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_gdi_test.c -o /tmp/coredll-gdi
+          /tmp/coredll-gdi
+          for name in nt_gwes_model_test nt_touchkb_test coredll_gwes_test nt_dialog_model_test coredll_dialog_test; do
+            gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-function -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast "tests/$name.c" -o "/tmp/$name"
+            "/tmp/$name"
+          done
+          python3 tests/test_hh3_launcher_layout.py
+      - name: Build one CP400 firmware with Ke/Ps and proven protection handler
+        run: |
+          set -eu
+          make -j4 BUILDDIR=obj_ke_cp400 OUTDIR=dist_ke_cp400 DEPDIR=.deps_ke_cp400 DEFINES="-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1 -DNTOS_STREAMED_IMAGE_LOADING=1 -DNTOS_ENFORCE_PE_PAGE_PERMISSIONS=1 -DNTOS_ENABLE_NT_PRIVATE_VM=1 -DNTOS_ENABLE_DLL_INIT_TRACE=0 -DNTOS_PE_STREAM_LOG=0 -DNTOS_NO_LOADER_PROGRESS_LOG=1 -DNTOS_ENABLE_GUEST_PROTECT_DISPATCH=1 -DNTOS_SH4A_TLB_SYNC_BARRIER=1 -DNTOS_VERIFY_UTLB_SLOTS=1 -DNTOS_ENABLE_KE_USER_SYSCALL=1 -DNTOS_ENABLE_COOP_KERNEL=1 -DNTOS_ENABLE_GUEST_IO=1 -DNTOS_ENABLE_PE_PAIR=1 -DNTOS_ENABLE_PSROOT=1 -DNTOS_ENABLE_PS_EXEC=1 -DNTOS_ENABLE_PSUSER=1 -DNTOS_ENABLE_CHILD_PS_RESOURCES=1 -DNTOS_PROCESS_HEAP_RESIDENT=1 -DNTOS_NATIVE_TMU_SNAPSHOT=1 -DNTOS_NATIVE_USB_SNAPSHOT=1" KE_COOP_SMALL=1 NTOS_KERNEL_SIZE=1 HH3_MIN_HEADROOM=1024 hh3
+          test -s dist_ke_cp400/NTOS.hh3
+          python3 tools/check_hh3_launcher_layout.py --min-headroom 1024 dist_ke_cp400/NTOS.hh3
+      - name: Build all matching SH4BE EXE/DLL and audit real syscall opcodes
+        run: |
+          set -eu
+          make -j4 ntx
+          test -s dist/GDIBLIT.EXE
+          test -s dist/GWESCHK.EXE
+          test -s dist/GWESLAB.EXE
+          test -s dist/DLGCHK.EXE
+          python3 tools/check_gdi_import_exports.py dist/COREDLL.DLL dist/GDIBLIT.EXE
+          python3 tools/check_gwes_exports.py dist/COREDLL.DLL dist/GWESCHK.EXE dist/GWESLAB.EXE dist/DLGCHK.EXE
+          make -j4 nt-vm-dll-probes nt-exec-probes dist_ntprobe/MMROTEST.EXE
+          for p in KTHREAD.EXE KEXCEPT.EXE ASOWN.EXE PSPARENT.EXE PSCHILD.EXE MMREUSE.EXE MMSTRESS.EXE MMRACE.EXE KCOOP.EXE K2THREAD.EXE DEVNULL.EXE DEVLOOP.EXE PEPAIR.EXE PEPEER.EXE PSROOT.EXE PSTWIN.EXE TWINCHILD.EXE KREGCTX.EXE DEVREPL.EXE PSCODE.EXE CODEA.EXE CODEB.EXE KTRAPREG.EXE PSUSER.EXE PSSTACK.EXE HALTMU.EXE HALUSB.EXE PSKILL.EXE KILLCHILD.EXE DEVDISP.EXE PROTSTATE.EXE NATIVEVM.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE IOTEST.EXE; do
+            test -s "dist_ntprobe/$p"
+          done
+          python3 tools/check_large4m_pe.py dist_ntprobe/LARGE4M.EXE
+          python3 tools/check_protected_pe.py dist_ntprobe/MMROTEST.EXE dist_ntprobe/MMGUARD.EXE
+          python3 tools/check_user_probe_elf.py obj_ntprobe/mmread.elf obj_ntprobe/mmrdinit.elf obj_ntprobe/mmguard.elf obj_ntprobe/kthread.elf obj_ntprobe/kexcept.elf
+          g++ -std=c++20 -Wall -Wextra -Werror -pedantic -O2 tests/pe_stream_test.cpp -o /tmp/pe-stream
+          /tmp/pe-stream dist/COREDLL.DLL dist/CHAINTEST.EXE dist_ntprobe/LARGE4M.EXE
+      - name: Assemble ONE matching CP400 kit with firmware and ALL tests
+        run: |
+          set -eu
+          mkdir -p ntos_cp400_all
+          cp dist_ke_cp400/NTOS.hh3 ntos_cp400_all/NTOS.hh3
+          cp dist/*.EXE dist/*.DLL ntos_cp400_all/
+          cp dist_ntprobe/*.EXE dist_ntprobe/*.DLL ntos_cp400_all/
+          cp docs/NTOS_KERNEL_NEXT_TESTS_20261120.md ntos_cp400_all/README.md
+          cp docs/COREDLL_COMPAT.md ntos_cp400_all/COREDLL_GWES.md
+          test -s ntos_cp400_all/NTOS.hh3
+          test -s ntos_cp400_all/KTHREAD.EXE
+          test -s ntos_cp400_all/KEXCEPT.EXE
+          test -s ntos_cp400_all/ASOWN.EXE
+          test -s ntos_cp400_all/PSPARENT.EXE
+          test -s ntos_cp400_all/PSCHILD.EXE
+          test -s ntos_cp400_all/MMREUSE.EXE
+          test -s ntos_cp400_all/MMSTRESS.EXE
+          test -s ntos_cp400_all/MMRACE.EXE
+          test -s ntos_cp400_all/KCOOP.EXE
+          test -s ntos_cp400_all/K2THREAD.EXE
+          test -s ntos_cp400_all/DEVNULL.EXE
+          test -s ntos_cp400_all/DEVLOOP.EXE
+          test -s ntos_cp400_all/PEPAIR.EXE
+          test -s ntos_cp400_all/PEPEER.EXE
+          test -s ntos_cp400_all/PSROOT.EXE
+          test -s ntos_cp400_all/PSTWIN.EXE
+          test -s ntos_cp400_all/TWINCHILD.EXE
+          test -s ntos_cp400_all/KREGCTX.EXE
+          test -s ntos_cp400_all/DEVREPL.EXE
+          test -s ntos_cp400_all/PSCODE.EXE
+          test -s ntos_cp400_all/CODEA.EXE
+          test -s ntos_cp400_all/CODEB.EXE
+          test -s ntos_cp400_all/KTRAPREG.EXE
+          test -s ntos_cp400_all/PSUSER.EXE
+          test -s ntos_cp400_all/HALTMU.EXE
+          test -s ntos_cp400_all/HALUSB.EXE
+          test -s ntos_cp400_all/PSSTACK.EXE
+          test -s ntos_cp400_all/PSKILL.EXE
+          test -s ntos_cp400_all/KILLCHILD.EXE
+          test -s ntos_cp400_all/DEVDISP.EXE
+          test -s ntos_cp400_all/COREDLL.DLL
+          test -s ntos_cp400_all/GDIBLIT.EXE
+          test -s ntos_cp400_all/GWESCHK.EXE
+          test -s ntos_cp400_all/GWESLAB.EXE
+          test -s ntos_cp400_all/DLGCHK.EXE
+          test -s ntos_cp400_all/MMGUARD.EXE
+          # Identify mixed/stale CP400 copies without depending on device logs.
+          {
+            printf 'commit=%s\n' "$(git rev-parse HEAD)"
+            printf 'branch=%s\n' "${GITHUB_REF_NAME:-unknown}"
+            printf 'run=%s\n' "${GITHUB_RUN_ID:-local}"
+            printf 'profile=nt-vm-dll-protect-all-in-one\n'
+          } > ntos_cp400_all/BUILD-ID.txt
+          (cd ntos_cp400_all && sha256sum NTOS.hh3 COREDLL.DLL GDIBLIT.EXE GWESCHK.EXE GWESLAB.EXE DLGCHK.EXE > BUILD-SHA256.txt)
+          test -s ntos_cp400_all/BUILD-ID.txt
+          test -s ntos_cp400_all/BUILD-SHA256.txt
+      - name: Upload ONLY ONE all-in-one CP400 package
+        uses: actions/upload-artifact@v7
+        with:
+          name: NTOS-CP400-KE-PS-ALL-IN-ONE
+          path: ntos_cp400_all/
+          if-no-files-found: error
+          retention-days: 30

@@ -14,17 +14,24 @@ INCLUDES=-I$(SDK_DIR)/include #-I$(SOURCEDIR)
 # Pager validated in emulator: the default loader now handles graphs beyond
 # the 55-slot eager translation budget. Use DEFINES= for the conservative build.
 DEFINES=-DNTOS_ENABLE_TLB_MISS_PAGER=1 -DNTOS_ENABLE_IRQ_OWNERSHIP=1
-FUNCTION_FLAGS=-flto=auto -ffat-lto-objects -fno-builtin -ffunction-sections -fdata-sections -gdwarf-5 -O2
+# The custom HH3 launcher restricts every PT_LOAD to 0x8C000000..0x8D000000.
+# The Ke/Ps build overran 0x8D000000 by 764 bytes because GCC emitted
+# ~6 KiB of unused .eh_frame metadata. NTOS is freestanding, has no C++
+# exception propagation/unwinder and must not allocate this RAM.
+FUNCTION_FLAGS=-flto=auto -ffat-lto-objects -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -gdwarf-5 -O2
 COMMON_FLAGS=$(FUNCTION_FLAGS) $(INCLUDES) $(WARNINGS) $(DEFINES)
 
 CC:=sh4a_nofpueb-elf-gcc
 CC_FLAGS=-std=c23 $(COMMON_FLAGS)
 
 CXX:=sh4a_nofpueb-elf-g++
-CXX_FLAGS=-std=c++20 $(COMMON_FLAGS)
+# NTOS never throws or catches C++ exceptions. In the standard build,
+# RAII resource cleanup must not drag the SH4 libstdc++ EH/unwinder into
+# the strictly bounded 64 KiB HH3 PT_LOAD segment.
+CXX_FLAGS=-std=c++20 -fno-exceptions $(COMMON_FLAGS)
 
 LD:=sh4a_nofpueb-elf-g++
-LD_FLAGS:=$(FUNCTION_FLAGS) -Wl,--gc-sections
+LD_FLAGS:=$(FUNCTION_FLAGS) -Wl,--gc-sections -Wl,-T,tools/ntos_no_unwind.ld
 LIBS:=-L$(SDK_DIR) -lsdk
 
 READELF:=sh4a_nofpueb-elf-readelf
@@ -67,9 +74,6 @@ HELLOCORE_EXE := $(OUTDIR)/HELLOCORE.EXE
 MEMTOOL_OBJ := $(BUILDDIR)/payload/memtool.o
 MEMTOOL_ELF := $(BUILDDIR)/payload/memtool.elf
 MEMTOOL_EXE := $(OUTDIR)/MEMTOOL.EXE
-SH7305_OBJ := $(BUILDDIR)/payload/sh7305_probe.o
-SH7305_ELF := $(BUILDDIR)/payload/sh7305_probe.elf
-SH7305_EXE := $(OUTDIR)/sh7305-probe.exe
 PAINT_OBJ := $(BUILDDIR)/payload/paintdemo.o
 PAINT_ELF := $(BUILDDIR)/payload/paintdemo.elf
 PAINT_EXE := $(OUTDIR)/PAINT.EXE
@@ -79,6 +83,24 @@ WINLAB_EXE := $(OUTDIR)/WINLAB.EXE
 GUIWIN_OBJ := $(BUILDDIR)/payload/guiwin.o
 GUIWIN_ELF := $(BUILDDIR)/payload/guiwin.elf
 GUIWIN_EXE := $(OUTDIR)/GUIWIN.EXE
+CMD_OBJ := $(BUILDDIR)/payload/cmd.o
+CMD_ELF := $(BUILDDIR)/payload/cmd.elf
+CMD_EXE := $(OUTDIR)/CMD.EXE
+GDILAB_OBJ := $(BUILDDIR)/payload/gdilab.o
+GDILAB_ELF := $(BUILDDIR)/payload/gdilab.elf
+GDILAB_EXE := $(OUTDIR)/GDILAB.EXE
+GDIBLIT_OBJ := $(BUILDDIR)/payload/gdiblt.o
+GDIBLIT_ELF := $(BUILDDIR)/payload/gdiblt.elf
+GDIBLIT_EXE := $(OUTDIR)/GDIBLIT.EXE
+GWESCHK_OBJ := $(BUILDDIR)/payload/gweschk.o
+GWESCHK_ELF := $(BUILDDIR)/payload/gweschk.elf
+GWESCHK_EXE := $(OUTDIR)/GWESCHK.EXE
+GWESLAB_OBJ := $(BUILDDIR)/payload/gweslab.o
+GWESLAB_ELF := $(BUILDDIR)/payload/gweslab.elf
+GWESLAB_EXE := $(OUTDIR)/GWESLAB.EXE
+DLGCHK_OBJ := $(BUILDDIR)/payload/dlgchk.o
+DLGCHK_ELF := $(BUILDDIR)/payload/dlgchk.elf
+DLGCHK_EXE := $(OUTDIR)/DLGCHK.EXE
 METROWIN_OBJ := $(BUILDDIR)/payload/metrowin.o
 METROWIN_ELF := $(BUILDDIR)/payload/metrowin.elf
 METROWIN_EXE := $(OUTDIR)/METROWIN.EXE
@@ -143,6 +165,28 @@ $(BUILDDIR)/.ntos-build-flags: ntos-config-force
 	@printf '%s\n' '$(DEFINES)' > $@.tmp
 	@if test -e $@ && cmp -s $@.tmp $@; then rm -f $@.tmp; else mv $@.tmp $@; fi
 
+# Only the SH7305 switcher needs SH4AL-DSP opcodes. The pinned
+# sh4a_nofpueb GCC lacks -m4al multilib; use assembler -dsp directly.
+# Keep the remaining project -m4a-nofpu and never generate FPU ops.
+# Stage0-only size option for the opt-in cooperative candidate.
+# Default O2 stays unchanged; avoid expanding the 64 KiB HH3 window.
+ifeq ($(KE_COOP_SMALL),1)
+$(BUILDDIR)/src/main.o: CXX_FLAGS += -Os
+endif
+# CPDoom uses section-level dead-code removal and LTO, both already present
+# in NTOS.  Its -Ofast and custom segment-address layout are NOT safe
+# substitutes for a checked PT_LOAD end.  This independent profile extends
+# -Os to other kernel C++ modules (LTO included), disables unused C++ runtime
+# features, and must pass the exact same SH7305 firmware/PE regression tests.
+ifeq ($(NTOS_KERNEL_SIZE),1)
+$(OBJECTS): CXX_FLAGS += -Os -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit
+LD_FLAGS += -Os -fno-exceptions -fno-rtti
+endif
+
+$(BUILDDIR)/src/cooperative_switch.o: src/cooperative_switch.S
+	@mkdir -p $(dir $@)
+	$(AS) -Wa,-dsp -c $< -o $@ $(AS_FLAGS)
+
 $(OBJECTS): $(BUILDDIR)/.ntos-build-flags
 
 NOLTOOBJS := $(foreach obj, $(OBJECTS), $(if $(findstring /nolto/, $(obj)), $(obj)))
@@ -151,7 +195,7 @@ DEPFILES := $(OBJECTS:$(BUILDDIR)/%.o=$(DEPDIR)/%.d)
 
 hh3: $(APP_HH3) Makefile
 elf: $(APP_ELF) Makefile
-ntx: $(OUTDIR)/romprobe.bin $(SH7305_EXE) $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
+ntx: $(HELLO_EXE) $(COREDLL_DLL) $(XAMLUI_DLL) $(HELLOCORE_EXE) $(MEMTOOL_EXE) $(PAINT_EXE) $(WINLAB_EXE) $(GUIWIN_EXE) $(CMD_EXE) $(GDILAB_EXE) $(GDIBLIT_EXE) $(GWESCHK_EXE) $(GWESLAB_EXE) $(DLGCHK_EXE) $(METROWIN_EXE) $(CALC_EXE) $(CONTROL_EXE) $(SVF_EDITOR_EXE) $(CPL_INSTALL) $(CHAIN_DLL) $(CHAINTEST_EXE) $(STRESS_DLLS) $(STRESS_EXE) $(PAGERSTRESS_DLL) $(PAGERSTRESS_TEST_EXE) $(FAULTSTRESS_DLL) $(FAULTTEST_EXE) Makefile
 
 # Basic builds must work with the older HH3 v2.2.1 toolchain too.
 # The BFD/COFF parity suite is a diagnostic target (and a CI gate), not
@@ -180,8 +224,10 @@ collision-test: ntx
 clean:
 	rm -rf $(BUILDDIR) $(OUTDIR) $(DEPDIR) dist_collision
 
-%.hh3: %.elf
-	$(STRIP) -o $@ $^
+HH3_MIN_HEADROOM ?= 4096
+%.hh3: %.elf tools/check_hh3_launcher_layout.py
+	$(STRIP) -o $@ $<
+	$(PYTHON) tools/check_hh3_launcher_layout.py --min-headroom $(HH3_MIN_HEADROOM) $@
 
 # Payloads: freestanding compile, static link at their preferred base
 # (+0x200 for the PE header page -- link VA == runtime VA, see elf2ntx.py),
@@ -198,7 +244,7 @@ $(HELLO_EXE): $(HELLO_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(HELLO_ELF) -o $@
 
-$(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c $(PAYLOAD_DIR)/ugui_font.h $(PAYLOAD_DIR)/ntapi_caps.h
+$(COREDLL_OBJ): $(PAYLOAD_DIR)/coredll.c $(PAYLOAD_DIR)/wince/ntgwes_model.h $(PAYLOAD_DIR)/wince/ntgwes_api.inc $(PAYLOAD_DIR)/wince/nt_gwes_dialog.h $(PAYLOAD_DIR)/wince/nt_gwes_dialog_api.inc $(PAYLOAD_DIR)/wince/nt_touchkb.h $(PAYLOAD_DIR)/wince/nt_touchkb_render.inc $(PAYLOAD_DIR)/wince/gdi_memory.inc $(PAYLOAD_DIR)/ugui_font.h $(PAYLOAD_DIR)/ntapi_caps.h
 	@mkdir -p $(dir $@)
 	$(CC) -c $(PAYLOAD_DIR)/coredll.c -o $@ $(PAYLOAD_CFLAGS)
 
@@ -283,6 +329,80 @@ $(GUIWIN_EXE): $(GUIWIN_ELF) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(GUIWIN_ELF) -o $@ --import-module COREDLL.DLL
 
+
+$(DLGCHK_OBJ): $(PAYLOAD_DIR)/dlgchk.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(DLGCHK_ELF): $(DLGCHK_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(DLGCHK_OBJ)
+
+$(DLGCHK_EXE): $(DLGCHK_ELF) $(COREDLL_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+$(GWESCHK_OBJ): $(PAYLOAD_DIR)/gweschk.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(GWESCHK_ELF): $(GWESCHK_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(GWESCHK_OBJ)
+
+$(GWESCHK_EXE): $(GWESCHK_ELF) $(COREDLL_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+$(GWESLAB_OBJ): $(PAYLOAD_DIR)/gweslab.c $(PAYLOAD_DIR)/wince_ui.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(GWESLAB_ELF): $(GWESLAB_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(GWESLAB_OBJ)
+
+$(GWESLAB_EXE): $(GWESLAB_ELF) $(COREDLL_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+$(GDIBLIT_OBJ): $(PAYLOAD_DIR)/gdiblt.c $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(GDIBLIT_ELF): $(GDIBLIT_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(GDIBLIT_OBJ)
+
+$(GDIBLIT_EXE): $(GDIBLIT_ELF) $(COREDLL_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+# Native shell runs as a real COREDLL/GWES client. No new ABI profile.
+$(CMD_OBJ): $(PAYLOAD_DIR)/cmd.c $(PAYLOAD_DIR)/nt_cmd_model.h $(PAYLOAD_DIR)/nt_tiling.h $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(CMD_ELF): $(CMD_OBJ) $(CONTROL_MEM_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(CMD_OBJ) $(CONTROL_MEM_OBJ)
+
+$(CMD_EXE): $(CMD_ELF) $(COREDLL_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+# Native WinCE GDI raster exercise; COREDLL is the sole dependency.
+$(GDILAB_OBJ): $(PAYLOAD_DIR)/gdilab.c $(PAYLOAD_DIR)/nt_tiling.h $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(GDILAB_ELF): $(GDILAB_OBJ) $(PAYLOAD_DIR)/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $<
+
+$(GDILAB_EXE): $(GDILAB_ELF) $(COREDLL_DLL) tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
 
 $(METROWIN_OBJ): $(PAYLOAD_DIR)/metrowin.c $(PAYLOAD_DIR)/wince_ui.h $(PAYLOAD_DIR)/ntimport.h
 	@mkdir -p $(dir $@)
@@ -464,9 +584,9 @@ $(FAULTTEST_EXE): $(PAGERSTRESS_TEST_ELF) $(FAULTSTRESS_DLL) tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $(PAGERSTRESS_TEST_ELF) -o $@ --import-module FAULTSTRESS.DLL
 
-$(APP_ELF): $(OBJECTS)
+$(APP_ELF): $(OBJECTS) tools/ntos_no_unwind.ld
 	@mkdir -p $(dir $@)
-	$(LD) -Wl,-Map $@.map -o $@ $(LD_FLAGS) $^ $(LIBS)
+	$(LD) -Wl,-Map $@.map -o $@ $(LD_FLAGS) $(OBJECTS) $(LIBS)
 
 $(NOLTOOBJS): FUNCTION_FLAGS+=-fno-lto
 
@@ -511,6 +631,341 @@ ce-abi-probe:
 .PHONY: elf hh3 ntx all clean compile_commands.json check-pe probe-pe collision-test pager-experiment pager-verify ce-abi-probe
 
 -include $(DEPFILES)
+
+# Isolated NT executive and ~4 MiB image probes. These are deliberately NOT
+# part of 'all', 'ntx' or install/: test on emulator before any CP400 deployment.
+NT_PROBE_BUILD := obj_ntprobe
+NT_PROBE_DIST := dist_ntprobe
+NT_OBTEST_OBJ := $(NT_PROBE_BUILD)/obtest.o
+NT_LARGE_SRC_OBJ := $(NT_PROBE_BUILD)/large4m.o
+NT_LARGE_BLOB_OBJ := $(NT_PROBE_BUILD)/large4m_blob.o
+
+$(NT_OBTEST_OBJ): payload/obtest.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(NT_PROBE_BUILD)/obtest.elf: $(NT_OBTEST_OBJ) payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+
+$(NT_PROBE_DIST)/OBTEST.EXE: $(NT_PROBE_BUILD)/obtest.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_LARGE_SRC_OBJ): payload/large4m.c
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(NT_LARGE_BLOB_OBJ): payload/large4m_blob.S
+	@mkdir -p $(dir $@)
+	$(AS) -c $< -o $@ $(AS_FLAGS)
+
+$(NT_PROBE_BUILD)/large4m.elf: $(NT_LARGE_SRC_OBJ) $(NT_LARGE_BLOB_OBJ) payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(NT_LARGE_SRC_OBJ) $(NT_LARGE_BLOB_OBJ)
+
+$(NT_PROBE_DIST)/LARGE4M.EXE: $(NT_PROBE_BUILD)/large4m.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+	$(PYTHON) tools/check_large4m_pe.py $@
+
+# Self-contained opt-in P0/P1/P2 probes. No fault injection, disk
+# mutation or unhinted P0 dereferences appear in the hardware package.
+# PROCTEST depends on PROCNEXT + PROCFINAL and a matching HELLO.EXE.
+# Pattern rules avoid GNU Make eval-time automatic-variable expansion.
+$(NT_PROBE_BUILD)/%.o: payload/%.c
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(NT_PROBE_BUILD)/%.elf: $(NT_PROBE_BUILD)/%.o payload/payload.ld
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+
+$(NT_PROBE_DIST)/POOLTEST.EXE: $(NT_PROBE_BUILD)/pooltest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/EVTEST.EXE: $(NT_PROBE_BUILD)/evtest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PROCTEST.EXE: $(NT_PROBE_BUILD)/proctest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PROCNEXT.EXE: $(NT_PROBE_BUILD)/procnext.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PROCFINAL.EXE: $(NT_PROBE_BUILD)/procfinal.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/MMTEST.EXE: $(NT_PROBE_BUILD)/mmtest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/IOTEST.EXE: $(NT_PROBE_BUILD)/iotest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+# Actual SH7305 PR=10/11 (RO/RW) probe, only for opt-in Mm builds.
+# The deliberately unhinted FAULTCAN is strictly emulator-only. Keep it
+# separate from normal and safe-intent device bundles.
+$(NT_PROBE_DIST)/MMROTEST.EXE: $(NT_PROBE_BUILD)/mmrotest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/FAULTCAN.EXE: $(NT_PROBE_BUILD)/faultcan.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+NT_SAFE_PROBES := $(addprefix $(NT_PROBE_DIST)/,POOLTEST.EXE EVTEST.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE MMTEST.EXE IOTEST.EXE)
+
+# NT private P1-backed VM / real DLL_PROCESS_ATTACH fixture.
+# These are not installed in normal HH3 builds.
+$(NT_PROBE_DIST)/VMTEST.EXE: $(NT_PROBE_BUILD)/vmtest.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/NATIVEVM.EXE: $(NT_PROBE_BUILD)/nativevm.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/KTHREAD.EXE: $(NT_PROBE_BUILD)/kthread.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/KEXCEPT.EXE: $(NT_PROBE_BUILD)/kexcept.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/ASOWN.EXE: $(NT_PROBE_BUILD)/asown.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PSPARENT.EXE: $(NT_PROBE_BUILD)/psparent.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PSCHILD.EXE: $(NT_PROBE_BUILD)/pschild.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/MMREUSE.EXE: $(NT_PROBE_BUILD)/mmreuse.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/MMSTRESS.EXE: $(NT_PROBE_BUILD)/mmstress.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/MMRACE.EXE: $(NT_PROBE_BUILD)/mmrace.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_BUILD)/kcoop_switch.o: payload/kcoop_switch.S
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(AS) -c $< -o $@ $(AS_FLAGS)
+
+$(NT_PROBE_BUILD)/kcoop.elf: $(NT_PROBE_BUILD)/kcoop.o $(NT_PROBE_BUILD)/kcoop_switch.o payload/payload.ld
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(NT_PROBE_BUILD)/kcoop.o $(NT_PROBE_BUILD)/kcoop_switch.o
+
+$(NT_PROBE_DIST)/KCOOP.EXE: $(NT_PROBE_BUILD)/kcoop.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/K2THREAD.EXE: $(NT_PROBE_BUILD)/k2thread.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/DEVNULL.EXE: $(NT_PROBE_BUILD)/devnull.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/DEVLOOP.EXE: $(NT_PROBE_BUILD)/devloop.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PEPAIR.EXE: $(NT_PROBE_BUILD)/pepair.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PEPEER.EXE: $(NT_PROBE_BUILD)/pepeer.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PSROOT.EXE: $(NT_PROBE_BUILD)/psroot.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PSTWIN.EXE: $(NT_PROBE_BUILD)/pstwin.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/TWINCHILD.EXE: $(NT_PROBE_BUILD)/twinchild.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/DEVREPL.EXE: $(NT_PROBE_BUILD)/devrepl.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_BUILD)/kregctx_probe.o: payload/kregctx_probe.S
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(AS) -Wa,-dsp -c $< -o $@ $(AS_FLAGS)
+
+$(NT_PROBE_BUILD)/kregctx.elf: $(NT_PROBE_BUILD)/kregctx.o $(NT_PROBE_BUILD)/kregctx_probe.o payload/payload.ld
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(NT_PROBE_BUILD)/kregctx.o $(NT_PROBE_BUILD)/kregctx_probe.o
+
+$(NT_PROBE_DIST)/KREGCTX.EXE: $(NT_PROBE_BUILD)/kregctx.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PSCODE.EXE: $(NT_PROBE_BUILD)/pscode.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_BUILD)/codea.o: payload/codeprobe.c
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(CC) -c $< -o $@ -DNTOS_CODE_TAG=0xA11A0000u $(PAYLOAD_CFLAGS)
+
+$(NT_PROBE_BUILD)/codeb.o: payload/codeprobe.c
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(CC) -c $< -o $@ -DNTOS_CODE_TAG=0xB22B0000u $(PAYLOAD_CFLAGS)
+
+$(NT_PROBE_DIST)/CODEA.EXE: $(NT_PROBE_BUILD)/codea.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/CODEB.EXE: $(NT_PROBE_BUILD)/codeb.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_BUILD)/ktrapreg_probe.o: payload/ktrapreg.S
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(AS) -Wa,-dsp -c $< -o $@ $(AS_FLAGS)
+
+$(NT_PROBE_BUILD)/ktrapreg.elf: $(NT_PROBE_BUILD)/ktrapreg.o $(NT_PROBE_BUILD)/ktrapreg_probe.o payload/payload.ld
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(NT_PROBE_BUILD)/ktrapreg.o $(NT_PROBE_BUILD)/ktrapreg_probe.o
+
+$(NT_PROBE_DIST)/KTRAPREG.EXE: $(NT_PROBE_BUILD)/ktrapreg.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_BUILD)/psuser_probe.o: payload/psuser.S
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(AS) -c $< -o $@ $(AS_FLAGS)
+
+$(NT_PROBE_BUILD)/psuser.elf: $(NT_PROBE_BUILD)/psuser.o $(NT_PROBE_BUILD)/psuser_probe.o payload/payload.ld
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(NT_PROBE_BUILD)/psuser.o $(NT_PROBE_BUILD)/psuser_probe.o
+
+$(NT_PROBE_DIST)/PSUSER.EXE: $(NT_PROBE_BUILD)/psuser.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_BUILD)/psstack_probe.o: payload/psstack.S
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(AS) -c $< -o $@ $(AS_FLAGS)
+
+$(NT_PROBE_BUILD)/psstack.elf: $(NT_PROBE_BUILD)/psstack.o $(NT_PROBE_BUILD)/psstack_probe.o payload/payload.ld
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $(NT_PROBE_BUILD)/psstack.o $(NT_PROBE_BUILD)/psstack_probe.o
+
+$(NT_PROBE_DIST)/PSSTACK.EXE: $(NT_PROBE_BUILD)/psstack.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/HALUSB.EXE: $(NT_PROBE_BUILD)/halusb.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/HALTMU.EXE: $(NT_PROBE_BUILD)/haltmu.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/PSKILL.EXE: $(NT_PROBE_BUILD)/pskill.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/KILLCHILD.EXE: $(NT_PROBE_BUILD)/killchild.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/DEVDISP.EXE: $(NT_PROBE_BUILD)/devdisp.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+# Non-destructive SR.MD/RB/BL preflight for the privileged-guest bridge.
+$(NT_PROBE_DIST)/PROTSTATE.EXE: $(NT_PROBE_BUILD)/protstate.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+# Real VBR+0x100 protected-access payloads are high-risk opt-in ONLY.
+# Never distribute as ordinary device-safe EXEs.
+$(NT_PROBE_DIST)/MMGUARD.EXE: $(NT_PROBE_BUILD)/mmguard.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/MMREAD.EXE: $(NT_PROBE_BUILD)/mmread.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_DIST)/MMRDINIT.EXE: $(NT_PROBE_BUILD)/mmrdinit.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+$(NT_PROBE_BUILD)/initgood.elf: $(NT_PROBE_BUILD)/initgood.o payload/xamlui.ld
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/xamlui.ld -o $@ $<
+
+$(NT_PROBE_DIST)/INITGOOD.DLL: $(NT_PROBE_BUILD)/initgood.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name INITGOOD.DLL --exports initgood_state
+
+$(NT_PROBE_BUILD)/initfail.elf: $(NT_PROBE_BUILD)/initfail.o payload/xamlui.ld
+	@mkdir -p $(NT_PROBE_BUILD)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/xamlui.ld -o $@ $<
+
+$(NT_PROBE_DIST)/INITFAIL.DLL: $(NT_PROBE_BUILD)/initfail.elf tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name INITFAIL.DLL --import-module INITGOOD.DLL --exports initfail_probe
+
+$(NT_PROBE_DIST)/INITPASS.EXE: $(NT_PROBE_BUILD)/initpass.elf $(NT_PROBE_DIST)/INITGOOD.DLL tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module INITGOOD.DLL
+
+$(NT_PROBE_DIST)/INITFAIL.EXE: $(NT_PROBE_BUILD)/initfail_test.elf $(NT_PROBE_DIST)/INITFAIL.DLL tools/elf2ntx.py
+	@mkdir -p $(NT_PROBE_DIST)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module INITFAIL.DLL
+
+.PHONY: nt-vm-dll-probes
+nt-vm-dll-probes: $(NT_PROBE_DIST)/KTHREAD.EXE $(NT_PROBE_DIST)/KEXCEPT.EXE $(NT_PROBE_DIST)/ASOWN.EXE $(NT_PROBE_DIST)/PSPARENT.EXE $(NT_PROBE_DIST)/PSCHILD.EXE $(NT_PROBE_DIST)/MMREUSE.EXE $(NT_PROBE_DIST)/MMSTRESS.EXE $(NT_PROBE_DIST)/MMRACE.EXE $(NT_PROBE_DIST)/KCOOP.EXE $(NT_PROBE_DIST)/K2THREAD.EXE $(NT_PROBE_DIST)/DEVNULL.EXE $(NT_PROBE_DIST)/DEVLOOP.EXE $(NT_PROBE_DIST)/PEPAIR.EXE $(NT_PROBE_DIST)/PEPEER.EXE $(NT_PROBE_DIST)/PSROOT.EXE $(NT_PROBE_DIST)/PSTWIN.EXE $(NT_PROBE_DIST)/TWINCHILD.EXE $(NT_PROBE_DIST)/KREGCTX.EXE $(NT_PROBE_DIST)/DEVREPL.EXE $(NT_PROBE_DIST)/PSCODE.EXE $(NT_PROBE_DIST)/CODEA.EXE $(NT_PROBE_DIST)/CODEB.EXE $(NT_PROBE_DIST)/KTRAPREG.EXE $(NT_PROBE_DIST)/PSUSER.EXE $(NT_PROBE_DIST)/PSSTACK.EXE $(NT_PROBE_DIST)/HALTMU.EXE $(NT_PROBE_DIST)/HALUSB.EXE $(NT_PROBE_DIST)/PSKILL.EXE $(NT_PROBE_DIST)/KILLCHILD.EXE $(NT_PROBE_DIST)/DEVDISP.EXE $(NT_PROBE_DIST)/PROTSTATE.EXE $(NT_PROBE_DIST)/NATIVEVM.EXE $(NT_PROBE_DIST)/VMTEST.EXE $(NT_PROBE_DIST)/MMGUARD.EXE $(NT_PROBE_DIST)/MMREAD.EXE $(NT_PROBE_DIST)/MMRDINIT.EXE $(NT_PROBE_DIST)/INITGOOD.DLL $(NT_PROBE_DIST)/INITFAIL.DLL $(NT_PROBE_DIST)/INITPASS.EXE $(NT_PROBE_DIST)/INITFAIL.EXE
+	@echo "NTOS private VM, DLL init and emulator-only protected-write probes"
+
+# Deliberately unresolved DLL import: exercises failure before guest entry.
+# This is NOT a DllMain initialization-failure test, which is unsupported.
+$(NT_PROBE_BUILD)/procfail.o: payload/procfail.c payload/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(NT_PROBE_BUILD)/procfail.elf: $(NT_PROBE_BUILD)/procfail.o payload/payload.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+
+$(NT_PROBE_DIST)/PROCFAIL.EXE: $(NT_PROBE_BUILD)/procfail.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module NOFILE.DLL
+
+.PHONY: nt-safe-probes nt-exec-probes
+nt-safe-probes: $(NT_PROBE_DIST)/OBTEST.EXE $(NT_SAFE_PROBES)
+	@echo "NTOS P0/P1/P2 HARDWARE-SAFE-INTENT probes in dist_ntprobe/"
+nt-exec-probes: nt-safe-probes $(NT_PROBE_DIST)/LARGE4M.EXE
+	@echo "NT EXECUTIVE EXPERIMENTS: dist_ntprobe/ (NOT DEFAULT DEVICE PACKAGE)"
 
 # Experimental measured MSVC SH4 ABI bridges. Both targets are completely
 # isolated: no compiler patch, no modified release or pager output.
@@ -735,20 +1190,3 @@ unified: all
 
 # Native WinCE-first phone launcher.
 include payload/phone/phone.mk
-
-# Freestanding SH4AL-DSP BE diagnostic built by the NTOS PE pipeline.
-$(SH7305_OBJ): $(PAYLOAD_DIR)/sh7305_probe.c
-	@mkdir -p $(dir $@)
-	$(CC) -c $< -o $@ $(PAYLOAD_CFLAGS)
-
-$(SH7305_ELF): $(SH7305_OBJ) $(PAYLOAD_DIR)/payload.ld
-	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T $(PAYLOAD_DIR)/payload.ld -o $@ $(SH7305_OBJ)
-
-$(SH7305_EXE): $(SH7305_ELF) tools/elf2ntx.py
-	$(PYTHON) tools/elf2ntx.py $< -o $@
-
-
-# External ROM test fixture: never added to the SH4BE PE's .rodata.
-$(OUTDIR)/romprobe.bin: tools/make_romprobe.py
-	@mkdir -p $(dir $@)
-	$(PYTHON) $< $@

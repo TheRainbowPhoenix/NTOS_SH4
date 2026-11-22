@@ -12,6 +12,7 @@
 #pragma once
 #include <stdint.h>
 #include "pe_rebase.hpp"
+#include "nt/mm_protect.hpp"
 
 namespace ntos_fault {
 constexpr unsigned MAX_MODULES=16u;
@@ -21,6 +22,8 @@ struct Area {
     uint32_t va;
     uint32_t pages;
     uint32_t pa;  // physical page aligned, image's P1 heap backing
+    const pe::Image *header=nullptr; // owned by loader for entire guest run
+    bool protected_pages=false;
 };
 struct Entry {
     uint32_t va;
@@ -28,19 +31,32 @@ struct Entry {
     uint32_t age;
     bool present;
     bool pinned;
+    ntos_mm::Access access=ntos_mm::Access::read_write;
 };
 // The SH7305 has a 64-entry fully associative UTLB, not the SH7705's
 // 32 sets x 4 ways. Slots 0..54 are NTOS-owned; 55..58 map the API window.
-// The final callback argument is reserved for ABI compatibility and is 0.
+// Install callback final argument: 0=RW, 1=RO, 2=debug-only supervisor.
+// Existing unprotected callers still pass 0. This is NOT a SH7705 way.
 using Install=bool (*)(void *,uint32_t,uint32_t,unsigned,unsigned);
+// Must prove old VA absent from UTLB AND ITLB; never a metadata-only drop.
+using Invalidate=bool (*)(void *,unsigned,uint32_t,uint32_t);
+// The private VM arena supplies committed physical frames from P1 RAM.
+// The VBR ISR never calls the allocator or filesystem.
+using ExtraResolve=bool (*)(void *,uint32_t,uint32_t *,ntos_mm::Access *);
 struct Pager {
     Area modules[MAX_MODULES]{};
     Entry entries[SLOTS]{};
     unsigned modules_used=0u;
     uint32_t clock=0u,misses=0u,evictions=0u;
     bool servicing=false;
+    void *extra_context=nullptr;
+    ExtraResolve extra=nullptr;
+    void set_extra(void *context,ExtraResolve resolve) {
+        extra_context=context;extra=resolve;
+    }
 
-    bool add(uint32_t va,uint32_t pa,uint32_t pages) {
+    bool add(uint32_t va,uint32_t pa,uint32_t pages,
+             const pe::Image *header=nullptr,bool protect=false) {
         if(modules_used>=MAX_MODULES || !pages ||
            (va&(PAGE-1u)) || (pa&(PAGE-1u)) ||
            va<ntos_rebase::VA_MIN || va>=ntos_rebase::VA_MAX ||
@@ -50,7 +66,10 @@ struct Pager {
             if(ntos_rebase::overlap(va,pages,
                 modules[i].va,modules[i].pages))
                 return false;
-        modules[modules_used++]={va,pages,pa};
+        if(protect && (!header || pages !=
+            (header->oh.size_of_image+PAGE-1u)/PAGE))
+            return false;
+        modules[modules_used++]={va,pages,pa,header,protect};
         return true;
     }
     bool backing(uint32_t va,uint32_t *pa) const {
@@ -65,7 +84,31 @@ struct Pager {
                 return true;
             }
         }
+        if(extra) {
+            ntos_mm::Access rights=ntos_mm::Access::no_access;
+            if(extra(extra_context,aligned,pa,&rights) &&
+               ntos_mm::readable(rights))return true;
+        }
         return false;
+    }
+    ntos_mm::Access access(uint32_t va) const {
+        const uint32_t aligned=va&~(PAGE-1u);
+        for(unsigned i=0u;i<modules_used;++i) {
+            const Area &a=modules[i];
+            if(aligned>=a.va && (aligned-a.va)/PAGE<a.pages) {
+                if(!a.protected_pages || !a.header)
+                    return ntos_mm::Access::read_write;
+                return ntos_mm::pe_page_access(*a.header,
+                                               (aligned-a.va)/PAGE);
+            }
+        }
+        if(extra) {
+            uint32_t physical_unused=0u;
+            ntos_mm::Access rights=ntos_mm::Access::no_access;
+            if(extra(extra_context,aligned,&physical_unused,&rights))
+                return rights;
+        }
+        return ntos_mm::Access::no_access;
     }
     int lookup(uint32_t va) const {
         va&=~(PAGE-1u);
@@ -74,6 +117,36 @@ struct Pager {
                 return static_cast<int>(i);
         return -1;
     }
+    // Only clear pager metadata AFTER the hardware callback confirms its
+    // UTLB slot AND ITLB alias are invalidated. No callback => fail closed.
+    bool invalidate(uint32_t va,Invalidate hw,void *ctx) {
+        if(servicing || !hw)return false;
+        const int ix=lookup(va);
+        // Even a nonresident software entry may still have a stale ITLB
+        // alias. The hardware must confirm absence before frame release.
+        if(ix<0)return hw(ctx,SLOTS,va&~(PAGE-1u),0u);
+        const Entry before=entries[static_cast<unsigned>(ix)];
+        if(!hw(ctx,static_cast<unsigned>(ix),before.va,before.pa))
+            return false;
+        entries[static_cast<unsigned>(ix)]=Entry{};
+        return true;
+    }
+    // Reinstall the same slot with updated PTEL.PR rights. Nonresident
+    // pages inherit their new permission when subsequently faulted in.
+    bool reprotect(uint32_t va,ntos_mm::Access rights,
+                   Install install,void *ctx) {
+        if(servicing || !install || !ntos_mm::readable(rights))
+            return false;
+        const int ix=lookup(va);
+        if(ix<0)return true;
+        Entry &e=entries[static_cast<unsigned>(ix)];
+        if(!install(ctx,e.va,e.pa,static_cast<unsigned>(ix),
+                    rights==ntos_mm::Access::privileged_only ? 2u :
+                    rights==ntos_mm::Access::read_only ? 1u : 0u))
+            return false;
+        e.access=rights;
+        return true;
+    }
     bool fault(uint32_t va,Install install,void *ctx,bool pin=false,
                bool hardware_miss=false) {
         if(servicing || !install)return false;
@@ -81,6 +154,8 @@ struct Pager {
         uint32_t pa=0;
         const uint32_t vpn=va&~(PAGE-1u);
         if(!backing(vpn,&pa)) {servicing=false;return false;}
+        const ntos_mm::Access rights=access(vpn);
+        if(!ntos_mm::readable(rights)) {servicing=false;return false;}
         const int existing=lookup(vpn);
         if(existing>=0) {
             Entry &e=entries[static_cast<unsigned>(existing)];
@@ -88,7 +163,9 @@ struct Pager {
             // on a tracked page still requires LDTLB, even if NTOS
             // previously installed that mapping.
             if(hardware_miss &&
-               !install(ctx,e.va,e.pa,static_cast<unsigned>(existing),0u)) {
+               !install(ctx,e.va,e.pa,static_cast<unsigned>(existing),
+                   e.access==ntos_mm::Access::privileged_only ? 2u :
+                   e.access==ntos_mm::Access::read_only ? 1u : 0u)) {
                 servicing=false;return false;
             }
             e.age=++clock;
@@ -112,11 +189,13 @@ struct Pager {
             }
         if(victim<0){servicing=false;return false;}
         Entry &out=entries[static_cast<unsigned>(victim)];
-        if(!install(ctx,vpn,pa,static_cast<unsigned>(victim),0u)) {
+        if(!install(ctx,vpn,pa,static_cast<unsigned>(victim),
+                    rights==ntos_mm::Access::privileged_only ? 2u :
+                    rights==ntos_mm::Access::read_only ? 1u : 0u)) {
             servicing=false;return false;
         }
         if(out.present)++evictions;
-        out={vpn,pa,++clock,true,pin};
+        out={vpn,pa,++clock,true,pin,rights};
         ++misses;
         servicing=false;
         return true;

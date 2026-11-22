@@ -69,6 +69,15 @@ _tlb_install_entry:
 
     ldtlb                           ! commit into UTLB[URC]
 
+#if NTOS_SH4A_TLB_SYNC_BARRIER
+    ! Renesas SH4A MMU section 7.4.3: after LDTLB, before returning to
+    ! an MMU-translated P0 instruction, execute ICBI for ANY address
+    ! (or RTE; an ordinary syscall here returns via RTS, not RTE).
+    ! The P1 exception/host stack is available and is not executable.
+    icbi    @r15
+    synco
+#endif
+
     ! CCR |= 1 again (OS330 invalidates after LDTLB too)
     mov.l   .Lccr, r1
     mov.l   @r1, r0
@@ -129,6 +138,32 @@ _cache_flush_invalidate_block:
     cmp/hi  r4, r0                  ! T = (r0 > r4)
     bf      .Lblk                   ! loop while r0 <= r4
     synco
+    rts
+    nop
+
+! ---------------------------------------------------------------------------
+! void cache_writeback_invalidate_block(void *addr [r4], u32 size [r5])
+! OCBP writeback+invalidate preserves the old page on failed shootdown.
+! Uses a P1 physical alias so no guest translation can fault here.
+! ---------------------------------------------------------------------------
+    .global _cache_writeback_invalidate_block
+_cache_writeback_invalidate_block:
+    tst r5,r5
+    bt .Lpurge_done
+    mov #-32,r1
+    mov r4,r0
+    and r1,r0
+    add r5,r4
+    add #-1,r4
+    and r1,r4
+.Lpurge_loop:
+    ocbp @r0
+    icbi @r0
+    add #32,r0
+    cmp/hi r4,r0
+    bf .Lpurge_loop
+    synco
+.Lpurge_done:
     rts
     nop
 
