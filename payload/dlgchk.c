@@ -5,6 +5,16 @@
  */
 #include <stdint.h>
 #include "ntimport.h"
+/* HH3 checks remain portrait; EX-word tests use the native LCD. */
+#ifdef NTOS_EXWORD
+#define TEST_WIDTH 528
+#define TEST_HEIGHT 320
+#define TEST_SIP_BOTTOM 320
+#else
+#define TEST_WIDTH 320
+#define TEST_HEIGHT 528
+#define TEST_SIP_BOTTOM 271
+#endif
 typedef uint32_t U;
 typedef uint16_t W;
 typedef struct {int l,t,r,b;} RECT;
@@ -76,7 +86,7 @@ int main(const void *const *api,char **argv,char **envp) {
         RECT rc={0,0,0,0};
         if(!id || NT_CALL(NtosDialogTop,())!=id ||
            !NT_CALL(NtosDialogGetRect,(id,&rc)) ||
-           rc.l<0 || rc.t<0 || rc.r>320 || rc.b>528 ||
+           rc.l<0 || rc.t<0 || rc.r>TEST_WIDTH || rc.b>TEST_HEIGHT ||
            rc.r-rc.l!=260 || rc.b-rc.t<70)
             return (int)0xBADF9104u;
         ITEM label;
@@ -95,7 +105,7 @@ int main(const void *const *api,char **argv,char **envp) {
             return (int)0xBADF9106u;
         if(!NT_CALL(NtosDialogMove,(id,10+(int)i*12,8+(int)i*15)) ||
            !NT_CALL(NtosDialogGetRect,(id,&rc)) ||
-           rc.l<0 || rc.t<0 || rc.r>320 || rc.b>528)
+           rc.l<0 || rc.t<0 || rc.r>TEST_WIDTH || rc.b>TEST_HEIGHT)
             return (int)0xBADF9107u;
         if((i==5u && !NT_CALL(NtosDialogDraw,())) ||
            !NT_CALL(NtosDialogEnd,(id,0x3EAu)) ||
@@ -124,7 +134,7 @@ int main(const void *const *api,char **argv,char **envp) {
     RECT rc={0,0,0,0};
     if(!keyboard ||
        !NT_CALL(NtosDialogGetRect,(keyboard,&rc)) ||
-       rc.b>271 || !NT_CALL(NtosDialogEnd,(keyboard,0x3EAu)) ||
+       rc.b>TEST_SIP_BOTTOM || !NT_CALL(NtosDialogEnd,(keyboard,0x3EAu)) ||
        !NT_CALL(NtosDialogRelease,(keyboard)))
         return (int)0xBADF910Cu;
     if(!NT_CALL(NtosGwesClose,(a)) ||

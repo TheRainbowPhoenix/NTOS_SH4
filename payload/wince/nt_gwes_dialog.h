@@ -168,8 +168,8 @@ static inline uint32_t nt_dlg_open(NT_DIALOGS *s,const NT_GWES *g,
        cfg->align>NT_DLG_ALIGN_BOTTOM ||
        (cfg->theme>NT_DLG_THEME_FLAT && cfg->theme!=0xFFFFFFFFu) ||
        (cfg->keyboard!=0u && cfg->keyboard!=1u) ||
-       cfg->width>320 || cfg->width<-1 ||
-       !nt_dlg_height(528,cfg->height))return 0u;
+       cfg->width>NT_GWES_WIDTH || cfg->width<-1 ||
+       !nt_dlg_height(NT_GWES_HEIGHT,cfg->height))return 0u;
     if(cfg->parent && (!g || nt_gwes_index(g,cfg->parent)<0))return 0u;
     for(unsigned i=0;i<NT_DIALOG_MAX;++i)
         if(!s->slots[i].state) {

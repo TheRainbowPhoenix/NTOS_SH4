@@ -40,8 +40,8 @@ static void nt_dialog_frame(NT_DIALOG *d) {
     const int x=r.left,y=r.top,w=r.right-r.left,h=r.bottom-r.top;
     if(w<40 || h<44)return;
     ntos_fillrect((u32)(x+3),(u32)(y+3),
-                  (u32)(r.right+3<=320?r.right+3:320),
-                  (u32)(r.bottom+3<=528?r.bottom+3:528),
+                  (u32)(r.right+3<=NTOS_SCREEN_W?r.right+3:NTOS_SCREEN_W),
+                  (u32)(r.bottom+3<=NTOS_SCREEN_H?r.bottom+3:NTOS_SCREEN_H),
                   0x00B5B8C0u);
     ntos_fillrect((u32)x,(u32)y,(u32)r.right,(u32)r.bottom,
                   theme.border);

@@ -6,6 +6,21 @@
  */
 #include <stdint.h>
 #include "ntimport.h"
+#ifdef NTOS_EXWORD
+#define TEST_WIDTH 528
+#define TEST_HEIGHT 320
+#define TEST_HALF_W 264
+#define TEST_HALF_H 160
+#define TEST_SIP_BOTTOM 320 /* Hardware QWERTY, no portrait SIP */
+#define TEST_HIT_X 518
+#else
+#define TEST_WIDTH 320
+#define TEST_HEIGHT 528
+#define TEST_HALF_W 160
+#define TEST_HALF_H 264
+#define TEST_SIP_BOTTOM 271
+#define TEST_HIT_X 310
+#endif
 typedef uint32_t U;
 typedef struct {int left,top,right,bottom;} RECT;
 NT_IMPORT(U,NtosGwesCreate,(void))
@@ -61,27 +76,27 @@ int main(const void *const *api,char **argv,char **envp) {
     RECT r={0,0,0,0};U action=0;
     if(!a || !b || a==b || NT_CALL(NtosGwesCreate,())!=0u)
         return (int)0xBADF8101u;
-    if(!NT_CALL(NtosGwesGetRect,(a,&r)) || !equals(&r,0,0,320,528) ||
+    if(!NT_CALL(NtosGwesGetRect,(a,&r)) || !equals(&r,0,0,TEST_WIDTH,TEST_HEIGHT) ||
         NT_CALL(NtosGwesGetRect,(b,&r))!=0)
         return (int)0xBADF8102u;
     if(!NT_CALL(NtosGwesSetMode,(1u)) ||
-       !NT_CALL(NtosGwesGetRect,(a,&r)) || !equals(&r,0,0,320,264) ||
-       !NT_CALL(NtosGwesGetRect,(b,&r)) || !equals(&r,0,264,320,528))
+       !NT_CALL(NtosGwesGetRect,(a,&r)) || !equals(&r,0,0,TEST_WIDTH,TEST_HALF_H) ||
+       !NT_CALL(NtosGwesGetRect,(b,&r)) || !equals(&r,0,TEST_HALF_H,TEST_WIDTH,TEST_HEIGHT))
         return (int)0xBADF8103u;
     if(!NT_CALL(NtosGwesSetMode,(2u)) ||
-       !NT_CALL(NtosGwesGetRect,(b,&r)) || !equals(&r,160,0,320,528) ||
-       NT_CALL(NtosGwesHit,(310,4,&action))!=b || action!=4u)
+       !NT_CALL(NtosGwesGetRect,(b,&r)) || !equals(&r,TEST_HALF_W,0,TEST_WIDTH,TEST_HEIGHT) ||
+       NT_CALL(NtosGwesHit,(TEST_HIT_X,4,&action))!=b || action!=4u)
         return (int)0xBADF8104u;
     if(!NT_CALL(NtosGwesSwap,()) ||
-       !NT_CALL(NtosGwesGetRect,(b,&r)) || !equals(&r,0,0,160,528) ||
+       !NT_CALL(NtosGwesGetRect,(b,&r)) || !equals(&r,0,0,TEST_HALF_W,TEST_HEIGHT) ||
        !NT_CALL(NtosGwesKeyboard,(1u)) ||
-       !NT_CALL(NtosGwesGetRect,(a,&r)) || !equals(&r,160,0,320,271) ||
+       !NT_CALL(NtosGwesGetRect,(a,&r)) || !equals(&r,TEST_HALF_W,0,TEST_WIDTH,TEST_SIP_BOTTOM) ||
        NT_CALL(NtosGwesHit,(12,325,&action))!=0u)
         return (int)0xBADF8105u;
     if(!NT_CALL(NtosGwesKeyboard,(0u)) ||
        !NT_CALL(NtosGwesSetMode,(0u)) ||
        !NT_CALL(NtosGwesFocus,(a)) ||
-       !NT_CALL(NtosGwesGetRect,(a,&r)) || !equals(&r,0,0,320,528) ||
+       !NT_CALL(NtosGwesGetRect,(a,&r)) || !equals(&r,0,0,TEST_WIDTH,TEST_HEIGHT) ||
        NT_CALL(NtosGwesGetRect,(b,&r))!=0)
         return (int)0xBADF8106u;
     /* Now exercise real WinCE GDI offscreen allocation, bitmap selection,
