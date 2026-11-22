@@ -52,7 +52,14 @@ int main(void) {
     assert(lb->selected==7u);
     assert(nt_ctl_select(lb,8)==-1);
     assert(nt_ctl_select(lb,-1)==-1 && lb->selected==0xffffffffu);
-    for(int i=0;i<5;++i)assert(nt_ctl_create(NT_CTL_STATIC,&parent,100+i,0,0,0,10,10,content));
+    NT_COMMON_CTL *edit=nt_ctl_create(NT_CTL_EDIT,&parent,99,0,0,210,200,30,0);
+    assert(edit && nt_ctl_edit_char(edit,'H')==1);
+    assert(nt_ctl_edit_char(edit,'i')==1);
+    assert(edit->title[0]=='H' && edit->title[1]=='i' && edit->title[2]==0);
+    assert(nt_ctl_edit_char(edit,8u)==1 && edit->title[1]==0);
+    assert(nt_ctl_edit_char(edit,13u)==2);
+    assert(!nt_ctl_edit_char(edit,1u));
+    for(int i=0;i<4;++i)assert(nt_ctl_create(NT_CTL_STATIC,&parent,100+i,0,0,0,10,10,content));
     assert(!nt_ctl_create(NT_CTL_STATIC,&parent,200,0,0,0,10,10,content));
     nt_ctl_destroy_parent(&parent);
     for(unsigned i=0;i<NT_CTL_MAX;++i)assert(!g_common_controls[i].handle);
