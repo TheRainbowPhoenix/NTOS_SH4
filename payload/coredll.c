@@ -287,6 +287,7 @@ typedef struct {
 #include "wince/ntgwes_model.h"
 #include "wince/nt_touchkb.h"
 #include "wince/nt_gwes_dialog.h"
+#include "wince/nt_common_controls.h"
 static NT_WINDOW g_window;
 static NT_GWES g_nt_gwes;
 static unsigned g_nt_gwes_initialized;
@@ -296,12 +297,14 @@ static unsigned g_nt_dialogs_initialized;
 static int nt_dialog_active(void);
 static int nt_dialog_capture(const NT_MSG *);
 static void nt_dialog_paint(void);
+static void nt_controls_paint(void);
 int UpdateWindow(void *hwnd);
 static u32 nt_sip_flags = 2u; /* docked, on = bit zero */
 static unsigned g_nt_sip_silent; /* modal transition, presenter handles paint */
 static void nt_sip_paint(void);
 static void nt_present_overlays(void) {
-    /* Final z-order: foreground app, dialogs, keyboard. */
+    /* Final z-order: app, native controls, dialogs, SIP. */
+    nt_controls_paint();
     nt_dialog_paint();
     nt_sip_paint();
 }
@@ -328,6 +331,7 @@ typedef struct {
     int visible,focused;
 } NT_EDITCTRL;
 static NT_EDITCTRL g_edit;
+static u32 g_control_pressed;
 static void nt_edit_paint(void);
 static int is_edit_hwnd(void *h) {
     return h==(void *)&g_edit && g_edit.magic==0x45444954u;
@@ -416,6 +420,14 @@ void *CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 
     (void)parent;
     (void)menu;
     (void)instance;
+    unsigned control_kind=nt_ctl_kind(class_name,style);
+    if(control_kind) {
+        NT_COMMON_CTL *control;
+        if(!is_hwnd(parent))return 0;
+        control=nt_ctl_create(control_kind,parent,(u32)(uintptr_t)menu,
+                              style,x,y,w,h,title);
+        return control?(void *)(uintptr_t)control->handle:0;
+    }
     if(nt_edit_class(class_name)) {
         if(!is_hwnd(parent) || g_edit.magic ||
            w<=0 || h<=0 || x<0 || y<0 || x>=320 || y>=528)
@@ -467,6 +479,13 @@ void *CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 
 int ShowWindow(void *hwnd, int cmd)
 {
     int was;
+    NT_COMMON_CTL *control=nt_ctl_find(hwnd);
+    if(control) {
+        was=(int)control->visible;
+        control->visible=(cmd!=0);
+        if(is_hwnd(control->parent))g_window.invalidated=1;
+        return was;
+    }
     if(is_edit_hwnd(hwnd)) {
         was=g_edit.visible;g_edit.visible=(cmd!=0);
         if(g_edit.visible)nt_edit_paint();
@@ -480,7 +499,7 @@ int ShowWindow(void *hwnd, int cmd)
 }
 int PostMessageW(void *hwnd, u32 msg, u32 wp, u32 lp)
 {
-    if (hwnd && !is_hwnd(hwnd) && !is_edit_hwnd(hwnd))
+    if (hwnd && !is_hwnd(hwnd) && !is_edit_hwnd(hwnd) && !nt_ctl_find(hwnd))
         return 0;
     return enqueue(hwnd, msg, wp, lp);
 }
@@ -571,6 +590,13 @@ int TranslateMessage(const NT_MSG *msg)
 }
 int DestroyWindow(void *hwnd)
 {
+    if(nt_ctl_find(hwnd)) {
+        int ok=nt_ctl_destroy(hwnd);
+        if(ok && g_control_pressed==(u32)(uintptr_t)hwnd)
+            g_control_pressed=0u;
+        g_window.invalidated=1;
+        return ok;
+    }
     if(is_edit_hwnd(hwnd)) {
         g_edit.magic=0u;g_edit.visible=g_edit.focused=0;
         nt_kb_edit_init(&g_edit.value);
@@ -581,12 +607,20 @@ int DestroyWindow(void *hwnd)
     if (g_window.proc)
         g_window.proc(hwnd, 0x0002u, 0, 0); /* WM_DESTROY */
     if(g_edit.magic)DestroyWindow((void *)&g_edit);
+    nt_ctl_destroy_parent(hwnd);
+    g_control_pressed=0;
     g_window.magic = 0;
     g_window.proc = 0;
     return 1;
 }
 int SetWindowTextW(void *hwnd, const u16 *text)
 {
+    NT_COMMON_CTL *control=nt_ctl_find(hwnd);
+    if(control) {
+        nt_ctl_copy(control->title,NT_CTL_TEXT_MAX,text);
+        g_window.invalidated=1;
+        return 1;
+    }
     if(is_edit_hwnd(hwnd)) {
         nt_kb_edit_init(&g_edit.value);
         if(text)
@@ -603,6 +637,16 @@ int SetWindowTextW(void *hwnd, const u16 *text)
 int GetWindowTextW(void *hwnd, u16 *buffer, int capacity)
 {
     int n = 0;
+    NT_COMMON_CTL *control=nt_ctl_find(hwnd);
+    if(control) {
+        if(!buffer || capacity<=0)return 0;
+        while(n+1<capacity && control->title[n]) {
+            buffer[n]=control->title[n];
+            ++n;
+        }
+        buffer[n]=0;
+        return n;
+    }
     if(is_edit_hwnd(hwnd)) {
         if(!buffer || capacity<=0)return 0;
         while(n+1<capacity && n<(int)g_edit.value.length) {
@@ -1047,6 +1091,13 @@ int GetClientRect(void *hwnd, NT_RECT *rect)
 {
     if (!rect)
         return 0;
+    NT_COMMON_CTL *control=nt_ctl_find(hwnd);
+    if(control) {
+        rect->left=rect->top=0;
+        rect->right=control->bounds.right-control->bounds.left;
+        rect->bottom=control->bounds.bottom-control->bounds.top;
+        return 1;
+    }
     if(is_edit_hwnd(hwnd)) {
         rect->left=rect->top=0;
         rect->right=g_edit.bounds.right-g_edit.bounds.left;
@@ -1280,6 +1331,10 @@ int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
 {
     (void)rect;
     (void)erase;
+    if(nt_ctl_find(hwnd)) {
+        g_window.invalidated=1;
+        return 1;
+    }
     if (is_hwnd(hwnd)) {
         /* Paint requests are coalesced, not queued. A queued WM_PAINT plus
          * UpdateWindow previously redrew the whole LCD twice. */
@@ -1290,6 +1345,12 @@ int InvalidateRect(void *hwnd, const NT_RECT *rect, int erase)
 }
 int UpdateWindow(void *hwnd)
 {
+    if(nt_ctl_find(hwnd)) {
+        nt_controls_paint();
+        if(!g_nt_paint_depth)nt_present_overlays();
+        coredll_refresh();
+        return 1;
+    }
     if(is_edit_hwnd(hwnd)) {
         nt_edit_paint();
         if(!g_nt_paint_depth)nt_present_overlays();
