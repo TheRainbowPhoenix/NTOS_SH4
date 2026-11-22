@@ -62,6 +62,19 @@ struct NtosP1Vm {
         }
         return 0u;
     }
+    /* Decommit/recommit is safe for an owned P1 arena because no guest
+     * virtual alias exists: the next commit zeroes the physical page.
+     * This does NOT imply that firmware P0 UTLB entries were invalidated. */
+    uint32_t decommit(uint32_t at,uint32_t pages) {
+        uint32_t offset=0u;
+        Region *r=find(at,pages,&offset);
+        if(!r)return (uint32_t)-1;
+        for(uint32_t i=0u;i<pages;++i)
+            if(!r->protection[offset+i])return (uint32_t)-1;
+        for(uint32_t i=0u;i<pages;++i)
+            r->protection[offset+i]=0u;
+        return 0u;
+    }
     uint32_t query(uint32_t at) {
         uint32_t p=0u;
         Region *r=find(at&~4095u,1u,&p);
