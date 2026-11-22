@@ -1,84 +1,71 @@
-# NTOSH / EX-word SH7305
+# NTOSH EX-word — flat _CONTENT SH4BE PE loader
 
-Native `ntos_sh.d01`, 528×320, built by
-[Exword CI](../.github/workflows/exword-d01.yml) with gint-exword.
+The native Exword add-in is **ntos_sh.d01**, a gint-exword 528×320
+D01. Exword transfer installs only files adjacent to the D01; it
+**does not upload nested directories**, and requires DOS **8.3 names**
+(8-character stem, dot, 3-character extension, max 12 total).
 
-## Install and use
+## Installed files
 
-The JP/CN packages install **NTOSH**. CI builds the same SH4BE WinCE
-EXEs, DLLs and phone apps as NTOS.hh3 and automatically places their
-latest binaries in `SYSROOT` beside `ntos_sh.d01` in the installed
-`_CONTENT` folder. Transfer utilities may require copying SYSROOT
-separately:
+Both [Exword CI](../.github/workflows/exword-d01.yml) locales now ship one
+flat set of PE modules beside the D01 in NTOSH/_CONTENT:
 
-```text
-NTOSH/_CONTENT/
-  ntos_sh.d01
-  SYSROOT/
-    HELLO.EXE
-    HELLOCORE.EXE
-    UIAPP.EXE
-    APPTEST/
-      EXAMPLE.EXE
-    Apps/
-      calc/calc.exe
-      edge/edge.exe
-    Windows/
-      System32/
-        XAMLUI.DLL
-        COREDLL.DLL    # built into the NTOSH runtime
-        CHAIN.DLL
-        UIXMOBILE.DLL
-```
+    NTOSH/_CONTENT/
+      ntos_sh.d01
+      HELLO.EXE
+      HELL6720.EXE   (the compiled HELLOCORE.EXE)
+      COREDLL.DLL
+      XAMLUI.DLL
+      VMTEST.EXE      (adapted from payload/vmtest.c for Exword)
+      UIXM57EB.DLL   (the compiled UIXMOBILE.DLL)
+      ...other SH4BE EXEs and DLLs, all 8.3 names
 
-Expected native locations include
-`\\drv0\NTOSH\_CONTENT\SYSROOT` and
-`\\crd0\CASIO\NTOSH\_CONTENT\SYSROOT`. NTOSH searches actual
-directory-entry spelling, including lower-case installer names; it still
-offers raw volume browsing if SYSROOT is missing. LEFT/RIGHT selects disk,
-UP/DOWN navigates (16-entry pages), EXE opens/runs, EXIT goes up or returns
-at the SYSROOT root, and ACON/MENU quits.
+No SYSROOT or Windows/System32 folder is installed or searched. The file
+picker boots in _CONTENT, with LEFT/RIGHT switching native disks, UP/DOWN
+selecting across 16-entry pages, EXE launching, EXIT returning at root and
+ACON or MENU quitting.
 
-DLL imports are resolved recursively in this exact order: the **running
-EXE's directory**, then `SYSROOT\Windows\System32` (on either
-`\\drv0\NTOSH\_CONTENT` or `\\crd0\CASIO\NTOSH\_CONTENT`).
-Directory spelling is resolved using native filesystem entries.
-The original `\fls0` WinCE path maps to SYSROOT on the active disk.
-OS FS remains **read-only**.
+On native filesystems the launcher searches, in order of preference:
 
-`make exword` builds the existing NTOS `ntx`/phone targets first and
-passes `dist/` into the Exword CMake packaging step. In GitHub Actions,
-a separate Hollyhock-3 container builds exactly those PE files and the
-native Exword job stages them in both JP/CN packages. `ntos_sh.d01`
-remains independent of the (much larger) SYSROOT data files.
+- \`\\drv0\NTOSH\_CONTENT\` or \`\\drv0\CASIO\NTOSH\_CONTENT\`
+- \`\\crd0\CASIO\NTOSH\_CONTENT\` or \`\\crd0\NTOSH\_CONTENT\`
 
-The loader reuses `src/pe.hpp`, `pe_stream.hpp`, and `pe_rebase.hpp`
-for file parsing and SH4BE relocations, and snaps imports to native
-COREDLL implementations or a loaded DLL's named/ordinal exports.
-Each dependency is initialized via `DllMain(DLL_PROCESS_ATTACH)` in
-dependency order and detached on return. Supports up to 7 DLLs inside the
-verified P1 image arena; unsupported forwarders, missing exports, fixed
-non-rebasable images and too-large module graphs fail with a message.
-It does **not** yet offer the CP400 P0 guest VBR or full GDI orientation.
+All DLL imports resolve in the **running EXE's own directory**, i.e.
+the same flat _CONTENT directory. Names within WinCE PEs are unchanged;
+for example \`UIXMOBILE.DLL\` maps to the deterministic 8.3 filename
+\`UIXM57EB.DLL\` at lookup. The Python packager and native runtime use
+the same uppercase FNV-1a suffix. CI rejects collisions and checks that
+all deployed PE bytes match the shared HH3 build output.
 
-## Exit
+## Build
 
-Use the EX-word return code `-2` and `touch_exword_quit()`, matching
-Edelweiss. EXE memory, DLLs, guest handles and synthetic COREDLL state are
-released before gint restores the EX-word OS. Hardware retest required.
+With the separate Exword toolchain installed, \`make exword\` compiles the
+ordinary NTOS \`ntx\`/phone binaries, compiles the special Exword VMTEST
+from the same test source, builds the native D01 and copies all EXE/DLL/
+CPL files into both locale install packages. CI uses two job containers:
+the normal Hollyhock-3 SH4BE compiler for the common PEs, and
+fxsdk-exword/gint-exword for the D01.
 
-## Memory / ROM
+The payload files are *not embedded* in the D01's 128 KiB image.
 
-A PE is executable, not just readable data. The add-in does *not*
-take ownership of firmware TLB slots. Executing in an unverified P1
-address can overwrite live firmware RAM during syscall/file I/O.
-Until EX-word exposes a proven, owned, pinned executable RAM lease
-on more models, large PE execution is **limited to the two verified
-Edelweiss ROM32A layouts**. Arbitrary ROM support must **not** be
-enabled by bypassing that check; a generic RAM allocator is the next
-required HAL milestone.
+## Advanced tests / VM
 
-Successful cross-compilation cannot prove the guest won't fault.
-Start with HELLO.EXE and a small known-import DLL test on backed-up
-hardware. DLLs containing unsupported WinCE dependencies may still
-fail safely. `NTOS.hh3` and the CP400 build remain independent.
+An existing CP400-oriented VMTEST reads NtosApi metadata from an unmapped
+P0 address \`0x08100000\`, causing a **fatal Exword TLB miss**. The special
+Exword VMTEST build instead receives the NtosApi function table via its
+entrypoint. The native host implements indices 23 and 41–46
+(reserve, commit, protect, query, release and committed-page count)
+with a bounded **P1-backed physical page arena**. These APIs simulate
+page permissions in software; read-only pages are *not* hardware-enforced.
+
+The loader rejects recognizable CP400-only API-window references in
+the executable before running it. It does not install CP400 P0 TLB entries,
+take the firmware VBR, or promise that arbitrary WinCE guest faults are
+recoverable. Unsupported guest MMU/protection use still requires a
+proper Exword-owned MMU lease and exception handling.
+
+The executable memory arena remains restricted to firmware profiles
+with known safe experimental P1 addresses (XD-A8500 ROM32A and
+XD-D6600 CY436 ROM32A). A generic host-owned executable allocator is
+required before other ROMs can be supported safely. Always retest on
+backed-up hardware; successful CI is not a device execution proof.
