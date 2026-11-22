@@ -8,7 +8,7 @@ import pefile
 
 def check(root):
     required = (
-        "NTOS.hh3", "COREDLL.DLL", "STARTHOST.EXE", "CMD.EXE", "GDILAB.EXE", "CTRLDEMO.EXE", "CALC.EXE",
+        "NTOS.hh3", "COREDLL.DLL", "COMMCTRL.DLL", "STARTHOST.EXE", "CMD.EXE", "GDILAB.EXE", "CTRLDEMO.EXE", "CALC.EXE",
         "METROWIN.EXE", "CONTROL.EXE", "DEMO.CPL",
     )
     system32 = root / "Windows" / "System32"
