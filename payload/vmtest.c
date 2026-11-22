@@ -11,8 +11,14 @@ typedef u32 (*count_fn)(void);
 typedef int32_t (*hint_fn)(u32);
 int main(const void *const *api,char **argv,char **envp) {
     (void)argv;(void)envp;
+#ifdef NTOS_EXWORD_VMTEST
+    /* Exword has no CP400 0x08100000 API window. Use the NtosApi table
+     * passed by the P1-resident native loader; no UTLB/VBR mutation. */
+    if(!api)return 0xBAD92001u;
+#else
     const volatile u32 *window=(const volatile u32 *)0x08100000u;
     if(!api || !ntos_api_has_slot(window,46u))return 0xBAD92001u;
+#endif
     reserve_fn reserve=(reserve_fn)api[41];
     change_fn commit=(change_fn)api[42],protect=(change_fn)api[43];
     query_fn query=(query_fn)api[44],release=(query_fn)api[45];
