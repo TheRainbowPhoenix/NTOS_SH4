@@ -74,6 +74,10 @@ jobs:
           gcc -std=c11 -O2 -Wall -Wextra -Werror -pedantic tests/native_cmd_tiling_test.c -o /tmp/ntos-native-cmd-tiles
           /tmp/ntos-native-cmd-tiles
           test -s dist/CMD.EXE
+          test -s dist/GDILAB.EXE
+          gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast \
+            tests/native_gdi_raster_test.c -o /tmp/ntos-gdi-raster
+          /tmp/ntos-gdi-raster
       - name: UI and host COREDLL regressions
         run: |
           python3 payload/phone/check_phone.py
