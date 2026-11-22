@@ -91,6 +91,8 @@ jobs:
           set -euo pipefail
           c++ -std=c++17 -Os -Wall -Wextra -Werror tests/exword_port_test.cpp -o /tmp/ntosh-exword-port-test
           /tmp/ntosh-exword-port-test
+          cc -std=c11 -Os -Wall -Wextra -Werror tests/coredll_exword_input_test.c -o /tmp/ntosh-exword-input
+          /tmp/ntosh-exword-input
           python3 tests/exword_packaging_test.py
           cc -std=c11 -Os -Wall -Wextra -Werror tests/exword_names_test.c -o /tmp/ntosh-exword-name-test
           /tmp/ntosh-exword-name-test
