@@ -25,8 +25,19 @@ static int ntos_path_ok(const char *path)
 struct ntos_scan {
     const char *pattern;
     struct ntos_exword_listing *listing;
-    unsigned skip,more;
+    unsigned skip,more,exe_only;
 };
+static int ntos_is_exe(const char *name)
+{
+    unsigned n=0u;
+    while(name[n])++n;
+    if(n<4u)return 0;
+    const char *s=name+n-4u;
+    return s[0]=='.' &&
+           (s[1]=='e'||s[1]=='E') &&
+           (s[2]=='x'||s[2]=='X') &&
+           (s[3]=='e'||s[3]=='E');
+}
 static int ntos_scan_native(struct ntos_scan *scan)
 {
     char found[512]={0};
@@ -37,25 +48,25 @@ static int ntos_scan_native(struct ntos_scan *scan)
     struct ntos_exword_listing *out=scan->listing;
     unsigned seen=0u;
     for(;;) {
-        if(seen++<scan->skip) {
-            found[0]=0;kind=0;
-            rc=exword_sys_findnext(handle,found,&kind);
-            if(rc<0)break;
-            continue;
+        /* Skip/filter counts only EXEs (and traversable directories).
+         * DLLs and metadata must NOT exhaust a 16-result UI page. */
+        if(!scan->exe_only || kind==5u || ntos_is_exe(found)) {
+            if(seen++>=scan->skip) {
+                if(out->count>=NTOS_EXWORD_LIST_MAX) {
+                    scan->more=1u;
+                    break;
+                }
+                char *dst=out->names[out->count];
+                unsigned n=0;
+                for(;n+1u<NTOS_EXWORD_NAME_MAX && found[n];++n) {
+                    unsigned char ch=(unsigned char)found[n];
+                    dst[n]=(ch>=32u && ch<127u)?(char)ch:'?';
+                }
+                dst[n]=0;
+                out->kinds[out->count]=(uint32_t)kind;
+                ++out->count;
+            }
         }
-        if(out->count>=NTOS_EXWORD_LIST_MAX) {
-            scan->more=1u;
-            break;
-        }
-        char *dst=out->names[out->count];
-        unsigned n=0;
-        for(;n+1u<NTOS_EXWORD_NAME_MAX && found[n];++n) {
-            unsigned char ch=(unsigned char)found[n];
-            dst[n]=(ch>=32u && ch<127u)?(char)ch:'?';
-        }
-        dst[n]=0;
-        out->kinds[out->count]=(uint32_t)kind;
-        ++out->count;
         found[0]=0;
         kind=0;
         rc=exword_sys_findnext(handle,found,&kind);
@@ -64,15 +75,26 @@ static int ntos_scan_native(struct ntos_scan *scan)
     int close=exword_sys_findclose(handle);
     return close<0?close:0;
 }
-int ntos_exword_scan_page(const char *pattern,unsigned skip,
-                         struct ntos_exword_listing *out,unsigned *more)
+static int ntos_exword_scan_filtered(const char *pattern,unsigned skip,
+                                      struct ntos_exword_listing *out,
+                                      unsigned *more,unsigned exe_only)
 {
     if(!out || !more || !ntos_path_ok(pattern) || skip>4096u)return -1;
     out->count=0u;out->result=0;*more=0u;
-    struct ntos_scan q={pattern,out,skip,0u};
+    struct ntos_scan q={pattern,out,skip,0u,exe_only};
     out->result=gint_world_switch(GINT_CALL(ntos_scan_native,(void *)&q));
     if(out->result>=0)*more=q.more;
     return out->result;
+}
+int ntos_exword_scan_page(const char *pattern,unsigned skip,
+                         struct ntos_exword_listing *out,unsigned *more)
+{
+    return ntos_exword_scan_filtered(pattern,skip,out,more,0u);
+}
+int ntos_exword_scan_exes_page(const char *pattern,unsigned skip,
+                              struct ntos_exword_listing *out,unsigned *more)
+{
+    return ntos_exword_scan_filtered(pattern,skip,out,more,1u);
 }
 int ntos_exword_scan_path(const char *pattern, struct ntos_exword_listing *out)
 {
