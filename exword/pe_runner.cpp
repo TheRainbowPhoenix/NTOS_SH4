@@ -10,6 +10,7 @@
 #include "storage.h"
 #include "shortname.h"
 #include "p1_vm.hpp"
+#include "rom32a_mmu.hpp"
 #include "../src/nt/process.hpp"
 #include "profile.hpp"
 #include "../src/pe.hpp"
@@ -84,6 +85,7 @@ static uint32_t handle_count(void) {
     return g_guest_process?g_guest_process->handles.used:0u;
 }
 static NtosP1Vm g_vm;
+static NtosExwordArena g_guest_area;
 static uint32_t vm_allocate(uint32_t n,void *) {
     return (uint32_t)(uintptr_t)heap_alloc(n);
 }
@@ -113,7 +115,15 @@ static uint32_t vm_committed(void) {
     return g_vm.committed();
 }
 static int32_t vm_hint(uint32_t at) {
-    return g_vm.hint(at);
+    uint32_t p=g_vm.query(at);
+    if(p==1u || p==2u)return 0;
+    if(p==0u)return -1; /* reserved, not committed */
+    /* An Exword P1 image/stack never needs a UTLB fill. Reject every
+     * unleased firmware P0 address, even if its alias is computable
+     * from the ROM's pager algorithm. */
+    return exword_rom32a::guest_hint(at,
+        g_guest_area.image_start,g_guest_area.image_end,
+        g_guest_area.stack_start,g_guest_area.stack_end);
 }
 
 static void set_error(const char *s) {g_error=s;}
@@ -417,6 +427,7 @@ static void guest_close_all()
     }
 }
 
+static uint32_t guest_rights(uint32_t at);
 static void init_host_api()
 {
     for(unsigned i=0;i<64u;++i)ntos_host_table[i]=nullptr;
@@ -449,6 +460,7 @@ static void init_host_api()
     ntos_host_table[35]=(const void *)&pool_peak;
     ntos_host_table[36]=(const void *)&pool_live;
     ntos_host_table[37]=(const void *)&handle_count;
+    ntos_host_table[38]=(const void *)&guest_rights;
     ntos_host_table[41]=(const void *)&vm_reserve;
     ntos_host_table[42]=(const void *)&vm_commit;
     ntos_host_table[43]=(const void *)&vm_protect;
@@ -532,6 +544,31 @@ static void sync_exec(uint32_t start,uint32_t size)
     __asm__ volatile("synco":::"memory");
 }
 #include "modules.inc"
+
+/* Software classification of guest PE section rights. ROM32A's
+ * normal add-in P0 mappings do enforce 0x15c (RO) / 0x17c (RW), but our
+ * private PE images are P1 SRAM and HAVE NO hardware page protection.
+ * This query is safe for MMROTEST; it is not an MMU guard or trap. */
+static uint32_t guest_rights(uint32_t at)
+{
+    using namespace ntos_exword_modules;
+    for(unsigned i=0u;i<count;++i) {
+        const Module &m=modules[i];
+        if(at<m.base || at-m.base>=m.size)continue;
+        uint32_t rva=at-m.base;
+        for(unsigned j=0u;j<m.pe.section_count;++j) {
+            const pe::SectionHeader &sh=m.pe.sections[j];
+            uint32_t span=sh.vsize>sh.raw_size?sh.vsize:sh.raw_size;
+            if(rva>=sh.rva && rva-sh.rva<span)
+                return (sh.characteristics&0x80000000u)?2u:1u;
+        }
+        return rva<m.pe.oh.size_of_headers?1u:0u;
+    }
+    uint32_t v=g_vm.query(at);
+    if(v==1u || v==2u)return v;
+    /* Only the guest's private P1 stack is mutable here. */
+    return at>=g_guest_area.stack_start && at<g_guest_area.stack_end?2u:0u;
+}
 
 int ntos_exword_run_pe(const char *path,const char *content_dir,uint32_t *exit_code)
 {
