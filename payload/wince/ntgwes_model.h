@@ -8,9 +8,15 @@
 #ifndef NTOS_GWES_MODEL_H
 #define NTOS_GWES_MODEL_H
 #include <stdint.h>
+#ifdef NTOS_EXWORD
+#define NT_GWES_WIDTH 528
+#define NT_GWES_HEIGHT 320
+#define NT_GWES_SIP_TOP 260
+#else
 #define NT_GWES_WIDTH 320
 #define NT_GWES_HEIGHT 528
 #define NT_GWES_SIP_TOP 271
+#endif
 #define NT_GWES_TITLE 24
 #define NT_GWES_FULL 0u
 #define NT_GWES_STACK 1u
