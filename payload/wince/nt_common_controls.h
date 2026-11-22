@@ -57,9 +57,10 @@ static unsigned nt_ctl_kind(const u16 *name, u32 style)
     if (nt_ctl_name(name, "STATIC"))
         return NT_CTL_STATIC;
     if (nt_ctl_name(name, "BUTTON"))
-        return (style & 15u) == 2u || (style & 15u) == 3u ||
-               (style & 15u) == 5u || (style & 15u) == 6u ?
-                   NT_CTL_CHECKBOX : NT_CTL_BUTTON;
+        return (style & 15u) == 2u || (style & 15u) == 3u || (style & 15u) == 5u ||
+                       (style & 15u) == 6u
+                   ? NT_CTL_CHECKBOX
+                   : NT_CTL_BUTTON;
     if (nt_ctl_name(name, "msctls_progress32"))
         return NT_CTL_PROGRESS;
     if (nt_ctl_name(name, "LISTBOX"))
@@ -88,12 +89,10 @@ static void nt_ctl_copy(u16 *dst, unsigned capacity, const u16 *src)
         }
     dst[i] = 0;
 }
-static NT_COMMON_CTL *nt_ctl_create(unsigned kind, void *parent, u32 id,
-                                    u32 style, int x, int y, int width,
-                                    int height, const u16 *title)
+static NT_COMMON_CTL *nt_ctl_create(unsigned kind, void *parent, u32 id, u32 style, int x, int y,
+                                    int width, int height, const u16 *title)
 {
-    if (!kind || !parent || width < 1 || height < 1 ||
-        x < 0 || y < 0 || x >= 320 || y >= 528 ||
+    if (!kind || !parent || width < 1 || height < 1 || x < 0 || y < 0 || x >= 320 || y >= 528 ||
         g_control_serial > 0x00FFFFFFu)
         return 0;
     for (unsigned i = 0; i < NT_CTL_MAX; ++i) {
@@ -151,8 +150,8 @@ static NT_COMMON_CTL *nt_ctl_hit(void *parent, int x, int y)
         NT_COMMON_CTL *c = &g_common_controls[i];
         if (!c->handle || !c->visible || !c->enabled || c->parent != parent)
             continue;
-        if (x >= c->bounds.left && x < c->bounds.right &&
-            y >= c->bounds.top && y < c->bounds.bottom)
+        if (x >= c->bounds.left && x < c->bounds.right && y >= c->bounds.top &&
+            y < c->bounds.bottom)
             return c;
     }
     return 0;
@@ -165,19 +164,24 @@ static int nt_ctl_command(NT_COMMON_CTL *c)
         c->checked ^= 1u;
     return c->role == NT_CTL_BUTTON || c->role == NT_CTL_CHECKBOX;
 }
-static int nt_ctl_edit_char(NT_COMMON_CTL *c,u32 ch)
+static int nt_ctl_edit_char(NT_COMMON_CTL *c, u32 ch)
 {
-    if(!c || c->role!=NT_CTL_EDIT || !c->enabled)return 0;
-    unsigned count=0;
-    while(count+1u<NT_CTL_TEXT_MAX && c->title[count])++count;
-    if(ch==8u) {
-        if(count)c->title[count-1u]=0;
+    if (!c || c->role != NT_CTL_EDIT || !c->enabled)
+        return 0;
+    unsigned count = 0;
+    while (count + 1u < NT_CTL_TEXT_MAX && c->title[count])
+        ++count;
+    if (ch == 8u) {
+        if (count)
+            c->title[count - 1u] = 0;
         return 1;
     }
-    if(ch==13u)return 2;
-    if(ch<32u || ch>126u || count+1u>=NT_CTL_TEXT_MAX)return 0;
-    c->title[count]=(u16)ch;
-    c->title[count+1u]=0;
+    if (ch == 13u)
+        return 2;
+    if (ch < 32u || ch > 126u || count + 1u >= NT_CTL_TEXT_MAX)
+        return 0;
+    c->title[count] = (u16)ch;
+    c->title[count + 1u] = 0;
     return 1;
 }
 static void nt_ctl_focus(NT_COMMON_CTL *focused)
@@ -189,8 +193,7 @@ static void nt_ctl_focus(NT_COMMON_CTL *focused)
 }
 static int nt_ctl_count(NT_COMMON_CTL *c)
 {
-    return c && (c->role == NT_CTL_LISTBOX || c->role == NT_CTL_COMBOBOX) ?
-           (int)c->line_count : -1;
+    return c && (c->role == NT_CTL_LISTBOX || c->role == NT_CTL_COMBOBOX) ? (int)c->line_count : -1;
 }
 static int nt_ctl_add_string(NT_COMMON_CTL *c, const u16 *s)
 {
