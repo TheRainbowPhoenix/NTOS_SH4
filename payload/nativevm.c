@@ -21,8 +21,13 @@ enum { CURRENT=0xFFFFFFFFu, MEM_COMMIT=0x1000u,
        PAGE_RO=2u,PAGE_RW=4u };
 int main(const void *const *api,char **argv,char **envp) {
     (void)argv;(void)envp;
+#ifdef NTOS_EXWORD_P1_VM
+    /* The Exword native loader passes the API directly. No CP400 P0 API window. */
+    if(!api)
+#else
     const volatile u32 *window=(const volatile u32 *)0x08100000u;
     if(!api || !ntos_api_has_slot(window,53u))
+#endif
         return (int)0xBAD97001u;
     alloc_fn alloc=(alloc_fn)api[51];
     protect_fn protect=(protect_fn)api[52];
