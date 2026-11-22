@@ -27,6 +27,19 @@ static bool read_rom(void *,uint32_t addr,uint8_t *out,unsigned len)
     for(unsigned i=0u;i<len;++i)out[i]=src[i];
     return true;
 }
+/* If an unusual firmware maps only its cached ROM view correctly,
+ * require the SAME full three 16-byte signatures via P1 before allowing
+ * any guest to run. This does not weaken the identity check and preserves
+ * the compatibility of pre-P2 builds. */
+static bool read_rom_cached(void *,uint32_t addr,uint8_t *out,unsigned len)
+{
+    if(!out || !len || addr<0x80000000u ||
+       addr>0x82000000u || len>0x82000000u-addr)return false;
+    const volatile uint8_t *src=
+        (const volatile uint8_t *)(uintptr_t)addr;
+    for(unsigned i=0u;i<len;++i)out[i]=src[i];
+    return true;
+}
 static const char *g_arena_error="not checked";
 static char g_arena_error_text[81];
 const char *ntos_exword_arena_error(void) {return g_arena_error;}
@@ -79,6 +92,7 @@ bool ntos_exword_arena_check(NtosExwordArena *out)
      * guest/WinCE world switch. Failed probes are never cached. */
     static const NtosRomProfile *verified=nullptr;
     if(!verified)verified=ntos_rom_match(read_rom,nullptr);
+    if(!verified)verified=ntos_rom_match(read_rom_cached,nullptr);
     if(!verified) {mismatch_reason();return false;}
     *out=verified->arena;
     g_arena_error="ok";
