@@ -158,3 +158,46 @@ These are cross-compiled/CI-tested changes; **the updated GUI, paging,
 CPL imports, IOTEST, and PROCTEST must still be exercised on hardware**
 before calling them fixed in the field. Application-specific phone
 assets and unimplemented WinCE subsystems may still limit some EXEs.
+
+## XD-A8500 hardware feedback: 2026-11-22 Exword canary/input/pager
+
+On physical XD-A8500, `CALC.EXE` now executes, demonstrating the
+profile-gated P1 loader is operational. Two native GUI canaries failed
+only their original **ClassPad portrait coordinate expectations**:
+
+- `DLGCHK.EXE` returned `0xBADF9104`: its modal bounds check used
+  `right <= 320, bottom <= 528`, but the Exword is 528x320.
+- `GWESCHK.EXE` returned `0xBADF8102`: its initial full-window bounds
+  check required `0,0,320,528`.
+
+Exword now compiles separate canary PEs with native 528x320 geometry,
+160-pixel horizontal halves and 264-pixel vertical halves, keeping all
+original HH3 portrait tests byte-for-byte unchanged.
+
+The Exword physical QWERTY previously created both `WM_KEYDOWN` with
+uppercase text and a synthetic `WM_CHAR` with lowercase text for every
+key, duplicating input (e.g., `Tt`, two Backspaces). The Exword message
+adapter now emits **one** `WM_CHAR` for printable keys and Backspace
+and leaves navigation/Enter/Escape in `WM_KEYDOWN`. The Exword
+calculator accepts the character message; HH3 keeps its existing
+`TranslateMessage` behavior. A host regression compiles the actual
+Exword COREDLL code and verifies input counts and native screen size.
+
+The previous Exword `PAGERTEST.EXE` imported the original CP400
+`PAGERSTRESS.DLL`, which directly dereferenced a ClassPad-only
+`0x08100000` P0 NtosApi window and was unsafe on Exword. The loader's
+P0-signature guard now also checks **DLL images**, not just EXEs.
+The packaged Exword-only `PAGERTEST.EXE` passes its host API table
+to a separately compiled Exword `PAGERSTRESS.DLL`, scans 80 resident
+4-KiB P1 pages and returns **`0xE0000CA8`** when checks pass.
+The normal HH3 `PAGERTEST` and real UTLB-fault tests are unchanged.
+**This Exword test does not prove UTLB eviction, a hardware protection
+fault, or installed firmware page mappings.**
+
+The hardware 0x040 TLB-miss report had `PC=7000DB1E`,
+`TEA=00000008`: the exact previous debug ELF maps the PC into
+gint's native `keydev_unqueue_event` routine. That may indicate
+bad native event-driver state; it is not enough evidence to ascribe
+the fault exclusively to the pager's old P0 literal. Real-device
+retesting remains necessary. Do not run unported `FAULTTEST` as
+a hardware VBR test through this add-in.
