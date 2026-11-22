@@ -15,7 +15,7 @@ static nt::Process g_kernel;
 static ntos_exword_listing g_listing;
 static unsigned g_volume,g_selected,g_top,g_skip,g_more;
 static char g_dir[NTOS_EXWORD_PATH_MAX];
-static char g_sysroot[2][NTOS_EXWORD_PATH_MAX];
+static char g_content_root[2][NTOS_EXWORD_PATH_MAX];
 static char g_note[72];
 static bool g_ready;
 
@@ -87,17 +87,17 @@ static void sort_list() {
         }
 }
 static void root() {
-    if(!g_sysroot[g_volume][0])
-        (void)ntos_exword_find_sysroot(g_volume,g_sysroot[g_volume]);
-    copy(g_dir,sizeof g_dir,g_sysroot[g_volume][0]?
-         g_sysroot[g_volume]:g_volume==0u?"\\\\drv0":"\\\\crd0");
+    if(!g_content_root[g_volume][0])
+        (void)ntos_exword_find_content_dir(g_volume,g_content_root[g_volume]);
+    copy(g_dir,sizeof g_dir,g_content_root[g_volume][0]?
+         g_content_root[g_volume]:g_volume==0u?"\\\\drv0":"\\\\crd0");
     g_selected=g_top=g_skip=0u;g_more=0u;
 }
 static void parent() {
     unsigned n=length(g_dir);
     while(n>2u && g_dir[n-1u]!='\\')--n;
     if(n>2u && g_dir[n-1u]=='\\')g_dir[n-1u]=0;
-    const char *boundary=g_sysroot[g_volume];
+    const char *boundary=g_content_root[g_volume];
     if(length(g_dir)<7u || (boundary[0] &&
        length(g_dir)<length(boundary)))root();
     g_selected=g_top=g_skip=0u;g_more=0u;
@@ -181,7 +181,7 @@ static void run_selected() {
     dtext(9,28,C_BLACK,name);
     dupdate();
     uint32_t result=0;
-    int rc=ntos_exword_run_pe(path,g_sysroot[g_volume],&result);
+    int rc=ntos_exword_run_pe(path,g_content_root[g_volume],&result);
     if(rc<0)copy(g_note,sizeof g_note,ntos_exword_pe_error());
     else {
         char value[9];hex8(value,result);
@@ -209,8 +209,8 @@ int main(void)
         if(e.type!=KEYEV_DOWN && e.type!=KEYEV_HOLD)continue;
         if(e.key==KEY_ACON || e.key==KEY_MENU)break;
         if(e.key==KEY_EXIT) {
-            if(length(g_dir)>(g_sysroot[g_volume][0]?
-                 length(g_sysroot[g_volume]):6u)){
+            if(length(g_dir)>(g_content_root[g_volume][0]?
+                 length(g_content_root[g_volume]):6u)){
                 parent();scan();draw();continue;
             }
             break;

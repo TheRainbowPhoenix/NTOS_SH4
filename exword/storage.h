@@ -21,9 +21,8 @@ static inline const char *ntos_exword_pattern(unsigned volume)
 extern "C" {
 #endif
 int ntos_exword_scan(unsigned volume, struct ntos_exword_listing *out);
-/* Resolve installed app's SYSROOT with case-accurate directory entries.
- * Returns 0 only when SYSROOT is actually visible on the given volume. */
-int ntos_exword_find_sysroot(unsigned volume, char out[NTOS_EXWORD_PATH_MAX]);
+/* Find installed NTOSH/_CONTENT folder on either native disk. */
+int ntos_exword_find_content_dir(unsigned volume, char out[NTOS_EXWORD_PATH_MAX]);
 /* Find an immediate child directory by native case-correct enumeration. */
 int ntos_exword_find_child_dir(const char *parent, const char *name,
                               char out[NTOS_EXWORD_PATH_MAX]);
