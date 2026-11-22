@@ -82,12 +82,15 @@ static inline int nt_cmd_path(const char *src, unsigned count, char out[96])
     out[at] = 0;
     return 1;
 }
-static inline NT_CMD_ACTION nt_cmd_parse(const char *line)
+static inline void nt_cmd_parse(const char *line, NT_CMD_ACTION *a)
 {
-    NT_CMD_ACTION a = {NT_CMD_EMPTY, {0}};
     unsigned i = 0, start, n;
+    if (!a)
+        return;
+    a->kind = NT_CMD_EMPTY;
+    a->path[0] = 0;
     if (!line)
-        return a;
+        return;
     while (nt_cmd_space(line[i]))
         ++i;
     start = i;
@@ -95,41 +98,40 @@ static inline NT_CMD_ACTION nt_cmd_parse(const char *line)
         ++i;
     n = i - start;
     if (!n)
-        return a;
+        return;
     while (nt_cmd_space(line[i]))
         ++i;
     if (nt_cmd_eq(line + start, n, "help") || nt_cmd_eq(line + start, n, "?"))
-        a.kind = NT_CMD_HELP;
+        a->kind = NT_CMD_HELP;
     else if (nt_cmd_eq(line + start, n, "cls"))
-        a.kind = NT_CMD_CLS;
+        a->kind = NT_CMD_CLS;
     else if (nt_cmd_eq(line + start, n, "dir"))
-        a.kind = NT_CMD_DIR;
+        a->kind = NT_CMD_DIR;
     else if (nt_cmd_eq(line + start, n, "split"))
-        a.kind = NT_CMD_SPLIT;
+        a->kind = NT_CMD_SPLIT;
     else if (nt_cmd_eq(line + start, n, "full"))
-        a.kind = NT_CMD_FULL;
+        a->kind = NT_CMD_FULL;
     else if (nt_cmd_eq(line + start, n, "swap"))
-        a.kind = NT_CMD_SWAP;
+        a->kind = NT_CMD_SWAP;
     else if (nt_cmd_eq(line + start, n, "rotate"))
-        a.kind = NT_CMD_ROTATE;
+        a->kind = NT_CMD_ROTATE;
     else if (nt_cmd_eq(line + start, n, "kb"))
-        a.kind = NT_CMD_KB;
+        a->kind = NT_CMD_KB;
     else if (nt_cmd_eq(line + start, n, "exit"))
-        a.kind = NT_CMD_EXIT;
+        a->kind = NT_CMD_EXIT;
     else if (nt_cmd_eq(line + start, n, "run")) {
         start = i;
         while (line[i] && !nt_cmd_space(line[i]) && i < 128)
             ++i;
         n = i - start;
-        a.kind = nt_cmd_path(line + start, n, a.path) ? NT_CMD_RUN : NT_CMD_BAD_PATH;
+        a->kind = nt_cmd_path(line + start, n, a->path) ? NT_CMD_RUN : NT_CMD_BAD_PATH;
     } else {
         /* Bare EXE names are first-class commands, as on NT. */
-        a.kind = nt_cmd_path(line + start, n, a.path) ? NT_CMD_RUN : NT_CMD_BAD;
+        a->kind = nt_cmd_path(line + start, n, a->path) ? NT_CMD_RUN : NT_CMD_BAD;
     }
     while (nt_cmd_space(line[i]))
         ++i;
-    if (line[i] != 0 && a.kind != NT_CMD_BAD_PATH)
-        a.kind = NT_CMD_BAD;
-    return a;
+    if (line[i] != 0 && a->kind != NT_CMD_BAD_PATH)
+        a->kind = NT_CMD_BAD;
 }
 #endif
