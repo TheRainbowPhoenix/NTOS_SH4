@@ -86,7 +86,7 @@ static void test_rectangles(void)
     assert(pixels[15][15] == 0xffffu && pixels[24][24] == 0xffffu);
     assert(pixels[20][20] == 0);
     assert(Rectangle((void *)1, -3, -3, 3, 3));
-    assert(pixels[0][0] == 0xffffu);
+    assert(pixels[0][2] == 0xffffu);
     assert(!Rectangle((void *)1, 500, 500, 520, 520));
     assert(DeleteObject(red));
 }
@@ -94,8 +94,8 @@ static void test_ellipses(void)
 {
     reset();
     assert(Ellipse((void *)1, 50, 50, 151, 151));
-    assert(pixels[50][100] == 0xffffu);
-    assert(pixels[150][100] == 0xffffu);
+    assert(pixels[50][93] == 0xffffu && pixels[50][107] == 0xffffu);
+    assert(pixels[150][93] == 0xffffu && pixels[150][107] == 0xffffu);
     assert(pixels[100][50] == 0xffffu);
     assert(pixels[100][150] == 0xffffu);
     assert(pixel_calls >= 180 && pixel_calls <= 250);
