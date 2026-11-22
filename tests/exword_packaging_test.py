@@ -27,21 +27,22 @@ def main():
         base=Path(temp);dist=base/"dist";dist.mkdir()
         for name in ("HELLO.EXE","HELLOCORE.EXE","COREDLL.DLL","XAMLUI.DLL",
                      "UIXMOBILE.DLL","CHAIN.DLL","CHAINTEST.EXE","VMTEST.EXE",
-                     "OBTEST.EXE","EVTEST.EXE","POOLTEST.EXE","IOTEST.EXE"):
+                     "OBTEST.EXE","EVTEST.EXE","POOLTEST.EXE","IOTEST.EXE",
+                     "PROCTEST.EXE","PROCNEXT.EXE","PROCFINAL.EXE"):
             (dist/name).write_bytes(fake_pe())
         (dist/"Apps"/"calc").mkdir(parents=True)
         (dist/"Apps"/"calc"/"calc.exe").write_bytes(fake_pe())
         (dist/"Apps"/"edge").mkdir()
         (dist/"Apps"/"edge"/"edge.exe").write_bytes(fake_pe())
         mapping=products(dist)
-        assert len(mapping)==14
+        assert len(mapping)==17
         for locale in ("ja","cn"):
             folder=base/locale/"NTOSH"
             folder.mkdir(parents=True)
             (folder/"ntos_sh.d01").write_bytes(b"native-D01")
             (folder/"fileinfo.cji").write_bytes(b"")
             (folder/"SYSROOT").mkdir()
-            assert package(dist,folder)==14
+            assert package(dist,folder)==17
             check(dist,folder)
             assert not (folder/"SYSROOT").exists()
             assert (folder/shortname("HELLOCORE.EXE")).is_file()
@@ -50,7 +51,7 @@ def main():
             assert not (folder/"Windows").exists()
             assert all(len(p.name)<=12 for p in folder.glob("*.EXE"))
             (dist/"CHAIN.DLL").unlink()
-            assert package(dist,folder)==13
+            assert package(dist,folder)==16
             check(dist,folder)
             assert not (folder/"CHAIN.DLL").exists()
             (dist/"CHAIN.DLL").write_bytes(fake_pe())

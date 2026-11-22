@@ -1174,9 +1174,9 @@ exword-vmtest: $(OUTDIR)/VMTEST.EXE
 .PHONY: exword-probes
 # Cross-compile the safe NTOS exec/Ob/Ex/IO fixtures from the SAME sources
 # as Hollyhock. Only proven non-faulting probes enter physical Exword builds.
-exword-probes: exword-vmtest $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE
+exword-probes: exword-vmtest $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE
 	@mkdir -p $(OUTDIR)
-	cp $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(OUTDIR)/
+	cp $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(OUTDIR)/
 
 # --- separate EX-word native D01 target (SH7305, 528x320, 128 KiB) --------
 # Does not change the HH3 compiler, link script or the normal "all" target.

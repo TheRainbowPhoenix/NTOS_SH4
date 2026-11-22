@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           make -j4
           make exword-probes
-          for probe in VMTEST OBTEST EVTEST POOLTEST IOTEST; do
+          for probe in VMTEST OBTEST EVTEST POOLTEST IOTEST PROCTEST PROCNEXT PROCFINAL; do
             test -s "dist/${probe}.EXE"
           done
           test -s dist/HELLO.EXE
