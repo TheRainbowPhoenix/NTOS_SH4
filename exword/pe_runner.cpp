@@ -420,6 +420,23 @@ static bool guest_path(const char *input,char out[NTOS_EXWORD_PATH_MAX])
     }
     return true;
 }
+static bool guest_existing_path(const char *requested,
+                                char actual[NTOS_EXWORD_PATH_MAX])
+{
+    if(!requested || !actual)return false;
+    unsigned len=0u,slash=0u;
+    while(requested[len] && len<NTOS_EXWORD_PATH_MAX) {
+        if(requested[len]=='\\')slash=len;
+        ++len;
+    }
+    if(!slash || len>=NTOS_EXWORD_PATH_MAX ||
+       !requested[slash+1u])return false;
+    char dir[NTOS_EXWORD_PATH_MAX];
+    for(unsigned i=0;i<slash;++i)dir[i]=requested[i];
+    dir[slash]=0;
+    return ntos_exword_find_child_file(dir,requested+slash+1u,actual)==0;
+}
+
 static int guest_launch(const char *path)
 {
     if(!g_guest_process || !g_guest_root[0] ||
@@ -438,8 +455,18 @@ static int guest_launch(const char *path)
     }
     if(len<5u || !same_case(leaf+len-4u,".EXE"))return 0;
     uint32_t size=0u;
-    if(ntos_exword_file_size(candidate,&size)<0 ||
-       size<64u || size>8u*1024u*1024u)return 0;
+    if(ntos_exword_file_size(candidate,&size)<0) {
+        char actual[NTOS_EXWORD_PATH_MAX];
+        if(!guest_existing_path(candidate,actual))return 0;
+        unsigned k=0u;
+        while(actual[k] && k+1u<sizeof candidate) {
+            candidate[k]=actual[k];++k;
+        }
+        candidate[k]=0;
+        if(actual[k] ||
+           ntos_exword_file_size(candidate,&size)<0)return 0;
+    }
+    if(size<64u || size>8u*1024u*1024u)return 0;
     unsigned j=0u;
     while(candidate[j] && j+1u<sizeof g_next_program) {
         g_next_program[j]=candidate[j];++j;
@@ -456,6 +483,12 @@ static int guest_open(const char *path,uint32_t flags)
     char native[NTOS_EXWORD_PATH_MAX];
     if(!guest_path(path,native))return -2;
     int fd=ntos_exword_open_read(native);
+    if(fd<0) {
+        /* Resolve the filename as actually uploaded, including case. */
+        char actual[NTOS_EXWORD_PATH_MAX];
+        if(guest_existing_path(native,actual))
+            fd=ntos_exword_open_read(actual);
+    }
     if(fd<0)return fd;
     uint32_t token=0u;
     nt::Status status=g_guest_process->attach_file(fd,&token);
@@ -507,7 +540,13 @@ static int guest_stat(const char *path)
     char native[NTOS_EXWORD_PATH_MAX];
     if(!guest_path(path,native))return -2;
     uint32_t size=0u;
-    return ntos_exword_file_size(native,&size);
+    int rc=ntos_exword_file_size(native,&size);
+    if(rc<0) {
+        char actual[NTOS_EXWORD_PATH_MAX];
+        if(guest_existing_path(native,actual))
+            rc=ntos_exword_file_size(actual,&size);
+    }
+    return rc;
 }
 static void guest_close_all()
 {
