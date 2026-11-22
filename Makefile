@@ -1174,10 +1174,11 @@ exword-vmtest: $(OUTDIR)/VMTEST.EXE
 .PHONY: exword-probes
 # Cross-compile the safe NTOS exec/Ob/Ex/IO fixtures from the SAME sources
 # as Hollyhock. Only proven non-faulting probes enter physical Exword builds.
-exword-probes: exword-vmtest $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(NT_PROBE_DIST)/MMTEST.EXE $(NT_PROBE_DIST)/MMROTEST.EXE $(OUTDIR)/NATIVEVM.EXE $(OUTDIR)/MMREUSE.EXE $(OUTDIR)/MMSTRESS.EXE $(OUTDIR)/ROMDIAG.EXE $(NT_PROBE_DIST)/CALC.EXE
+exword-probes: exword-vmtest $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(NT_PROBE_DIST)/MMTEST.EXE $(NT_PROBE_DIST)/MMROTEST.EXE $(OUTDIR)/NATIVEVM.EXE $(OUTDIR)/MMREUSE.EXE $(OUTDIR)/MMSTRESS.EXE $(OUTDIR)/ROMDIAG.EXE $(NT_PROBE_DIST)/CALC.EXE $(NT_PROBE_DIST)/DLGCHK.EXE $(NT_PROBE_DIST)/GWESCHK.EXE $(NT_PROBE_DIST)/PAGERTEST.EXE $(NT_PROBE_DIST)/PAGERSTRESS.DLL
 	@mkdir -p $(OUTDIR)
 	cp $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(NT_PROBE_DIST)/MMTEST.EXE $(NT_PROBE_DIST)/MMROTEST.EXE $(OUTDIR)/
 	cp $(NT_PROBE_DIST)/CALC.EXE $(OUTDIR)/
+	cp $(NT_PROBE_DIST)/DLGCHK.EXE $(NT_PROBE_DIST)/GWESCHK.EXE $(NT_PROBE_DIST)/PAGERTEST.EXE $(NT_PROBE_DIST)/PAGERSTRESS.DLL $(OUTDIR)/
 
 # Build Exword-specific P1 versions of the CP400 native VM/decommit
 # tests. Only the API window probe differs; real P0 UTLB reuse is NOT tested.
@@ -1208,6 +1209,34 @@ $(NT_PROBE_BUILD)/calc_exword.elf: $(NT_PROBE_BUILD)/calc_exword.o payload/paylo
 $(NT_PROBE_DIST)/CALC.EXE: $(NT_PROBE_BUILD)/calc_exword.elf tools/elf2ntx.py
 	@mkdir -p $(dir $@)
 	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+# Exword native 528x320 canary probes, keeping HH3's original
+# 320x528 contract and executable bytes unchanged.
+$(NT_PROBE_BUILD)/dlgchk_exword.o: payload/dlgchk.c payload/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -DNTOS_EXWORD=1 -c $< -o $@ $(PAYLOAD_CFLAGS)
+$(NT_PROBE_BUILD)/gweschk_exword.o: payload/gweschk.c payload/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -DNTOS_EXWORD=1 -c $< -o $@ $(PAYLOAD_CFLAGS)
+$(NT_PROBE_DIST)/DLGCHK.EXE: $(NT_PROBE_BUILD)/dlgchk_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+$(NT_PROBE_DIST)/GWESCHK.EXE: $(NT_PROBE_BUILD)/gweschk_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+# SH4BE pager stress on Exword is an *eager P1 80-page* integrity test,
+# not a hardware UTLB-eviction test. The ClassPad P0 0x08100000 NtosApi
+# window is NEVER accessed: the EXE passes its NtosApi to the DLL.
+$(NT_PROBE_BUILD)/pagerstress_exword.elf: $(NT_PROBE_BUILD)/pagerstress_exword.o payload/xamlui.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/xamlui.ld -o $@ $<
+$(NT_PROBE_DIST)/PAGERSTRESS.DLL: $(NT_PROBE_BUILD)/pagerstress_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name PAGERSTRESS.DLL --exports pager_touch
+$(NT_PROBE_DIST)/PAGERTEST.EXE: $(NT_PROBE_BUILD)/pagerstress_test_exword.elf $(NT_PROBE_DIST)/PAGERSTRESS.DLL tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module PAGERSTRESS.DLL
 
 # Read-only firmware MMU snapshot; no P4 writes or exception hooks.
 $(OUTDIR)/ROMDIAG.EXE: $(NT_PROBE_BUILD)/romdiag.elf tools/elf2ntx.py
