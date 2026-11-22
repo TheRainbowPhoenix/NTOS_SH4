@@ -16,8 +16,14 @@ enum { CURRENT=0xFFFFFFFFu,COMMIT=0x1000u,RESERVE=0x2000u,
        DECOMMIT=0x4000u,RELEASE=0x8000u,RW=4u };
 int main(const void *const *api,char **argv,char **envp) {
     (void)argv;(void)envp;
+#ifdef NTOS_EXWORD_P1_VM
+    /* The Exword native loader passes the API directly. No CP400 P0 API window. */
+    if(!api)
+#else
     const volatile u32 *w=(const volatile u32 *)0x08100000u;
-    if(!api || !ntos_api_has_slot(w,53u))return (int)0xBADAA001u;
+    if(!api || !ntos_api_has_slot(w,53u))
+#endif
+        return (int)0xBADAA001u;
     alloc_fn alloc=(alloc_fn)api[51];
     free_fn free_=(free_fn)api[53];
     hint_fn hint=(hint_fn)api[23];

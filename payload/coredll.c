@@ -19,6 +19,13 @@
  */
 #include "ugui_font.h"
 typedef unsigned int u32;
+#ifdef NTOS_EXWORD
+#define NTOS_SCREEN_W 528
+#define NTOS_SCREEN_H 320
+#else
+#define NTOS_SCREEN_W 320
+#define NTOS_SCREEN_H 528
+#endif
 
 /* OS330 C1A API window contract: *(0x08100000) = syscall table pointer. */
 #define API_WINDOW ((const void *const *)0x08100000u)
@@ -418,10 +425,10 @@ void *CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 
     (void)instance;
     if(nt_edit_class(class_name)) {
         if(!is_hwnd(parent) || g_edit.magic ||
-           w<=0 || h<=0 || x<0 || y<0 || x>=320 || y>=528)
+           w<=0 || h<=0 || x<0 || y<0 || x>=NTOS_SCREEN_W || y>=NTOS_SCREEN_H)
             return 0;
-        if(w>320-x)w=320-x;
-        if(h>528-y)h=528-y;
+        if(w>NTOS_SCREEN_W-x)w=NTOS_SCREEN_W-x;
+        if(h>NTOS_SCREEN_H-y)h=NTOS_SCREEN_H-y;
         g_edit.magic=0x45444954u;
         g_edit.parent=&g_window;
         g_edit.bounds=(NT_RECT){x,y,x+w,y+h};
@@ -434,23 +441,30 @@ void *CreateWindowExW(u32 exstyle, const u16 *class_name, const u16 *title, u32 
     }
     if (!g_class_proc || !same_wstr(class_name, g_class_name) || g_window.magic)
         return 0;
+#ifdef NTOS_EXWORD
+    /* Existing WinCE apps request 320x528 portrait. Give them an actual
+     * 528x320 client region on native Exword without changing HH3. */
+    if(x==0 && y==0 && w==320 && h==528) {
+        w=NTOS_SCREEN_W;h=NTOS_SCREEN_H;
+    }
+#endif
     /* This environment has one pen-oriented LCD window. WinCE
      * CW_USEDEFAULT and unspecified dimensions mean a full-screen window;
      * explicit smaller dimensions are preserved in GetClientRect. */
     if (w <= 0)
-        w = 320;
+        w = NTOS_SCREEN_W;
     if (h <= 0)
-        h = 528;
+        h = NTOS_SCREEN_H;
     if (x < 0)
         x = 0;
     if (y < 0)
         y = 0;
-    if (x >= 320 || y >= 528)
+    if (x >= NTOS_SCREEN_W || y >= NTOS_SCREEN_H)
         return 0;
-    if (w > 320 - x)
-        w = 320 - x;
-    if (h > 528 - y)
-        h = 528 - y;
+    if (w > NTOS_SCREEN_W - x)
+        w = NTOS_SCREEN_W - x;
+    if (h > NTOS_SCREEN_H - y)
+        h = NTOS_SCREEN_H - y;
     g_window.magic = 0x4E57494Eu;
     g_window.proc = g_class_proc;
     g_window.visible = 0;
@@ -543,7 +557,7 @@ int DispatchMessageW(const NT_MSG *msg)
         return 1;
     }
     /* Close belongs to shared chrome, not to individual app WNDPROCs. */
-    if (is_hwnd(msg->hwnd) && !is_phone_shell() && !is_hosted_phone() && msg->message == 0x0202u && msg->pt.x >= 288 &&
+    if (is_hwnd(msg->hwnd) && !is_phone_shell() && !is_hosted_phone() && msg->message == 0x0202u && msg->pt.x >= NTOS_SCREEN_W-32 &&
         msg->pt.y < 24 && msg->pt.y >= 0) {
         PostQuitMessage(0);
         return 0;
@@ -567,7 +581,14 @@ int DispatchMessageW(const NT_MSG *msg)
 int TranslateMessage(const NT_MSG *msg)
 {
     /* No Unicode keyboard map yet; retain WM_KEYDOWN for the caller. */
+#ifndef NTOS_EXWORD
     return msg != 0 && msg->message == 0x0100u;
+#else
+    /* The Exword physical bridge emits text as WM_CHAR directly below.
+     * Do not enqueue a SECOND character for a single hardware key:
+     * several CE applications consume both WM_KEYDOWN and WM_CHAR. */
+    return msg && msg->message==0x0100u;
+#endif
 }
 int DestroyWindow(void *hwnd)
 {
@@ -710,10 +731,17 @@ sip_next_event:
         }
         msg->message=0x0005u; /* WM_SIZE remeasure/repaint */
         msg->wParam=g_nt_gwes_initialized?g_nt_gwes.mode:0u;
-        msg->lParam=(528u<<16u)|320u;
+        msg->lParam=((u32)NTOS_SCREEN_H<<16u)|(u32)NTOS_SCREEN_W;
         return 1;
     }
     if (ev == 3) {
+#ifdef NTOS_EXWORD
+        /* Classify the native hardware event BEFORE converting to WinCE
+         * VK codes. VK_LEFT=0x25 etc. overlap printable ASCII punctuation
+         * and must not be mistaken for WM_CHAR. */
+        const int navigation =
+            (x>=0x90u && x<=0x94u) || x==0x80u || x==0xB3u;
+#endif
         msg->message = 0x0100u; /* WM_KEYDOWN */
         if (x == 0x0090u)
             x = 0x26u; /* VK_UP */
@@ -733,6 +761,14 @@ sip_next_event:
         }
         else if (x == 0x0080u)
             x = 0x1Bu; /* Raw Clear -> VK_ESCAPE/Back. */
+#ifdef NTOS_EXWORD
+        /* One text action per key press. Text, digits and Backspace
+         * enter via WM_CHAR only; arrows, Escape and Enter retain the
+         * WM_KEYDOWN navigation contract. Virtual controls also receive
+         * the physical Shift state already encoded by the host. */
+        if(!navigation && ((x>=32u && x<=126u) || x==8u))
+            msg->message=0x0102u; /* WM_CHAR */
+#endif
         msg->wParam = x;
         return 1;
     }
@@ -790,10 +826,10 @@ static void ntos_paint_titlebar(void)
         return;
     /* Shared light system title bar; app windows never draw another bar.
      * RGB565 path retains gentle slate colors without a black screen edge. */
-    ntos_fillrect(0, 0, 320, 24, 0x00f4e9dau);
-    ntos_fillrect(289, 2, 316, 22, 0x00e6d6c5u);
-    ntos_line(297, 7, 308, 17, 0x002a1d16u);
-    ntos_line(308, 7, 297, 17, 0x002a1d16u);
+    ntos_fillrect(0,0,NTOS_SCREEN_W,24,0x00f4e9dau);
+    ntos_fillrect(NTOS_SCREEN_W-31,2,NTOS_SCREEN_W-4,22,0x00e6d6c5u);
+    ntos_line(NTOS_SCREEN_W-23,7,NTOS_SCREEN_W-12,17,0x002a1d16u);
+    ntos_line(NTOS_SCREEN_W-12,7,NTOS_SCREEN_W-23,17,0x002a1d16u);
     u32 previous = SetTextColor((void *)1, 0x003a2a1du);
     int count = 0;
     while (g_window.title[count] && count < 34)
@@ -823,7 +859,7 @@ u32 SetPixel(void *hdc, int x, int y, u32 colorref)
         b->pixels[(u32)y*(u32)b->w+(u32)x]=(u16)rgb565(colorref);
         return colorref;
     }
-    if(gdi_device_dc(hdc) && x>=0 && y>=0 && x<320 && y<528) {
+    if(gdi_device_dc(hdc) && x>=0 && y>=0 && x<NTOS_SCREEN_W && y<NTOS_SCREEN_H) {
         ntos_pixel((u32)x,(u32)y,colorref);
         return colorref;
     }
@@ -950,8 +986,8 @@ int GetClientRect(void *hwnd, NT_RECT *rect)
         rect->right = g_window.bounds.right - g_window.bounds.left;
         rect->bottom = g_window.bounds.bottom - g_window.bounds.top;
     } else {
-        rect->right = 320;
-        rect->bottom = 528;
+        rect->right = NTOS_SCREEN_W;
+        rect->bottom = NTOS_SCREEN_H;
     }
     return 1;
 }
@@ -959,9 +995,9 @@ int GetClientRect(void *hwnd, NT_RECT *rect)
 int GetSystemMetrics(int index)
 {
     if (index == 0)
-        return 320; /* SM_CXSCREEN */
+        return NTOS_SCREEN_W; /* SM_CXSCREEN */
     if (index == 1)
-        return 528; /* SM_CYSCREEN */
+        return NTOS_SCREEN_H; /* SM_CYSCREEN */
     return 0;
 }
 /* Fixed-size public-domain bitmap font. No debug console or FPU. WinCE
@@ -1087,7 +1123,7 @@ static int nt_glyph(void *hdc, int x, int y, u16 ch)
                            py>=0 && py<bitmap->h)
                             bitmap->pixels[(u32)py*(u32)bitmap->w+
                                            (u32)px]=(u16)(active?fg:bg);
-                    } else if(px>=0 && px<320 && py>=0 && py<528) {
+                    } else if(px>=0 && px<NTOS_SCREEN_W && py>=0 && py<NTOS_SCREEN_H) {
                         ((void (*)(u32,u32,u32))api[7])
                             ((u32)px,(u32)py,active?fg:bg);
                     }
@@ -1111,7 +1147,7 @@ static int nt_glyph(void *hdc, int x, int y, u16 ch)
                        py>=0 && py<bitmap->h)
                         bitmap->pixels[(u32)py*(u32)bitmap->w+
                                        (u32)px]=(u16)(active?fg:bg);
-                } else if (px>=0 && px<320 && py>=0 && py<528)
+                } else if (px>=0 && px<NTOS_SCREEN_W && py>=0 && py<NTOS_SCREEN_H)
                     ((void (*)(u32, u32, u32))api[7])
                         ((u32)px,(u32)py,active?fg:bg);
             }
@@ -1135,7 +1171,7 @@ int TextOutW(void *hdc, int x, int y, const u16 *text, int n)
 {
     if (!hdc || !text || n < 0)
         return 0;
-    for (int i = 0; i < n && text[i] && x < 320; ++i) {
+    for (int i = 0; i < n && text[i] && x < NTOS_SCREEN_W; ++i) {
         nt_glyph(hdc, x, y, text[i]);
         x += nt_fontwidth(text[i]);
     }
@@ -1203,6 +1239,18 @@ int UpdateWindow(void *hwnd)
     }
     return 1;
 }
+
+/* EX-word's P0 0x08100000 is not the ClassPad API window. */
+#ifdef NTOS_EXWORD
+static int ntos_core_has_slot(u32 slot) {
+    const void **api=ntapi();
+    return slot<28u && api && api[slot];
+}
+#else
+static int ntos_core_has_slot(u32 slot) {
+    return ntos_api_has_slot((const volatile uint32_t *)0x08100000u,slot);
+}
+#endif
 
 /* WinCE file-handle bridge. Handles are tagged SDK file descriptors.
  * Strings from apps are UTF-16; Hollyhock File_Open takes an ANSI path.
@@ -1532,6 +1580,28 @@ int main(void *module,u32 reason,void *reserved)
 {
     (void)module;(void)reserved;
     if(reason==0u)gdi_release_all(); /* DLL_PROCESS_DETACH */
+#ifdef NTOS_EXWORD
+    if(reason==0u) {
+        /* Here COREDLL is built into D01 instead of reloaded per EXE.
+         * Close the guest's remaining WinCE descriptors and reset its
+         * synthetic window/keyboard state before the next test EXE. */
+        const void **api=ntapi();
+        for(unsigned i=0u;i<32u;++i)if(nt_files[i].used) {
+            if(api && api[14])
+                ((int (*)(int))api[14])(nt_files[i].fd);
+            nt_files[i].used=0;
+            nt_files[i].fd=-1;
+            nt_files[i].token=0u;
+        }
+        g_window.magic=0u;
+        g_edit.magic=0u;
+        g_nt_gwes_initialized=0u;
+        g_nt_dialogs_initialized=0u;
+        nt_sip_flags=2u;
+        g_qhead=g_qtail=0u;
+        g_nt_paint_depth=g_nt_paint_pending=0u;
+    }
+#endif
     return 1;
 }
 
@@ -1577,7 +1647,7 @@ void *FindFirstFileW(const u16 *pattern, NT_FIND_DATA *out)
     char path[96];
     NT_FIND_NATIVE found;
     int fd = -1;
-    if (!ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 24u)) {
+    if (!ntos_core_has_slot(24u)) {
         g_last_error = 50;
         return NT_INVALID_FILE;
     }
@@ -1611,7 +1681,7 @@ int FindNextFileW(void *search, NT_FIND_DATA *out)
     const int slot = find_slot(search);
     const void **a = ntapi();
     NT_FIND_NATIVE found;
-    if (!ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 25u)) {
+    if (!ntos_core_has_slot(25u)) {
         g_last_error = 50;
         return 0;
     }
@@ -1631,7 +1701,7 @@ int FindClose(void *search)
 {
     const int slot = find_slot(search);
     const void **a = ntapi();
-    if (!ntos_api_has_slot((const volatile uint32_t *)0x08100000u, 26u)) {
+    if (!ntos_core_has_slot(26u)) {
         g_last_error = 50;
         return 0;
     }
@@ -1657,6 +1727,10 @@ int SipShowIM(u32 flags)
         g_last_error = 87;
         return 0;
     }
+#ifdef NTOS_EXWORD
+    /* Hardware QWERTY replaces CP400's portrait SIP. */
+    if(flags)return 1;
+#endif
     if((nt_sip_flags&1u)==flags)return 1;
     nt_sip_flags = 2u | flags;
     if(g_nt_gwes_initialized)
@@ -1681,12 +1755,12 @@ int SipGetInfo(NT_SIP_INFO *info)
     }
     info->flags = nt_sip_flags;
     info->desktop.left = info->desktop.top = 0;
-    info->desktop.right = 320;
-    info->desktop.bottom = (nt_sip_flags & 1u) ? 271 : 528;
+    info->desktop.right = NTOS_SCREEN_W;
+    info->desktop.bottom = (nt_sip_flags & 1u) ? NT_GWES_SIP_TOP : NTOS_SCREEN_H;
     info->sip.left = 0;
-    info->sip.top = 271;
-    info->sip.right = 320;
-    info->sip.bottom = 528;
+    info->sip.top = NT_GWES_SIP_TOP;
+    info->sip.right = NTOS_SCREEN_W;
+    info->sip.bottom = NTOS_SCREEN_H;
     info->data_size = 0;
     info->data = 0;
     return 1;
@@ -1979,3 +2053,9 @@ static int legacy_nav_input(NT_MSG *msg)
     }
     return 1;
 }
+
+#if defined(NTOS_EXWORD) && !defined(NTOS_EXWORD_HOST_TEST)
+/* The SH4 static export table stores 32-bit SH function addresses.
+ * A 64-bit native host test exercises COREDLL logic without this table. */
+#include "../exword/ntos_exword_core_exports.inc"
+#endif

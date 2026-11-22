@@ -1158,3 +1158,108 @@ unified: all
 
 # Native WinCE-first phone launcher.
 include payload/phone/phone.mk
+
+# Exword-specific VMTEST uses exactly the NTOS VM probe source but avoids
+# the CP400-only 0x08100000 P0 API window (a fatal EX-word TLB miss).
+$(NT_PROBE_BUILD)/vmtest_exword.o: payload/vmtest.c payload/ntapi_caps.h
+	@mkdir -p $(dir $@)
+	$(CC) -DNTOS_EXWORD_VMTEST=1 -c $< -o $@ $(PAYLOAD_CFLAGS)
+$(NT_PROBE_BUILD)/vmtest_exword.elf: $(NT_PROBE_BUILD)/vmtest_exword.o payload/payload.ld
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+$(OUTDIR)/VMTEST.EXE: $(NT_PROBE_BUILD)/vmtest_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+.PHONY: exword-vmtest
+exword-vmtest: $(OUTDIR)/VMTEST.EXE
+.PHONY: exword-probes
+# Cross-compile the safe NTOS exec/Ob/Ex/IO fixtures from the SAME sources
+# as Hollyhock. Only proven non-faulting probes enter physical Exword builds.
+exword-probes: exword-vmtest $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(NT_PROBE_DIST)/MMTEST.EXE $(NT_PROBE_DIST)/MMROTEST.EXE $(OUTDIR)/NATIVEVM.EXE $(OUTDIR)/MMREUSE.EXE $(OUTDIR)/MMSTRESS.EXE $(OUTDIR)/ROMDIAG.EXE $(NT_PROBE_DIST)/CALC.EXE $(NT_PROBE_DIST)/DLGCHK.EXE $(NT_PROBE_DIST)/GWESCHK.EXE $(NT_PROBE_DIST)/PAGERTEST.EXE $(NT_PROBE_DIST)/PAGERSTRESS.DLL
+	@mkdir -p $(OUTDIR)
+	cp $(NT_PROBE_DIST)/OBTEST.EXE $(NT_PROBE_DIST)/EVTEST.EXE $(NT_PROBE_DIST)/POOLTEST.EXE $(NT_PROBE_DIST)/IOTEST.EXE $(NT_PROBE_DIST)/PROCTEST.EXE $(NT_PROBE_DIST)/PROCNEXT.EXE $(NT_PROBE_DIST)/PROCFINAL.EXE $(NT_PROBE_DIST)/MMTEST.EXE $(NT_PROBE_DIST)/MMROTEST.EXE $(OUTDIR)/
+	cp $(NT_PROBE_DIST)/CALC.EXE $(OUTDIR)/
+	cp $(NT_PROBE_DIST)/DLGCHK.EXE $(NT_PROBE_DIST)/GWESCHK.EXE $(NT_PROBE_DIST)/PAGERTEST.EXE $(NT_PROBE_DIST)/PAGERSTRESS.DLL $(OUTDIR)/
+
+# Build Exword-specific P1 versions of the CP400 native VM/decommit
+# tests. Only the API window probe differs; real P0 UTLB reuse is NOT tested.
+$(NT_PROBE_BUILD)/%_exword.o: payload/%.c
+	@mkdir -p $(dir $@)
+	$(CC) -DNTOS_EXWORD_P1_VM=1 -c $< -o $@ $(PAYLOAD_CFLAGS)
+
+$(NT_PROBE_BUILD)/%_exword.elf: $(NT_PROBE_BUILD)/%_exword.o payload/payload.ld
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+
+$(OUTDIR)/NATIVEVM.EXE: $(NT_PROBE_BUILD)/nativevm_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+$(OUTDIR)/MMREUSE.EXE: $(NT_PROBE_BUILD)/mmreuse_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+$(OUTDIR)/MMSTRESS.EXE: $(NT_PROBE_BUILD)/mmstress_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+# Exword-only landscape calculator. Rebuild from the same source into
+# a separate object; the ordinary HH3 CALC.EXE remains 320x528.
+$(NT_PROBE_BUILD)/calc_exword.o: payload/calc.c payload/wince_ui.h payload/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -DNTOS_EXWORD=1 -c $< -o $@ $(PAYLOAD_CFLAGS)
+$(NT_PROBE_BUILD)/calc_exword.elf: $(NT_PROBE_BUILD)/calc_exword.o payload/payload.ld
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/payload.ld -o $@ $<
+$(NT_PROBE_DIST)/CALC.EXE: $(NT_PROBE_BUILD)/calc_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+# Exword native 528x320 canary probes, keeping HH3's original
+# 320x528 contract and executable bytes unchanged.
+$(NT_PROBE_BUILD)/dlgchk_exword.o: payload/dlgchk.c payload/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -DNTOS_EXWORD=1 -c $< -o $@ $(PAYLOAD_CFLAGS)
+$(NT_PROBE_BUILD)/gweschk_exword.o: payload/gweschk.c payload/ntimport.h
+	@mkdir -p $(dir $@)
+	$(CC) -DNTOS_EXWORD=1 -c $< -o $@ $(PAYLOAD_CFLAGS)
+$(NT_PROBE_DIST)/DLGCHK.EXE: $(NT_PROBE_BUILD)/dlgchk_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+$(NT_PROBE_DIST)/GWESCHK.EXE: $(NT_PROBE_BUILD)/gweschk_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module COREDLL.DLL
+
+# SH4BE pager stress on Exword is an *eager P1 80-page* integrity test,
+# not a hardware UTLB-eviction test. The ClassPad P0 0x08100000 NtosApi
+# window is NEVER accessed: the EXE passes its NtosApi to the DLL.
+$(NT_PROBE_BUILD)/pagerstress_exword.elf: $(NT_PROBE_BUILD)/pagerstress_exword.o payload/xamlui.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -Wl,--emit-relocs -Wl,-e,_main -T payload/xamlui.ld -o $@ $<
+$(NT_PROBE_DIST)/PAGERSTRESS.DLL: $(NT_PROBE_BUILD)/pagerstress_exword.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --base 0x10000000 --dll --dll-name PAGERSTRESS.DLL --exports pager_touch
+$(NT_PROBE_DIST)/PAGERTEST.EXE: $(NT_PROBE_BUILD)/pagerstress_test_exword.elf $(NT_PROBE_DIST)/PAGERSTRESS.DLL tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@ --import-module PAGERSTRESS.DLL
+
+# Read-only firmware MMU snapshot; no P4 writes or exception hooks.
+$(OUTDIR)/ROMDIAG.EXE: $(NT_PROBE_BUILD)/romdiag.elf tools/elf2ntx.py
+	@mkdir -p $(dir $@)
+	$(PYTHON) tools/elf2ntx.py $< -o $@
+
+# --- separate EX-word native D01 target (SH7305, 528x320, 128 KiB) --------
+# Does not change the HH3 compiler, link script or the normal "all" target.
+# Use fxSDK's EXWORD.cmake and a separately installed gint-exword prefix.
+EXWORD_TOOLCHAIN ?=
+EXWORD_GINT_PREFIX ?=
+EXWORD_METADATA_SOURCE ?=
+EXWORD_PAYLOAD_DIR ?= $(abspath $(OUTDIR))
+.PHONY: exword
+# Build the same NTOS WinCE SH4BE modules used by the HH3 device first.
+exword: ntx exword-probes
+	@test -n "$(EXWORD_TOOLCHAIN)" && test -n "$(EXWORD_GINT_PREFIX)" || { \
+		echo "Usage: make exword EXWORD_TOOLCHAIN=/path/EXWORD.cmake EXWORD_GINT_PREFIX=/path/gint-exword"; exit 2; }
+	cmake -S exword -B build-exword \
+	  -DCMAKE_TOOLCHAIN_FILE="$(EXWORD_TOOLCHAIN)" \
+	  -DCMAKE_PREFIX_PATH="$(EXWORD_GINT_PREFIX)" \
+	  '-DCMAKE_MODULE_PATH=$(EXWORD_GINT_PREFIX)/lib/cmake/fxsdk;$(dir $(EXWORD_TOOLCHAIN))' \
+	  -DEXWORD_PAYLOAD_DIR="$(EXWORD_PAYLOAD_DIR)" \
+	  $(if $(EXWORD_METADATA_SOURCE),-DEXWORD_METADATA_SOURCE="$(EXWORD_METADATA_SOURCE)",)
+	cmake --build build-exword --parallel 2
+	$(PYTHON) tools/check_exword_d01.py build-exword $(EXWORD_PAYLOAD_DIR)

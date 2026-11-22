@@ -93,7 +93,7 @@ int DeleteDC(void *dc)
 void *CreateCompatibleBitmap(void *dc,int width,int height)
 {
     if(!gdi_valid_dc(dc) || width<1 || height<1 ||
-       width>320 || height>528)return 0;
+       width>NTOS_SCREEN_W || height>NTOS_SCREEN_H)return 0;
     /* 320x528x2 is 337920 bytes; overflow impossible after bounds. */
     const u32 bytes=(u32)width*(u32)height*2u;
     GDI_BITMAP *entry=0;
@@ -166,10 +166,10 @@ int BitBlt(void *destination,int x,int y,int width,int height,
     GDI_BITMAP *sb=gdi_selected(source);
     GDI_BITMAP *db=gdi_selected(destination);
     const int screen=gdi_device_dc(destination);
-    const int dw=screen?320:(db?db->w:0);
-    const int dh=screen?528:(db?db->h:0);
+    const int dw=screen?NTOS_SCREEN_W:(db?db->w:0);
+    const int dh=screen?NTOS_SCREEN_H:(db?db->h:0);
     if(!sb || (!db && !screen) || rop!=GDI_SRCCOPY ||
-       width<1 || height<1 || width>320 || height>528 ||
+       width<1 || height<1 || width>NTOS_SCREEN_W || height>NTOS_SCREEN_H ||
        x< -width || y< -height ||
        srcx< -width || srcy< -height ||
        x>dw || y>dh || srcx>sb->w || srcy>sb->h)
@@ -210,11 +210,11 @@ int StretchBlt(void *dst,int dx,int dy,int dw,int dh,
     GDI_BITMAP *source=gdi_selected(src);
     GDI_BITMAP *target=gdi_selected(dst);
     const int screen=gdi_device_dc(dst);
-    const int width=screen?320:(target?target->w:0);
-    const int height=screen?528:(target?target->h:0);
+    const int width=screen?NTOS_SCREEN_W:(target?target->w:0);
+    const int height=screen?NTOS_SCREEN_H:(target?target->h:0);
     if(!source || (!target && !screen) || rop!=GDI_SRCCOPY ||
        dw<1 || dh<1 || sw<1 || sh<1 ||
-       dw>320 || dh>528 || sw>320 || sh>528 ||
+       dw>NTOS_SCREEN_W || dh>NTOS_SCREEN_H || sw>NTOS_SCREEN_W || sh>NTOS_SCREEN_H ||
        dx< -dw || dy< -dh || sx< -sw || sy< -sh ||
        dx>width || dy>height ||
        sx>source->w || sy>source->h)return 0;
