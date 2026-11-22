@@ -91,7 +91,7 @@ jobs:
           set -euo pipefail
           c++ -std=c++17 -Os -Wall -Wextra -Werror tests/exword_port_test.cpp -o /tmp/ntosh-exword-port-test
           /tmp/ntosh-exword-port-test
-          cc -std=c11 -Os -Wall -Wextra -Werror -Wno-unused-function tests/coredll_exword_input_test.c -o /tmp/ntosh-exword-input
+          cc -std=c11 -Os -Wall -Wextra -Werror -Wno-unused-function -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_exword_input_test.c -o /tmp/ntosh-exword-input
           /tmp/ntosh-exword-input
           cc -std=c11 -Os -Wall -Wextra -Werror tests/exword_p1_pager_test.c -o /tmp/ntosh-exword-pager
           /tmp/ntosh-exword-pager
