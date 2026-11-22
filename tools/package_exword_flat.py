@@ -58,6 +58,61 @@ def sh4_pe(path: Path) -> None:
             raise ValueError(f"{path}: not SH4BE PE32")
 
 
+def imported_modules(pe: Path) -> list[str]:
+    """Walk PE32 import descriptors using only stdlib (no SH4 toolchain).
+
+    All imports must resolve to flat 8.3 payloads. This catches missing
+    dependencies before packaging rather than displaying a vague load error
+    on physical Exword hardware.
+    """
+    data = pe.read_bytes()
+    if len(data) < 0x100 or data[:2] != b"MZ":
+        return []
+    peoff = struct.unpack_from("<I", data, 0x3C)[0]
+    if peoff + 24 > len(data):
+        return []
+    count = struct.unpack_from("<H", data, peoff + 6)[0]
+    opt_size = struct.unpack_from("<H", data, peoff + 20)[0]
+    opt = peoff + 24
+    if opt + opt_size > len(data) or opt_size < 112:
+        return []
+    if struct.unpack_from("<H", data, opt)[0] != 0x10B:
+        return []
+    imp, length = struct.unpack_from("<II", data, opt + 104)
+    if not imp or not length:
+        return []
+    sections = []
+    for index in range(count):
+        start = opt + opt_size + index * 40
+        if start + 40 > len(data):
+            raise ValueError(f"{pe}: truncated section table")
+        vlen, va, rawlen, raw = struct.unpack_from("<IIII", data, start + 8)
+        sections.append((va, max(vlen, rawlen), raw))
+
+    def offset(rva: int) -> int:
+        for va, span, raw in sections:
+            if va <= rva < va + span:
+                pos = raw + rva - va
+                if pos < len(data):
+                    return pos
+        raise ValueError(f"{pe}: invalid import RVA 0x{rva:08X}")
+
+    result: list[str] = []
+    for index in range(128):
+        desc = offset(imp + index * 20)
+        if desc + 20 > len(data):
+            raise ValueError(f"{pe}: truncated import descriptor")
+        vals = struct.unpack_from("<IIIII", data, desc)
+        if not any(vals):
+            return result
+        name_off = offset(vals[3])
+        terminator = data.find(b"\0", name_off, min(len(data), name_off + 64))
+        if terminator < 0:
+            raise ValueError(f"{pe}: unterminated import name")
+        result.append(data[name_off:terminator].decode("ascii"))
+    raise ValueError(f"{pe}: too many import descriptors")
+
+
 def products(dist: Path) -> dict[str, Path]:
     dist = dist.resolve()
     if not dist.is_dir():
@@ -86,6 +141,15 @@ def products(dist: Path) -> dict[str, Path]:
         for source in sorted(apps.rglob("*")):
             if source.is_file() and source.suffix.upper() == ".EXE":
                 add(appname(source.relative_to(apps)), source)
+    # Every transitive module referenced by the actual PE IAT must be
+    # uploadable in the same directory under its deterministic 8.3 name.
+    for name, source in result.items():
+        for dependency in imported_modules(source):
+            target = shortname(dependency)
+            if target not in result:
+                raise FileNotFoundError(
+                    f"{name}: missing flat import {dependency} -> {target}"
+                )
     return result
 
 
