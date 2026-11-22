@@ -1,1 +1,0 @@
-NTOSH DLL dependencies live here, or next to the EXE.\nCOREDLL.DLL is built into NTOSH and does not need a disk copy.\n
