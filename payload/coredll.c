@@ -516,11 +516,112 @@ int DefWindowProcW(void *hwnd, u32 msg, u32 wp, u32 lp)
         coredll_refresh(); /* WM_PAINT */
     return 0;
 }
+/* Native WinCE common-control message contract. Handle values are
+ * generation-tagged IDs, never pointers to app-owned or kernel memory. */
+int SendMessageW(void *hwnd,u32 message,u32 wp,u32 lp)
+{
+    NT_COMMON_CTL *c=nt_ctl_find(hwnd);
+    if(c) {
+        switch(message) {
+        case 0x000Cu: /* WM_SETTEXT */
+            nt_ctl_copy(c->title,NT_CTL_TEXT_MAX,(const u16 *)(uintptr_t)lp);
+            g_window.invalidated=1;
+            return 1;
+        case 0x000Du: { /* WM_GETTEXT */
+            u16 *buffer=(u16 *)(uintptr_t)lp;
+            if(!buffer || !wp)return 0;
+            unsigned n=0u;
+            while(n+1u<wp && c->title[n]) {
+                buffer[n]=c->title[n];++n;
+            }
+            buffer[n]=0;
+            return (int)n;
+        }
+        case 0x000Eu: { /* WM_GETTEXTLENGTH */
+            unsigned n=0;
+            while(c->title[n] && n<NT_CTL_TEXT_MAX)++n;
+            return (int)n;
+        }
+        case 0x000Au: /* WM_ENABLE */
+            c->enabled=wp!=0u;
+            g_window.invalidated=1;
+            return 0;
+        case 0x00F0u: /* BM_GETCHECK */
+            return c->role==NT_CTL_CHECKBOX?(int)c->checked:0;
+        case 0x00F1u: /* BM_SETCHECK */
+            if(c->role!=NT_CTL_CHECKBOX)return 0;
+            c->checked=wp?1u:0u;
+            g_window.invalidated=1;
+            return 0;
+        case 0x00F5u: /* BM_CLICK */
+            if(nt_ctl_command(c) && is_hwnd(c->parent) && g_window.proc) {
+                g_window.invalidated=1;
+                g_window.proc(c->parent,0x0111u,c->id&0xffffu,(u32)(uintptr_t)hwnd);
+            }
+            return 0;
+        case 0x0401u: { /* PBM_SETRANGE */
+            if(c->role!=NT_CTL_PROGRESS)return 0;
+            unsigned low=lp&0xffffu,high=(lp>>16)&0xffffu;
+            if(high<=low)return 0;
+            c->minimum=low;c->maximum=high;
+            if(c->value<low)c->value=low;
+            if(c->value>high)c->value=high;
+            g_window.invalidated=1;
+            return 1;
+        }
+        case 0x0402u: { /* PBM_SETPOS */
+            if(c->role!=NT_CTL_PROGRESS)return 0;
+            int old=(int)c->value;
+            c->value=wp<c->minimum?c->minimum:
+                     wp>c->maximum?c->maximum:wp;
+            g_window.invalidated=1;
+            return old;
+        }
+        case 0x0180u: /* LB_ADDSTRING */
+        case 0x0143u: /* CB_ADDSTRING */
+            if(c->role!=NT_CTL_LISTBOX && c->role!=NT_CTL_COMBOBOX)return -1;
+            return nt_ctl_add_string(c,(const u16 *)(uintptr_t)lp);
+        case 0x0184u: /* LB_RESETCONTENT */
+        case 0x014Bu: /* CB_RESETCONTENT */
+            c->line_count=0;c->selected=0xffffffffu;
+            g_window.invalidated=1;return 0;
+        case 0x018Bu: /* LB_GETCOUNT */
+        case 0x0146u: /* CB_GETCOUNT */
+            return nt_ctl_count(c);
+        case 0x0188u: /* LB_GETCURSEL */
+        case 0x0147u: /* CB_GETCURSEL */
+            return c->selected==0xffffffffu?-1:(int)c->selected;
+        case 0x0186u: /* LB_SETCURSEL */
+        case 0x014Eu: /* CB_SETCURSEL */
+            return nt_ctl_select(c,(int)wp);
+        case 0x0189u: /* LB_GETTEXT */
+        case 0x0148u: { /* CB_GETLBTEXT */
+            if((c->role!=NT_CTL_LISTBOX && c->role!=NT_CTL_COMBOBOX) ||
+               wp>=c->line_count || !lp)return -1;
+            u16 *dst=(u16 *)(uintptr_t)lp;
+            unsigned n=0;
+            while(c->lines[wp][n] && n<NT_CTL_LIST_TEXT-1u) {
+                dst[n]=c->lines[wp][n];++n;
+            }
+            dst[n]=0;return (int)n;
+        }
+        default:
+            return 0;
+        }
+    }
+    if(is_hwnd(hwnd) && g_window.proc)
+        return g_window.proc(hwnd,message,wp,lp);
+    return 0;
+}
 int DispatchMessageW(const NT_MSG *msg)
 {
     if (!msg)
         return 0;
     if(nt_dialog_capture(msg))return 1; /* modal owns focus over every HWND */
+    if(nt_ctl_find(msg->hwnd)) {
+        if(msg->message==0x000Fu) {nt_controls_paint();return 1;}
+        return SendMessageW(msg->hwnd,msg->message,msg->wParam,msg->lParam);
+    }
     if(is_edit_hwnd(msg->hwnd)) {
         if(msg->message==0x0102u) {
             int changed=nt_kb_edit_char(&g_edit.value,msg->wParam);
@@ -560,6 +661,54 @@ int DispatchMessageW(const NT_MSG *msg)
         SipShowIM(1u);
         nt_edit_paint();
         return 1;
+    }
+    /* Real child HWND hit testing precedes the parent's WNDPROC.
+     * HWND focus, BN_CLICKED and LBN_SELCHANGE use standard WM_COMMAND. */
+    if(is_hwnd(msg->hwnd) &&
+       (msg->message==0x0201u || msg->message==0x0202u)) {
+        NT_COMMON_CTL *hit=nt_ctl_hit(msg->hwnd,msg->pt.x,msg->pt.y);
+        if(msg->message==0x0201u) {
+            g_control_pressed=hit?hit->handle:0u;
+            if(hit) {
+                nt_ctl_focus(hit);g_edit.focused=0;
+                if(hit->role==NT_CTL_LISTBOX || hit->role==NT_CTL_COMBOBOX) {
+                    int row=(msg->pt.y-hit->bounds.top-3)/20;
+                    if(row>=0 && (unsigned)row<hit->line_count) {
+                        nt_ctl_select(hit,row);
+                        g_window.invalidated=1;
+                        if(g_window.proc)
+                            g_window.proc(msg->hwnd,0x0111u,
+                                (hit->id&0xffffu)|(1u<<16u),hit->handle);
+                    }
+                }
+                return 1;
+            }
+        } else {
+            if(g_control_pressed) {
+                NT_COMMON_CTL *pressed=nt_ctl_find((void *)(uintptr_t)g_control_pressed);
+                g_control_pressed=0u;
+                if(pressed && pressed==hit && nt_ctl_command(pressed)) {
+                    g_window.invalidated=1;
+                    if(g_window.proc)
+                        g_window.proc(msg->hwnd,0x0111u,
+                                      pressed->id&0xffffu,pressed->handle);
+                }
+                return 1;
+            }
+        }
+    }
+    if(is_hwnd(msg->hwnd) && msg->message==0x0100u &&
+       (msg->wParam==13u || msg->wParam==32u)) {
+        for(unsigned i=0;i<NT_CTL_MAX;++i) {
+            NT_COMMON_CTL *c=&g_common_controls[i];
+            if(c->handle && c->visible && c->focus &&
+               nt_ctl_command(c)) {
+                g_window.invalidated=1;
+                if(g_window.proc)
+                    g_window.proc(msg->hwnd,0x0111u,c->id&0xffffu,c->handle);
+                return 1;
+            }
+        }
     }
     /* Close belongs to shared chrome, not to individual app WNDPROCs. */
     if (is_hwnd(msg->hwnd) && !is_phone_shell() && !is_hosted_phone() && msg->message == 0x0202u && msg->pt.x >= 288 &&
