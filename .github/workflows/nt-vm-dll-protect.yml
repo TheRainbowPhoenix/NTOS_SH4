@@ -14,6 +14,7 @@ on:
       - feat/ps-user-stack-dual-owner-irq-io-20261121
       - feat/ps-p1-resident-hal-tmu-20261121
       - feat/coredll-memory-gdi-userland-20261121
+      - feat/gwes-tiles-sip-edit-20261121
   workflow_dispatch:
 permissions:
   contents: read
@@ -45,6 +46,10 @@ jobs:
           /tmp/coredll-files
           gcc -std=c11 -O2 -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast tests/coredll_gdi_test.c -o /tmp/coredll-gdi
           /tmp/coredll-gdi
+          for name in nt_gwes_model_test nt_touchkb_test coredll_gwes_test nt_dialog_model_test coredll_dialog_test; do
+            gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-function -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast "tests/$name.c" -o "/tmp/$name"
+            "/tmp/$name"
+          done
           python3 tests/test_hh3_launcher_layout.py
       - name: Build one CP400 firmware with Ke/Ps and proven protection handler
         run: |
@@ -57,7 +62,11 @@ jobs:
           set -eu
           make -j4 ntx
           test -s dist/GDIBLIT.EXE
+          test -s dist/GWESCHK.EXE
+          test -s dist/GWESLAB.EXE
+          test -s dist/DLGCHK.EXE
           python3 tools/check_gdi_import_exports.py dist/COREDLL.DLL dist/GDIBLIT.EXE
+          python3 tools/check_gwes_exports.py dist/COREDLL.DLL dist/GWESCHK.EXE dist/GWESLAB.EXE dist/DLGCHK.EXE
           make -j4 nt-vm-dll-probes nt-exec-probes dist_ntprobe/MMROTEST.EXE
           for p in KTHREAD.EXE KEXCEPT.EXE ASOWN.EXE PSPARENT.EXE PSCHILD.EXE MMREUSE.EXE MMSTRESS.EXE MMRACE.EXE KCOOP.EXE K2THREAD.EXE DEVNULL.EXE DEVLOOP.EXE PEPAIR.EXE PEPEER.EXE PSROOT.EXE PSTWIN.EXE TWINCHILD.EXE KREGCTX.EXE DEVREPL.EXE PSCODE.EXE CODEA.EXE CODEB.EXE KTRAPREG.EXE PSUSER.EXE PSSTACK.EXE HALTMU.EXE HALUSB.EXE PSKILL.EXE KILLCHILD.EXE DEVDISP.EXE PROTSTATE.EXE NATIVEVM.EXE VMTEST.EXE MMGUARD.EXE MMREAD.EXE MMRDINIT.EXE INITGOOD.DLL INITFAIL.DLL INITPASS.EXE INITFAIL.EXE MMROTEST.EXE OBTEST.EXE LARGE4M.EXE PROCTEST.EXE PROCNEXT.EXE PROCFINAL.EXE IOTEST.EXE; do
             test -s "dist_ntprobe/$p"
@@ -75,6 +84,7 @@ jobs:
           cp dist/*.EXE dist/*.DLL ntos_cp400_all/
           cp dist_ntprobe/*.EXE dist_ntprobe/*.DLL ntos_cp400_all/
           cp docs/NTOS_KERNEL_NEXT_TESTS_20261120.md ntos_cp400_all/README.md
+          cp docs/COREDLL_COMPAT.md ntos_cp400_all/COREDLL_GWES.md
           test -s ntos_cp400_all/NTOS.hh3
           test -s ntos_cp400_all/KTHREAD.EXE
           test -s ntos_cp400_all/KEXCEPT.EXE
@@ -108,7 +118,20 @@ jobs:
           test -s ntos_cp400_all/DEVDISP.EXE
           test -s ntos_cp400_all/COREDLL.DLL
           test -s ntos_cp400_all/GDIBLIT.EXE
+          test -s ntos_cp400_all/GWESCHK.EXE
+          test -s ntos_cp400_all/GWESLAB.EXE
+          test -s ntos_cp400_all/DLGCHK.EXE
           test -s ntos_cp400_all/MMGUARD.EXE
+          # Identify mixed/stale CP400 copies without depending on device logs.
+          {
+            printf 'commit=%s\n' "$(git rev-parse HEAD)"
+            printf 'branch=%s\n' "${GITHUB_REF_NAME:-unknown}"
+            printf 'run=%s\n' "${GITHUB_RUN_ID:-local}"
+            printf 'profile=nt-vm-dll-protect-all-in-one\n'
+          } > ntos_cp400_all/BUILD-ID.txt
+          (cd ntos_cp400_all && sha256sum NTOS.hh3 COREDLL.DLL GDIBLIT.EXE GWESCHK.EXE GWESLAB.EXE DLGCHK.EXE > BUILD-SHA256.txt)
+          test -s ntos_cp400_all/BUILD-ID.txt
+          test -s ntos_cp400_all/BUILD-SHA256.txt
       - name: Upload ONLY ONE all-in-one CP400 package
         uses: actions/upload-artifact@v7
         with:

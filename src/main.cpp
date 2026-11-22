@@ -678,7 +678,9 @@ static int32_t ntos_file_close(int32_t fd) {
     return g_nt_process.drop_file(token)==nt::SUCCESS ? 0 : -2;
 }
 
-// Structured input: kind 1=touch down/drag, 2=CLEAR, 3=key press.
+// Structured input: 1=touch; 2=physical CLEAR; 3=key;
+// physical ClassPad action bar 4=RESIZE 5=SWAP 6=ROTATE 7=ESC.
+// The distinct Hollyhock GetInput enums are used, NOT x/y hit guesses.
 // On key press x contains the Hollyhock KEYCODE_* value.
 static uint32_t ntos_read_event(uint32_t *x, uint32_t *y,
                                  uint32_t *direction) {
@@ -694,7 +696,10 @@ static uint32_t ntos_read_event(uint32_t *x, uint32_t *y,
         if (direction) *direction = event.data.touch_single.direction==TOUCH_ACT_BAR?1u:static_cast<uint32_t>(event.data.touch_single.direction);
         return 1;
     }
-    if(event.type==EVENT_ACTBAR_ESC)return 2;
+    if(event.type==EVENT_ACTBAR_RESIZE)return 4;
+    if(event.type==EVENT_ACTBAR_SWAP)return 5;
+    if(event.type==EVENT_ACTBAR_ROTATE)return 6;
+    if(event.type==EVENT_ACTBAR_ESC)return 7;
     if (event.type == EVENT_KEY && event.data.key.direction == KEY_PRESSED) {
         if (event.data.key.keyCode == KEYCODE_POWER_CLEAR) return 2;
         if (x) *x = static_cast<uint32_t>(event.data.key.keyCode);
@@ -3747,6 +3752,10 @@ int main(int argc, char **argv, char **envp) {
         }
         count = npick;
     }
+    // File_FindFirst order is filesystem-dependent; sort the visible EXEs
+    // by filename while preserving the original size/path catalog indices.
+    ntos_picker::sort_by_name(*catalog_owner.catalog,
+                              static_cast<unsigned>(count));
 
     if (count == 0) {
         Debug_SetCursorPosition(0, 3);

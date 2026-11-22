@@ -198,6 +198,63 @@ int BitBlt(void *destination,int x,int y,int width,int height,
     return 1;
 }
 
+/* Integer nearest-neighbour StretchBlt for WinCE GDI, intentionally
+ * no bilinear filtering or antialiasing. Uses DDA integer accumulators
+ * rather than compiler software division helpers. Only SRCCOPY from
+ * a selected memory bitmap is implemented. Different-size self-blit
+ * is denied because no staging buffer exists for aliasing.
+ */
+int StretchBlt(void *dst,int dx,int dy,int dw,int dh,
+               void *src,int sx,int sy,int sw,int sh,u32 rop)
+{
+    GDI_BITMAP *source=gdi_selected(src);
+    GDI_BITMAP *target=gdi_selected(dst);
+    const int screen=gdi_device_dc(dst);
+    const int width=screen?320:(target?target->w:0);
+    const int height=screen?528:(target?target->h:0);
+    if(!source || (!target && !screen) || rop!=GDI_SRCCOPY ||
+       dw<1 || dh<1 || sw<1 || sh<1 ||
+       dw>320 || dh>528 || sw>320 || sh>528 ||
+       dx< -dw || dy< -dh || sx< -sw || sy< -sh ||
+       dx>width || dy>height ||
+       sx>source->w || sy>source->h)return 0;
+    if(target==source) {
+        if(dw!=sw || dh!=sh)return 0;
+        return BitBlt(dst,dx,dy,dw,dh,src,sx,sy,rop);
+    }
+    const void **api=ntapi();
+    if(screen && (!api || !api[7]))return 0;
+    unsigned row_in_source=0u,remaining_y=0u;
+    for(int j=0;j<dh;++j) {
+        int to_y=dy+j,from_y=sy+(int)row_in_source;
+        unsigned col_in_source=0u,remaining_x=0u;
+        for(int k=0;k<dw;++k) {
+            int to_x=dx+k,from_x=sx+(int)col_in_source;
+            if(to_y>=0 && to_y<height && to_x>=0 && to_x<width &&
+               from_y>=0 && from_y<source->h &&
+               from_x>=0 && from_x<source->w) {
+                u16 pixel=source->pixels[(u32)from_y*(u32)source->w+
+                                         (u32)from_x];
+                if(screen)
+                    ((void (*)(u32,u32,u32))api[7])
+                        ((u32)to_x,(u32)to_y,(u32)pixel);
+                else
+                    target->pixels[(u32)to_y*(u32)target->w+
+                                   (u32)to_x]=pixel;
+            }
+            remaining_x+=(u32)sw;
+            while(remaining_x>=(u32)dw) {
+                remaining_x-=(u32)dw;++col_in_source;
+            }
+        }
+        remaining_y+=(u32)sh;
+        while(remaining_y>=(u32)dh) {
+            remaining_y-=(u32)dh;++row_in_source;
+        }
+    }
+    return 1;
+}
+
 /* The actual loader calls COREDLL DllMain(DLL_PROCESS_DETACH) before
  * unmapping its P0 image and before disabling the MMU. Do not let an
  * application which forgot DeleteObject leak P1 SDK allocations.
