@@ -4,7 +4,7 @@
  * No CP400 UTLB remapping and no executable OS scratch allocations.
  */
 namespace ntos_exword_modules {
-constexpr unsigned MAX_MODULES=8u;
+constexpr unsigned MAX_MODULES=16u;
 struct Module {
     char name[48];
     char path[NTOS_EXWORD_PATH_MAX];
@@ -52,9 +52,11 @@ static bool dirname(const char *full,char dest[NTOS_EXWORD_PATH_MAX]) {
     dest[n-1u]=0;
     return true;
 }
-static bool valid_dll(const char *name) {
+static bool valid_module(const char *name) {
     unsigned n=str_len(name);
-    if(n<5u || n>=48u || !same_case(name+n-4u,".DLL"))return false;
+    if(n<5u || n>=48u ||
+       (!same_case(name+n-4u,".DLL") &&
+        !same_case(name+n-4u,".CPL")))return false;
     for(unsigned i=0u;i<n;++i)
         if(name[i]=='\\' || name[i]=='/' || name[i]==':' ||
            (name[i]=='.' && name[i+1u]=='.') ||
@@ -79,7 +81,8 @@ static bool in_dir(const char *dir,const char *filename,
         if(ntos_exword_scan_page(pattern,skip,directory,&more)<0)return false;
         for(unsigned i=0u;i<directory->count;++i)
             if(directory->kinds[i]!=5u &&
-               same_case(directory->names[i],filename))
+               (same_case(directory->names[i],filename) ||
+                same_case(directory->names[i],short_file)))
                 return joined(dir,directory->names[i],out);
         if(!directory->count)break;
         skip+=directory->count;
@@ -193,12 +196,12 @@ static bool load(const char *path,const char *name,bool is_dll,
             set_error("invalid DLL import name");return false;
         }
         if(same_case(dep,"COREDLL.DLL"))continue;
-        if(!valid_dll(dep)) {
-            set_error("unsupported DLL dependency name");return false;
+        if(!valid_module(dep)) {
+            set_error_detail("Unsupported module: ",dep);return false;
         }
         char dependency_path[NTOS_EXWORD_PATH_MAX];
         if(!resolve_dll(dep,m.path,dependency_path)) {
-            set_error("dependency DLL missing from SYSROOT");return false;
+            set_error_detail("Missing flat module: ",dep);return false;
         }
         unsigned child=0u;
         if(!load(dependency_path,dep,true,depth+1u,&child))return false;
