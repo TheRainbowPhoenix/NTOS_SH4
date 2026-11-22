@@ -13,11 +13,11 @@ flat set of PE modules beside the D01 in NTOSH/_CONTENT:
     NTOSH/_CONTENT/
       ntos_sh.d01
       HELLO.EXE
-      HELL6720.EXE   (the compiled HELLOCORE.EXE)
+      HELLOCOR.EXE   (the compiled HELLOCORE.EXE)
       COREDLL.DLL
       XAMLUI.DLL
       VMTEST.EXE      (adapted from payload/vmtest.c for Exword)
-      UIXM57EB.DLL   (the compiled UIXMOBILE.DLL)
+      UIXMOBIL.DLL   (the compiled UIXMOBILE.DLL)
       ...other SH4BE EXEs and DLLs, all 8.3 names
 
 No SYSROOT or Windows/System32 folder is installed or searched. The file
@@ -33,7 +33,7 @@ On native filesystems the launcher searches, in order of preference:
 All DLL imports resolve in the **running EXE's own directory**, i.e.
 the same flat _CONTENT directory. Names within WinCE PEs are unchanged;
 for example \`UIXMOBILE.DLL\` maps to the deterministic 8.3 filename
-\`UIXM57EB.DLL\` at lookup. The Python packager and native runtime use
+\`UIXMOBIL.DLL\` at lookup. The Python packager and native runtime use
 the same uppercase FNV-1a suffix. CI rejects collisions and checks that
 all deployed PE bytes match the shared HH3 build output.
 
@@ -122,3 +122,39 @@ P0 TLB invalidation, protected store, or thread-fault tests.
 and actual multi-thread preemption remain disabled until a validated
 Exword-owned exception/TLB scheme exists. The ROM source alone
 cannot establish safe ownership of those resources.
+
+## XD-A8500 hardware feedback: Exword browser and UI fixes
+
+After testing the 88-file build on the actual XD-A8500, the safe
+NTOS VM/Ob/Ex probes passed, but the first picker showed only 16 entries,
+mixed in DLLs, and WinCE windows painted then immediately returned.
+This was caused by incomplete platform input integration, not an MMU
+fault: `GetMessageW` requires native `NtosApi[15]`, which the
+Exword PE loader had left null.
+
+The native add-in now provides a blocking keyboard/pen event service at
+slot 15. The GUI bridges EX-word physical QWERTY to WinCE key codes and
+`WM_CHAR`; Exword COREDLL/GDI reports a **528x320** landscape screen,
+while the HH3 variant stays **320x528**. The standalone calculator has
+a separate Exword landscape compilation from the same source file.
+
+The picker enumerates only directories and `.EXE` files. Its internal
+16-entry pages continue until all installed EXEs have been reached;
+`UP/DOWN` traverse individual files, `PgUp/PgDn` (also
+History/Zoom) change pages, and footer pen buttons offer PREV/NEXT.
+After any EXE exits, an on-screen result overlay preserves the final
+frame and shows the entire `RETURN 0x...` or detailed load failure;
+EXE/EXIT acknowledges it and returns to the picker.
+
+The loader accepts `.CPL` as a WinCE dependency (for
+`CONTROL.EXE -> DEMO.CPL`), allows 16 dependent images (enough for
+the 12-DLL STRESS chain), and tries a native case-correct directory
+lookup before declaring a guest file or child process missing. File
+errors report the actual missing module instead of mentioning SYSROOT.
+The Exword packaging step verifies each PE import resolves to an
+8.3 file in the flat install directory, before transfer.
+
+These are cross-compiled/CI-tested changes; **the updated GUI, paging,
+CPL imports, IOTEST, and PROCTEST must still be exercised on hardware**
+before calling them fixed in the field. Application-specific phone
+assets and unimplemented WinCE subsystems may still limit some EXEs.
