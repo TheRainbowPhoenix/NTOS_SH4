@@ -20,7 +20,7 @@ jobs:
     name: Native common controls + SIP host tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Bounded common-control HWND/token model
         run: |
           gcc -std=c11 -O2 -Wall -Wextra -Werror -pedantic tests/nt_common_controls_test.c -o /tmp/ntos-control-model
@@ -47,7 +47,7 @@ jobs:
     name: Native CMD and GDI host tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Bounded command grammar and tiled window layouts
         run: |
           gcc -std=c11 -O2 -Wall -Wextra -Werror -pedantic tests/native_cmd_tiling_test.c -o /tmp/ntos-native-cmd-tiles
